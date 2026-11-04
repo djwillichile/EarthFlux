@@ -75,6 +75,44 @@ su documento y no se usan como IDs de decisión.
 
 ## 1. Decisiones P0 para el autor
 
+### 1.0 Adopción provisional para M2 (2026-11-04)
+
+Por indicación del autor (avanzar M2 sin haber respondido aún las preguntas
+P0), se adoptan las **recomendaciones escritas abajo para P0-4 … P0-12**
+con estado **`DECIDIDA (provisional)`, 2026-11-04**, revisables por el
+autor antes de `0.1.0`. **P0-1, P0-2 y P0-3 siguen `ABIERTA`**: dependen de
+leer Allen, Tasumi & Trezza (2007), aún no disponible. Se adopta además la
+propuesta de severidad de `specs/flags.md` §5 (FL-05: tercer nivel
+`critical`; FL-06: `critical` para `EF_H_CALIBRATION_NOT_CONVERGED` y
+`EF_H_DT_SLOPE_NONPOSITIVE`).
+
+Regla para M2 mientras P0-1 … P0-3 estén abiertas: las formulaciones no
+verificadas quedan `CANDIDATA`, se exponen mediante **argumentos explícitos
+sin valor por defecto** (p. ej., la altura de ψ_m estable de SH-11 como
+control del tipo `stable_psi_m_height`; RL↓ mediante un argumento de
+temperatura agnóstico, `ef_longwave_in(temperature, …)`, RC-12) y se
+rotulan como `CANDIDATA` en roxygen.
+
+| P0 | Se adopta | Filas que pasan a `DECIDIDA (provisional)` (§5) | Sigue pendiente |
+|---|---|---|---|
+| P0-4 | K y radianes en el núcleo `metric`; °C en `forcing` y ET de referencia con conversión explícita en la frontera; `doy` + `utc_hour` numéricos | ARCH-4, WF-02, RC-01, RC-03 (convención) | *View time* de MOD21 (MP-01) |
+| P0-5 | Una constante por magnitud (`R/constants.R`): 273.15 K, σ CODATA exacto, regla de Gsc; literales normativos solo en ET de referencia | G-D9, RC-07, WF-14; ET-D3 (ρ_w como constante, misma regla) | Valor de Gsc (RC-06: regla adoptada, valor sin verificar; constante `CANDIDATA`) |
+| P0-6 | ρ_air de §8.1 con T_a = Ts − dT y P de `ef_air_pressure()` o medida; T_a y ρ iteradas en L; dT₀ = 0; c_p en una sola constante nombrada | SH-08, SH-10 (salvo g), SH-19 | SH-09 (valor de c_p, depende de P0-1): constante `CANDIDATA` 1004; g `CANDIDATA` |
+| P0-7 | Una sola `ef_latent_heat_vaporization()`, `method` sin defecto; `"constant"` como defecto futuro de `earthflux()` hasta V2; guarda [10⁶, 10⁷] J kg⁻¹ | ET-D1, ET-D2 | `"metric"` (`CANDIDATA`, no implementada hasta V2) |
+| P0-8 | Núcleo de anclas sin umbrales ni k por defecto, sin relajación automática, `etrf_hot`/`le_hot` explícitos | D-AP-01, D-AP-02, D-AP-04, D-AP-05 | Preset `VERIFICADA` para `earthflux()` |
+| P0-9 | Un punto de calibración por clase con `aggregate` explícito; condiciones de borde en función propia de la etapa [B] | D-AP-06, SH-14, D-AP-03 | — |
+| P0-10 | Fase B con estrategia P2, `tol` = 0.01 por ancla, `maxit` = 20, ω = 0, driver de calibración exportado | SH-15, SH-16, SH-17 | — |
+| P0-11 | Entrada imposible → error con clase en el núcleo; la orquestación convierte en `NA` + flag lo marcado aguas arriba; `on_invalid` no adoptado | G-D6, ET-D6 | Política de la orquestación M2–M3 (T-13) |
+| P0-12 | Núcleo vectorizado; longitud 0 rechazada; `dim` sin reciclar; una función por método + despachador delgado con `method` sin defecto; clases de retorno coordinadas (`ARCHITECTURE.md` §3.2); condiciones con datos (T-17) | ARCH-3, G-5.2, G-D3, D-AP-09, ET-D12, SH-18, D-AP-10 (NR-D5, NR-D6 confirmadas) | Revisión del tamaño de la API antes de `0.1.0` (T-16) |
+
+Al implementar `ef_air_pressure()` se tomó además la ubicación compartida
+recomendada por RC-17 = WF-01 (`R/shared-physics.R`), también
+`DECIDIDA (provisional)`. El detalle de las convenciones vive en los
+documentos dueños: `ARCHITECTURE.md` §3–§4, `specs/flags.md` §4.2, §5, §7
+y §9, `R/constants.R` y `R/diagnostics.R`.
+
+### 1.1 Preguntas P0
+
 Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
 **tal como figura en su documento** y la consecuencia de adoptarla.
 
@@ -194,6 +232,11 @@ cada documento y se agrupan en la sección 4.
 | | ABIERTA | DECIDIDA | CERRADA | Total |
 |---|---|---|---|---|
 | Filas | 143 | 16 | 3 | **162** |
+
+Recuento a la fecha de corte. La adopción provisional de §1.0 pasa
+**34 filas** de `ABIERTA` a `DECIDIDA (provisional)` (con ellas: 109
+`ABIERTA`, 50 `DECIDIDA`, 3 `CERRADA`); las tablas de esta sección y de §5
+conservan el recuento original salvo en la columna de estado.
 
 Decisiones abiertas por prioridad:
 
@@ -543,8 +586,8 @@ grupo**.
 
 | ID | Orig. | Título | Opciones | Recomendación | Estado | Pr. | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|---|---|---|
-| ARCH-3 | — | Núcleo físico de funciones numéricas vectorizadas | Vectorial `numeric` + envoltorio ráster / funciones sobre rásteres | Vectorial; envoltorios sin reimplementar ("a confirmar en M1") | ABIERTA | P0 | ARCH §3 | D-AP-09; T-16; P0-12 |
-| ARCH-4 | — | Unidad de `air_temperature` en el contrato | K / °C | `TODO: decidir K vs °C` (WF-02 propone cerrarlo) | ABIERTA | P0 | ARCH §4 | = WF-02; T-09 |
+| ARCH-3 | — | Núcleo físico de funciones numéricas vectorizadas | Vectorial `numeric` + envoltorio ráster / funciones sobre rásteres | Vectorial; envoltorios sin reimplementar ("a confirmar en M1") | DECIDIDA (provisional, 2026-11-04) | — | ARCH §3 | D-AP-09; T-16; P0-12 |
+| ARCH-4 | — | Unidad de `air_temperature` en el contrato | K / °C | `TODO: decidir K vs °C` (WF-02 propone cerrarlo) | DECIDIDA (provisional, 2026-11-04) (= WF-02) | — | ARCH §4 | = WF-02; T-09 |
 | ARCH-5 | — | Paquete `units` | Adoptar / nombres + documentación + rangos | No adoptado por ahora | DECIDIDA (provisional) | — | ARCH §5 | Reevaluar en M2 |
 | ARCH-6.2 | — | Backend espacial | `terra`; `sf` | `terra`; `sf` solo si se justifica | DECIDIDA 2026-11-04 | — | ARCH §6.2; DEV §4 | — |
 | ARCH-6.3a | — | Paralelismo como requisito y reglas | — | Secuencial por defecto; secuencial = paralelo; sin `mclapply()`; ≤ 2 núcleos en CRAN | DECIDIDA (fecha no registrada) | — | ARCH §6.3 | T-22 |
@@ -574,21 +617,21 @@ grupo**.
 | NR-D2 | D2 | Marcar Rn < 0 en escenas diurnas | Flag / sin flag | Capa de orquestación; criterio documentado | ABIERTA | P2 | §4, §10.2 | T-14 |
 | NR-D3 | D3 | Número de ecuación y notación en Allen et al. (2007) | — | `TODO`; bloquea la fusión a `main` | ABIERTA | P0 | §2.3, §10.2 | P0-1 |
 | NR-D4 | D4 | DOI de Allen et al. (2007) | — | Verificado con Crossref | CERRADA 2026-11-04 | — | §10.2; audit §8 | §6 ítem 9 |
-| NR-D5 | D5 | Argumentos de longitud 0 | Error / `numeric(0)` | Rechazar (provisional) | DECIDIDA (provisional) | — | §3.1, §10.2 | P0-12 |
-| NR-D6 | D6 | `dim` sin reciclar | — | Deben compartir `dim` (provisional) | DECIDIDA (provisional) | — | §3.1, §10.2 | Revisar con `SpatRaster`; P0-12 |
+| NR-D5 | D5 | Argumentos de longitud 0 | Error / `numeric(0)` | Rechazar (provisional) | DECIDIDA (provisional; confirmada 2026-11-04 con P0-12) | — | §3.1, §10.2 | P0-12 |
+| NR-D6 | D6 | `dim` sin reciclar | — | Deben compartir `dim` (provisional) | DECIDIDA (provisional; confirmada 2026-11-04 con P0-12) | — | §3.1, §10.2 | Revisar con `SpatRaster`; P0-12 |
 | NR-D7 | D7 | Función alta con Ts en lugar de `rl_out` | Ts / `rl_out` | Se decide al especificar RL↑ | ABIERTA | P0 | §10.2 | RC-14; T-10 |
 
 ### 5.3 `specs/radiation-components.md`
 
 | ID | Orig. | Título | Opciones | Recomendación | Estado | Pr. | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|---|---|---|
-| RC-01 | RC-01 | Unidad angular del núcleo | Radianes en todo / grados en lat-lon | Radianes en todo | ABIERTA | P0 | §4.2, §9 | T-09; P0-4 |
+| RC-01 | RC-01 | Unidad angular del núcleo | Radianes en todo / grados en lat-lon | Radianes en todo | DECIDIDA (provisional, 2026-11-04) | — | §4.2, §9 | T-09; P0-4 |
 | RC-02 | RC-02 | Convención de orientación | SIG en contrato y γ = A − π interno / γ en contrato | SIG en contrato | ABIERTA | P0 | §4.3, §9 | RC-16 |
-| RC-03 | RC-03 | Tiempo y origen de la hora de paso | `doy`+`utc_hour` / `POSIXct`; *view time* medio / aparente; `solar_hour` | Numéricos; envoltorio desde `POSIXct` UTC; verificar *view time* (resuelto para MOD11A1 en MP §6.1) | ABIERTA (parcialmente resuelta) | P0 | §4.4, §9 | MP-01; T-02; P0-4 |
+| RC-03 | RC-03 | Tiempo y origen de la hora de paso | `doy`+`utc_hour` / `POSIXct`; *view time* medio / aparente; `solar_hour` | Numéricos; envoltorio desde `POSIXct` UTC; verificar *view time* (resuelto para MOD11A1 en MP §6.1) | DECIDIDA (provisional, 2026-11-04) en la convención (`doy`/`utc_hour` numéricos, envoltorio `POSIXct` UTC); *view time* de MOD21: MP-01 | — | §4.4, §9 | MP-01; T-02; P0-4 |
 | RC-04 | RC-04 | Precisión de la geometría solar | FAO-56 / efemérides | Cuantificar error antes de decidir | ABIERTA | P0 | §6.1, §9 | — |
 | RC-05 | RC-05 | Exportar auxiliares geométricas | Solo envolvente / también `ef_cos_incidence()` | Exportar solo la envolvente | ABIERTA | P0 | §9 | T-16 |
-| RC-06 | RC-06 | Valor de Gsc | 1367 / ≈ 1361 | El de los coeficientes de τ | ABIERTA | P0 | §5, §9 | T-07; P0-5 |
-| RC-07 | RC-07 | Valor de σ | CODATA exacto / 5.67e-8 | Exacto; tests de reproducción con tolerancia | ABIERTA | P0 | §5, §9 | T-07; WF-14; P0-5 |
+| RC-06 | RC-06 | Valor de Gsc | 1367 / ≈ 1361 | El de los coeficientes de τ | ABIERTA (regla de P0-5 adoptada provisionalmente; valor sin verificar) | P0 | §5, §9 | T-07; P0-5 |
+| RC-07 | RC-07 | Valor de σ | CODATA exacto / 5.67e-8 | Exacto; tests de reproducción con tolerancia | DECIDIDA (provisional, 2026-11-04) | — | §5, §9 | T-07; WF-14; P0-5 |
 | RC-08 | RC-08 | τ_sw y origen de P | Particionada ASCE / simple; P medida/GWR / P(z) | Particionada por defecto; simple en plano y sensibilidad | ABIERTA | P0 | §6.3, §9 | WF-05; T-08; discrepancia K_B (WF §10) |
 | RC-09 | RC-09 | Difusa en pendiente y ρ_g | Isotrópico / anisotrópico; ρ_g píxel / vecindario | Verificar Allen et al. (2006) primero | ABIERTA | P1 (P0 si M2 incluye corrección topográfica) | §6.4, §9 | MP-03; T-11 |
 | RC-10 | RC-10 | Fuente de Rs↓ | Modelada / medida + descomposición / híbrida | Modelada por defecto; híbrida para H1; coherencia con Rs de ETr | ABIERTA | P0 | §6.4, §9 | SPEC-5.1; T-01 |
@@ -598,43 +641,45 @@ grupo**.
 | RC-14 | RC-14 | ε₀ de banda ancha y coherencia con LST | Desde LAI / producto LST / MOD21 | Preferir derivada del producto; registrar procedencia | ABIERTA | P1 | §6.6, §9 | MP-04; NR-D7; T-10 |
 | RC-15 | RC-15 | Tipo de retorno | Vector / lista | Lista en `ef_shortwave_in()` y `ef_solar_geometry()`; vector en onda larga | ABIERTA | P0 | §9 | T-17 |
 | RC-16 | RC-16 | Orientación `NA` en celdas planas | Propagar / aceptar si s = 0 | Propagar; el envoltorio del MDE asigna valor | ABIERTA | P0 | §4.6, §9 | RC-02 |
-| RC-17 | RC-17 | Ubicación de `ef_air_pressure()` | `metric-radiation.R` / módulo compartido | Archivo compartido | ABIERTA | P0 | §6.2, §9 | = WF-01; T-08 |
+| RC-17 | RC-17 | Ubicación de `ef_air_pressure()` | `metric-radiation.R` / módulo compartido | Archivo compartido | DECIDIDA (provisional, 2026-11-04), tomada al implementar `ef_air_pressure()` (`R/shared-physics.R`) | — | §6.2, §9 | = WF-01; T-08 |
 
 ### 5.4 `specs/soil-heat-flux.md`
 
 | ID | Orig. | Título | Opciones | Recomendación | Estado | Pr. | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|---|---|---|
-| G-5.2 | §5.2 | Diseño de API de G | A función única / B por método / C por método + despachador | Opción C ("decisión propuesta") | ABIERTA | P0 | §5.1–5.4 | T-16; P0-12 |
+| G-5.2 | §5.2 | Diseño de API de G | A función única / B por método / C por método + despachador | Opción C ("decisión propuesta") | DECIDIDA (provisional, 2026-11-04) | — | §5.1–5.4 | T-16; P0-12 |
 | G-D1 | D1 | Método por defecto en `earthflux()` | Tasumi / Bastiaanssen | Tasumi solo si se verifica; despachador sin defecto | ABIERTA | P2 | §5.4, §11 | T-15; ítems §10 |
 | G-D2 | D2 | Exportar funciones por método | Sí / no | Sí, como API avanzada | ABIERTA | P0 | §5.3, §11 | T-16 |
-| G-D3 | D3 | Objeto devuelto por el despachador | Lista liviana / clase | Lista con `g`, `g_rn_ratio`, `method`, `branch`, `flags`, `provenance` | ABIERTA | P0 | §5.4, §11 | T-17 |
+| G-D3 | D3 | Objeto devuelto por el despachador | Lista liviana / clase | Lista con `g`, `g_rn_ratio`, `method`, `branch`, `flags`, `provenance` | DECIDIDA (provisional, 2026-11-04) (convención de `ARCHITECTURE.md` §3.2) | — | §5.4, §11 | T-17 |
 | G-D4 | D4 | Superficies especiales (agua, nieve, impermeable) | Regla / flag / capa explícita | Sin regla hasta verificar; flag `EF_G_NDVI_NONPOSITIVE` | ABIERTA | P0 | §3.4, §11 | Ítems 15, 16, 19 de §10 |
 | G-D5 | D5 | NA en `lst` con LAI ≥ 0.5 (Tasumi) | `NA` / calcular | `NA` (conservador); confirmación del autor | ABIERTA | P0 | §6.1, §11 | — |
-| G-D6 | D6 | Entradas fuera de dominio en rásteres | Error / `on_invalid` | Error por defecto; evaluar `on_invalid` | ABIERTA | P0 | §6.2, §11 | T-13; P0-11 |
+| G-D6 | D6 | Entradas fuera de dominio en rásteres | Error / `on_invalid` | Error por defecto; evaluar `on_invalid` | DECIDIDA (provisional, 2026-11-04): error por defecto; `on_invalid` no adoptado | — | §6.2, §11 | T-13; P0-11 |
 | G-D7 | D7 | Rango plausible de G/Rn | — | Ninguno hasta referencia; flag no registrado | ABIERTA | P2 | §6.3, §11 | Ítem 18 de §10 |
 | G-D8 | D8 | Escala de evaluación con MODIS | 1 km / fino y agregación | Documentar como limitación; evaluar en M6 | ABIERTA | P2 | §7.1, §11 | T-18 |
-| G-D9 | D9 | Constante K → °C | 273.15 / 273.16 | 273.15 en todo el paquete | ABIERTA | P0 | §3.2, §4, §11 | T-06; P0-5 |
+| G-D9 | D9 | Constante K → °C | 273.15 / 273.16 | 273.15 en todo el paquete | DECIDIDA (provisional, 2026-11-04) | — | §3.2, §4, §11 | T-06; P0-5 |
 
 ### 5.5 `specs/anchor-pixels.md`
 
 | ID | Orig. | Título | Opciones | Recomendación | Estado | Pr. | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|---|---|---|
-| D-AP-01 | D-AP-01 | Valores por defecto de los criterios | Presets / ninguno | Ninguno en el núcleo; presets con `source` y `status`; `earthflux()` solo preset `VERIFICADA` | ABIERTA | P0 | §5.2, §9 | Ítems 9–14 de §8.2; T-15; P0-8 |
-| D-AP-02 | D-AP-02 | Relajación automática | Sí / plan explícito | No por defecto; plan explícito registrado | ABIERTA | P0 | §5.3, §9 | P0-8 |
-| D-AP-03 | D-AP-03 | Dónde viven las condiciones de borde | Selección / función propia [B] | Función propia de la etapa [B] | ABIERTA | P0 | §1.3, §9 | SH §2.2; T-03 |
-| D-AP-04 | D-AP-04 | k del ancla fría y cobertura parcial | 1.05 por defecto / explícito; Kc–NDVI | k explícito sin defecto; sin reemplazos automáticos | ABIERTA | P0 | §2.2, §9 | Ítems 1–2, 25; antecedente; T-12; P0-8 |
-| D-AP-05 | D-AP-05 | LE del ancla caliente | `etrf_hot`/`le_hot` / balance hídrico | Explícitos; balance hídrico futuro | ABIERTA | P0 | §2.3, §9 | Ítem 3; P0-8 |
-| D-AP-06 | D-AP-06 | Agregación de varios píxeles por tipo | Media de entradas / por píxel / otras | `aggregate` explícito; registrar dispersión | ABIERTA | P0 | §2.4, §5.3, §9 | = SH-14; Q-AP-09; T-03; P0-9 |
+| D-AP-01 | D-AP-01 | Valores por defecto de los criterios | Presets / ninguno | Ninguno en el núcleo; presets con `source` y `status`; `earthflux()` solo preset `VERIFICADA` | DECIDIDA (provisional, 2026-11-04) | — | §5.2, §9 | Ítems 9–14 de §8.2; T-15; P0-8 |
+| D-AP-02 | D-AP-02 | Relajación automática | Sí / plan explícito | No por defecto; plan explícito registrado | DECIDIDA (provisional, 2026-11-04) | — | §5.3, §9 | P0-8 |
+| D-AP-03 | D-AP-03 | Dónde viven las condiciones de borde | Selección / función propia [B] | Función propia de la etapa [B] | DECIDIDA (provisional, 2026-11-04) | — | §1.3, §9 | SH §2.2; T-03 |
+| D-AP-04 | D-AP-04 | k del ancla fría y cobertura parcial | 1.05 por defecto / explícito; Kc–NDVI | k explícito sin defecto; sin reemplazos automáticos | DECIDIDA (provisional, 2026-11-04) | — | §2.2, §9 | Ítems 1–2, 25; antecedente; T-12; P0-8 |
+| D-AP-05 | D-AP-05 | LE del ancla caliente | `etrf_hot`/`le_hot` / balance hídrico | Explícitos; balance hídrico futuro | DECIDIDA (provisional, 2026-11-04) | — | §2.3, §9 | Ítem 3; P0-8 |
+| D-AP-06 | D-AP-06 | Agregación de varios píxeles por tipo | Media de entradas / por píxel / otras | `aggregate` explícito; registrar dispersión | DECIDIDA (provisional, 2026-11-04) | — | §2.4, §5.3, §9 | = SH-14; Q-AP-09; T-03; P0-9 |
 | D-AP-07 | D-AP-07 | Seleccionar sobre Ts o Ts,datum | Ts / Ts,datum | Configurable y registrado; evaluar en Andes | ABIERTA | P0 | §3.3.3, §9 | SH-13; T-20 |
 | D-AP-08 | D-AP-08 | Exportar constructores de reglas | Exportar / listas validadas | Solo `ef_anchor_criteria()` | ABIERTA | P0 | §5.2, §9 | T-16 |
-| D-AP-09 | D-AP-09 | Núcleo sobre matrices o solo `SpatRaster` | Matrices + resolución / `SpatRaster` | Matrices; envoltorio `terra` | ABIERTA | P0 | §5.3, §9 | ARCH-3; P0-12 |
-| D-AP-10 | D-AP-10 | Condiciones con datos e `index` de flags | Extender `ef_abort()` / otro | Campos opcionales; `index` sobre filas de `pixels` | ABIERTA | P0 | §5.6, §6, §9 | T-17 |
+| D-AP-09 | D-AP-09 | Núcleo sobre matrices o solo `SpatRaster` | Matrices + resolución / `SpatRaster` | Matrices; envoltorio `terra` | DECIDIDA (provisional, 2026-11-04) | — | §5.3, §9 | ARCH-3; P0-12 |
+| D-AP-10 | D-AP-10 | Condiciones con datos e `index` de flags | Extender `ef_abort()` / otro | Campos opcionales; `index` sobre filas de `pixels` | DECIDIDA (provisional, 2026-11-04) (`ef_abort()`/`ef_warn()` con campos opcionales) | — | §5.6, §6, §9 | T-17 |
 | D-AP-11 | D-AP-11 | Radio a la estación con forzamiento GWR | Exigir / opcional | Opcional; en C3 registrar incertidumbre GWR | ABIERTA | P1 | §2.4, §9 | GW §6.3 (`EF_ANCHOR_FORCING_EXTRAPOLATED`) |
 | D-AP-12 | D-AP-12 (+ Q-AP-01…10) | Estrategia MODIS 1 km | Homogeneidad estricta, subpíxel, calibración cruzada, sensibilidad | Ninguna decidida; evaluar en M6 | ABIERTA | P2 | §4, §9 | T-18; T-19; VP-2.1b |
 
 ### 5.6 `specs/sensible-heat.md`
 
-Todas `ABIERTA`, P0 (bloquean la calibración de dT y H en M2).
+Todas `ABIERTA`, P0 (bloquean la calibración de dT y H en M2) a la fecha
+de corte; las adoptadas provisionalmente el 2026-11-04 (§1.0) se marcan en
+la columna Recomendación.
 
 | ID | Título | Opciones | Recomendación | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|
@@ -645,36 +690,36 @@ Todas `ABIERTA`, P0 (bloquean la calibración de dT y H en M2).
 | SH-05 | u_b uniforme vs espacial | Escalar / superficie GWR | Aceptar ambos; registrar cuál | §6.1 | T-21; GW enmienda A4 |
 | SH-06 | Viento bajo | Sin piso + flag / piso explícito | Sin piso por defecto | §6.2 | T-21 |
 | SH-07 | Ajuste del viento por elevación | No / con z_w / con datum | No implementar hasta verificar | §6.3 | T-21 |
-| SH-08 | Forma y temperatura de ρ_air; 273 vs 273.15 | §8.1 con T_a / §8.2 / con Ts | §8.1 con T_a y P de `ef_air_pressure()` o medida | §8 | T-06; T-08; P0-6 |
-| SH-09 | c_p | 1004 / 1013 | Verificar en Allen et al. (2007) | §8.3 | T-04; P0-6 |
-| SH-10 | T, ρ y g en L | Ts / T_a; ρ inicial / iterada; 9.807 / otro | T_a y ρ iterada; g con referencia | §10.1 | P0-6 |
+| SH-08 | Forma y temperatura de ρ_air; 273 vs 273.15 | §8.1 con T_a / §8.2 / con Ts | §8.1 con T_a y P de `ef_air_pressure()` o medida → **DECIDIDA (provisional, 2026-11-04)** | §8 | T-06; T-08; P0-6 |
+| SH-09 | c_p | 1004 / 1013 | Verificar en Allen et al. (2007) → sigue **ABIERTA** (depende de P0-1); constante única `EF_SPECIFIC_HEAT_AIR` = 1004 `CANDIDATA` | §8.3 | T-04; P0-6 |
+| SH-10 | T, ρ y g en L | Ts / T_a; ρ inicial / iterada; 9.807 / otro | T_a y ρ iterada; g con referencia → **DECIDIDA (provisional, 2026-11-04)** salvo g (`EF_GRAVITY` = 9.807 `CANDIDATA`) | §10.1 | P0-6 |
 | SH-11 | Altura de ψ_m estable en z_b | 2/L / 200/L | **Bloqueante**: verificar en la fuente primaria | §10.3 | P0-2 |
 | SH-12 | Notación de a y b | SPEC / artículo | Mantener SPEC salvo que el artículo difiera | §4.2 | `water` invierte a ↔ b |
 | SH-13 | Γ y z_datum | 6.49 K km⁻¹ fijo / argumento; z_datum estación / escena | Γ argumento documentado; z_datum constante explícito | §9.1 | D-AP-07; T-20 |
-| SH-14 | Agregación de varias anclas | Promedio entradas / dT / por par / regresión | Coordinar con anclas; caso base 1 valor por clase | §2.3 | = D-AP-06; T-03; P0-9 |
-| SH-15 | Estrategia de Fase B | Estrategia P1 (`water`) / estrategia P2 | Estrategia P2; P1 solo verificación | §11.7 | P0-10 |
-| SH-16 | `tol`, `maxit`, ω; criterio por ancla o promedio | — | 0.01, 20, 0, por ancla; reportar Δa, Δb | §11.3–11.5 | T-15; P0-10 |
-| SH-17 | Driver exportado o interno; auxiliares | — | Driver exportado; auxiliares internas | §12 | T-16; T-17; P0-10 |
-| SH-18 | Clases de condición nuevas | `earthflux_calibration_error`, `earthflux_convergence_warning` | Adoptar | §13 | T-17 |
-| SH-19 | Estado inicial | dT₀ = 0 / otro | dT₀ = 0, documentado | §11.2 | P0-6 |
+| SH-14 | Agregación de varias anclas | Promedio entradas / dT / por par / regresión | Coordinar con anclas; caso base 1 valor por clase → **DECIDIDA (provisional, 2026-11-04)** | §2.3 | = D-AP-06; T-03; P0-9 |
+| SH-15 | Estrategia de Fase B | Estrategia P1 (`water`) / estrategia P2 | Estrategia P2; P1 solo verificación → **DECIDIDA (provisional, 2026-11-04)** | §11.7 | P0-10 |
+| SH-16 | `tol`, `maxit`, ω; criterio por ancla o promedio | — | 0.01, 20, 0, por ancla; reportar Δa, Δb → **DECIDIDA (provisional, 2026-11-04)** | §11.3–11.5 | T-15; P0-10 |
+| SH-17 | Driver exportado o interno; auxiliares | — | Driver exportado; auxiliares internas → **DECIDIDA (provisional, 2026-11-04)** | §12 | T-16; T-17; P0-10 |
+| SH-18 | Clases de condición nuevas | `earthflux_calibration_error`, `earthflux_convergence_warning` | Adoptar → **DECIDIDA (provisional, 2026-11-04)** | §13 | T-17 |
+| SH-19 | Estado inicial | dT₀ = 0 / otro | dT₀ = 0, documentado → **DECIDIDA (provisional, 2026-11-04)** | §11.2 | P0-6 |
 | SH-20 | Ts_datum > Ts_datum,hot | Misma recta + flag / pendiente reducida | Misma recta + flag hasta verificar p. 389 | §9.4 | — |
 
 ### 5.7 `specs/evapotranspiration.md`
 
 | ID | Título | Opciones | Recomendación | Estado | Pr. | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|---|---|
-| ET-D1 | λ por defecto y temperatura (aire/superficie) | `"constant"` / `"fao56"` / `"metric"` | `"constant"` hasta V2; luego evaluar `"metric"`; bajo nivel sin defecto | ABIERTA | P0 | §4.5, §13 | T-05; T-15; P0-7 |
-| ET-D2 | Guarda de unidades de λ | [10⁶, 10⁷] J kg⁻¹ / ninguna | Adoptar como control de unidades | ABIERTA | P0 | §13 | P0-7 |
-| ET-D3 | ρ_w constante o argumento | Constante / argumento | Constante interna `EF_WATER_DENSITY` | ABIERTA | P0 | §4.4, §13 | — |
+| ET-D1 | λ por defecto y temperatura (aire/superficie) | `"constant"` / `"fao56"` / `"metric"` | `"constant"` hasta V2; luego evaluar `"metric"`; bajo nivel sin defecto | DECIDIDA (provisional, 2026-11-04) | — | §4.5, §13 | T-05; T-15; P0-7 |
+| ET-D2 | Guarda de unidades de λ | [10⁶, 10⁷] J kg⁻¹ / ninguna | Adoptar como control de unidades | DECIDIDA (provisional, 2026-11-04) | — | §13 | P0-7 |
+| ET-D3 | ρ_w constante o argumento | Constante / argumento | Constante interna `EF_WATER_DENSITY` | DECIDIDA (provisional, 2026-11-04) (`EF_WATER_DENSITY`, regla de P0-5) | — | §4.4, §13 | — |
 | ET-D4 | Flag de LE negativo | `EF_LE_NEGATIVE` / reutilizar `EF_ET_NEGATIVE` | Código nuevo | ABIERTA | P0 | §7.2, §13 | T-14 |
 | ET-D5 | Rango plausible de ETrF | — | Ninguno hasta V7 | ABIERTA | P2 | §7.3, §13 | T-12 |
-| ET-D6 | `etr_inst` ≤ 0 y `etr_24` < 0 | Error / `NA` + flag | Error de dominio | ABIERTA | P0 | §9.3, §13 | T-13; P0-11 |
+| ET-D6 | `etr_inst` ≤ 0 y `etr_24` < 0 | Error / `NA` + flag | Error de dominio | DECIDIDA (provisional, 2026-11-04) | — | §9.3, §13 | T-13; P0-11 |
 | ET-D7 | C_rad | Reservar / implementar | Reservar `c_rad`; implementar tras V6 | ABIERTA | P2 | §6.3, §13 | Radiación en pendientes |
 | ET-D8 | Extrapolación alternativa | ETrF / fracción evaporativa / otros | Solo ETrF en M2; alternativas separadas | ABIERTA | P2 | §6.6, §13 | V14 |
 | ET-D9 | Comprobación del tipo de referencia | Orquestación / funciones | Orquestación; `earthflux_reference_mismatch` | ABIERTA | P1 | §6.4, §13 | T-12 |
 | ET-D10 | ET de período: método, extrapolación, huecos | — | `method` obligatorio; `extrapolation = "none"`; spline < 3 fechas → error | ABIERTA | P2 | §8, §13 | V8 |
 | ET-D11 | Exportar las seis funciones | Sí / no | Sí; la inversa interna | ABIERTA | P0 | §9.1, §13 | T-16 |
-| ET-D12 | Salida de `ef_et_period()` | — | Lista liviana coordinada con `earthflux_result` | ABIERTA | P2 | §8.3, §13 | T-17 |
+| ET-D12 | Salida de `ef_et_period()` | — | Lista liviana coordinada con `earthflux_result` | DECIDIDA (provisional, 2026-11-04) (convención de `ARCHITECTURE.md` §3.2) | — | §8.3, §13 | T-17 |
 | ET-D13 | Archivos de test | — | `test-latent-heat.R`, `test-et.R`, `test-et-period.R` | ABIERTA | P0 | §13 | SPEC §3 (`test-pipeline.R`) |
 | ET-D14 | Variable interpolada entre imágenes | ETrF / ETa | ETrF | ABIERTA | P2 | §8.1, §13 | V8 |
 | ET-D15 | Lluvia o riego entre imágenes | — | Sin corrección; limitación documentada | ABIERTA | P2 | §8.4, §13 | V8 |
@@ -682,12 +727,13 @@ Todas `ABIERTA`, P0 (bloquean la calibración de dT y H en M2).
 
 ### 5.8 `specs/weather-forcing.md` y decisión 5.1 de `SCIENTIFIC_SPEC.md`
 
-Todas `ABIERTA`.
+Todas `ABIERTA` a la fecha de corte; las adoptadas provisionalmente el
+2026-11-04 (§1.0) se marcan en la columna Recomendación.
 
 | ID | Título | Opciones | Recomendación | Pr. | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|---|
-| WF-01 | Ubicación de funciones compartidas y tests | Archivo atmosférico compartido / `prep-weather.R` | Archivo compartido; test propio de ET de referencia | P0 | §4, §11 | = RC-17; T-08 |
-| WF-02 | Unidad de temperatura del aire | °C en `forcing` y referencia, K en radiación / K en todo | °C en `forcing` y ET de referencia; conversión a K en la frontera | P0 | §2, §4, §11 | = ARCH-4; T-09; P0-4 |
+| WF-01 | Ubicación de funciones compartidas y tests | Archivo atmosférico compartido / `prep-weather.R` | Archivo compartido; test propio de ET de referencia → **DECIDIDA (provisional, 2026-11-04)**, tomada al implementar `ef_air_pressure()` (`R/shared-physics.R`) | — | §4, §11 | = RC-17; T-08 |
+| WF-02 | Unidad de temperatura del aire | °C en `forcing` y referencia, K en radiación / K en todo | °C en `forcing` y ET de referencia; conversión a K en la frontera → **DECIDIDA (provisional, 2026-11-04)** | — | §2, §4, §11 | = ARCH-4; T-09; P0-4 |
 | WF-03 | Representación de la tabla de estaciones | Dos tablas + clase / tabla ancha / `terra::vect` | Dos tablas + clase S3 | P1 | §2, §11 | — |
 | WF-04 | Valores imposibles en `observations` | Error / flag + exclusión | Flag; error solo en metadatos | P1 | §2.6, §3, §11 | T-13 |
 | WF-05 | Origen de P | P(z) para ETr; P medida/GWR para τ_sw | P(z) en ETr; registrar mezcla | P1 | §4.1, §11 | RC-08; T-08 |
@@ -699,7 +745,7 @@ Todas `ABIERTA`.
 | WF-11 | Día de ETr24 y huecos | Local estándar / UTC | Argumento explícito; local estándar si se verifica; sin relleno | P1 | §5.6, §11 | = ET-D16; T-02 |
 | WF-12 | Rso de la referencia | Ec. 37 / Anexo 3 | Ec. 37; variantes solo para QC | P1 | §4.7, §11 | — |
 | WF-13 | API de ET de referencia | Una función / alias | Una función exportada | P1 | §5.4, §11 | T-16 |
-| WF-14 | Constantes de la norma vs del paquete | Literales de la norma / constantes del paquete | Literales de la norma dentro de funciones de referencia | P1 | §4.8, §11 | T-06; T-07 |
+| WF-14 | Constantes de la norma vs del paquete | Literales de la norma / constantes del paquete | Literales de la norma dentro de funciones de referencia → **DECIDIDA (provisional, 2026-11-04)** | — | §4.8, §11 | T-06; T-07 |
 | WF-15 | Criterio día/noche para G y Cd horarios | Rn > 0 / Ra > 0 / ángulo solar | Pendiente de ASCE-EWRI | P1 | §4.9, §5.3, §11 | — |
 | WF-16 | ETr24: suma horaria vs ecuación diaria | Opción D1 / opción D2 | D1 (coherencia con ETr_inst) | P1 | §5.6, §11 | T-02 |
 | SPEC-5.1 | Interpolar-calcular vs calcular-interpolar | A / B / C | Soportar A y C; C candidata; decidir con CV | P1 | SPEC §5; WF §6, §11 | T-01; GW §2.1 |

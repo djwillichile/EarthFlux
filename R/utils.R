@@ -6,21 +6,86 @@
 # - All errors and warnings raised by EarthFlux carry a class so that tests
 #   and downstream code can catch them precisely (e.g. `earthflux_error`,
 #   `earthflux_input_error`).
+# - Conditions may carry optional data fields (e.g. the anchor funnel or the
+#   last iterate of a calibration) passed through `...` of `ef_abort()` /
+#   `ef_warn()` (dev/DECISIONS.md, D-AP-10 and T-17).
 # - Helpers here are internal and must not be exported.
+#
+# Condition classes used by the package (most specific first; every error
+# also inherits `earthflux_error`, every warning `earthflux_warning`):
+#
+#   earthflux_input_error          invalid type, length, dim or argument
+#   earthflux_domain_error         value outside the physical domain
+#                                  (subclass of earthflux_input_error)
+#   earthflux_missing_input        required argument not supplied
+#                                  (subclass of earthflux_input_error)
+#   earthflux_unknown_method       `method` not among the accepted values
+#                                  (subclass of earthflux_input_error)
+#   earthflux_unknown_flag         flag code not in ef_flag_registry()
+#   earthflux_registry_error       malformed flag registry row (development
+#                                  error, raised while building the registry)
+#   earthflux_calibration_error    an internal calibration cannot proceed
+#                                  (e.g. NA or non-finite values at an anchor
+#                                  pixel; dev/specs/sensible-heat.md, SH-18)
+#   earthflux_convergence_warning  an iteration stopped without meeting its
+#                                  convergence criterion (SH-18); the result
+#                                  is returned and flagged, never hidden
+#
+# Module-specific subclasses (e.g. `earthflux_anchor_no_candidates`) are
+# introduced with the function that raises them and must inherit one of the
+# classes above.
+
+#' Build a classed EarthFlux condition object
+#'
+#' @param message Character. Condition message.
+#' @param class Character vector of condition classes (complete, most
+#'   specific first).
+#' @param call The call to report.
+#' @param fields A list of optional data fields (named, see `ef_abort()`).
+#' @return A condition object.
+#' @noRd
+ef_condition <- function(message, class, call, fields) {
+  if (length(fields) > 0L) {
+    nms <- names(fields)
+    reserved <- c("message", "call")
+    if (is.null(nms) || any(!nzchar(nms)) || anyDuplicated(nms) > 0L ||
+        any(nms %in% reserved)) {
+      ef_abort(
+        paste0(
+          "Condition data fields must be uniquely named and must not be ",
+          "called 'message' or 'call'."
+        ),
+        class = "earthflux_input_error",
+        call = NULL
+      )
+    }
+  }
+  structure(
+    class = class,
+    c(list(message = message, call = call), fields)
+  )
+}
 
 #' Signal a classed EarthFlux error
 #'
 #' @param message Character. Error message.
 #' @param class Character vector of additional condition classes, most
 #'   specific first.
+#' @param ... Optional data fields attached to the condition object, as
+#'   `name = value` pairs (e.g. `funnel = funnel`, `iterations = 20L`).
+#'   Names must be unique and must not be `message` or `call`; avoid names
+#'   that are prefixes of `message` or `class` (R matches them partially to
+#'   those arguments). Handlers read them as `cnd$name`.
 #' @param call The call to report. Defaults to the caller of `ef_abort()`.
 #' @return Never returns; signals an error condition of class
 #'   `c(class, "earthflux_error", "error", "condition")`.
 #' @noRd
-ef_abort <- function(message, class = NULL, call = sys.call(-1)) {
-  cnd <- structure(
+ef_abort <- function(message, class = NULL, ..., call = sys.call(-1)) {
+  cnd <- ef_condition(
+    message,
     class = c(class, "earthflux_error", "error", "condition"),
-    list(message = message, call = call)
+    call = call,
+    fields = list(...)
   )
   stop(cnd)
 }
@@ -31,13 +96,70 @@ ef_abort <- function(message, class = NULL, call = sys.call(-1)) {
 #' @return Invisibly `NULL`; signals a warning condition of class
 #'   `c(class, "earthflux_warning", "warning", "condition")`.
 #' @noRd
-ef_warn <- function(message, class = NULL, call = sys.call(-1)) {
-  cnd <- structure(
+ef_warn <- function(message, class = NULL, ..., call = sys.call(-1)) {
+  cnd <- ef_condition(
+    message,
     class = c(class, "earthflux_warning", "warning", "condition"),
-    list(message = message, call = call)
+    call = call,
+    fields = list(...)
   )
   warning(cnd)
   invisible(NULL)
+}
+
+#' Check a `method` argument without default
+#'
+#' Encodes the rule that the choice of a scientific method is always explicit
+#' (dev/DECISIONS.md, T-15): `method` has no default in the core functions,
+#' must be a single string and must match one of `choices` exactly (no
+#' partial matching, no change of case).
+#'
+#' Missingness propagates: when the caller passes its own missing `method`
+#' argument, `check_method()` detects it.
+#'
+#' @param method The caller's `method` argument (possibly missing).
+#' @param choices Character vector of accepted values.
+#' @param arg Name of the argument, used in the error message.
+#' @param call The call to report. Defaults to the caller of
+#'   `check_method()`.
+#' @return `method`, invisibly, if the check passes. Errors of class
+#'   `c("earthflux_missing_input", "earthflux_input_error")` when `method` is
+#'   missing or `NULL`, `earthflux_input_error` when it is not a single
+#'   string, and `c("earthflux_unknown_method", "earthflux_input_error")`
+#'   when it is not one of `choices`.
+#' @noRd
+check_method <- function(method, choices, arg = "method",
+                         call = sys.call(-1)) {
+  if (missing(method) || is.null(method)) {
+    ef_abort(
+      sprintf(
+        "`%s` must be supplied explicitly; one of %s.",
+        arg, paste0("\"", choices, "\"", collapse = ", ")
+      ),
+      class = c("earthflux_missing_input", "earthflux_input_error"),
+      call = call
+    )
+  }
+  if (!is.character(method) || length(method) != 1L || is.na(method)) {
+    ef_abort(
+      sprintf("`%s` must be a single string.", arg),
+      class = "earthflux_input_error",
+      call = call
+    )
+  }
+  if (!method %in% choices) {
+    ef_abort(
+      sprintf(
+        "Unknown %s \"%s\"; must be one of %s.",
+        arg, method, paste0("\"", choices, "\"", collapse = ", ")
+      ),
+      class = c("earthflux_unknown_method", "earthflux_input_error"),
+      method = method,
+      choices = choices,
+      call = call
+    )
+  }
+  invisible(method)
 }
 
 #' Check that an argument is a single non-missing string
