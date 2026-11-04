@@ -1,6 +1,6 @@
 # EarthFlux — Nombres de funciones
 
-Estado: **PROPUESTA** (2026-11-04) · pendiente de aprobación del autor.
+Estado: **DECIDIDA** (2026-11-04, aprobada por el autor con la opción B de §2.1).
 Complementa `DEVELOPMENT.md` §1 y las especificaciones de `dev/specs/`.
 
 ## 1. Decisión de base
@@ -29,19 +29,48 @@ Este documento acorta las raíces.
 |---|---|---|
 | N1 | Toda función exportada de bajo nivel empieza por `ef_`. | `ef_net_radiation()` |
 | N2 | Longitud máxima orientativa: **22 caracteres** con el prefijo. Una excepción se justifica en este documento. | — |
-| N3 | Las magnitudes de la cadena principal conservan su nombre completo, para que el flujo se lea sin glosario. | `ef_net_radiation()`, `ef_soil_heat_flux()`, `ef_sensible_heat()`, `ef_latent_heat()` |
+| N3 | Las magnitudes de la cadena principal **calculadas con un solo método** conservan su nombre completo, para que el flujo se lea sin glosario. | `ef_net_radiation()`, `ef_sensible_heat()`, `ef_latent_heat()` |
 | N4 | Las magnitudes auxiliares usan el **símbolo estándar** de FAO-56 o METRIC cuando es inequívoco para el público del paquete. El título del `.Rd` siempre escribe el nombre completo. | `ef_rah()`, `ef_zom()`, `ef_ustar()`, `ef_ra_daily()`, `ef_ea_rh()` |
 | N5 | Los nombres de funciones coinciden con los nombres de argumentos que alimentan. | `ef_rl_in()` → argumento `rl_in` de `ef_net_radiation()` |
-| N6 | Familias con varios métodos: despachador con el nombre de la magnitud y `method` sin defecto; funciones por método con raíz corta + sufijo del método, documentadas en el mismo `.Rd` (`@rdname`). | `ef_soil_heat_flux(method = )`, `ef_g_tasumi()`, `ef_g_bastiaanssen()` |
+| N6 | Familias con varios métodos de **argumentos distintos**: el despachador **es la raíz de la familia** y recibe `method` sin defecto; cada método es la raíz + sufijo del método. Todos se documentan en el mismo `.Rd` (`@rdname`), cuyo título nombra la magnitud completa. Ver §2.1. | `ef_g(method = )`, `ef_g_tasumi()`, `ef_g_bastiaanssen()` |
+| N6b | Si los métodos comparten argumentos y solo cambia la fórmula, basta una función con `method` sin defecto (sin funciones por método). | `ef_lambda(temperature, method = )`, `ef_ea_daily(..., method = )` |
 | N7 | Sin `_from_` ni palabras deducibles de los argumentos; el método o la entrada va como sufijo. | `ef_ea_dewpoint()`, `ef_dewpoint()` |
 | N8 | Sufijos de escala temporal fijos: `_inst`, `_hourly`, `_daily`, `_period`. | `ef_et_inst()`, `ef_ra_daily()` |
 | N9 | Objetos de control con sufijo `_control`; constructores de reglas con la raíz del módulo. | `ef_h_control()`, `ef_anchor_rule()` |
 | N10 | Las funciones internas no se rigen por N2 (no son API), pero mantienen `ef_` cuando forman parte del núcleo. | `ef_flag_registry()` |
 
+### 2.1 Despachadores (opción B)
+
+Opciones evaluadas para nombrar el despachador de una familia (2026-11-04):
+
+| Opción | Despachador | Métodos | Resultado |
+|---|---|---|---|
+| A | `ef_soil_heat_flux()` | `ef_g_tasumi()`, `ef_g_bastiaanssen()` | Descartada: la familia queda con dos raíces y `ef_g` + Tab no muestra el despachador |
+| **B** | **`ef_g()`** | `ef_g_tasumi()`, `ef_g_bastiaanssen()` | **Adoptada**: familia coherente y corta; el título del `.Rd` ("Soil heat flux") compensa la brevedad |
+| C | `ef_soil_heat_flux()` | `ef_soil_heat_flux_tasumi()`, … | Descartada: vuelve a nombres de 24–30 caracteres |
+
+Un nombre con verbo (`get_g()`) se descartó: pierde el prefijo `ef_` y, en
+R, *get* sugiere recuperar un valor existente (`get()`, *getters*), no
+calcular una magnitud.
+
+Comportamiento común de los despachadores:
+
+- `method` sin valor por defecto (P0-12, T-15); se valida con
+  `check_method()`.
+- Solo reenvía los argumentos al método elegido; no contiene ecuaciones.
+- Un test verifica que el despachador y la llamada directa al método dan
+  resultados idénticos.
+- Cuando el método que hoy lleva el nombre de la raíz pasa a ser uno de
+  varios, recibe su propio sufijo (`ef_tau_sw_allen()`,
+  `ef_rs_in_modelled()`, `ef_et_daily_etrf()`). Los sufijos `_allen` y
+  `_modelled` son provisionales hasta verificar Allen et al. (2007).
+- Una familia con un solo método implementado tiene igualmente su
+  despachador, para que la API no cambie al agregar métodos.
+
 ## 3. Tabla de nombres
 
 Se listan las 81 funciones públicas o candidatas a públicas que nombran las
-especificaciones de `dev/specs/` (se excluyen las internas `ef_abort()`,
+especificaciones, más 3 despachadores nuevos (—) de `dev/specs/` (se excluyen las internas `ef_abort()`,
 `ef_flag()`, `ef_flag_bits()` y `ef_flag_registry()`). "=" indica que el
 nombre se mantiene.
 
@@ -56,10 +85,12 @@ nombre se mantiene.
 | `ef_hour_angle()` | 13 | = | 13 |  |
 | `ef_inverse_relative_distance()` | 28 | **`ef_inv_distance()`** | 15 | Inverso de la distancia relativa Tierra–Sol, d_r (FAO-56) |
 | `ef_cos_incidence()` | 16 | = | 16 |  |
-| `ef_sw_transmissivity()` | 20 | **`ef_tau_sw()`** | 9 | Símbolo τ_sw de METRIC |
+| — | — | **`ef_tau_sw()`** | 9 | Despachador nuevo (N6); símbolo τ_sw de METRIC |
+| `ef_sw_transmissivity()` | 20 | **`ef_tau_sw_allen()`** | 15 | Método completo (P, e_a, cos θ); sufijo tentativo |
 | `ef_sw_transmissivity_elevation()` | 30 | **`ef_tau_sw_elevation()`** | 19 | Variante simplificada por elevación |
 | `ef_atmospheric_emissivity()` | 25 | **`ef_atm_emissivity()`** | 17 |  |
-| `ef_shortwave_in()` | 15 | **`ef_rs_in()`** | 8 | Coincide con el argumento `rs_in` de `ef_net_radiation()` |
+| — | — | **`ef_rs_in()`** | 8 | Despachador nuevo (N6); coincide con el argumento `rs_in` de `ef_net_radiation()` |
+| `ef_shortwave_in()` | 15 | **`ef_rs_in_modelled()`** | 17 | Rs↓ modelada; sufijo tentativo |
 | `ef_shortwave_in_measured()` | 24 | **`ef_rs_in_measured()`** | 17 |  |
 | `ef_sw_to_slope()` | 14 | **`ef_rs_to_slope()`** | 14 | Misma raíz `rs` que la familia |
 | `ef_longwave_in()` | 14 | **`ef_rl_in()`** | 8 | Coincide con el argumento `rl_in` |
@@ -69,8 +100,8 @@ nombre se mantiene.
 
 | Nombre en las especificaciones | Car. | Nombre propuesto | Car. | Nota |
 |---|---:|---|---:|---|
-| `ef_soil_heat_flux()` | 17 | = | 17 | Despachador (`method`) |
-| `ef_soil_heat_flux_tasumi()` | 24 | **`ef_g_tasumi()`** | 11 | Métodos con la raíz del símbolo G; mismo `.Rd` que el despachador |
+| `ef_soil_heat_flux()` | 17 | **`ef_g()`** | 4 | Despachador (`method`); raíz de la familia (N6) |
+| `ef_soil_heat_flux_tasumi()` | 24 | **`ef_g_tasumi()`** | 11 | Mismo `.Rd` que el despachador |
 | `ef_soil_heat_flux_bastiaanssen()` | 30 | **`ef_g_bastiaanssen()`** | 17 |  |
 
 ### Píxeles ancla (`anchor-pixels.md`)
@@ -107,8 +138,9 @@ nombre se mantiene.
 | `ef_latent_heat_vaporization()` | 27 | **`ef_lambda()`** | 9 | Símbolo λ; ya implementada en la base de M2 |
 | `ef_et_instantaneous()` | 19 | **`ef_et_inst()`** | 10 | Sufijo de escala temporal `_inst` |
 | `ef_etrf()` | 7 | = | 7 |  |
-| `ef_et_daily()` | 11 | = | 11 |  |
-| `ef_et_daily_evaporative_fraction()` | 32 | **`ef_et_daily_evapfrac()`** | 20 | Alternativa futura (ET-D8) |
+| — | — | **`ef_et_daily()`** | 11 | Despachador nuevo (N6) |
+| `ef_et_daily()` | 11 | **`ef_et_daily_etrf()`** | 16 | ETa = ETrF × ETr_24; en las especificaciones era `ef_et_daily()` |
+| `ef_et_daily_evaporative_fraction()` | 32 | **`ef_et_daily_evapfrac()`** | 20 | Método futuro del despachador (ET-D8) |
 | `ef_et_period()` | 12 | = | 12 |  |
 
 ### Forzamiento meteorológico y ET de referencia (`weather-forcing.md`)
@@ -163,10 +195,10 @@ nombre se mantiene.
 
 ## 4. Resumen
 
-| | Especificaciones | Propuesta |
+| | Especificaciones | Decisión |
 |---|---:|---:|
-| Funciones | 81 | 81 |
-| Nombres que cambian | — | 42 |
+| Funciones | 81 | 84 (3 despachadores nuevos) |
+| Nombres que cambian | — | 44 |
 | Mediana de caracteres | 17 | 14 |
 | Máximo de caracteres | 36 | 21 |
 | Nombres con más de 22 caracteres | 23 | 0 |
@@ -187,10 +219,10 @@ nombre se mantiene.
 
 ## 6. Aplicación
 
-1. El autor aprueba la tabla (con o sin ajustes); el estado pasa a
-   **DECIDIDA**.
-2. En un mismo cambio se renombran las funciones en `dev/specs/`,
-   `dev/SCIENTIFIC_SPEC.md`, `dev/DECISIONS.md` y `dev/ARCHITECTURE.md`, y
+1. Aprobada por el autor el 2026-11-04 con la opción B (§2.1).
+2. En el mismo cambio que aprueba esta tabla se renombran las funciones en
+   `dev/specs/`, `dev/SCIENTIFIC_SPEC.md`, `dev/DECISIONS.md`,
+   `dev/ARCHITECTURE.md` y `dev/VALIDATION_PLAN.md`, y
    `ef_latent_heat_vaporization()` pasa a `ef_lambda()` en el código (no hay
    release, por lo que no se necesita alias ni deprecación).
 3. Los módulos de M2 se implementan directamente con los nombres de la

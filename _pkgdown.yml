@@ -30,7 +30,7 @@ reference:
       (radiation, sensible heat, evapotranspiration and reference ET).
     contents:
       - ef_air_pressure
-      - ef_latent_heat_vaporization
+      - ef_lambda
 
 # Reference index. Sections are added as functions are exported, to avoid
 # empty documentation. Planned sections (in this order):

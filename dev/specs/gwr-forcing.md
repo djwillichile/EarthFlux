@@ -1040,11 +1040,11 @@ flags y diagnósticos (excepto marcas de tiempo de la procedencia).
 | `ef_gwr_search(lower = NULL, upper = NULL, n_grid, tol, min_neighbours = NULL, lower_offset, upper_factor, k_min = NULL, k_max = NULL, method_adaptive = c("exhaustive", "golden"))` | m o enteros | Lista validada | Sí (control) |
 | `ef_gwr_predict(object, newx, newcoords)` | `newx` matriz N × (p − 1) mismas columnas y unidades; `newcoords` [m] | `list(value, coefficients, n_nonzero, flags)` (vectores/matrices) | Sí |
 | `ef_gwr_diagnostics(object)` | `earthflux_gwr` | Lista/`data.frame` de §7.1 (`fit`, `stations`, `profile`, `flags`) | Sí |
-| `ef_regionalize(data, covariates, method, config, grid, prediction = ef_prediction_control(), use_qc, exclude = NULL)` | `ef_regionalization_input`; `SpatRaster` de covariables; `ef_method_*()` | `earthflux_surface` | Sí (orquestador del módulo; nombre GW-23) |
+| `ef_regionalize(data, covariates, method, config, grid, prediction = ef_predict_control(), use_qc, exclude = NULL)` | `ef_regionalization_input`; `SpatRaster` de covariables; `ef_method_*()` | `earthflux_surface` | Sí (orquestador del módulo; nombre GW-23) |
 | `ef_regionalize_cv(data, covariates, method, config, folds, reselect_bandwidth = TRUE)` | Pliegues (§8.2) | Tabla larga de predicciones fuera de pliegue | Sí |
 | `ef_spatial_folds(coords, block_size, origin = NULL)` | [m] | Vector entero de pliegues | Sí |
 | `ef_method_gwr(kernel, adaptive, criterion = NULL, bandwidth = NULL, search)`, `ef_method_station(station_id, lapse_rate = NULL)`, `ef_method_ols()`, `ef_method_idw(power)` | – | Objetos de método validados | Sí |
-| `ef_prediction_control(mode = c("exact", "coarse"), coarse_factor = NULL, block_rows = NULL, check_every = NULL, write_coefficients = FALSE, filename = "")` | – | Lista validada | Sí |
+| `ef_predict_control(mode = c("exact", "coarse"), coarse_factor = NULL, block_rows = NULL, check_every = NULL, write_coefficients = FALSE, filename = "")` | – | Lista validada | Sí |
 | `ef_ols_fit()`, `ef_idw_fit()`, `ef_station_forcing()` + métodos `predict()` | Mismas firmas conceptuales que `ef_gwr_fit()`/`ef_gwr_predict()` | Objetos `earthflux_ols`, `earthflux_idw`, `earthflux_station_forcing` | Internas o exportadas (API pequeña: preferir internas tras `ef_regionalize()`) |
 | `print()`, `summary()`, `as.data.frame()` para `earthflux_gwr`, `earthflux_gwr_bandwidth`, `earthflux_surface` | – | – | Métodos S3 |
 

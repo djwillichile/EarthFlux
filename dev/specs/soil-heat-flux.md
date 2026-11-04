@@ -25,8 +25,8 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 | Superficies impermeables | `TODO` | – | Ninguna identificada | – |
 
 Recomendación de API (sección 5): **una función de bajo nivel por método**
-(`ef_soil_heat_flux_bastiaanssen()`, `ef_soil_heat_flux_tasumi()`) más un
-**despachador delgado** `ef_soil_heat_flux(..., method)` que valida, llama a
+(`ef_g_bastiaanssen()`, `ef_g_tasumi()`) más un
+**despachador delgado** `ef_g(..., method)` que valida, llama a
 la función del método, calcula diagnósticos y registra el método en la
 procedencia.
 
@@ -140,7 +140,7 @@ Detalles de implementación observados en `water` que **no** se adoptan:
   definido como R_n > 0; el comentario de código lo atribuye a ASCE-EWRI
   (2005), Tabla 1 (`TODO: verificar`). **No** es un método de G del píxel:
   pertenece al módulo de ETr (`metric-et.R` / `prep-weather.R`) y no debe
-  ofrecerse en `ef_soil_heat_flux()`.
+  ofrecerse en `ef_g()`.
 - En `METRIC.EB()` hay una línea comentada que truncaría G negativo a 0; no
   está activa. EarthFlux no trunca G (principio 6 de `ARCHITECTURE.md`).
 - `LAI()` de `water` trunca LAI < 0 a 0 y fija LAI = 6 cuando SAVI > 0.687;
@@ -214,11 +214,11 @@ adimensional (diagnóstico).
 
 ```r
 # Bajo nivel: aritmética pura, vectorizada, una ecuación por función.
-ef_soil_heat_flux_bastiaanssen(rn, lst, albedo, ndvi)
-ef_soil_heat_flux_tasumi(rn, lst, lai)
+ef_g_bastiaanssen(rn, lst, albedo, ndvi)
+ef_g_tasumi(rn, lst, lai)
 
 # Despachador: valida, despacha, diagnostica y registra procedencia.
-ef_soil_heat_flux(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
+ef_g(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
                   method)
 ```
 
@@ -226,7 +226,7 @@ Justificación:
 
 1. **Testabilidad.** Cada ecuación se verifica contra su caso numérico
    (§8) sin pasar por la lógica de despacho; el despachador se prueba por
-   equivalencia (`ef_soil_heat_flux(method = "x")` ≡ llamada directa).
+   equivalencia (`ef_g(method = "x")` ≡ llamada directa).
 2. **Documentación.** Cada función de bajo nivel tiene `@param` obligatorios
    y sin condicionales, `@references` propias y su dominio en `@details`.
    El despachador documenta solo la selección y los diagnósticos.
@@ -550,8 +550,8 @@ por defecto de testthat (`VALIDATION_PLAN.md` §1.2).
 
 ### 9.1 Unitarios (valores)
 
-- B1–B6 para `ef_soil_heat_flux_bastiaanssen()`.
-- T1–T8 para `ef_soil_heat_flux_tasumi()`.
+- B1–B6 para `ef_g_bastiaanssen()`.
+- T1–T8 para `ef_g_tasumi()`.
 - Vectorización: los casos de un método en un solo vector dan el mismo
   resultado que caso por caso.
 - Unidades: G en W m⁻² (p. ej., B1 = 74.349, no 0.0744 ni 7.43 × 10⁴);
@@ -592,8 +592,8 @@ por defecto de testthat (`VALIDATION_PLAN.md` §1.2).
 
 ### 9.6 Equivalencia y procedencia
 
-- `ef_soil_heat_flux(..., method = "bastiaanssen")$g` idéntico a
-  `ef_soil_heat_flux_bastiaanssen(...)`; ídem Tasumi.
+- `ef_g(..., method = "bastiaanssen")$g` idéntico a
+  `ef_g_bastiaanssen(...)`; ídem Tasumi.
 - `$method` igual al argumento; `$provenance` contiene referencia, estado
   de verificación, constantes (273.15, umbral 0.5) y entradas usadas.
 - `$g_rn_ratio * rn == $g` donde `rn != 0`.

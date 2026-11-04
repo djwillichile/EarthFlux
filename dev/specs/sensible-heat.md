@@ -71,8 +71,8 @@ verifican aritmética y no física).
 | L, ψ_m, ψ_h | Paulson (inestable), log-lineal −5·z/L (estable) | `CANDIDATA` | `water`, `rahStep()`; `bigleaf` (rdrr.io); citas verificadas en Crossref, contenido no |
 
 Recomendación de API (§12): seis funciones numéricas vectorizadas
-(`ef_roughness_length()`, `ef_friction_velocity()`,
-`ef_aerodynamic_resistance()`, `ef_air_density()`, `ef_dt_coefficients()`,
+(`ef_zom()`, `ef_ustar()`,
+`ef_rah()`, `ef_air_density()`, `ef_dt_coef()`,
 `ef_sensible_heat()`), auxiliares para viento a altura de mezcla,
 Ts_datum y estabilidad, y un **driver de calibración** en dos fases
 (iteración en anclas → (a*, b*); iteración por píxel con (a*, b*) fijos)
@@ -107,9 +107,9 @@ o `data.frame`, una fila por ancla):
 | `type` | `"hot"` / `"cold"` | Clase del ancla | Anclas |
 | `lst` | K | Ts del píxel | `surface` |
 | `elevation` | m | z del píxel (para Ts_datum, P y, si aplica, ajuste de viento) | DEM |
-| `zom` | m | z_om del píxel (salida de `ef_roughness_length()`) | Este módulo |
+| `zom` | m | z_om del píxel (salida de `ef_zom()`) | Este módulo |
 | `rn` | W m⁻² | Rn del píxel | `ef_net_radiation()` |
-| `g` | W m⁻² | G del píxel | `ef_soil_heat_flux()` |
+| `g` | W m⁻² | G del píxel | `ef_g()` |
 | `le_target` | W m⁻² | LE objetivo (p. ej., LE_cold = coeficiente·ETr_inst·λ; LE_hot = ETrF_hot·ETr_inst·λ, típicamente 0) | Anclas (coeficientes, λ y su referencia viven allí) |
 | `u_blend` | m s⁻¹ | Viento a altura de mezcla en el ancla (escalar de escena o superficie espacial) | Este módulo / `forcing` |
 | `pressure` | kPa | P en el ancla (medida/GWR o `ef_air_pressure()`) | `forcing` / `radiation-components.md` §6.2 |
@@ -724,17 +724,17 @@ objetos de sensor (`ARCHITECTURE.md` §1, §3).
 
 | Función (propuesta) | Entradas (unidades) | Salida | ¿Exportar? |
 |---|---|---|---|
-| `ef_roughness_length(method, lai, ndvi, albedo, coef_1, coef_2, f_lai, height, slope = NULL, terrain_min1, zom_min)` | LAI [m² m⁻²], NDVI [–], α [–], h [m], s [rad] | z_om [m] | Sí. Despachador delgado sobre funciones internas por método, como en `soil-heat-flux.md` §5 |
+| `ef_zom(method, lai, ndvi, albedo, coef_1, coef_2, f_lai, height, slope = NULL, terrain_min1, zom_min)` | LAI [m² m⁻²], NDVI [–], α [–], h [m], s [rad] | z_om [m] | Sí. Despachador delgado sobre funciones internas por método, como en `soil-heat-flux.md` §5 |
 | `ef_blending_wind(wind_speed, height, zom_station, d_station = 0, blending_height = 200)` | u_x [m s⁻¹], z_x [m], z_om,w [m], d_w [m] | u_b [m s⁻¹] | Sí (lo usa también `forcing`) |
-| `ef_friction_velocity(u_blend, zom, psi_m = 0, blending_height = 200)` | m s⁻¹, m, – | u* [m s⁻¹] | Sí |
-| `ef_aerodynamic_resistance(u_star, psi_h_z2 = 0, psi_h_z1 = 0, z1 = 0.1, z2 = 2)` | m s⁻¹, –, m | rah [s m⁻¹] | Sí |
+| `ef_ustar(u_blend, zom, psi_m = 0, blending_height = 200)` | m s⁻¹, m, – | u* [m s⁻¹] | Sí |
+| `ef_rah(u_star, psi_h_z2 = 0, psi_h_z1 = 0, z1 = 0.1, z2 = 2)` | m s⁻¹, –, m | rah [s m⁻¹] | Sí |
 | `ef_air_density(pressure, air_temperature)` | kPa, K | ρ_air [kg m⁻³] | Sí |
-| `ef_datum_temperature(lst, elevation, datum_elevation, lapse_rate)` | K, m, m, K m⁻¹ | Ts_datum [K] | Interna o exportada (SH-17) |
-| `ef_dt_coefficients(ts_datum_hot, ts_datum_cold, dt_hot, dt_cold)` | K | `list(a [K], b [–])` | Sí |
+| `ef_ts_datum(lst, elevation, datum_elevation, lapse_rate)` | K, m, m, K m⁻¹ | Ts_datum [K] | Interna o exportada (SH-17) |
+| `ef_dt_coef(ts_datum_hot, ts_datum_cold, dt_hot, dt_cold)` | K | `list(a [K], b [–])` | Sí |
 | `ef_sensible_heat(air_density, dt, rah, cp)` | kg m⁻³, K, s m⁻¹, J kg⁻¹ K⁻¹ | H [W m⁻²] | Sí |
 | `monin_obukhov_length()`, `stability_psi()` | ver §10 | L [m]; ψ_m, ψ_h [–] | Internas (API pequeña) |
-| Driver de calibración (nombre provisional `ef_calibrate_sensible_heat(anchors, pixels, control)`) | Tabla de anclas (§2.2) + vectores de píxel | Objeto con a*, b*, `converged`, `iterations`, historial, estado en anclas, configuración; y H, dT, rah, u*, L, flags por píxel | **Decisión abierta (SH-17)** |
-| Control (nombre provisional `ef_sensible_heat_control(tol, maxit, damping, stable_psi_m_height, …)`) | – | Lista validada | Según SH-17 |
+| Driver de calibración (nombre provisional `ef_calibrate_h(anchors, pixels, control)`) | Tabla de anclas (§2.2) + vectores de píxel | Objeto con a*, b*, `converged`, `iterations`, historial, estado en anclas, configuración; y H, dT, rah, u*, L, flags por píxel | **Decisión abierta (SH-17)** |
+| Control (nombre provisional `ef_h_control(tol, maxit, damping, stable_psi_m_height, …)`) | – | Lista validada | Según SH-17 |
 
 Diseño para `terra`, bloques y paralelismo (`ARCHITECTURE.md` §6.2–6.3,
 §6.6):
@@ -761,7 +761,7 @@ Diseño para `terra`, bloques y paralelismo (`ARCHITECTURE.md` §6.2–6.3,
   calibración no puede continuar (como `anchorCells()` de `water`).
 - Dominio (error `earthflux_domain_error`, ignorando NA): z_om > 0;
   u_x ≥ 0; z_x > d_w ≥ 0; z_b > d_w; z_om,w > 0; u* > 0 como entrada de
-  `ef_aerodynamic_resistance()`; z₂ > z₁ > 0; P > 0; T > 0 K; c_p > 0;
+  `ef_rah()`; z₂ > z₁ > 0; P > 0; T > 0 K; c_p > 0;
   rah > 0 en `ef_sensible_heat()`; LAI ≥ 0; α > 0 (método custom); f ∈
   [0, 1]; h ≥ 0; Γ ≥ 0 (`water` exige ≥ 0; un gradiente negativo requeriría
   justificación); `tol` > 0; `maxit` entero ≥ 1; ω ∈ [0, 1).
@@ -991,7 +991,7 @@ forzarse:
 | SH-14 | Agregación de varias anclas | Promedio de entradas / promedio de dT / por par / regresión | Coordinar con la especificación de anclas; caso base 1 valor por clase | §2.3 |
 | SH-15 | Estrategia de Fase B | P1 / P2 | P2; P1 solo para verificación | §11.7 |
 | SH-16 | `tol`, `maxit`, ω por defecto; criterio por ancla o promedio | – | 0.01, 20, 0 por ancla; reportar Δa, Δb | §11.3–11.5 |
-| SH-17 | Driver exportado o interno; exportar `ef_datum_temperature()` y auxiliares de estabilidad | – | Driver exportado (usuarios avanzados con anclas propias); auxiliares internas | §12 |
+| SH-17 | Driver exportado o interno; exportar `ef_ts_datum()` y auxiliares de estabilidad | – | Driver exportado (usuarios avanzados con anclas propias); auxiliares internas | §12 |
 | SH-18 | Clases de condición nuevas | `earthflux_calibration_error`, `earthflux_convergence_warning` | Adoptar | §13 |
 | SH-19 | Estado inicial | dT₀ = 0 (ρ con Ts) / otro | dT₀ = 0, documentado | §11.2 |
 | SH-20 | Tratamiento de Ts_datum > Ts_datum,hot | Misma recta + flag / pendiente reducida (si la fuente lo indica) | Misma recta + flag hasta verificar p. 389 | §9.4 |

@@ -19,7 +19,7 @@ No scientific result has been validated yet.
   (FAO-56 Eq. 7), shared by the radiation, sensible heat and reference
   evapotranspiration modules.
 
-* `ef_latent_heat_vaporization()` returns the latent heat of vaporization
+* `ef_lambda()` returns the latent heat of vaporization
   in J kg-1 with an explicit `method` and no default: the FAO-56 constant
   (`"constant"`) or the FAO-56 function of the air temperature in K
   (`"fao56"`). The same function is meant to be used throughout the METRIC

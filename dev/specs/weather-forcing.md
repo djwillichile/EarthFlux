@@ -122,7 +122,7 @@ ef_station_table(stations, observations, provenance)   # constructor + validador
 ```
 
 Nombres propuestos (decisión WF-03): `ef_station_table()` (constructor y
-validador; exportado) y `ef_validate_station_table()` (interna).
+validador; exportado) y `ef_validate_stations()` (interna).
 
 ### 2.2 Tabla `stations`
 
@@ -338,7 +338,7 @@ Diferencias de **uso** (no de ecuación) que deben quedar explícitas:
    terreno complejo: la P usada en ETr por píxel (opción B de §6) debe ser
    la del píxel.
 
-### 4.2 Constante psicrométrica — `ef_psychrometric_constant(pressure)`
+### 4.2 Constante psicrométrica — `ef_psychrometric(pressure)`
 
 ```text
 γ = c_p·P / (ε·λ) = 0.665 × 10⁻³ · P          [kPa °C⁻¹], P en kPa      (FAO-56 Ec. 8)
@@ -365,8 +365,8 @@ es    = e°(T_hr)                       (paso horario)       [kPa]   (Ec. 53, t�
 VPD   = es − eₐ                                             [kPa]   (Ejemplo 6; Ec. 6, 53)
 ```
 
-Funciones propuestas: `ef_sat_vapour_pressure(air_temperature)`,
-`ef_sat_vapour_slope(air_temperature)`. Estado: `VERIFICADA` (Ec. 11, 12,
+Funciones propuestas: `ef_es(air_temperature)`,
+`ef_es_slope(air_temperature)`. Estado: `VERIFICADA` (Ec. 11, 12,
 13). El déficit es una resta y no requiere función exportada.
 
 Inconsistencias internas de FAO-56 registradas (se adopta el capítulo 3):
@@ -389,11 +389,11 @@ error (p. ej., 293) → flag `EF_WS_IMPLAUSIBLE` (umbral `TODO`, QC-01b).
 
 | Función propuesta | Ecuación | Uso | Estado |
 |---|---|---|---|
-| `ef_vapour_pressure_from_dewpoint(dewpoint_temperature)` | eₐ = e°(Tdew) (Ec. 14) | Cualquier paso | `VERIFICADA` |
-| `ef_vapour_pressure_from_rh(air_temperature, relative_humidity)` | eₐ = e°(T_hr)·HR_hr/100 (Ec. 54; Anexo 5 Ec. 5-3: T y HR del mismo período, preferentemente ≤ 1 h) | Horario / sub-horario | `VERIFICADA` |
-| `ef_vapour_pressure_daily(tmin, tmax, rh_max, rh_min, method)` | `"rhmax_rhmin"`: eₐ = [e°(Tmin)·HRmax/100 + e°(Tmax)·HRmin/100]/2 (Ec. 17); `"rhmax"`: eₐ = e°(Tmin)·HRmax/100 (Ec. 18, cuando HRmin es dudosa); `"rhmean"`: eₐ = (HRmedia/100)·[e°(Tmax) + e°(Tmin)]/2 (Ec. 19, "menos deseable"), HRmedia = (HRmax + HRmin)/2 | Diario o mayor | `VERIFICADA` |
-| `ef_vapour_pressure_from_tmin(tmin, k0 = 0)` | eₐ = e°(Tmin − K₀) (Ec. 48; Anexo 6 Ec. 6-6: K₀ = 0 °C húmedo/subhúmedo, 2 °C árido/semiárido; cap. 3: restar 2–3 °C en zonas áridas) | Solo datos faltantes | `VERIFICADA` (uso solo explícito) |
-| `ef_dewpoint_from_vapour_pressure(vapour_pressure)` | Tdew = [116,91 + 237,3·ln eₐ] / [16,78 − ln eₐ] (Anexo 3 Ec. 3-11) | QC (QC-08b, QC-08c) | `VERIFICADA` (forma FAO-56) |
+| `ef_ea_dewpoint(dewpoint_temperature)` | eₐ = e°(Tdew) (Ec. 14) | Cualquier paso | `VERIFICADA` |
+| `ef_ea_rh(air_temperature, relative_humidity)` | eₐ = e°(T_hr)·HR_hr/100 (Ec. 54; Anexo 5 Ec. 5-3: T y HR del mismo período, preferentemente ≤ 1 h) | Horario / sub-horario | `VERIFICADA` |
+| `ef_ea_daily(tmin, tmax, rh_max, rh_min, method)` | `"rhmax_rhmin"`: eₐ = [e°(Tmin)·HRmax/100 + e°(Tmax)·HRmin/100]/2 (Ec. 17); `"rhmax"`: eₐ = e°(Tmin)·HRmax/100 (Ec. 18, cuando HRmin es dudosa); `"rhmean"`: eₐ = (HRmedia/100)·[e°(Tmax) + e°(Tmin)]/2 (Ec. 19, "menos deseable"), HRmedia = (HRmax + HRmin)/2 | Diario o mayor | `VERIFICADA` |
+| `ef_ea_tmin(tmin, k0 = 0)` | eₐ = e°(Tmin − K₀) (Ec. 48; Anexo 6 Ec. 6-6: K₀ = 0 °C húmedo/subhúmedo, 2 °C árido/semiárido; cap. 3: restar 2–3 °C en zonas áridas) | Solo datos faltantes | `VERIFICADA` (uso solo explícito) |
+| `ef_dewpoint(vapour_pressure)` | Tdew = [116,91 + 237,3·ln eₐ] / [16,78 − ln eₐ] (Anexo 3 Ec. 3-11) | QC (QC-08b, QC-08c) | `VERIFICADA` (forma FAO-56) |
 | Psicrómetro: eₐ = e°(T_wet) − γ_psy·(T_dry − T_wet), γ_psy = a_psy·P (Ec. 15–16) | – | Fuera del contrato (§2.3) | `VERIFICADA`, no se implementa por ahora |
 
 Notas: la Ec. 3-11 no es la inversa exacta de la Ec. 11 (comprobación
@@ -406,7 +406,7 @@ regionalizar eₐ y no HR (HR depende de T): coherente con FAO-56 cap. 3
 Dominio: HR ∈ [0, 100] físico; HR > 100 → se calcula y se marca (QC-02),
 no se recorta. eₐ ≤ 0 en la Ec. 3-11 → error (logaritmo).
 
-### 4.5 Viento a 2 m — `ef_wind_speed_2m(wind_speed, height)`
+### 4.5 Viento a 2 m — `ef_wind_2m(wind_speed, height)`
 
 ```text
 u₂ = u_z · 4.87 / ln(67.8·z − 5.42)            [m s⁻¹], z en m      (FAO-56 Ec. 47)
@@ -460,16 +460,16 @@ Lz, Lm: longitud del centro de la zona horaria y del sitio, en grados AL OESTE
 Si ω < −ωs o ω > ωs (sol bajo el horizonte en el punto medio): Ra = 0 por definición.
 ```
 
-Funciones propuestas: `ef_extraterrestrial_radiation_daily(lat, doy)` y
-`ef_extraterrestrial_radiation_period(lat, lon, doy, utc_mid, period_hours)`.
+Funciones propuestas: `ef_ra_daily(lat, doy)` y
+`ef_ra_period(lat, lon, doy, utc_mid, period_hours)`.
 Estado: `VERIFICADA` (Ec. 21–34).
 
 Coherencia con `radiation-components.md` §6.1 (sin duplicar):
 
 - δ, dr, b y Sc son las mismas formas que allí figuran como `CANDIDATA`:
   ahora verificadas (Ec. 24, 23, 33, 32). Deben implementarse **una vez**
-  (auxiliares internas `ef_solar_declination()`,
-  `ef_inverse_relative_distance()`, `ef_equation_of_time()` de ese
+  (auxiliares internas `ef_declination()`,
+  `ef_inv_distance()`, `ef_equation_of_time()` de ese
   documento) y reutilizarse aquí.
 - **Convención de longitud.** Con tiempos en UTC (Lz = 0) y longitud este
   positiva λ_E [grados], Lm = −λ_E (oeste positivo), y la Ec. 31 queda
@@ -493,7 +493,7 @@ Rso = (as + bs)·Ra          (cerca del nivel del mar o con as, bs calibrados)  
 Rso = (0.75 + 2×10⁻⁵·z)·Ra  (sin calibración), z en m                           (Ec. 37 = Anexo 3 Ec. 3-13)
 ```
 
-Función propuesta: `ef_clear_sky_radiation(extraterrestrial, elevation)`.
+Función propuesta: `ef_rso(extraterrestrial, elevation)`.
 Estado: `VERIFICADA`. FAO-56 Anexo 3 (con base en Allen, 1996): Ec. 3-13 es
 "una buena aproximación de Rso para períodos **diarios y horarios**",
 válida para z < 6000 m y baja turbidez; se obtuvo linealizando la ley de
@@ -541,7 +541,7 @@ Rs/Rso = 0,4–0,6 en climas húmedos y subhúmedos, 0,7–0,8 en áridos y
 semiáridos; Rs/Rso = 0,3 supone cobertura nubosa total.
 
 Funciones propuestas (internas salvo decisión WF-13):
-`ef_reference_net_radiation(solar_radiation, clear_sky_radiation,
+`ef_ref_net_radiation(solar_radiation, clear_sky_radiation,
 vapour_pressure, air_temperature | tmax + tmin, timestep, cloudiness = NULL)`
 → `list(rn, rns, rnl, cloudiness)`. El argumento `cloudiness` permite
 inyectar el término (1,35·Rs/Rso − 0,35) arrastrado desde la tarde (noche).
@@ -582,7 +582,7 @@ día/noche: FAO-56 dice "daylight periods" sin definir el umbral; `water`
 usa Rn > 0 y lo atribuye a ASCE-EWRI (Tabla 1): `CANDIDATA`. En el
 Ejemplo 19 de FAO-56 ambos criterios coinciden (noche con Rn < 0; día con
 Ra > 0 y Rn > 0). Decisión WF-15. Función propuesta (interna):
-`ef_reference_soil_heat_flux(rn, reference, timestep, daytime)`.
+`ef_ref_soil_heat_flux(rn, reference, timestep, daytime)`.
 Referencia cruzada: `soil-heat-flux.md` §3.3 (no es un método de G del
 píxel). FAO-56 Anexo 5 Ec. 5-2 (Choudhury, 1989: G = 0,4·exp(−0,5·LAI)·Rn,
 diurno) da 0,1·Rn con LAI = 2,8; solo como contexto.
@@ -654,7 +654,7 @@ Una función pública, sin alias por referencia ni por paso (API pequeña;
 decisión WF-13):
 
 ```text
-ef_reference_et(net_radiation, soil_heat_flux, air_temperature, wind_speed_2m,
+ef_ref_et(net_radiation, soil_heat_flux, air_temperature, wind_speed_2m,
                 vapour_pressure_deficit, slope, psychrometric,
                 reference = c("alfalfa", "grass"),
                 timestep  = c("hourly", "daily"),
@@ -673,7 +673,7 @@ ef_reference_et(net_radiation, soil_heat_flux, air_temperature, wind_speed_2m,
 - `standard = "fao56"` + `reference = "alfalfa"` → error clasificado (FAO-56
   no define alfalfa).
 - Orquestación para series de estación (en `prep-weather.R`):
-  `ef_station_reference_et(station_table, reference, timestep, standard)` →
+  `ef_station_ref_et(station_table, reference, timestep, standard)` →
   serie horaria/diaria con procedencia y flags; incluye el arrastre de
   nubosidad nocturna (§4.8) y la definición del día (§5.6).
 - ETr < 0 (posible de noche, Rn − G < 0 con poco déficit): se conserva, sin
@@ -950,7 +950,7 @@ reproduzcan:
   `numeric` (`ARCHITECTURE.md` §6.2).
 - **Verificación cruzada con `water`** (fuera del tarball,
   `VALIDATION_PLAN.md` §1.3): `hourlyET()`/`dailyET()` vs
-  `ef_station_reference_et()`; diferencias esperadas: recorte de ω
+  `ef_station_ref_et()`; diferencias esperadas: recorte de ω
   (WF-10), σ horaria 2,042 vs 2,043·10⁻¹⁰, límite inferior 0,3 de Rs/Rso,
   interpolación lineal de insumos (O2 vs O3), definición del día.
 

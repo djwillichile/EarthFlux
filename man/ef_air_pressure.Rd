@@ -64,6 +64,6 @@ evapotranspiration: Guidelines for computing crop water requirements}
 }
 \seealso{
 Other shared physical quantities:
-\code{\link[=ef_latent_heat_vaporization]{ef_latent_heat_vaporization()}}
+\code{\link[=ef_lambda]{ef_lambda()}}
 }
 \concept{shared physical quantities}

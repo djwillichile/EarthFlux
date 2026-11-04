@@ -769,7 +769,7 @@ Advertencia: D7 es la versión de 1999 (pre-C6). Su vigencia para C6.1 es
 
 | ID | Método | Estado | Entradas | Pros | Contras |
 |---|---|---|---|---|---|
-| A1 | *Blue-sky*: α = (1 − S)·BSA_sw + S·WSA_sw (forma de D7 ec. 32 aplicada a banda ancha) | `CANDIDATA` | MCD43A3 + fracción difusa S | Físicamente consistente con Rs↓ instantánea; usa productos oficiales de banda ancha | BSA es a **mediodía solar**, no a la hora de paso; S requiere un modelo (posible acoplamiento con `ef_sw_transmissivity()`, que a su vez usa α como ρ_g: riesgo de circularidad); aplicar ec. 32 a banda ancha supone que S no varía espectralmente (`TODO`, Román et al., 2010) |
+| A1 | *Blue-sky*: α = (1 − S)·BSA_sw + S·WSA_sw (forma de D7 ec. 32 aplicada a banda ancha) | `CANDIDATA` | MCD43A3 + fracción difusa S | Físicamente consistente con Rs↓ instantánea; usa productos oficiales de banda ancha | BSA es a **mediodía solar**, no a la hora de paso; S requiere un modelo (posible acoplamiento con `ef_tau_sw_allen()`, que a su vez usa α como ρ_g: riesgo de circularidad); aplicar ec. 32 a banda ancha supone que S no varía espectralmente (`TODO`, Román et al., 2010) |
 | A2 | Solo WSA_sw | `CANDIDATA` | MCD43A3 | Simple; sin dependencia de S | Sesgo bajo cielo despejado (iluminación mayormente directa) |
 | A3 | Solo BSA_sw (mediodía) | `CANDIDATA` | MCD43A3 | Simple; cielo despejado coherente con LST despejada | Ignora difusa; ángulo de mediodía ≠ hora de paso |
 | A4 | BSA a la hora de paso desde parámetros BRDF (MCD43A1) con el polinomio en el cenital solar de D7 §IV/V | `TODO` | MCD43A1 (no especificado aquí) | Corrige la diferencia mediodía/hora de paso | Producto adicional; más complejidad |
@@ -785,7 +785,7 @@ Decisión MP-03.
 ### 8.2 Emisividad (bandas 31/32 → banda ancha)
 
 Requisito heredado (`radiation-components.md` §6.6, RC-14; C2): ε₀ debe ser
-de banda ancha, coherente con la LST y la **misma** en `ef_longwave_out()` y
+de banda ancha, coherente con la LST y la **misma** en `ef_rl_out()` y
 `ef_net_radiation()`.
 
 | ID | Método | Estado | Pros | Contras |

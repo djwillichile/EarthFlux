@@ -16,7 +16,7 @@ EarthFlux; las ideas se reimplementan desde las fuentes primarias.
 | Etapa | Implementación en el prototipo | Equivalente en EarthFlux |
 |---|---|---|
 | Albedo MODIS | Combinación lineal de reflectancias de bandas 1-7 (coeficientes tipo Liang, 2001) | `modis-products.md` §8 (MP-03) |
-| Emisividad y RL↑ | `RL↑ = ε·σ·Ts⁴` con **emisividad MODIS como entrada** (no derivada de LAI) | `ef_longwave_out()`; principio de independencia del sensor |
+| Emisividad y RL↑ | `RL↑ = ε·σ·Ts⁴` con **emisividad MODIS como entrada** (no derivada de LAI) | `ef_rl_out()`; principio de independencia del sensor |
 | Rs↓ | Transmisividad con partición directa/difusa (forma tipo ASCE) y corrección por pendiente/orientación con MDE | `radiation-components.md` §6.3-6.4 |
 | Radiación difusa | Fracción difusa empírica por tramos en función de la transmisividad (polinomio de 4º grado entre 0,17 y 0,75) | `radiation-components.md` (modelos de descomposición, `TODO`) |
 | RL↓ | `εa·σ·Ta⁴` con **Ta del aire regionalizada por GWR** | Decisión RC-12 |
