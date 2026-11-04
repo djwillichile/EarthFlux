@@ -38,6 +38,10 @@
 #     the sensible heat flux (ef_calibrate_h()).
 #   - earthflux_daily_et (R/metric-et.R): output of ef_et_daily()
 #     (`eta_24`).
+#   - earthflux_reference_net_radiation (R/reference-et.R): output of
+#     ef_ref_net_radiation() (`rn`, `rns`, `rnl`, `cloudiness`).
+#   - earthflux_reference_et (R/reference-et.R): output of ef_ref_et()
+#     (`et_ref`, `reference`, `timestep`, `standard`).
 # Planned classes (created with their first constructor, not before):
 #   - earthflux_result         : all intermediate layers + diagnostics +
 #                                provenance (M5);
