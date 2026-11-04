@@ -1,0 +1,94 @@
+# Deletes remote branches that are fully merged into main and no longer in use.
+#
+# A branch is deleted only if ALL of the following hold:
+#   1. its tip is an ancestor of main (every commit is already in main, so no
+#      history is lost; only the branch name is removed);
+#   2. its tip is not the current tip of main (e.g. a branch just created from
+#      main without commits of its own);
+#   3. its last commit is at least MIN_AGE_DAYS old (default 7);
+#   4. it has no open pull request.
+# Protected names (main, gh-pages) are never deleted.
+#
+# Branches merged through pull requests are also removed by the repository
+# setting "Automatically delete head branches" (squash merges are not
+# ancestors of main, so they rely on that setting).
+
+name: cleanup-merged-branches.yaml
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      min_age_days:
+        description: "Minimum days since the last commit on the branch"
+        required: false
+        default: "7"
+      dry_run:
+        description: "List branches without deleting them (true/false)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: cleanup-merged-branches
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Delete merged and inactive branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MIN_AGE_DAYS: ${{ inputs.min_age_days || '7' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          set -euo pipefail
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          now=$(date +%s)
+          main_tip=$(git rev-parse origin/main)
+
+          for branch in $(git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin); do
+            case "$branch" in
+              main|gh-pages|HEAD) continue ;;
+            esac
+
+            tip=$(git rev-parse "origin/$branch")
+            if [ "$tip" = "$main_tip" ]; then
+              echo "keep   $branch (same commit as main)"
+              continue
+            fi
+            if ! git merge-base --is-ancestor "$tip" "$main_tip"; then
+              echo "keep   $branch (has commits not in main)"
+              continue
+            fi
+
+            age_days=$(( (now - $(git log -1 --format=%ct "$tip")) / 86400 ))
+            if [ "$age_days" -lt "$MIN_AGE_DAYS" ]; then
+              echo "keep   $branch (last commit ${age_days} d ago)"
+              continue
+            fi
+
+            open_prs=$(gh pr list --head "$branch" --state open --json number --jq 'length')
+            if [ "$open_prs" -gt 0 ]; then
+              echo "keep   $branch (open pull request)"
+              continue
+            fi
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete $branch"
+            else
+              git push origin --delete "$branch"
+              echo "deleted $branch"
+            fi
+          done
