@@ -922,7 +922,7 @@ Todas `ABIERTA`.
 | MP-09 | Política QA por defecto | `"flag"` / `"mask"` | `"flag"`; anclas con filtro estricto | P1 | §10.3, §15 | D-AP-01 (QA de anclas `TODO`) |
 | MP-10 | Formatos de entrada | Solo HDF4 / HDF4 + convertidos | HDF4 + convertidos con declaración | P1 | §11, §15 | — |
 | MP-11 | Escala/offset | GDAL / ficha interna | Ficha interna | P1 | §11.3, §15 | — |
-| MP-12 | Datos de ejemplo | AOI, fecha, productos | AOI agrícola chileno pequeño, pre-2020, Terra | P1 | §12, §15 | ARCH-6.6b; DEV §6 |
+| MP-12 | Datos de ejemplo | AOI, fecha, productos | **AOI decidido por el autor (2026-11-04): provincia de Cauquenes, Región del Maule**, el área de estudio habitual del autor (también en `thermify`). Fecha despejada pre-2020 y productos (Terra) por definir | P1 | §12, §15 | ARCH-6.6b; DEV §6 |
 | MP-13 | Migración a C7 de tierra | Esperar / ambas | Fichas por colección; C6.1 por ahora | P2 | §3, §15 | — |
 | MP-14 | Continuidad | VIIRS / Landsat / Sentinel-3 | Módulo de sensor separado; fuera de M4 | P2 | §7.3, §15 | — |
 
