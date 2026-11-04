@@ -833,7 +833,7 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #' rn <- ef_ref_net_radiation(solar_radiation = 22.07,
 #'                            clear_sky_radiation = 30.90,
 #'                            vapour_pressure = ea, tmax = 21.5, tmin = 12.3,
-#'                            timestep = "daily")$rn
+#'                            timestep = "daily", standard = "fao56")$rn
 #' eto <- ef_ref_et(
 #'   net_radiation = rn, soil_heat_flux = 0, air_temperature = tmean,
 #'   wind_speed_2m = ef_wind_2m(10 / 3.6, 10),

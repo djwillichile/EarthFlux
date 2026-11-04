@@ -236,10 +236,12 @@ station_period_mid <- function(timestamp, provenance) {
 #' up to 24 h (for a 24 h window it equals FAO-56 Eq. 21). Declination and
 #' inverse relative distance are those of the day of the mid-point (Eqs. 23
 #' and 24), the hour angle that of the mid-point in UTC (Eq. 31 through
-#' `ef_hour_angle()`). The midpoint criterion of `ef_ra_period()` (Ra = 0
-#' when the sun is below the horizon at the mid-point) is not used here:
-#' at sunrise and sunset it would underestimate the window and flag valid
-#' records.
+#' `ef_hour_angle()`). The midpoint criterion of
+#' `ef_ra_period(standard = "fao56")` (Ra = 0 when the sun is below the
+#' horizon at the mid-point) is not used here: at sunrise and sunset it
+#' would underestimate the window and flag valid records. For windows of
+#' up to 1 h this integral equals `ef_ra_period(standard = "asce")`
+#' (limits of ASCE-EWRI 2005 Eq. 56).
 #'
 #' @param lat,lon Numeric latitude and east-positive longitude \[rad\].
 #' @param mid POSIXct mid-points of the windows (UTC).
