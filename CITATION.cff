@@ -5,8 +5,9 @@ message: "If you use this software, please cite it using these metadata."
 type: software
 title: "EarthFlux: METRIC Evapotranspiration with Spatially Varying Weather Forcing"
 authors:
-  - family-names: "Fuentes Jaque"
+  - family-names: "Fuentes-Jaque"
     given-names: "Guillermo Servando"
+    orcid: "https://orcid.org/0000-0002-7864-4899"
 version: "0.0.0.9000"
 license: MIT
 repository-code: "https://github.com/djwillichile/EarthFlux"

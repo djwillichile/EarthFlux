@@ -6,12 +6,13 @@
 bibentry(
   bibtype = "Manual",
   title = "{EarthFlux}: {METRIC} Evapotranspiration with Spatially Varying Weather Forcing",
-  author = person("Guillermo Servando", "Fuentes Jaque"),
+  author = person("Guillermo Servando", "Fuentes-Jaque",
+                  comment = c(ORCID = "0000-0002-7864-4899")),
   year = "2026",
   note = paste("R package version", meta$Version),
   url = "https://github.com/djwillichile/EarthFlux",
   textVersion = paste0(
-    "Fuentes Jaque, G. S. (2026). EarthFlux: METRIC Evapotranspiration ",
+    "Fuentes-Jaque, G. S. (2026). EarthFlux: METRIC Evapotranspiration ",
     "with Spatially Varying Weather Forcing. R package version ",
     meta$Version, ". https://github.com/djwillichile/EarthFlux"
   )

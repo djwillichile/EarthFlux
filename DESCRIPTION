@@ -2,7 +2,8 @@ Package: EarthFlux
 Title: METRIC Evapotranspiration with Spatially Varying Weather Forcing
 Version: 0.0.0.9000
 Authors@R:
-    person("Guillermo Servando", "Fuentes Jaque", , "maintainer-email-TODO@example.com", role = c("aut", "cre", "cph"))
+    person("Guillermo Servando", "Fuentes-Jaque", , "gfuentesj@correo.uss.cl", role = c("aut", "cre", "cph"),
+           comment = c(ORCID = "0000-0002-7864-4899"))
 Description: Tools for estimating spatially distributed actual
     evapotranspiration from Earth observation data using the METRIC
     (Mapping EvapoTranspiration at high Resolution with Internalized

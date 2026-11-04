@@ -44,7 +44,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Guillermo Servando Fuentes Jaque \email{maintainer-email-TODO@example.com} [copyright holder]
+\strong{Maintainer}: Guillermo Servando Fuentes-Jaque \email{gfuentesj@correo.uss.cl} (\href{https://orcid.org/0000-0002-7864-4899}{ORCID}) [copyright holder]
 
 }
 \keyword{internal}

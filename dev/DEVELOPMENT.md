@@ -1,6 +1,8 @@
 # EarthFlux — Guía de desarrollo
 
-Autor y mantenedor: **Guillermo Servando Fuentes Jaque** (único autor).
+Autor y mantenedor: **Guillermo Servando Fuentes-Jaque** (único autor) ·
+ORCID [0000-0002-7864-4899](https://orcid.org/0000-0002-7864-4899) ·
+`gfuentesj@correo.uss.cl`.
 
 ## 1. Convenciones generales
 
@@ -82,7 +84,7 @@ trailers de coautoría o referencias a herramientas.
 Identidad Git del repositorio (configuración local, no global):
 
 ```bash
-git config user.name "Guillermo Servando Fuentes Jaque"
+git config user.name "Guillermo Servando Fuentes-Jaque"
 git config user.email "32119499+djwillichile@users.noreply.github.com"
 ```
 
@@ -150,8 +152,8 @@ No usar: rutas absolutas; escritura fuera de `tempdir()`; internet
 obligatorio en tests/ejemplos/vignettes; descargas grandes; credenciales;
 código interactivo obligatorio; ejemplos lentos; más de 2 núcleos en checks.
 
-Antes del envío a CRAN: reemplazar el correo provisional del mantenedor en
-`DESCRIPTION`, retirar la frase "under active development" de la
+Antes del envío a CRAN: confirmar que el correo del mantenedor en
+`DESCRIPTION` siga vigente (CRAN exige un correo estable), retirar la frase "under active development" de la
 descripción si ya no aplica y agregar DOI de referencias en `Description`
 con el formato `<doi:...>`.
 
