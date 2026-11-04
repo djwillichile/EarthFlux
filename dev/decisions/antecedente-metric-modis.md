@@ -24,7 +24,7 @@ EarthFlux; las ideas se reimplementan desde las fuentes primarias.
 | G | Métodos Bastiaanssen y Tasumi | `soil-heat-flux.md` |
 | Anclas | Selección **manual** de píxeles frío/caliente (la selección automática quedó comentada) | `anchor-pixels.md` (`ef_anchors()` explícito) |
 | H | Calibración dT con anclas e iteración de estabilidad; en una variante se reemplazó H por una regresión empírica sobre LST, G y Rn | `sensible-heat.md` |
-| GWR | `spgwr`: kernel **tricúbico**, selección de bandwidth (fijo y adaptativo), predicción en la grilla ráster, cluster paralelo | `gwr-forcing.md`, `decisions/gwr-backend.md` |
+| GWR | `spgwr`: kernel tricúbico **declarado pero no transmitido** (en la práctica se usó el kernel gaussiano por defecto); se pasaban a la vez un bandwidth fijo y una proporción adaptativa, y `spgwr` ignoraba el fijo (verificado en `gwr-forcing.md` §1.4); predicción en la grilla ráster; cluster paralelo | `gwr-forcing.md`, `decisions/gwr-backend.md` |
 | Modelos GWR | `ea ~ EVI + elevación`; `Ta ~ LST` | `gwr-forcing.md` |
 | QC de estaciones | Eliminación de atípicos por regla IQR (Q1/Q3 ± 1,2·IQR) | `weather-forcing.md` §3 (flags, no eliminación) |
 | Meteorología | Estaciones y, en algunas corridas, reanálisis NCEP | Alternativas de forzamiento (C2) |
@@ -55,11 +55,16 @@ EarthFlux; las ideas se reimplementan desde las fuentes primarias.
    del prototipo difieren en la banda 7 de la forma habitualmente citada
    para MODIS (Liang, 2001): deben verificarse contra la fuente primaria
    antes de implementarse (`modis-products.md`, MP-03).
-6. **Paralelismo y portabilidad.** El prototipo creaba clusters con
+6. **Parámetros que no llegan a la función.** En el prototipo, el kernel
+   declarado y el bandwidth fijo no eran los que realmente se usaban. En
+   EarthFlux, el kernel, el tipo de bandwidth y su valor quedan registrados
+   en el objeto de resultado y en la procedencia, y los tests verifican que
+   el kernel solicitado sea el aplicado.
+7. **Paralelismo y portabilidad.** El prototipo creaba clusters con
    `detectCores() - n` y usaba rutas absolutas; EarthFlux deja el número de
    núcleos al usuario (máximo 2 en checks de CRAN) y no usa rutas absolutas
    (`parallel-processing.md`, `DEVELOPMENT.md` §5).
-7. **Radiación difusa.** El prototipo ya incluía una partición de la
+8. **Radiación difusa.** El prototipo ya incluía una partición de la
    radiación de onda corta en componentes directa y difusa, coherente con la
    aclaración de `SCIENTIFIC_SPEC.md` §2.2: esa partición pertenece al
    módulo de radiación, no a la selección de anclas. La fuente del modelo de
