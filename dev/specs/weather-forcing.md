@@ -1,6 +1,6 @@
 # EarthFlux — Especificación: forzamiento meteorológico (estaciones, QC, variables derivadas y ET de referencia)
 
-Estado: **borrador M1** · Módulo: `forcing` (`ARCHITECTURE.md` §2) ·
+Estado: **borrador M1**; §4–§5 implementadas en M3 (ver §13) · Módulo: `forcing` (`ARCHITECTURE.md` §2) ·
 Archivos de destino: `R/io-weather.R`, `R/prep-weather.R`, `R/prep-qc.R`
 (ubicación de las funciones compartidas: decisión WF-01) · Tests:
 `tests/testthat/test-weather.R` y, propuesto, `test-reference-et.R`.
@@ -36,6 +36,7 @@ diseñados: este documento los especifica, pero la integración en
 10. Hallazgos que afectan a otros documentos (no editados aquí)
 11. Registro de decisiones abiertas
 12. Registro de fuentes y accesos
+13. Estado de implementación (M3)
 
 Resumen de estados:
 
@@ -1040,3 +1041,115 @@ No se afirma ningún dato sobre las redes; todo es `TODO`.
 | `www.fao.org/3/...` (ruta antigua) | Redirige a `/4/`; la ruta `/3/x0490e/x0490e.pdf` sin conexión |
 | `openknowledge.fao.org` | Sin conexión; no se reintentó |
 | `export.arxiv.org` (API de búsqueda) | No resuelve; no se reintentó |
+
+---
+
+## 13. Estado de implementación (M3)
+
+Fecha: 2026-11-04 · Rama `feature/m3-reference-et`. Alcance: §4 (variables
+derivadas) y §5 (ET de referencia). El contrato de estaciones, el QC (§2–§3)
+y `ef_station_ref_et()` (orquestación por estación, §5.4) se implementan por
+separado.
+
+### 13.1 Archivos y funciones
+
+| Archivo | Función | Exportada | Estado |
+|---|---|---|---|
+| `R/forcing-derived.R` | `ef_psychrometric(pressure)` | Sí | `VERIFICADA` (Ec. 8) |
+| | `ef_es(air_temperature)`, `ef_es_slope(air_temperature)` | Sí | `VERIFICADA` (Ec. 11–13) |
+| | `ef_ea_dewpoint(dewpoint_temperature)`, `ef_ea_rh(air_temperature, relative_humidity)`, `ef_ea_tmin(tmin, k0)`, `ef_ea_daily(tmin, tmax = NULL, rh_max, rh_min = NULL, method)` (un solo `.Rd`, tema `ef_ea`) | Sí | `VERIFICADA` (Ec. 14, 17–19, 48, 54) |
+| | `ef_dewpoint(vapour_pressure)` | Sí | `VERIFICADA` (Anexo 3 Ec. 3-11) |
+| | `ef_wind_2m(wind_speed, height)` | Sí | `VERIFICADA` (Ec. 47) |
+| | `ef_ra_daily(lat, doy)`, `ef_ra_period(lat, lon, doy, utc_mid, period_hours)` | Sí | `VERIFICADA` (Ec. 21–33) |
+| | `ef_rso(extraterrestrial, elevation)` | Sí | `VERIFICADA` (Ec. 37) |
+| | `sat_vp()`, `ef_sunset_hour_angle()`, `ef_daylight_hours()` (Ec. 11, 25, 34) | No | `VERIFICADA` |
+| `R/reference-et.R` | `ef_ref_net_radiation(solar_radiation, clear_sky_radiation, vapour_pressure, air_temperature = NULL, tmax = NULL, tmin = NULL, timestep, cloudiness = NULL)` → `earthflux_reference_net_radiation` (`rn`, `rns`, `rnl`, `cloudiness`, `timestep`, `flags`, `provenance`) | Sí | `VERIFICADA` (Ec. 38–40 y paso horario) |
+| | `ef_ref_soil_heat_flux(net_radiation, reference, timestep, standard, daytime = NULL)` → `numeric` | Sí | Pasto FAO-56 `VERIFICADA`; ASCE `CANDIDATA` |
+| | `ef_ref_et(net_radiation, soil_heat_flux, air_temperature, wind_speed_2m, vapour_pressure_deficit, slope, psychrometric, reference, timestep, standard, daytime = NULL)` → `earthflux_reference_et` (`et_ref`, `reference`, `timestep`, `standard`, `flags`, `provenance`) | Sí | Pasto FAO-56 `VERIFICADA`; ASCE `CANDIDATA` |
+| | `ef_reference_constants()` (tabla única de §5.3), `check_reference_setup()`, `check_daytime()`, `ef_diagnose_reference_et()`, `ef_flags_reference_et()` | No | – |
+| | `ef_ref_et_inst_interp(et_ref, period_mid, overpass)` (opción O3, §5.5) y `ef_ref_et_daily_sum(et_ref, day, periods_per_day)` (opción D1, §5.6) | No | `TODO` (WF-09, WF-11, WF-16 abiertas) |
+
+Tests: `tests/testthat/test-forcing-derived.R` (V1–V9, V12, V13, V17,
+equivalencia de longitud, Ra diaria vs suma horaria, bordes, NA, `dim`) y
+`tests/testthat/test-reference-et.R` (V10, V11, V14–V16, A1–A4, constantes,
+errores, flags, O3 y D1). `test-weather.R` queda para el contrato y el QC
+(WF-01).
+
+### 13.2 Decisiones tomadas al implementar
+
+1. **Constantes ASCE-EWRI como `CANDIDATA` por indicación del autor.** Las
+   constantes estandarizadas de ASCE-EWRI (2005) (referencia alta/alfalfa,
+   Cn/Cd diarios y horarios, Cd día/noche, G/Rn 0,04/0,2 y 0,1/0,5) se
+   implementaron como `CANDIDATA`, por indicación del autor de avanzar M3,
+   bajo la regla M2 de `DECISIONS.md` §1.0: rótulo `CANDIDATA` en roxygen,
+   en la procedencia y en cada fila de la tabla interna con su fuente
+   secundaria (`SPEI` 1.8.1; `water` 1.0), sin defectos ocultos. Reemplaza,
+   mientras se lee ASCE-EWRI (2005), la frase de §5.4 "mientras tanto solo
+   `standard = "fao56"` + `reference = "grass"` es implementable". El
+   integrador registra la decisión en `DECISIONS.md`.
+2. **Objetos de retorno.** `ef_ref_et()` devuelve un objeto con clase
+   `earthflux_reference_et` (no un `numeric` con atributos, §5.4), según
+   `ARCHITECTURE.md` §3.2: el valor está en `$et_ref`; `reference`,
+   `timestep` y `standard` como elementos; las filas de constantes usadas
+   (con fuente y estado) en `provenance$constants`. `ef_ref_net_radiation()`
+   devuelve `earthflux_reference_net_radiation` con los flags de §4.8.
+3. **WF-13 (API).** `ef_ref_net_radiation()` y `ef_ref_soil_heat_flux()` se
+   exportan (no internas, §4.8–§4.9): sin ellas `ef_ref_et()` no puede
+   usarse mientras `ef_station_ref_et()` no exista. Revisar con T-16 antes
+   de `0.1.0`. `ef_etr_hourly()`/`ef_etr_daily()` no se crearon (no aportan
+   sobre `ef_ref_et()`).
+4. **`ef_ref_soil_heat_flux()`** recibe `standard` (las razones G/Rn de la
+   tabla dependen de la norma) y el argumento se llama `net_radiation`
+   (regla N5, igual que en `ef_ref_et()`). `daytime` es obligatorio en paso
+   horario (ambas normas) y debe ser `NULL` en paso diario; G diario = 0
+   (`NA` donde Rn es `NA`).
+5. **`daytime` en `ef_ref_et()`:** obligatorio con `timestep = "hourly"` y
+   `standard = "asce"`; con FAO-56 horario no se usa (Cd = 0,34 de día y de
+   noche) y se acepta sin efecto; debe ser `NULL` en paso diario. El
+   criterio día/noche lo decide quien llama (WF-15 sigue abierta).
+6. **`cloudiness`** es el término f = 1,35·Rs/Rso − 0,35 (no el cociente),
+   en [−0,35; 1]; si se entrega, se usa en todas las posiciones y
+   `clear_sky_radiation` puede ser `NULL`. Sin `cloudiness`, Rso = 0 es
+   `earthflux_domain_error` (cociente indefinido). La selección del valor
+   nocturno (§4.8) queda en la orquestación.
+7. **`ef_ea_tmin(tmin, k0)` sin defecto para `k0`** (la propuesta era
+   `k0 = 0`): K₀ depende del clima (FAO-56 Anexo 6: 0 o 2 °C) y es una
+   elección científica explícita (T-15). `k0 ≥ 0`.
+8. **`ef_ea_daily()`**: `tmax` y `rh_min` admiten `NULL` con
+   `method = "rhmax"` (Ec. 18 no los usa); `tmin > tmax` →
+   `earthflux_domain_error` (clase III `EF_WS_TMIN_GT_TMAX`).
+9. **ωs en condiciones polares:** el argumento de arccos de la Ec. 25 se
+   limita a [−1, 1] (ωs = π en día polar, 0 en noche polar), límites
+   geométricos exactos; FAO-56 Ec. 26–27 trata el mismo caso con
+   X = 0,00001. Evita `NaN` en latitudes > 66,5°.
+10. **`ef_ra_period()`:** `period_hours` ∈ (0, 1] (dominio de la Ec. 28,
+    "horario o menor"); `doy` es el de la fecha UTC del punto medio; criterio
+    de punto medio de FAO-56 y 1/15 h por grado exacto (WF-10); ω se
+    obtiene con `ef_hour_angle()` (reutilizado, no reimplementado).
+11. **Gsc** se toma de `EF_SOLAR_CONSTANT` (W m⁻²) convertido a
+    MJ m⁻² min⁻¹ (= 0,0820, Ec. 21), sin literal duplicado.
+12. **Dominios de temperatura:** Ec. 11/13 exigen T > −237,3 °C; Rnl exige
+    T > −273,16 °C (conversión de la Ec. 39); el término aerodinámico
+    T > −273 °C. Los literales de la norma (0,23; 4,903·10⁻⁹; 273,16; 273;
+    0,408; 0,665·10⁻³) quedan dentro de las funciones (WF-14).
+13. **Flags registrados** (`ef_flags_reference_et()`, prefijo `EF_WS_`,
+    ámbito `record`, sin bit): `EF_WS_RS_RSO_LIMITED` (I-m, info; el método
+    —límite de la Ec. 39— es `VERIFICADA`) y `EF_WS_ETR_NEGATIVE` (I, info;
+    nombre normalizado de `EF_ETREF_NEGATIVE`, cubre ETo y ETr).
+    `EF_WS_OVERPASS_OUTSIDE_RECORDS` y `EF_WS_INCOMPLETE_DAY` no se
+    registran: los levantará la orquestación por estación (las auxiliares O3
+    y D1 solo devuelven `NA`).
+14. **Ubicación (WF-01):** γ, e° y Δ quedan en `R/forcing-derived.R` y no en
+    `R/shared-physics.R` (cuya cabecera los anuncia "planned here"). Si otro
+    módulo los necesita, el integrador puede moverlos sin cambiar su API.
+
+### 13.3 Pendiente
+
+- `ef_station_ref_et()` (tabla de estaciones, arrastre de nubosidad
+  nocturna, definición del día, flags de registro de §3).
+- Relación de Ångström (Ec. 35; usada solo en el test de V14) y Rs desde
+  horas de sol; variantes de Rso (Anexo 3 Ec. 3-14 a 3-20, solo QC);
+  psicrómetro (Ec. 15–16, caso V5 opcional); inversa exacta de la Ec. 11.
+- Caso de verificación de ETr alfalfa con los ejemplos de ASCE-EWRI (2005);
+  A1–A4 solo verifican aritmética.
+- Test sobre `SpatRaster` (§8.4): `terra` no es dependencia de este módulo.

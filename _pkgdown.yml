@@ -70,6 +70,36 @@ reference:
       - ef_et_inst
       - ef_etrf
       - ef_et_daily
+  - title: Meteorological forcing
+    desc: >
+      Meteorological forcing of the METRIC chain from weather stations:
+      variables derived from the station observations and the reference
+      evapotranspiration (grass ETo of FAO-56, alfalfa ETr of the ASCE-EWRI
+      standardized equation).
+  - subtitle: Derived variables
+    desc: >
+      Psychrometric constant, saturation and actual vapour pressure, dew
+      point, wind speed at 2 m, extraterrestrial and clear-sky radiation
+      (FAO-56).
+    contents:
+      - ef_psychrometric
+      - ef_es
+      - ef_es_slope
+      - ef_ea
+      - ef_dewpoint
+      - ef_wind_2m
+      - ef_ra_daily
+      - ef_ra_period
+      - ef_rso
+  - subtitle: Reference evapotranspiration
+    desc: >
+      Net radiation and soil heat flux of the reference surface and the
+      reference evapotranspiration, with explicit reference crop, time step
+      and standard.
+    contents:
+      - ef_ref_net_radiation
+      - ef_ref_soil_heat_flux
+      - ef_ref_et
   - title: Shared physical quantities
     desc: >
       Atmospheric and thermodynamic quantities used by several modules
