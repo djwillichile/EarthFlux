@@ -290,9 +290,10 @@ Convención:
     T. Spofford, M. Hattendorf, D. Martin, R. H. Cuenca y J. L. Wright;
     respaldo de la Irrigation Association (2004). La lista de editores de
     la edición publicada (Crossref) agrega a R. L. Snyder. Copia PDF de 70
-    páginas (i–vii y 1–59; metadatos del PDF: creado 2005-02-28) entregada
-    por el integrador el 2026-11-04 junto con su texto extraído con
-    `pdftotext -layout`; URL de descarga no registrada en la rama.
+    páginas (i–vii y 1–59; metadatos del PDF: creado 2005-02-28) descargada el 2026-11-04 de
+    https://www.mesonet.org/images/site/ASCE_Evapotranspiration_Formula.pdf
+    (copia pública alojada por Oklahoma Mesonet) y leída con su texto
+    extraído con `pdftotext -layout`.
     **No incluye los apéndices A–F** (solo su lista, p. vii).
     `VERIFIED (2026-11-04, documento)` para el contenido de las p. i–59
     (ecuaciones, Tablas 1–4 y páginas citadas en
