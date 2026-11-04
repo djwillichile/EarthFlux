@@ -115,6 +115,39 @@ No scientific result has been validated yet.
   `EF_H_DT_EXTRAPOLATED_COLD`, `EF_H_NEGATIVE`, `EF_H_GT_AVAILABLE` (cell)
   and `EF_H_CALIBRATION_NOT_CONVERGED`, `EF_H_DT_SLOPE_NONPOSITIVE` (object,
   critical).
+* Anchor pixels of the METRIC calibration (stage [A], selection):
+  `ef_select_anchors()` selects the cold and hot anchor pixels from
+  numeric vectors or matrices of surface temperature, NDVI, albedo and,
+  optionally, LAI and land cover, following explicit criteria built with
+  `ef_anchor_criteria()`, `ef_anchor_rule()`, `ef_homogeneity()` and
+  `ef_anchor_pick()`. There are no default thresholds and nothing is
+  relaxed without an explicit plan. The result (class `earthflux_anchors`)
+  records the anchor pixels and their attributes, exactly one calibration
+  point per class with an explicit `aggregate`, the dispersion of the
+  anchor values, the computed thresholds, the funnel of candidates, the
+  search domain used, flags and provenance. `ef_anchors()` builds the same
+  object from cells or coordinates chosen by the user. Missing candidates,
+  an empty percentile domain, inverted anchors, anchors outside the grid
+  and missing temperatures raise classed errors. No selection criterion is
+  verified against a primary source (`CANDIDATA`).
+
+* `ef_anchor_conditions()` adds the boundary conditions at the anchor pixels
+  (stage [B]): target latent heat flux from an explicit cold-anchor reference
+  ET fraction and an explicit hot-anchor condition (`etrf_hot` or `le_hot`),
+  with the instantaneous reference ET and the latent heat of vaporization
+  evaluated at each anchor pixel, and the target sensible heat flux
+  H = Rn - G - LE consumed by the sensible heat calibration. Optional
+  roughness length, blending-height wind speed and pressure are passed
+  through to the calibration points, which then hold every input of the
+  sensible heat calibration. The forms are `CANDIDATA`; no coefficient has
+  a default.
+
+* New diagnostic flags of the anchor stage: `EF_ANCHOR_USER_SUPPLIED`,
+  `EF_ANCHOR_CRITERIA_RELAXED`, `EF_ANCHOR_SEARCH_EXPANDED`,
+  `EF_ANCHOR_HOMOGENEITY_DROPPED`, `EF_ANCHOR_WINDOW_INCOMPLETE`,
+  `EF_ANCHOR_TIES`, `EF_ANCHOR_SINGLE_PIXEL`, `EF_ANCHOR_COLD_H_NEGATIVE`,
+  `EF_ANCHOR_HOT_LE_ASSUMED_ZERO` and `EF_ANCHOR_OVERPASS_SPREAD`. Flags
+  evaluated upstream in an anchor cell are inherited, not duplicated.
 
 ## Changes
 

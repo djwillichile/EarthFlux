@@ -434,7 +434,9 @@ códigos y de bits por etapa (R1, R7). Dueños: `ef_flags_core()`
 `EF_ET_`); `surface`, `forcing` y `spatial` agregan la suya con su primer
 código. Registrados: `EF_INPUT_NA` (`INPUT`, info, `cell,record`, bit 0) y
 `EF_ET_NEGATIVE` (`ET`, warning, `cell`, bit 1), ambos con las columnas de
-§7. Las demás filas de este catálogo siguen sin registrar y se registran
+§7, y los diez códigos de clase I de `EF_ANCHOR_` (ámbitos `object`/`record`,
+sin bit), registrados con `ef_select_anchors()`, `ef_anchors()` y
+`ef_anchor_conditions()` (`metric-anchors.R`). Las demás filas de este catálogo siguen sin registrar y se registran
 según §7.
 
 #### `EF_INPUT_` (1)
@@ -549,16 +551,16 @@ según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_ANCHOR_USER_SUPPLIED` | ídem | — | I | info | object | — | Derivado de `origin == "user"` |
-| `EF_ANCHOR_CRITERIA_RELAXED` | ídem | — | I | warning | object | — | Sin candidatos: `earthflux_anchor_no_candidates` |
-| `EF_ANCHOR_SEARCH_EXPANDED` | ídem | — | I | warning | object | — | – |
-| `EF_ANCHOR_HOMOGENEITY_DROPPED` | ídem | — | I | warning | object | — | – |
-| `EF_ANCHOR_WINDOW_INCOMPLETE` | ídem | — | I | warning | record | — | `index` = filas de `pixels` (D-AP-10) |
-| `EF_ANCHOR_TIES` | ídem | — | I | info | object | — | – |
-| `EF_ANCHOR_SINGLE_PIXEL` | ídem | — | I | info | object | — | – |
-| `EF_ANCHOR_COLD_H_NEGATIVE` | ídem | — | I | warning | record | — | – |
-| `EF_ANCHOR_HOT_LE_ASSUMED_ZERO` | ídem | — | I | info | object | — | Derivado de `conditions` |
-| `EF_ANCHOR_OVERPASS_SPREAD` | ídem | — | I | info | object | — | Diferencia exacta de horas; la magnitud tolerable sería otro código (II) |
+| `EF_ANCHOR_USER_SUPPLIED` | ídem | — | I (registrado) | info | object | — | Derivado de `origin == "user"` |
+| `EF_ANCHOR_CRITERIA_RELAXED` | ídem | — | I (registrado) | warning | object | — | Sin candidatos: `earthflux_anchor_no_candidates` |
+| `EF_ANCHOR_SEARCH_EXPANDED` | ídem | — | I (registrado) | warning | object | — | – |
+| `EF_ANCHOR_HOMOGENEITY_DROPPED` | ídem | — | I (registrado) | warning | object | — | – |
+| `EF_ANCHOR_WINDOW_INCOMPLETE` | ídem | — | I (registrado) | warning | record | — | `index` = filas de `pixels` (D-AP-10) |
+| `EF_ANCHOR_TIES` | ídem | — | I (registrado) | info | object | — | – |
+| `EF_ANCHOR_SINGLE_PIXEL` | ídem | — | I (registrado) | info | object | — | – |
+| `EF_ANCHOR_COLD_H_NEGATIVE` | ídem | — | I (registrado) | warning | record | — | – |
+| `EF_ANCHOR_HOT_LE_ASSUMED_ZERO` | ídem | — | I (registrado) | info | object | — | Derivado de `conditions` |
+| `EF_ANCHOR_OVERPASS_SPREAD` | ídem | — | I (registrado) | info | object | — | Diferencia exacta de horas; la magnitud tolerable sería otro código (II) |
 | `EF_ANCHOR_FEW_CANDIDATES` | ídem | — | II | warning | object | — | `TODO` (20 de `water` sin referencia) |
 | `EF_ANCHOR_CONTRAST_LOW` | `EF_ANCHOR_SMALL_CONTRAST`, `EF_ANCHOR_DT_SMALL` | fusión (C4) | II | warning | object | — | Ts_hot ≤ Ts_cold: `earthflux_anchor_inverted` |
 | `EF_ANCHOR_COLD_PARTIAL_COVER` | ídem | — | II | warning | record | — | `TODO` |

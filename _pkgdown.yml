@@ -39,6 +39,15 @@ reference:
   - subtitle: Soil heat flux
     contents:
       - ef_g
+  - subtitle: Anchor pixels
+    contents:
+      - ef_select_anchors
+      - ef_anchors
+      - ef_anchor_criteria
+      - ef_anchor_rule
+      - ef_homogeneity
+      - ef_anchor_pick
+      - ef_anchor_conditions
   - subtitle: Aerodynamics and sensible heat
     desc: >
       Momentum roughness, wind at the blending height, friction velocity,

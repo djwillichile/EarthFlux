@@ -1,7 +1,8 @@
 # EarthFlux — Especificación: píxeles ancla (frío/caliente)
 
-Estado: **borrador M1** · Componente: `metric` · Archivo de destino:
-`R/metric-anchors.R` · Tests: `tests/testthat/test-anchors.R` (por crear) ·
+Estado: **borrador M1; implementado en M2 (provisional)** · Componente:
+`metric` · Archivo de destino: `R/metric-anchors.R` · Tests:
+`tests/testthat/test-anchors.R`, `tests/testthat/test-anchor-conditions.R` ·
 Complementa `SCIENTIFIC_SPEC.md` (§1.2, §2.1, §2.2, §2.3, §7),
 `ARCHITECTURE.md` (§1, §3, §4, §6.3, §6.4) y `VALIDATION_PLAN.md` (§1.1,
 §1.2, §2.1).
@@ -16,6 +17,74 @@ Complementa `SCIENTIFIC_SPEC.md` (§1.2, §2.1, §2.2, §2.3, §7),
 
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`).
+
+> **Estado de implementación (M2, 2026-11-04).** Implementado en
+> `R/metric-anchors.R` bajo las decisiones provisionales P0-8 y P0-9
+> (`DECISIONS.md` §1.0), sin que ningún criterio pase a `VERIFICADA`: todo
+> valor numérico es un argumento explícito del usuario. Funciones:
+> `ef_anchor_rule()`, `ef_homogeneity()`, `ef_anchor_pick()`,
+> `ef_anchor_criteria()`, `ef_select_anchors()`, `ef_anchors()` y, para la
+> etapa [B] (D-AP-03), `ef_anchor_conditions()` (nombre nuevo, agregado a
+> `NAMING.md`). Decisiones tomadas al implementar (revisables):
+>
+> 1. **Entradas.** Vectores o matrices numéricas de una misma grilla
+>    (D-AP-09); las celdas se numeran como en `terra` (por filas desde
+>    arriba a la izquierda) aunque R almacene por columnas. La homogeneidad
+>    exige matrices. `utc_hour` (h UTC decimal) reemplaza a
+>    `overpass_time` (convención numérica del núcleo, `ARCHITECTURE.md`
+>    §3.1). `seed` no existe: ningún paso usa azar (§5.4); la procedencia
+>    registra `seed = NULL`.
+> 2. **Criterios.** `percentile_domain` vive en `ef_anchor_criteria()`
+>    (`"usable"` o `"land"` = NDVI > 0), no en cada regla; `scale`,
+>    `quantile_type`, `homogeneity` (incluido `NULL`) y `window_na` son
+>    obligatorios. Operadores `>=`, `>`, `<=`, `<`, `between` (cerrado) e
+>    `in` (solo `land_cover`). Selección final: `lowest_fraction`,
+>    `highest_fraction` (como `water`) y `lowest`/`highest` (n celdas, con
+>    empates resueltos por índice de celda y `EF_ANCHOR_TIES`). Las celdas
+>    válidas son las utilizables sin `NA` en las variables que usa el
+>    criterio; las reglas se evalúan sobre las válidas y los percentiles
+>    sobre el dominio de percentiles. Los cuantiles reproducen
+>    `stats::quantile()` (tipos 1–9) con código base (stats no está en
+>    `Imports`).
+> 3. **Búsqueda y relajación.** Por tipo: dominios de `search_area` en
+>    orden y, dentro de cada uno, `criteria` y luego los pasos de `relax`;
+>    se usa la primera combinación con anclas y se registra.
+> 4. **Agregación (P0-9).** `aggregate` ∈ {`"mean"`, `"median"`,
+>    `"none"`} sin defecto (`"none"` exige un píxel por tipo).
+>    `calibration_points` tiene exactamente una fila por tipo; la dispersión
+>    va en `dispersion` (n, media, mediana, sd, mín., máx.). En [B] se
+>    agregan por separado `rn`, `g`, `etr_inst`, `lambda` y `le_target`, y
+>    `h_target = rn − g − le_target` en el punto (con `"mean"` coincide con
+>    la media de los H por píxel).
+> 5. **Rangos percentiles del píxel** (§5.5): fracción de celdas no `NA`
+>    de **toda la grilla** con valor ≤ el del ancla (no del dominio de
+>    percentiles), para que `ef_anchors()` y la selección automática den la
+>    misma tabla (§7.5). Distancia a la estación y `x`, `y` solo con
+>    `origin` y `cell_size`.
+> 6. **Etapa [B].** `etr_inst` y `lambda` (de `ef_lambda()`, guarda de
+>    unidades) escalares o capas de la grilla, evaluadas en cada ancla;
+>    `etrf_cold` (k), y exactamente uno de `etrf_hot` / `le_hot`, sin
+>    defecto; `reference` ∈ {`"alfalfa"`, `"grass"`} (T-12); `source` y
+>    `status` obligatorios. LE = ETrF·ETr_inst·λ·ρ_w/(3600·1000).
+>    Opcionalmente `zom`, `u_blend` y `pressure` (escalar o capa) pasan,
+>    agregados, a `calibration_points`, que entonces contiene todas las
+>    columnas que exige `ef_calibrate_h()` (`type`, `lst`, `elevation`,
+>    `zom`, `rn`, `g`, `le_target`, `u_blend`, `pressure`; `anchor_id`
+>    opcional; `sensible-heat.md` §2.2). No intervienen en [B].
+> 7. **Herencia de flags** (`flags.md` §3.4): `inherited_flags` recibe
+>    registros de ámbito `cell` sobre la grilla y se registran en
+>    `pixels$inherited_flags` (códigos separados por `;`) y en
+>    `provenance$flags$inherited`.
+> 8. **Errores.** `earthflux_anchor_no_candidates`,
+>    `earthflux_anchor_insufficient_domain` (solo dominio vacío; el mínimo
+>    sigue `TODO`), `earthflux_anchor_inverted` (Ts del punto caliente ≤
+>    frío), `earthflux_anchor_outside_grid` y `earthflux_anchor_na_input`
+>    heredan de `earthflux_anchor_error` → `earthflux_error`; los dos
+>    últimos también de `earthflux_input_error`.
+> 9. **Flags registrados** (clase I): los diez de `flags.md` §4.2. Los de
+>    clase II siguen sin registrar. No implementado: contraste de anclas
+>    manuales con criterios (§5.7), selección sobre Ts_datum (D-AP-07,
+>    abierta), presets con nombre, `summary()` y `plot()`.
 
 ---
 
