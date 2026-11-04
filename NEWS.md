@@ -15,6 +15,16 @@ No scientific result has been validated yet.
   corroborated by secondary sources; verification against the primary
   reference (Allen et al., 2007) is pending.
 
+* `ef_air_pressure()` computes the mean atmospheric pressure from elevation
+  (FAO-56 Eq. 7), shared by the radiation, sensible heat and reference
+  evapotranspiration modules.
+
+* `ef_latent_heat_vaporization()` returns the latent heat of vaporization
+  in J kg-1 with an explicit `method` and no default: the FAO-56 constant
+  (`"constant"`) or the FAO-56 function of the air temperature in K
+  (`"fao56"`). The same function is meant to be used throughout the METRIC
+  chain.
+
 ## Changes
 
 * Modular source layout for the surface, forcing, spatial (GWR), METRIC,
