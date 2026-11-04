@@ -17,3 +17,4 @@ inst/extdata/private/
 *.Rcheck/
 EarthFlux_*.tar.gz
 docs/
+__pycache__/
