@@ -2,4 +2,5 @@
 
 ### Getting started
 
-- [Introduction to EarthFlux](earthflux-introduction.md):
+- [Introduction to
+  EarthFlux](https://djwillichile.github.io/EarthFlux/articles/earthflux-introduction.md):
