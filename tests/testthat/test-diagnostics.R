@@ -87,19 +87,15 @@ test_that("R10: class II codes are not registered", {
 })
 
 test_that("R11: every registered code is exercised by a module test", {
-  # Temporary exception (dev/specs/flags.md section 8, R11): codes
-  # registered in M0, before the policy, until their functions exist.
-  exempt <- c("EF_INPUT_NA", "EF_ET_NEGATIVE")
+  # No exemption: the M0 codes EF_INPUT_NA and EF_ET_NEGATIVE are raised by
+  # the M2 dispatchers and diagnostics and tested in their modules.
   files <- list.files(test_path(), pattern = "^test-.*\\.R$",
                       full.names = TRUE)
   files <- files[basename(files) != "test-diagnostics.R"]
   text <- paste(unlist(lapply(files, readLines, warn = FALSE)),
                 collapse = "\n")
   used <- vapply(reg$code, grepl, logical(1), x = text, fixed = TRUE)
-  expect_identical(
-    reg$code[!used & !reg$code %in% exempt],
-    character(0)
-  )
+  expect_identical(reg$code[!used], character(0))
 })
 
 test_that("R15: no code coincides with an object of the package", {
