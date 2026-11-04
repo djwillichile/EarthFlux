@@ -42,6 +42,10 @@
 #     ef_ref_net_radiation() (`rn`, `rns`, `rnl`, `cloudiness`).
 #   - earthflux_reference_et (R/reference-et.R): output of ef_ref_et()
 #     (`et_ref`, `reference`, `timestep`, `standard`).
+#   - earthflux_station_table and earthflux_station_qc (R/io-weather.R,
+#     R/prep-qc.R): standard station table and its quality control.
+#   - earthflux_station_ref_et (R/prep-weather.R): output of
+#     ef_station_ref_et() (`series`, `etr_inst`, `etr_24`).
 # Planned classes (created with their first constructor, not before):
 #   - earthflux_result         : all intermediate layers + diagnostics +
 #                                provenance (M5);

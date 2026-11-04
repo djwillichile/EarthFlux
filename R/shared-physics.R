@@ -18,8 +18,10 @@
 #   - check_latent_heat_units() (internal): unit guard for lambda, [1e6, 1e7]
 #     J kg-1 (decision ET-D2), for the functions that receive lambda.
 #
-# Planned here (WF-01): psychrometric constant, saturation vapour pressure
-#   and its slope, once specified for the core.
+# Not here: the psychrometric constant, the saturation vapour pressure and its
+#   slope (gamma, e0 and Delta; FAO-56 Eqs. 8, 11-13) live in
+#   R/forcing-derived.R with the other derived meteorological variables
+#   (decision WF-01 as implemented, dev/specs/weather-forcing.md 13.2).
 #
 # Conventions: those of ef_net_radiation() (dev/ARCHITECTURE.md section 3.1):
 #   numeric input, recycling of length-1 arguments, no recycling of arrays

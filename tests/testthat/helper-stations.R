@@ -17,7 +17,9 @@ syn_stations <- function() {
 }
 
 # Three hourly records per station (timestamps mark the end of the period),
-# all values physically possible and mutually consistent.
+# all values physically possible and mutually consistent (the solar
+# radiation stays below the extraterrestrial radiation of each hour, about
+# 725, 965 and 1160 W m-2 at these mid-morning hours).
 syn_times <- function(n = 3L) {
   as.POSIXct("2024-01-15 13:00", tz = "UTC") + 3600 * (seq_len(n) - 1L)
 }
@@ -30,7 +32,7 @@ syn_observations <- function() {
     relative_humidity = c(45, 41, 38, 52, 48, 46),
     dewpoint_temperature = c(11.2, 11.0, 10.6, 11.4, 11.3, 11.2),
     wind_speed = c(2.1, 2.6, 3.0, 3.4, 3.9, 4.1),
-    solar_radiation = c(850, 900, 870, 820, 880, 860),
+    solar_radiation = c(600, 760, 870, 580, 740, 860),
     stringsAsFactors = FALSE
   )
 }

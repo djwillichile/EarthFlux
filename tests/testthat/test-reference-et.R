@@ -549,14 +549,19 @@ test_that("ef_ref_soil_heat_flux() uses the ratios of the constants table", {
 
 # Flag registry ---------------------------------------------------------------------
 
-test_that("the stage registers its two class I codes", {
+test_that("the stage registers its four class I codes", {
   rows <- ef_flags_reference_et()
-  expect_identical(rows$code, c("EF_WS_RS_RSO_LIMITED", "EF_WS_ETR_NEGATIVE"))
+  # EF_WS_INCOMPLETE_DAY and EF_WS_OVERPASS_OUTSIDE_RECORDS are raised by
+  # ef_station_ref_et() (tests in test-station-ref-et.R).
+  expect_identical(rows$code, c("EF_WS_RS_RSO_LIMITED", "EF_WS_ETR_NEGATIVE",
+                                "EF_WS_INCOMPLETE_DAY",
+                                "EF_WS_OVERPASS_OUTSIDE_RECORDS"))
   expect_identical(names(rows), names(ef_flag_registry()))
-  expect_identical(rows$stage, c("WS", "WS"))
-  expect_identical(rows$severity, c("info", "info"))
-  expect_identical(rows$scope, c("record", "record"))
-  expect_identical(rows$bit, c(NA_integer_, NA_integer_))
+  expect_identical(rows$stage, rep("WS", 4L))
+  expect_identical(rows$severity, c("info", "info", "warning", "info"))
+  expect_identical(rows$scope, rep("record", 4L))
+  expect_identical(rows$bit, rep(NA_integer_, 4L))
+  expect_true(all(is.na(rows$error_class)))
   reg <- ef_flag_registry()
   expect_true(all(rows$code %in% reg$code))
   # The pre-normalisation name is not registered.

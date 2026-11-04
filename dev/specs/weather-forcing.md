@@ -241,9 +241,10 @@ Implementado en `R/io-weather.R` (`ef_station_table()`, exportada;
   `stations` → `earthflux_domain_error`; imposibles en `observations` → se
   conservan y `ef_station_qc()` los marca con severidad `critical`. Valores
   infinitos en `observations` → `earthflux_domain_error` (no son medidas).
-- **Altura del anemómetro:** dominio > (1 + 5,42)/67,8 = 0,0947 m (Ec. 47),
-  con nota `TODO(shared)` para reutilizar la cota de `ef_wind_2m()` al
-  fusionar el módulo de ET de referencia. Alturas `NA` permitidas (flag
+- **Altura del anemómetro:** dominio > (1 + 5,42)/67,8 = 0,0947 m (Ec. 47).
+  La cota tiene una sola fuente, `ef_wind_2m_min_height()` (interna, en
+  `R/forcing-derived.R`), que usan `ef_wind_2m()` y el validador de la
+  tabla (resuelto el antiguo `TODO(shared)`). Alturas `NA` permitidas (flag
   QC-11); la columna es obligatoria si se observa la variable.
 - **CRS:** campo obligatorio `provenance$crs`, que debe ser exactamente
   `"EPSG:4326"` (la proyección la hace `spatial`).
@@ -353,9 +354,12 @@ Implementado en `R/prep-qc.R` (`ef_station_qc(x, qc_policy =
 - **Códigos registrados** (nombres de `flags.md` §4.2, ámbito `record`,
   sin bit): `EF_WS_OUT_OF_DOMAIN` (QC-01a; clase III, `critical`,
   contraparte `earthflux_domain_error`; HR, `rh_max`, `rh_min` < 0;
-  viento < 0; T, Tdew, `tmax`, `tmin` ≤ −273,15 °C; P ≤ 0; eₐ < 0),
+  viento < 0; T, Tdew, `tmax`, `tmin` ≤ −273,15 °C; P ≤ 0; eₐ < 0;
+  Rs < 0 y precipitación < 0, agregados con `ef_station_ref_et()`),
   `EF_WS_TMIN_GT_TMAX` (QC-03; clase III, `critical`), `EF_WS_RH_GT100`
-  (QC-02, info), `EF_WS_TDEW_GT_TAIR` (QC-04, sin tolerancia),
+  (QC-02, info), `EF_WS_TDEW_GT_TAIR` (QC-04, sin tolerancia; variantes
+  Tdew > T y eₐ > e°(T) con `vapour_pressure` y `ef_es()`; T se marca una
+  vez por registro), `EF_WS_RS_GT_RA` (QC-05b, warning; ver abajo),
   `EF_WS_TIME_GAP` y `EF_WS_TIME_IRREGULAR` (QC-09: paso múltiplo entero
   ≥ 2 de `interval` / no múltiplo; comparación exacta),
   `EF_WS_HEIGHT_MISSING` y `EF_WS_HEIGHT_NONSTANDARD` (QC-11; T/HR ≠ 2 m;
@@ -375,13 +379,24 @@ Implementado en `R/prep-qc.R` (`ef_station_qc(x, qc_policy =
   cambia; conteos en `provenance$qc` y `provenance$flags`.
 - **Clase de resultado:** `c("earthflux_station_qc",
   "earthflux_station_table")`.
+- **QC-05b (`EF_WS_RS_GT_RA`)**, evaluado desde la orquestación de ET de
+  referencia (§13.4): Rs media del registro > Ra media de la **misma
+  ventana** (`interval` segundos ubicados por `timestamp_convention`). Ra
+  de la ventana = integral de la forma de la Ec. 28 con los límites
+  restringidos a la parte con sol (−ωs ≤ ω ≤ ωs, Ec. 25), con δ y dr del día
+  del punto medio; es la integral exacta de la irradiancia extraterrestre
+  positiva (para 24 h coincide con la Ec. 21). No se usa el criterio de
+  punto medio de `ef_ra_period()`, que en las horas de salida y puesta del
+  sol subestima la ventana y marcaría registros válidos. Ventanas con
+  Ra = 0 (noche completa) no se evalúan: corresponden a QC-05d (clase II).
+  Solo para medias de período (`"end"`/`"start"`) con `interval` ≤ 1 d; si
+  no, el código figura en `not_evaluated`.
 - **No evaluados** (listados en `provenance$qc$not_evaluated`): todos los
   de clase II de §3.2 (ningún umbral tiene valor elegido con referencia;
   no se exponen argumentos de umbral porque su código no puede
-  registrarse), `EF_WS_RS_GT_RA` (requiere Ra de la ventana del registro,
-  módulo de ET de referencia) y `EF_WS_INCOMPLETE_DAY` (ETr24, WF-11).
-  Tampoco se evalúa eₐ > e°(T) (variante de QC-04 con `vapour_pressure`):
-  requiere `ef_es()` del módulo de ET de referencia.
+  registrarse) y `EF_WS_INCOMPLETE_DAY` (QC-10): depende de la definición
+  del día (WF-11), por lo que lo levanta `ef_station_ref_et()` sobre las
+  sumas diarias (§13.4), no el QC.
 - **Interfaz con `spatial`** (`R/prep-weather.R`, internas):
   `station_values()` (copia con `NA` en lo excluido) y
   `station_regionalization_input()` (tabla de §7.2 para `air_temperature`,
@@ -1140,9 +1155,10 @@ No se afirma ningún dato sobre las redes; todo es `TODO`.
 ## 13. Estado de implementación (M3)
 
 Fecha: 2026-11-04 · Rama `feature/m3-reference-et`. Alcance: §4 (variables
-derivadas) y §5 (ET de referencia). El contrato de estaciones, el QC (§2–§3)
-y `ef_station_ref_et()` (orquestación por estación, §5.4) se implementan por
-separado.
+derivadas) y §5 (ET de referencia). El contrato de estaciones y el QC
+(§2–§3) se implementaron por separado (§2.7, §3.3); `ef_station_ref_et()`
+(orquestación por estación, §5.4) se implementó en la rama
+`feature/m3-station-ref-et` (§13.4).
 
 ### 13.1 Archivos y funciones
 
@@ -1160,7 +1176,8 @@ separado.
 | | `ef_ref_soil_heat_flux(net_radiation, reference, timestep, standard, daytime = NULL)` → `numeric` | Sí | Pasto FAO-56 `VERIFICADA`; ASCE `CANDIDATA` |
 | | `ef_ref_et(net_radiation, soil_heat_flux, air_temperature, wind_speed_2m, vapour_pressure_deficit, slope, psychrometric, reference, timestep, standard, daytime = NULL)` → `earthflux_reference_et` (`et_ref`, `reference`, `timestep`, `standard`, `flags`, `provenance`) | Sí | Pasto FAO-56 `VERIFICADA`; ASCE `CANDIDATA` |
 | | `ef_reference_constants()` (tabla única de §5.3), `check_reference_setup()`, `check_daytime()`, `ef_diagnose_reference_et()`, `ef_flags_reference_et()` | No | – |
-| | `ef_ref_et_inst_interp(et_ref, period_mid, overpass)` (opción O3, §5.5) y `ef_ref_et_daily_sum(et_ref, day, periods_per_day)` (opción D1, §5.6) | No | `TODO` (WF-09, WF-11, WF-16 abiertas) |
+| | `ef_ref_et_inst_interp(et_ref, period_mid, overpass)` (opción O3, §5.5) y `ef_ref_et_daily_sum(et_ref, day, periods_per_day)` (opción D1, §5.6) | No | `TODO` (WF-09, WF-11, WF-16 abiertas); usadas por `ef_station_ref_et()` |
+| `R/prep-weather.R` | `ef_station_ref_et(x, reference, timestep, standard, humidity, day_definition, day_completeness, daytime_rule = NULL, night_cloudiness = NULL, night_ratio = NULL, overpass = NULL, inst_method = NULL, dates = NULL, utc_offset = NULL)` → `earthflux_station_ref_et` | Sí | Física: la de las funciones llamadas; elecciones de orquestación en §13.4 |
 
 Tests: `tests/testthat/test-forcing-derived.R` (V1–V9, V12, V13, V17,
 equivalencia de longitud, Ra diaria vs suma horaria, bordes, NA, `dim`) y
@@ -1228,21 +1245,126 @@ errores, flags, O3 y D1). `test-weather.R` queda para el contrato y el QC
 13. **Flags registrados** (`ef_flags_reference_et()`, prefijo `EF_WS_`,
     ámbito `record`, sin bit): `EF_WS_RS_RSO_LIMITED` (I-m, info; el método
     —límite de la Ec. 39— es `VERIFICADA`) y `EF_WS_ETR_NEGATIVE` (I, info;
-    nombre normalizado de `EF_ETREF_NEGATIVE`, cubre ETo y ETr).
-    `EF_WS_OVERPASS_OUTSIDE_RECORDS` y `EF_WS_INCOMPLETE_DAY` no se
-    registran: los levantará la orquestación por estación (las auxiliares O3
-    y D1 solo devuelven `NA`).
+    nombre normalizado de `EF_ETREF_NEGATIVE`, cubre ETo y ETr). Con la
+    orquestación por estación se agregaron `EF_WS_INCOMPLETE_DAY` (I,
+    warning) y `EF_WS_OVERPASS_OUTSIDE_RECORDS` (I, info) (§13.4); las
+    auxiliares O3 y D1 solo devuelven `NA`.
 14. **Ubicación (WF-01):** γ, e° y Δ quedan en `R/forcing-derived.R` y no en
-    `R/shared-physics.R` (cuya cabecera los anuncia "planned here"). Si otro
-    módulo los necesita, el integrador puede moverlos sin cambiar su API.
+    `R/shared-physics.R` (la cabecera de este ya lo indica). Si otro módulo
+    los necesita, el integrador puede moverlos sin cambiar su API.
 
 ### 13.3 Pendiente
 
-- `ef_station_ref_et()` (tabla de estaciones, arrastre de nubosidad
-  nocturna, definición del día, flags de registro de §3).
+- Opciones O2, O4 y O5 de ETr_inst (§5.5), D2 a partir de registros
+  horarios (agregados diarios de datos horarios, §5.6), tolerancias de
+  huecos distintas de `"all_periods"` (WF-11) y arrastre nocturno por
+  ángulo solar β > 0,3 rad atribuido a ASCE-EWRI ("Eq. 46", `CANDIDATA`).
+- Interfaz `ef_station_ref_et()` → `station_regionalization_input()` para
+  `etr_inst`, `etr_24`, `wind_speed_2m` y `clearness` (§7.2).
 - Relación de Ångström (Ec. 35; usada solo en el test de V14) y Rs desde
   horas de sol; variantes de Rso (Anexo 3 Ec. 3-14 a 3-20, solo QC);
   psicrómetro (Ec. 15–16, caso V5 opcional); inversa exacta de la Ec. 11.
 - Caso de verificación de ETr alfalfa con los ejemplos de ASCE-EWRI (2005);
   A1–A4 solo verifican aritmética.
 - Test sobre `SpatRaster` (§8.4): `terra` no es dependencia de este módulo.
+
+### 13.4 Orquestación por estación: `ef_station_ref_et()` (M3, 2026-11-04)
+
+Rama `feature/m3-station-ref-et`. Archivo `R/prep-weather.R` (exportada,
+clase `earthflux_station_ref_et`), tests en
+`tests/testthat/test-station-ref-et.R`. Usa solo funciones existentes
+(§4–§5); no agrega ecuaciones. Decisiones tomadas al implementar
+(provisionales, para que el integrador las registre en `DECISIONS.md`):
+
+1. **Firma y decisiones abiertas como argumentos sin defecto.**
+   `reference`, `timestep`, `standard`, `humidity`, `day_definition` (WF-11)
+   y `day_completeness` (WF-11, política de huecos) no tienen defecto. Los
+   que solo aplican al paso horario —`daytime_rule` (WF-15),
+   `night_cloudiness` (+ `night_ratio`) (§4.8) y `inst_method` (WF-09, con
+   `overpass`)— tienen `NULL` como marcador y son obligatorios cuando
+   aplican (`earthflux_missing_input`); en paso diario deben ser `NULL`
+   (`earthflux_input_error`). `utc_offset` es obligatorio solo con
+   `day_definition = "local_standard"`. Todas las elecciones quedan en
+   `provenance$choices`.
+2. **Entrada y política de QC.** `x` es `earthflux_station_qc` (se usa su
+   política) o `earthflux_station_table` (se aplica `ef_station_qc(x)` con
+   `"exclude_critical"`, registrado en `provenance$qc`). Los valores
+   `"excluded"` entran como `NA` (`station_values()`); se cuentan por
+   variable. Con `"keep_all"`, un imposible llega al núcleo y produce
+   `earthflux_domain_error` (§3.1, `flags.md` §5.3).
+3. **Paso horario** (`interval` = 3600 s, medias de período): Ra por
+   período con `ef_ra_period()` (criterio de punto medio, día del año UTC
+   del punto medio), Rso Ec. 37 (WF-12), P(z) Ec. 7 (WF-05; la
+   `air_pressure` medida no se usa), u₂ Ec. 47 con `height_wind`, Rs de
+   W m⁻² a MJ m⁻² h⁻¹ (× 0,0036). eₐ según `humidity`:
+   `"vapour_pressure"`, `"dewpoint_temperature"` (Ec. 14) o
+   `"relative_humidity"` (Ec. 54).
+4. **Paso diario** (`interval` = 86 400 s): Tmedia Ec. 9, es Ec. 12, Δ en
+   Tmedia, Ra Ec. 21 con el día del registro (en la definición del día), Rs
+   × 0,0864, G = 0; eₐ por Ec. 14, Ec. 17 (`rh_max`/`rh_min`) o
+   `vapour_pressure`. Rso = 0 (noche polar) → `NA` (término de nubosidad
+   indefinido). `etr_24` es el valor del registro (opción D2 con datos
+   diarios); `overpass` no se admite.
+5. **Nubosidad nocturna** (§4.8; registros con Rso = 0):
+   `"before_sunset"` = cociente del **último** registro de la misma
+   estación en las 24 h previas cuyo ω del punto medio cumple
+   ωs − 0,79 ≤ ω ≤ ωs − 0,52 (FAO-56 cap. 4); elegir el último cuando dos
+   períodos califican es una elección de implementación. Sin registro que
+   califique (p. ej., la primera noche de la serie) → `NA` +
+   `EF_INPUT_NA`. Se arrastra el término ya limitado (Rs/Rso ≤ 1).
+   `"fixed"` = cociente constante `night_ratio` ∈ [0, 1] (FAO-56: 0,4–0,6
+   húmedo, 0,7–0,8 árido, 0,3 cubierto). El β > 0,3 rad de ASCE-EWRI
+   (`CANDIDATA`) no se implementó.
+6. **Día/noche (WF-15):** `"ra_positive"` (Ra del período > 0, criterio de
+   punto medio de FAO-56) o `"rn_positive"` (Rn > 0, atribuido a
+   ASCE-EWRI, `CANDIDATA`). Selecciona G/Rn y, con `"asce"`, Cd.
+7. **ETr_inst (WF-09):** opciones `"O1"` (período que contiene la hora de
+   paso, intervalo [inicio, fin)) y `"O3"` (interpolación lineal de la tasa
+   entre puntos medios con `ef_ref_et_inst_interp()`; se inserta un nodo
+   `NA` tras cada paso mayor que un período, para no interpolar a través de
+   un registro faltante). Cada estación recibe todas las horas de
+   `overpass` (UTC). Fuera del soporte (O1: inicio del primer período a fin
+   del último; O3: primer a último punto medio) → `NA` +
+   `EF_WS_OVERPASS_OUTSIDE_RECORDS`; dentro, un registro faltante o una ETr
+   `NA` → `NA` + `EF_INPUT_NA`. O2, O4 y O5 no se implementaron (O2/O4
+   exigen interpolar insumos y recalcular la geometría en el instante; queda
+   para el análisis de sensibilidad).
+8. **ETr_24 (WF-16, WF-11):** paso horario → D1 (suma de las 24 láminas
+   horarias del día, con `ef_ref_et_daily_sum()`); un período pertenece al
+   día de su punto medio en la definición elegida (`"utc"` o
+   `"local_standard"` con `utc_offset` en horas, sin horario de verano).
+   `day_completeness = "all_periods"` (única opción): el día necesita todos
+   sus períodos con ETr válida; si no → `NA` + `EF_WS_INCOMPLETE_DAY`, sin
+   relleno. `dates = NULL` → todos los días con registros; un día pedido
+   sin registros tiene `n_periods = 0` y se marca.
+9. **Objeto de resultado:** `series` (una fila por registro de
+   `observations`, mismo orden, con las magnitudes intermedias), `etr_inst`
+   (estación × hora de paso; mm h⁻¹), `etr_24` (estación × día; mm d⁻¹),
+   `reference`, `timestep`, `standard`, `flags` y `provenance`. Los flags son
+   de ámbito `record` y llevan el campo `target` (`"series"`, `"etr_inst"`,
+   `"etr_24"`) propuesto en `flags.md` §6.2 para indicar la tabla a la que
+   se refiere `index`; `provenance$flags_evaluated` (códigos) y
+   `provenance$flags_evaluated_by_target`.
+10. **Flags:** `EF_WS_INCOMPLETE_DAY` (warning) y
+    `EF_WS_OVERPASS_OUTSIDE_RECORDS` (info) se registran en
+    `ef_flags_reference_et()` (QC-10 pertenece a la suma diaria, no al QC:
+    depende de la definición del día). En la serie se combinan los de
+    `ef_ref_net_radiation()` y `ef_ref_et()` (`EF_INPUT_NA`,
+    `EF_WS_RS_RSO_LIMITED`, `EF_WS_ETR_NEGATIVE`).
+11. **QC completado:** `EF_WS_RS_GT_RA` (QC-05b) y la variante eₐ > e°(T) de
+    QC-04 se evalúan en `ef_station_qc()` (§3.3). Rs < 0 y precipitación < 0
+    se agregaron a QC-01a (`EF_WS_OUT_OF_DOMAIN`): sin ello, una Rs nocturna
+    negativa (desplazamiento del piranómetro) detendría
+    `ef_station_ref_et()` con `earthflux_domain_error`; con la política por
+    defecto se excluye y el período queda `NA`.
+12. **Verificación:** el Ejemplo 19 de FAO-56 (V15, V16 con Rs/Rso = 0,8
+    vía `"fixed"`) y el Ejemplo 18 (V14, registros diarios) se reproducen a
+    través de `ef_station_ref_et()`; A3 (alfalfa horaria) como aritmética.
+
+Preguntas abiertas detectadas: (a) Rs nocturna ligeramente negativa o
+positiva (QC-05d, clase II) hace que la regla `"all_periods"` pierda días
+enteros; requiere la tolerancia de QC-05d o una política de huecos (WF-11);
+(b) definición de Ra horaria en los períodos de salida y puesta del sol
+para ETr (WF-10): la orquestación usa el criterio de punto medio de
+`ef_ra_period()`, mientras que QC-05b usa la integral sobre la parte con
+sol.

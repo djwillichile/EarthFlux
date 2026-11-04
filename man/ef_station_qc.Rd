@@ -61,7 +61,10 @@ brackets):
 value: relative humidity (\code{relative_humidity}, \code{rh_max}, \code{rh_min})
 \verb{< 0}, \code{wind_speed < 0}, temperature (\code{air_temperature},
 \code{dewpoint_temperature}, \code{tmax}, \code{tmin}) \verb{<= -273.15} degC,
-\code{air_pressure <= 0}, \code{vapour_pressure < 0}.
+\code{air_pressure <= 0}, \code{vapour_pressure < 0}, \code{solar_radiation < 0},
+\code{precipitation < 0}. A negative solar radiation (for example the
+night-time offset of a thermopile pyranometer) is excluded by the
+default policy; it is not set to zero.
 \item \code{EF_WS_TMIN_GT_TMAX} [critical] (QC-03): \code{tmin > tmax} in the same
 record; both variables are flagged.
 \item \code{EF_WS_RH_GT100} [info] (QC-02): relative humidity \verb{> 100} \%.
@@ -69,8 +72,24 @@ Values slightly above 100 \% occur (e.g. early morning or rain); FAO-56
 Annex 5 relates records exceeding 100 \% by more than 3-5 \% to a need of
 recalibration, a class II test not evaluated until its margin is chosen
 (WF-06).
-\item \code{EF_WS_TDEW_GT_TAIR} [warning] (QC-04): \code{dewpoint_temperature > air_temperature}, without tolerance (equivalent to a relative humidity
-above 100 \%, FAO-56 Eqs. 10 and 14); both variables are flagged.
+\item \code{EF_WS_TDEW_GT_TAIR} [warning] (QC-04): \code{dewpoint_temperature > air_temperature}, or \code{vapour_pressure} greater than the saturation
+vapour pressure at \code{air_temperature} (\eqn{e_a > e^\circ(T)}{ea >
+  e0(T)}, \code{\link[=ef_es]{ef_es()}}), without tolerance (both are equivalent to a relative
+humidity above 100 \%, FAO-56 Eqs. 10, 11 and 14); the variables
+compared are flagged (the air temperature once per record). The
+threshold is the air temperature for the dew point, \eqn{e^\circ(T)}{e0(T)}
+for the vapour pressure and the dew point of the vapour pressure
+(\code{\link[=ef_dewpoint]{ef_dewpoint()}}) for the air temperature.
+\item \code{EF_WS_RS_GT_RA} [warning] (QC-05b): the mean \code{solar_radiation} of
+the record is greater than the mean extraterrestrial radiation of the
+same time window (the window of \code{interval} seconds of the record,
+located by \code{timestamp_convention}). The extraterrestrial radiation is
+the integral of FAO-56 Eq. 28 over the part of the window with the sun
+above the horizon (for a one-day window, Eq. 21). Windows with the sun
+below the horizon during the whole window (night-time radiation, test
+QC-05d, class II) are not tested. Evaluated for period means
+(\code{timestamp_convention} \code{"end"} or \code{"start"}) with an \code{interval} of at
+most one day.
 \item \code{EF_WS_TIME_GAP} [warning] and \code{EF_WS_TIME_IRREGULAR} [warning]
 (QC-09), per station in time order: the time since the previous record
 is a whole multiple (two or more) of the declared \code{interval} (gap: the
@@ -96,9 +115,10 @@ conditions, diurnal stability of the vapour pressure, time shift,
 spatial consistency, cloudy overpass): they need thresholds with a
 documented reference that are not available, so their codes are not
 registered and no threshold is assumed. Also not evaluated here:
-\code{EF_WS_RS_GT_RA} (needs the extraterrestrial radiation of the record
-window) and \code{EF_WS_INCOMPLETE_DAY} (evaluated with the daily reference
-ET). They are listed in \code{provenance$qc$not_evaluated}.
+\code{EF_WS_INCOMPLETE_DAY} (QC-10), which depends on the definition of the
+day and is raised by the daily sums of \code{\link[=ef_station_ref_et]{ef_station_ref_et()}}. They are
+listed in \code{provenance$qc$not_evaluated} (with \code{EF_WS_RS_GT_RA} when the
+table has solar radiation that cannot be tested).
 
 \strong{Status and policy.} The status of an observed value is the highest
 severity among the flags of its record that concern its variable or the
@@ -137,5 +157,5 @@ evapotranspiration - Guidelines for computing crop water requirements}.
 FAO Irrigation and Drainage Paper 56. FAO, Rome. ISBN 92-5-104219-5.
 }
 \seealso{
-\code{\link[=ef_station_table]{ef_station_table()}}.
+\code{\link[=ef_station_table]{ef_station_table()}}, \code{\link[=ef_station_ref_et]{ef_station_ref_et()}}.
 }

@@ -34,7 +34,11 @@
 #' section 4.2, `EF_WS_`; conditions of dev/specs/weather-forcing.md section
 #' 3.2). All have the `record` scope (rows of `observations`) and no bit.
 #' Class III codes (`EF_WS_OUT_OF_DOMAIN`, `EF_WS_TMIN_GT_TMAX`) are
-#' `critical` with their error counterpart of the numeric core.
+#' `critical` with their error counterpart of the numeric core. The codes of
+#' the reference ET at the stations (`EF_WS_RS_RSO_LIMITED`,
+#' `EF_WS_ETR_NEGATIVE`, `EF_WS_INCOMPLETE_DAY`,
+#' `EF_WS_OVERPASS_OUTSIDE_RECORDS`) are registered by
+#' `ef_flags_reference_et()` (`R/reference-et.R`).
 #'
 #' @return A data frame built with `ef_flag_rows()`.
 #' @noRd
@@ -46,30 +50,32 @@ ef_flags_stations <- function() {
       "EF_WS_TMIN_GT_TMAX",
       "EF_WS_RH_GT100",
       "EF_WS_TDEW_GT_TAIR",
+      "EF_WS_RS_GT_RA",
       "EF_WS_TIME_GAP",
       "EF_WS_TIME_IRREGULAR",
       "EF_WS_HEIGHT_MISSING",
       "EF_WS_HEIGHT_NONSTANDARD"
     ),
-    stage = rep("WS", 8L),
+    stage = rep("WS", 9L),
     severity = c("critical", "critical", "info", "warning", "warning",
-                 "warning", "warning", "warning"),
-    scope = rep("record", 8L),
-    bit = rep(NA_integer_, 8L),
+                 "warning", "warning", "warning", "warning"),
+    scope = rep("record", 9L),
+    bit = rep(NA_integer_, 9L),
     error_class = c("earthflux_domain_error", "earthflux_domain_error",
-                    rep(NA_character_, 6L)),
+                    rep(NA_character_, 7L)),
     description = c(
       "An observed value is physically impossible and is excluded by the default quality control policy.",
       "The daily minimum air temperature is greater than the daily maximum.",
       "The relative humidity is greater than 100 percent.",
-      "The dew point temperature is greater than the air temperature.",
+      "The dew point temperature is greater than the air temperature, or the vapour pressure is greater than the saturation vapour pressure at the air temperature.",
+      "The mean solar radiation of the record is greater than the mean extraterrestrial radiation of its time window.",
       "The record follows a gap of one or more missing time steps.",
       "The time since the previous record is not a whole number of time steps.",
       "The measurement height of the variable is unknown.",
       "The temperature and humidity sensors are not at the standard height of 2 m."
     ),
-    spec = rep(spec, 8L),
-    since = rep("0.0.0.9000", 8L)
+    spec = rep(spec, 9L),
+    since = rep("0.0.0.9000", 9L)
   )
 }
 
@@ -107,7 +113,9 @@ station_qc_exclusion_level <- function(qc_policy) {
 #' absolute zero (-273.15 degC), air pressure at or below 0. The same
 #' definitions apply to the daily fields (`rh_max`, `rh_min`, `tmax`,
 #' `tmin`), to the dew point temperature and to the vapour pressure (below
-#' 0). No plausibility limit is applied (class II, QC-01b).
+#' 0), and to the global solar radiation and the precipitation (below 0: an
+#' irradiance on a horizontal surface and a depth of water are not
+#' negative). No plausibility limit is applied (class II, QC-01b).
 #'
 #' @return A data frame with columns `variable`, `strict` (`TRUE`: the
 #'   condition is `value < bound`; `FALSE`: `value <= bound`) and `bound`.
@@ -117,11 +125,12 @@ station_domain_rules <- function() {
   data.frame(
     variable = c("relative_humidity", "rh_max", "rh_min", "wind_speed",
                  "air_temperature", "dewpoint_temperature", "tmax", "tmin",
-                 "air_pressure", "vapour_pressure"),
+                 "air_pressure", "vapour_pressure", "solar_radiation",
+                 "precipitation"),
     strict = c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE,
-               TRUE),
+               TRUE, TRUE, TRUE),
     bound = c(0, 0, 0, 0, absolute_zero, absolute_zero, absolute_zero,
-              absolute_zero, 0, 0),
+              absolute_zero, 0, 0, 0, 0),
     stringsAsFactors = FALSE
   )
 }
@@ -142,36 +151,131 @@ station_standard_height <- function() {
 #' Station QC tests that are not evaluated
 #'
 #' Class II tests (dev/specs/flags.md section 4.1: they need a threshold
-#' with a documented reference, not available) and class I tests that need
-#' a quantity computed by another module.
+#' with a documented reference, not available) and the class I test of
+#' complete days (QC-10), which is evaluated by the daily sums of
+#' `ef_station_ref_et()` because it depends on the definition of the day
+#' (decision WF-11). When `x` is given, `EF_WS_RS_GT_RA` (QC-05b) is added
+#' if the table has solar radiation that cannot be tested (instantaneous
+#' values or periods longer than one day).
 #'
+#' @param x An `earthflux_station_table` or `NULL`.
 #' @return A data frame with columns `code`, `test_id` and `reason`.
 #' @noRd
-station_qc_not_evaluated <- function() {
+station_qc_not_evaluated <- function(x = NULL) {
   class_ii <- "class II: needs a threshold with a documented reference (dev/specs/flags.md 7)"
-  data.frame(
+  out <- data.frame(
     code = c("EF_WS_IMPLAUSIBLE", "EF_WS_RH_RECALIBRATE", "EF_WS_RS_GT_RSO",
-             "EF_WS_RS_GT_RA", "EF_WS_RS_CALIBRATION", "EF_WS_RS_NIGHT",
+             "EF_WS_RS_CALIBRATION", "EF_WS_RS_NIGHT",
              "EF_WS_PERSISTENCE", "EF_WS_STEP", "EF_WS_RHMAX_LOW",
              "EF_WS_NONREFERENCE", "EF_WS_EA_DIURNAL", "EF_WS_TIME_SHIFT",
              "EF_WS_INCOMPLETE_DAY", "EF_WS_SPATIAL_OUTLIER",
              "EF_WS_CLOUDY_OVERPASS"),
-    test_id = c("QC-01b", "QC-02", "QC-05a", "QC-05b", "QC-05c", "QC-05d",
+    test_id = c("QC-01b", "QC-02", "QC-05a", "QC-05c", "QC-05d",
                 "QC-06", "QC-07", "QC-08a", "QC-08b", "QC-08c", "QC-09",
                 "QC-10", "QC-12", "QC-13"),
     reason = c(
       class_ii,
       paste(class_ii, "(margin in [3, 5] %, WF-06)"),
-      class_ii,
-      "class I: needs the extraterrestrial radiation of the record window (reference ET module)",
-      class_ii, class_ii, class_ii, class_ii,
+      class_ii, class_ii, class_ii, class_ii, class_ii,
       paste(class_ii, "(value in [80, 90] % and window, WF-06)"),
       class_ii, class_ii, class_ii,
-      "class I: evaluated with the daily reference ET (definition of the day, WF-11)",
+      "class I: evaluated by ef_station_ref_et() on the daily sums (definition of the day, WF-11)",
       class_ii, class_ii
     ),
     stringsAsFactors = FALSE
   )
+  if (!is.null(x) && "solar_radiation" %in% names(x$observations) &&
+      !station_rs_ra_testable(x$provenance)) {
+    out <- rbind(out, data.frame(
+      code = "EF_WS_RS_GT_RA", test_id = "QC-05b",
+      reason = "class I: needs period means of at most one day (instantaneous values or longer periods)",
+      stringsAsFactors = FALSE
+    ))
+  }
+  out
+}
+
+#' Whether the solar radiation of a table can be compared with Ra
+#'
+#' QC-05b compares period means: it needs `timestamp_convention` `"end"` or
+#' `"start"` and an `interval` of at most one day.
+#'
+#' @param provenance The provenance of a station table.
+#' @return A logical scalar.
+#' @noRd
+station_rs_ra_testable <- function(provenance) {
+  provenance$timestamp_convention %in% c("end", "start") &&
+    provenance$interval <= 24 * EF_SECONDS_PER_HOUR
+}
+
+#' Mid-points of the averaging periods of the records
+#'
+#' `timestamp - interval / 2` for `"end"`, `timestamp + interval / 2` for
+#' `"start"`, the timestamp itself for `"instant"`
+#' (dev/specs/weather-forcing.md section 2.4).
+#'
+#' @param timestamp POSIXct (UTC).
+#' @param provenance The provenance of a station table.
+#' @return POSIXct (UTC).
+#' @noRd
+station_period_mid <- function(timestamp, provenance) {
+  timestamp + switch(provenance$timestamp_convention,
+                     end = -provenance$interval / 2,
+                     start = provenance$interval / 2,
+                     instant = 0)
+}
+
+#' Extraterrestrial radiation of the time window of a record
+#'
+#' Integral of the extraterrestrial radiation on a horizontal surface over
+#' the window of `period_seconds` centred on `mid` (test QC-05b), with the
+#' form of FAO-56 Eq. 28 (chapter 3) and the limits of integration restricted
+#' to the part of the window with the sun above the horizon
+#' (\eqn{-\omega_s \le \omega \le \omega_s}, Eq. 25), which makes it the
+#' exact integral of the positive extraterrestrial irradiance for any window
+#' up to 24 h (for a 24 h window it equals FAO-56 Eq. 21). Declination and
+#' inverse relative distance are those of the day of the mid-point (Eqs. 23
+#' and 24), the hour angle that of the mid-point in UTC (Eq. 31 through
+#' `ef_hour_angle()`). The midpoint criterion of `ef_ra_period()` (Ra = 0
+#' when the sun is below the horizon at the mid-point) is not used here:
+#' at sunrise and sunset it would underestimate the window and flag valid
+#' records.
+#'
+#' @param lat,lon Numeric latitude and east-positive longitude \[rad\].
+#' @param mid POSIXct mid-points of the windows (UTC).
+#' @param period_seconds Numeric scalar length of the windows \[s\], in
+#'   (0, 86400\].
+#' @return Numeric extraterrestrial radiation of each window \[MJ m-2\].
+#' @section Verification status: `VERIFICADA` as the integral of FAO-56
+#'   Eqs. 21-33 (the restriction of the limits is the definition of the
+#'   integral of the positive irradiance, not a method choice).
+#' @noRd
+station_ra_window <- function(lat, lon, mid, period_seconds) {
+  t <- as.POSIXlt(mid, tz = "UTC")
+  doy <- t$yday + 1L
+  utc_hour <- t$hour + t$min / 60 + t$sec / EF_SECONDS_PER_HOUR
+  dr <- ef_inv_distance(doy)
+  delta <- ef_declination(doy)
+  omega <- ef_hour_angle(doy, utc_hour, lon)
+  ws <- ef_sunset_hour_angle(lat, delta)
+  half <- pi * period_seconds / (24 * EF_SECONDS_PER_HOUR)
+  sunlit <- function(a, b) {
+    lo <- pmax(a, -ws)
+    hi <- pmin(b, ws)
+    ifelse(hi > lo,
+           (hi - lo) * sin(lat) * sin(delta) +
+             cos(lat) * cos(delta) * (sin(hi) - sin(lo)),
+           0)
+  }
+  w1 <- omega - half
+  w2 <- omega + half
+  # The window may cross omega = +-pi (around midnight): its parts shifted
+  # by one turn are added.
+  gsc <- EF_SOLAR_CONSTANT * 60 / 1e6 # W m-2 to MJ m-2 min-1 (0.0820)
+  # FAO-56, chapter 3, Eq. 28 with sunlit limits.
+  12 * 60 / pi * gsc * dr *
+    (sunlit(w1, w2) + sunlit(w1 - 2 * pi, w2 - 2 * pi) +
+       sunlit(w1 + 2 * pi, w2 + 2 * pi))
 }
 
 #' Zero-row audit table of the station QC
@@ -251,7 +355,10 @@ station_qc_template <- function() {
 #'   value: relative humidity (`relative_humidity`, `rh_max`, `rh_min`)
 #'   `< 0`, `wind_speed < 0`, temperature (`air_temperature`,
 #'   `dewpoint_temperature`, `tmax`, `tmin`) `<= -273.15` degC,
-#'   `air_pressure <= 0`, `vapour_pressure < 0`.
+#'   `air_pressure <= 0`, `vapour_pressure < 0`, `solar_radiation < 0`,
+#'   `precipitation < 0`. A negative solar radiation (for example the
+#'   night-time offset of a thermopile pyranometer) is excluded by the
+#'   default policy; it is not set to zero.
 #' * `EF_WS_TMIN_GT_TMAX` \[critical\] (QC-03): `tmin > tmax` in the same
 #'   record; both variables are flagged.
 #' * `EF_WS_RH_GT100` \[info\] (QC-02): relative humidity `> 100` %.
@@ -260,8 +367,24 @@ station_qc_template <- function() {
 #'   recalibration, a class II test not evaluated until its margin is chosen
 #'   (WF-06).
 #' * `EF_WS_TDEW_GT_TAIR` \[warning\] (QC-04): `dewpoint_temperature >
-#'   air_temperature`, without tolerance (equivalent to a relative humidity
-#'   above 100 %, FAO-56 Eqs. 10 and 14); both variables are flagged.
+#'   air_temperature`, or `vapour_pressure` greater than the saturation
+#'   vapour pressure at `air_temperature` (\eqn{e_a > e^\circ(T)}{ea >
+#'   e0(T)}, [ef_es()]), without tolerance (both are equivalent to a relative
+#'   humidity above 100 %, FAO-56 Eqs. 10, 11 and 14); the variables
+#'   compared are flagged (the air temperature once per record). The
+#'   threshold is the air temperature for the dew point, \eqn{e^\circ(T)}{e0(T)}
+#'   for the vapour pressure and the dew point of the vapour pressure
+#'   ([ef_dewpoint()]) for the air temperature.
+#' * `EF_WS_RS_GT_RA` \[warning\] (QC-05b): the mean `solar_radiation` of
+#'   the record is greater than the mean extraterrestrial radiation of the
+#'   same time window (the window of `interval` seconds of the record,
+#'   located by `timestamp_convention`). The extraterrestrial radiation is
+#'   the integral of FAO-56 Eq. 28 over the part of the window with the sun
+#'   above the horizon (for a one-day window, Eq. 21). Windows with the sun
+#'   below the horizon during the whole window (night-time radiation, test
+#'   QC-05d, class II) are not tested. Evaluated for period means
+#'   (`timestamp_convention` `"end"` or `"start"`) with an `interval` of at
+#'   most one day.
 #' * `EF_WS_TIME_GAP` \[warning\] and `EF_WS_TIME_IRREGULAR` \[warning\]
 #'   (QC-09), per station in time order: the time since the previous record
 #'   is a whole multiple (two or more) of the declared `interval` (gap: the
@@ -286,9 +409,10 @@ station_qc_template <- function() {
 #' spatial consistency, cloudy overpass): they need thresholds with a
 #' documented reference that are not available, so their codes are not
 #' registered and no threshold is assumed. Also not evaluated here:
-#' `EF_WS_RS_GT_RA` (needs the extraterrestrial radiation of the record
-#' window) and `EF_WS_INCOMPLETE_DAY` (evaluated with the daily reference
-#' ET). They are listed in `provenance$qc$not_evaluated`.
+#' `EF_WS_INCOMPLETE_DAY` (QC-10), which depends on the definition of the
+#' day and is raised by the daily sums of [ef_station_ref_et()]. They are
+#' listed in `provenance$qc$not_evaluated` (with `EF_WS_RS_GT_RA` when the
+#' table has solar radiation that cannot be tested).
 #'
 #' **Status and policy.** The status of an observed value is the highest
 #' severity among the flags of its record that concern its variable or the
@@ -304,7 +428,7 @@ station_qc_template <- function() {
 #' evapotranspiration - Guidelines for computing crop water requirements*.
 #' FAO Irrigation and Drainage Paper 56. FAO, Rome. ISBN 92-5-104219-5.
 #'
-#' @seealso [ef_station_table()].
+#' @seealso [ef_station_table()], [ef_station_ref_et()].
 #'
 #' @examples
 #' stations <- data.frame(
@@ -356,7 +480,8 @@ ef_station_qc <- function(x, qc_policy = "exclude_critical") {
   prov <- x$provenance
   prov$flags_evaluated <- flags$evaluated
   prov$qc <- station_qc_provenance(qc, flags$flags, tests$evaluated, status,
-                                   vars, qc_policy, n)
+                                   vars, qc_policy, n,
+                                   station_qc_not_evaluated(x))
   prov$flags <- list(
     registry = {
       reg <- ef_flag_registry()
@@ -486,6 +611,53 @@ station_qc_tests <- function(x) {
                          "QC-04", td[rows], ta[rows]))
     add(station_qc_chunk(rows, "air_temperature", "EF_WS_TDEW_GT_TAIR",
                          "QC-04", ta[rows], td[rows]))
+  }
+
+  # QC-04, vapour pressure variant: ea > e0(T) (class I, no tolerance; FAO-56
+  # Eqs. 11 and 14). T must be in the domain of Eq. 11 (T > -237.3 degC).
+  if (all(c("vapour_pressure", "air_temperature") %in% vars)) {
+    evaluated <- c(evaluated, "EF_WS_TDEW_GT_TAIR")
+    ea <- obs$vapour_pressure
+    ta <- obs$air_temperature
+    ok <- !is.na(ea) & !is.na(ta) & ta > -237.3
+    es <- rep(NA_real_, length(ta))
+    if (any(ok)) {
+      es[ok] <- ef_es(ta[ok])
+    }
+    rows <- which(ok & ea > es)
+    add(station_qc_chunk(rows, "vapour_pressure", "EF_WS_TDEW_GT_TAIR",
+                         "QC-04", ea[rows], es[rows]))
+    # The air temperature is flagged once per record: rows already flagged by
+    # the dew point variant are not repeated. Threshold: the dew point of ea
+    # (FAO-56 annex 3, Eq. 3-11).
+    done <- rows %in% unlist(lapply(chunks, function(ch) {
+      ch$row[ch$flag_code == "EF_WS_TDEW_GT_TAIR" &
+               ch$variable == "air_temperature"]
+    }))
+    rows_t <- rows[!done]
+    add(station_qc_chunk(rows_t, "air_temperature", "EF_WS_TDEW_GT_TAIR",
+                         "QC-04", ta[rows_t],
+                         if (length(rows_t) > 0L) ef_dewpoint(ea[rows_t]) else
+                           numeric(0)))
+  }
+
+  # QC-05b: mean solar radiation above the mean extraterrestrial radiation of
+  # the record window (class I). Windows with Ra = 0 (sun below the horizon
+  # during the whole window) belong to QC-05d (class II, not evaluated).
+  if ("solar_radiation" %in% vars && station_rs_ra_testable(x$provenance)) {
+    evaluated <- c(evaluated, "EF_WS_RS_GT_RA")
+    at <- match(obs$station_id, stations$station_id)
+    period <- x$provenance$interval
+    ra <- station_ra_window(stations$lat[at] * pi / 180,
+                            stations$lon[at] * pi / 180,
+                            station_period_mid(obs$timestamp, x$provenance),
+                            period)
+    # MJ m-2 per window to mean W m-2.
+    ra_mean <- ra * 1e6 / period
+    rs <- obs$solar_radiation
+    rows <- which(!is.na(rs) & ra_mean > 0 & rs > ra_mean)
+    add(station_qc_chunk(rows, "solar_radiation", "EF_WS_RS_GT_RA", "QC-05b",
+                         rs[rows], ra_mean[rows]))
   }
 
   # QC-09: time integrity per station (class I).
@@ -620,6 +792,8 @@ station_qc_status <- function(obs, qc, vars, qc_policy) {
 #' @param vars Character. Observed variables.
 #' @param qc_policy Character.
 #' @param n Integer. Number of records.
+#' @param not_evaluated Data frame of the tests not evaluated (see
+#'   `station_qc_not_evaluated()`).
 #' @return A list with `qc_policy`, `excluded_severities`, `excluded_codes`
 #'   (codes raised whose severity is excluded), `counts` (data frame `code`,
 #'   `severity`, `n_records`, `n_values`, `n_total` for every code
@@ -627,7 +801,7 @@ station_qc_status <- function(obs, qc, vars, qc_policy) {
 #'   `n_excluded`) and `not_evaluated` (see `station_qc_not_evaluated()`).
 #' @noRd
 station_qc_provenance <- function(qc, flags, evaluated, status, vars,
-                                  qc_policy, n) {
+                                  qc_policy, n, not_evaluated) {
   reg <- ef_flag_registry()
   levels <- ef_flag_severity_levels()
   excluded_sev <- names(levels)[levels >= station_qc_exclusion_level(qc_policy)]
@@ -662,7 +836,7 @@ station_qc_provenance <- function(qc, flags, evaluated, status, vars,
                                    counts$severity %in% excluded_sev],
     counts = counts,
     excluded = excluded,
-    not_evaluated = station_qc_not_evaluated()
+    not_evaluated = not_evaluated
   )
 }
 

@@ -103,11 +103,13 @@ reference:
     desc: >
       Net radiation and soil heat flux of the reference surface and the
       reference evapotranspiration, with explicit reference crop, time step
-      and standard.
+      and standard; the reference evapotranspiration series of the stations,
+      at the overpass time and as daily sums.
     contents:
       - ef_ref_net_radiation
       - ef_ref_soil_heat_flux
       - ef_ref_et
+      - ef_station_ref_et
   - title: Spatial regionalization (GWR)
     desc: >
       Regionalization of meteorological station variables over the working
