@@ -1,0 +1,155 @@
+---
+title: "Design and development status"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+spec <- function(file) {
+  sprintf(
+    "[%s](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/%s)",
+    file, file
+  )
+}
+```
+
+This page describes the planned design of EarthFlux and the development
+status of each component. **Only the functions marked as available can be
+used today.** All other functions are planned: their names, arguments and
+behaviour may still change, and none of their results should be used.
+
+Each component is implemented only after its equations, units, domain of
+validity and test cases are specified and, where possible, verified against
+the primary sources. The internal specifications are linked below for
+readers who want the full detail.
+
+## Processing chain
+
+```text
+MODIS products            weather stations
+      |                         |
+ surface state           quality control, reference ET
+ (LST, albedo,                  |
+  NDVI, LAI, emissivity)  spatial forcing (C1 single station,
+      |                    C2 simple interpolation, C3 GWR)
+      |                         |
+      +------------+------------+
+                   |
+   METRIC: Rn -> G -> anchor pixels -> rah, dT -> H -> LE
+                   |
+          ETinst -> ETrF -> ETa  (+ diagnostic flags and provenance)
+```
+
+The use of geographically weighted regression (GWR) for the meteorological
+forcing is a research hypothesis that EarthFlux is designed to test, not an
+established result.
+
+## Verification status
+
+| Status | Meaning |
+|---|---|
+| Verified | The equation was checked against the primary source (equation and page or table). |
+| Candidate | Known form, corroborated by secondary sources, pending verification against the primary source. |
+
+## Components
+
+### Radiation (milestone M2)
+
+| Function | Purpose | Status |
+|---|---|---|
+| `ef_net_radiation()` | Surface net radiation | **Available**; equation candidate (corroborated) |
+| `ef_solar_geometry()` | Solar angles and incidence on sloping terrain | Planned; candidate |
+| `ef_air_pressure()` | Atmospheric pressure from elevation | Planned; equation verified (FAO-56, Eq. 7) |
+| `ef_sw_transmissivity()` | Broadband shortwave transmissivity with beam/diffuse partition | Planned; candidate |
+| `ef_shortwave_in()` | Incoming shortwave radiation, including slope and aspect | Planned; candidate |
+| `ef_atmospheric_emissivity()` | Clear-sky atmospheric emissivity | Planned; candidate |
+| `ef_longwave_in()`, `ef_longwave_out()` | Incoming and emitted longwave radiation | Planned; candidate |
+
+Specifications: `r spec("ef_net_radiation.md")`, `r spec("radiation-components.md")`.
+
+### Soil heat flux (M2)
+
+| Function | Purpose | Status |
+|---|---|---|
+| `ef_soil_heat_flux()` | Soil heat flux with an explicit method | Planned; candidate |
+
+Specification: `r spec("soil-heat-flux.md")`.
+
+### Anchor pixels (M2)
+
+| Function | Purpose | Status |
+|---|---|---|
+| `ef_anchor_criteria()` | Explicit, documented selection criteria | Planned |
+| `ef_select_anchors()` | Automatic, deterministic and auditable selection of hot and cold pixels | Planned; candidate |
+| `ef_anchors()` | Anchors chosen explicitly by the user | Planned |
+
+Specification: `r spec("anchor-pixels.md")`.
+
+### Sensible heat flux (M2)
+
+| Function | Purpose | Status |
+|---|---|---|
+| `ef_roughness_length()` | Momentum roughness length | Planned; candidate |
+| `ef_friction_velocity()`, `ef_aerodynamic_resistance()` | Friction velocity and aerodynamic resistance with stability correction | Planned; candidate |
+| `ef_air_density()` | Air density | Planned; candidate |
+| `ef_dt_coefficients()` | Calibration of the near-surface temperature difference from the anchors | Planned; candidate |
+| `ef_sensible_heat()` | Sensible heat flux | Planned; candidate |
+
+Specification: `r spec("sensible-heat.md")`.
+
+### Evapotranspiration (M2)
+
+| Function | Purpose | Status |
+|---|---|---|
+| `ef_latent_heat()` | Latent heat flux as the energy balance residual | Planned; balance verified (FAO-56) |
+| `ef_et_instantaneous()` | Instantaneous ET from latent heat flux | Planned; unit conversion verified (FAO-56) |
+| `ef_etrf()`, `ef_et_daily()` | Reference ET fraction and daily actual ET | Planned; candidate |
+| `ef_et_period()` | ET between image dates | Planned (later) |
+
+Specification: `r spec("evapotranspiration.md")`.
+
+### Weather stations and reference ET (milestone M3)
+
+| Function | Purpose | Status |
+|---|---|---|
+| `ef_station_table()` | Standard station and observation tables (explicit time zone, measurement heights) | Planned |
+| `ef_station_qc()` | Station quality control (values are flagged, never deleted) | Planned |
+| `ef_reference_et()` | Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and daily | Planned; FAO-56 grass reference verified, alfalfa constants candidate |
+
+Specification: `r spec("weather-forcing.md")`.
+
+### Spatial forcing (M3)
+
+| Function | Purpose | Status |
+|---|---|---|
+| `ef_gwr_fit()`, `ef_gwr_predict()` | GWR with documented kernel, bandwidth and AICc conventions; block-wise prediction | Planned |
+| `ef_ols_fit()`, `ef_idw_fit()` | Simple spatial alternatives (C2) | Planned |
+| `ef_station_forcing()` | Single representative station (C1) | Planned |
+
+Specification: `r spec("gwr-forcing.md")`.
+
+### MODIS preprocessing (milestone M4)
+
+Internal functions that read MODIS products, apply scale factors and
+quality flags, and convert view times to UTC, producing sensor-independent
+surface variables. Product metadata (layers, scale factors, fill values,
+quality bits) are verified against the official user guides.
+
+Specification: `r spec("modis-products.md")`.
+
+### Integrated workflow (milestone M5)
+
+| Function | Purpose | Status |
+|---|---|---|
+| `earthflux()` | Complete workflow built on the same low-level functions, returning all intermediate components, diagnostics and provenance | Planned |
+
+## More information
+
+- Scientific specification and index:
+  [SCIENTIFIC_SPEC.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/SCIENTIFIC_SPEC.md)
+- Roadmap:
+  [ROADMAP.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/ROADMAP.md)
+- Validation plan:
+  [VALIDATION_PLAN.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/VALIDATION_PLAN.md)

@@ -11,6 +11,9 @@ articles:
   - title: Getting started
     contents:
       - earthflux-introduction
+  - title: Development
+    contents:
+      - articles/design
 
 reference:
   - title: METRIC
