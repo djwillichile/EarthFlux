@@ -23,6 +23,93 @@ referencia, decisión GW-22) · Tests: `tests/testthat/test-gwr-*.R`
 > antecedente histórico (§1.4) y como evidencia de la evaluación del
 > backend (`dev/decisions/gwr-backend.md`). Ver §1.2.
 
+> **Estado de implementación — núcleo GWR interno (M3, 2026-11-04).**
+> Implementados en `R/gwr-fit.R`, `R/gwr-bandwidth.R`, `R/gwr-predict.R`
+> y `R/gwr-diagnostics.R`: `ef_gwr_fit()`, `ef_gwr_bandwidth()`,
+> `ef_gwr_search()`, `ef_gwr_predict()`, `ef_gwr_diagnostics()` y las
+> internas de §9.2 (`gwr_distance()`, `gwr_row_bandwidth()`,
+> `gwr_kernel_weights()`, `gwr_check_design()`, `gwr_local_wls()` (QR de
+> referencia), `gwr_local_solve()` (momentos + Cholesky vectorizado),
+> `gwr_aicc()`, `gwr_cv_score()`, `gwr_scale_design()`,
+> `gwr_unscale_coef()`, `gwr_extrapolation_flags()`,
+> `gwr_predict_block()`, `gwr_flag_word()`). Tests:
+> `tests/testthat/test-gwr.R`, `test-gwr-fit.R`, `test-gwr-bandwidth.R`,
+> `test-gwr-predict.R`, `test-gwr-crosscheck.R` (con
+> `skip_if_not_installed("GWmodel")`) y `helper-gwr.R` (datos de §10 y
+> generador del sintético G7). Casos G1a–G7 reproducidos; verificación
+> cruzada con `GWmodel` 2.4-1 a 1 × 10⁻¹⁰ (coeficientes, RSS, AICc, AIC,
+> `enp_alt`, edf, CV, residuos LOO, R² local en su convención con kernel
+> fijo, predicción). Pendiente para la fase de orquestación:
+> `ef_regionalize()`, `ef_method_*()`, `ef_predict_control()`, modo
+> grueso (§6.2), CV por bloques (§8.2), C1/C2 (§5), I de Moran (§7.3).
+>
+> Decisiones y desviaciones tomadas al implementar (para registrar en
+> `DECISIONS.md`):
+>
+> 1. `kernel` (GW-04) y `criterion` (GW-05) sin defecto; `search` es
+>    obligatorio en `ef_gwr_bandwidth()`. En `ef_gwr_search()` los
+>    parámetros numéricos valen `NULL` ("no fijado") y se exigen
+>    (`earthflux_missing_input`) solo cuando la búsqueda los usa: `n_grid`
+>    y `tol` (fijo), `lower_offset` (límite inferior automático con
+>    bicuadrado/tricúbico), `upper_factor` (límite superior automático).
+>    `method_adaptive` solo admite `"exhaustive"` (la sección áurea
+>    entera queda sin implementar).
+> 2. Errores de dimensión: se usa `earthflux_input_error` (como el resto
+>    del núcleo, p. ej. `check_same_dim()`); **no** se creó
+>    `earthflux_dimension_error`. k no entero → `earthflux_domain_error`
+>    (§9.3). Subclases nuevas: `earthflux_gwr_error` (padre),
+>    `earthflux_gwr_insufficient_stations` (campos `n`, `p`),
+>    `earthflux_gwr_no_feasible_bandwidth` (campo `profile`),
+>    `earthflux_gwr_singular_error` (campo `stations`).
+> 3. Argumentos añadidos a §9.1: `station_id` en `ef_gwr_fit()` y
+>    `ef_gwr_bandwidth()`; `scale_covariates` en `ef_gwr_bandwidth()`;
+>    `chunk_rows` en `ef_gwr_predict()` (solo memoria; el resultado no
+>    cambia); `ef_gwr_predict()` devuelve además `bandwidth` (b_g en m).
+>    `bandwidth` de `ef_gwr_fit()` acepta el objeto
+>    `earthflux_gwr_bandwidth` (hereda kernel, tipo, `min_neighbours`,
+>    perfil y flags de objeto). Se omitió `kappa_max`: su flag
+>    (`EF_GWR_ILL_CONDITIONED`) es de clase II y no se evalúa; κ se reporta
+>    por estación (`stations$kappa`) y no se incluye en el perfil.
+> 4. Rango numérico: un pivote de Cholesky de la matriz de momentos
+>    escalada ≤ 10⁻¹⁰ × su elemento diagonal marca rango deficiente; LOO
+>    indefinido si 1 − s_ii ≤ 10⁻¹⁰; tolerancia de borde de la envolvente
+>    10⁻⁹ × extensión de las estaciones. Convenciones numéricas registradas
+>    en `conventions`, no constantes científicas. κ = número de condición
+>    de W^{1/2}X en unidades originales con columnas de norma 1
+>    (reproduce 3,2378 de G1b).
+> 5. Sumas ponderadas con `colSums()` (no BLAS) para que el resultado de
+>    una fila no dependa del bloque (test `identical()`); k-ésima distancia
+>    por fila con `order(..., method = "radix")`.
+> 6. `EF_GWR_EXTRAPOLATION_LOCAL` se evalúa solo con kernels compactos y
+>    también se marca en celdas singulares si la condición se cumple;
+>    `EF_GWR_AICC_UNDEFINED` se evalúa en la búsqueda solo con criterio
+>    AICc y en `ef_gwr_fit()` con bandwidth del usuario.
+>    `EF_INPUT_NA` (bit 0) lo levanta ya `ef_gwr_predict()`.
+> 7. Hallazgos en los casos de §10: (a) G1b imprime ŷ₁ = 20,090654, pero
+>    los coeficientes impresos dan 20,0906523 (errata de redondeo; el test
+>    usa β̂₀ + 100 β̂₁); (b) G1a no admite el ajuste completo: con boxcar
+>    15 km S6 queda sola (singular), y el test excluye S6 (respuesta `NA`)
+>    sin cambiar el ajuste local en S1; (c) con gaussiano/exponencial la
+>    regla de vecinos "dentro de un bandwidth" (§4.5) fija el límite
+>    inferior automático: en G7 gaussiano fijo el mínimo queda en ese
+>    límite (18 361 m, `EF_GWR_BW_AT_BOUND`) aunque b = 14 541 m tiene
+>    AICc menor; en el caso pequeño hace no factible todo b < 28,3 km por
+>    S6. (d) G7 adaptativo gaussiano: mínimo en k = 9 (perfil multimodal).
+> 8. Hallazgos de la verificación cruzada con `GWmodel` 2.4-1: (a)
+>    reporta un AICc aunque n − 2 − tr S ≤ 0 (−86 con k = 5 bicuadrado en
+>    el caso pequeño), que EarthFlux deja `NA`; (b) su `Local_R2`
+>    adaptativo usa los pesos transpuestos w_ji (bandwidth de la estación
+>    j), además de ŷ global y media no ponderada; con kernel fijo coincide
+>    con la variante de §3.8; (c) `enp + edf = n`, de modo que tr S no es
+>    recuperable de esos dos campos; se recupera de su AICc y su RSS
+>    (coincide a 10⁻¹⁰).
+> 9. Rendimiento (R 4.3.3, un hilo, BLAS de referencia; mediana de 3
+>    ejecuciones, orientativo): predicción exacta de 150 estaciones a
+>    99 856 celdas en ≈ 2,6–3,0 s (bicuadrado fijo), ≈ 1,9–2,0 s
+>    (gaussiano fijo) y ≈ 2,8–3,6 s (bicuadrado adaptativo); selección
+>    AICc fija (30 valores + Brent) ≈ 0,2 s; adaptativa exhaustiva
+>    ≈ 0,4 s. Benchmark: `dev/benchmarks/gwr-core.R`.
+
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`). Aquí `VERIFICADA` significa **contrastada en
 esta redacción con la fuente leída**, con su ubicación exacta. Como en

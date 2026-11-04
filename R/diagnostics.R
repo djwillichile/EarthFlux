@@ -24,6 +24,7 @@
 #     ef_flags_et()               R/metric-et.R            (EF_ET_*)
 #     ef_flags_reference_et()     R/reference-et.R         (EF_WS_*, reference ET)
 #     ef_flags_stations()         R/prep-qc.R              (EF_WS_*, station QC)
+#     ef_flags_gwr()              R/gwr-diagnostics.R      (EF_GWR_*)
 #
 #   Stages of other modules (EF_SURF_*, EF_WS_*, EF_GWR_*) add their own
 #   ef_flags_<stage>() in their module file when their first code is
@@ -280,7 +281,8 @@ ef_flag_registry <- function() {
     ef_flags_sensible_heat(),
     ef_flags_et(),
     ef_flags_reference_et(),
-    ef_flags_stations()
+    ef_flags_stations(),
+    ef_flags_gwr()
   )
   rownames(reg) <- NULL
 

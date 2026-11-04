@@ -108,6 +108,22 @@ reference:
       - ef_ref_net_radiation
       - ef_ref_soil_heat_flux
       - ef_ref_et
+  - title: Spatial regionalization (GWR)
+    desc: >
+      Internal numeric core of geographically weighted regression used to
+      regionalize meteorological station variables over the working grid:
+      plain vectors and matrices in a projected CRS, with explicit kernel,
+      bandwidth and criterion, auditable bandwidth profiles, prediction by
+      blocks of rows and extrapolation flags.
+  - subtitle: Fit and bandwidth selection
+    contents:
+      - ef_gwr_fit
+      - ef_gwr_bandwidth
+      - ef_gwr_search
+  - subtitle: Prediction and diagnostics
+    contents:
+      - ef_gwr_predict
+      - ef_gwr_diagnostics
   - title: Shared physical quantities
     desc: >
       Atmospheric and thermodynamic quantities used by several modules

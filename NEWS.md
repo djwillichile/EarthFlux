@@ -241,6 +241,53 @@ yet.
     critical);
   * evapotranspiration: `EF_ET_NEGATIVE`, evaluated on each ET layer.
 
+### Spatial regionalization (GWR core)
+
+* Internal numeric core of geographically weighted regression (GWR) in base
+  R, to regionalize meteorological station variables (milestone M3). It
+  works on plain vectors and matrices (response, named covariates and
+  projected coordinates in metres) and knows nothing about rasters, so that
+  the regionalization orchestrator can call it block by block:
+  * `ef_gwr_fit()` fits the local weighted least squares models at the
+    stations for a fixed (metres) or adaptive (k nearest stations, counting
+    the station itself) bandwidth, with an explicit kernel and no default
+    (`"gaussian"`, `"exponential"`, `"bisquare"`, `"tricube"`, `"boxcar"`
+    with support d <= b). The result (class `earthflux_gwr`) keeps the
+    station table (fitted values, residuals, leave-one-out residuals, s_ii,
+    local R2, bandwidth, neighbours, condition number, exclusions with their
+    reason), local coefficients in original units, tr(S), tr(S'S), AICc,
+    CV, the global OLS reference, the conventions applied, flags and
+    provenance. Covariates are scaled internally for conditioning;
+    coefficients and predictions do not change.
+  * `ef_gwr_bandwidth()` selects the bandwidth by AICc or leave-one-out CV
+    (explicit criterion, no default) with a recorded search set by
+    `ef_gwr_search()` (log grid plus Brent refinement for fixed bandwidths,
+    exhaustive search over k), and returns the whole criterion profile
+    including the global model. Infeasible bandwidths (rank-deficient local
+    designs, too few neighbours, undefined AICc or LOO) are kept in the
+    profile and never selected.
+  * `ef_gwr_predict()` predicts exactly at new locations (one local fit per
+    location); results do not depend on how locations are split into blocks
+    or chunks.
+  * `ef_gwr_diagnostics()` collects fit statistics, the station table, the
+    profile and the flags.
+  * AICc uses n stations, sigma = sqrt(RSS/n) and tr(S), the form read in
+    Gollini et al. (2015); it reproduces `GWmodel`'s AICc. Coefficients,
+    RSS, AICc, CV, leave-one-out residuals and predictions agree with
+    `GWmodel` 2.4-1 to 1e-10 in tests that run when it is installed. The
+    formulations are candidates pending the primary references.
+  * Errors: `earthflux_gwr_insufficient_stations` (fewer than p + 3
+    stations), `earthflux_gwr_no_feasible_bandwidth` (with the profile) and
+    `earthflux_gwr_singular_error` (rank-deficient design at a station),
+    all inheriting `earthflux_gwr_error`. Stations with missing values are
+    excluded with their reason, never silently.
+  * Diagnostic flags registered for the GWR stage:
+    `EF_GWR_EXTRAPOLATION_COVARIATE`, `EF_GWR_EXTRAPOLATION_LOCAL`, `EF_GWR_OUTSIDE_HULL`,
+    `EF_GWR_FEW_NEIGHBOURS`, `EF_GWR_LOCAL_SINGULAR` (cell, bits 1-5),
+    `EF_GWR_BW_AT_BOUND`, `EF_GWR_BW_MULTIMODAL`, `EF_GWR_AICC_UNDEFINED`,
+    `EF_GWR_GLOBAL_PREFERRED` (object) and `EF_GWR_STATION_EXCLUDED`
+    (record).
+
 ## Changes
 
 * Modular source layout for the surface, forcing, spatial (GWR), METRIC,
@@ -263,6 +310,8 @@ yet.
   standard deviations of the anchor selection).
 * An end-to-end test runs a synthetic scene through the whole METRIC core
   chain, from solar geometry to daily actual evapotranspiration.
+* `GWmodel` is suggested (not imported) as the cross-verification reference
+  of the GWR core tests, which are skipped when it is not installed.
 
 ## Documentation
 
