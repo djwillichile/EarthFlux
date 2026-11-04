@@ -12,13 +12,20 @@ articles:
     contents:
       - earthflux-introduction
 
+reference:
+  - title: METRIC
+    desc: Physics core of the METRIC surface energy balance.
+  - subtitle: Net radiation
+    contents:
+      - ef_net_radiation
+
 # Reference index. Sections are added as functions are exported, to avoid
 # empty documentation. Planned sections (in this order):
 #   - Data preparation
 #   - MODIS
 #   - Meteorological forcing
 #   - GWR
-#   - METRIC
+#   - METRIC (started above)
 #   - Evapotranspiration
 #   - Diagnostics
 #   - Validation

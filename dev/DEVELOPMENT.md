@@ -185,7 +185,7 @@ objeto de resultado futuro (`earthflux_result`) incluirá esta procedencia.
 | Hito | Contenido | Estado |
 |---|---|---|
 | **M0 — Foundation** | Paquete creado con `usethis`; Git y GitHub; licencia MIT; autor; DESCRIPTION; roxygen2; testthat 3; pkgdown; README; NEWS; CITATION; `.gitignore`; `.Rbuildignore`; `dev/`; documentación científica inicial; estructura modular de `R/`; estructura inicial de tests; CI | En curso |
-| **M1 — Scientific specification** | Ecuaciones METRIC verificadas; productos MODIS; unidades; GWR; variables meteorológicas; referencias; anclas; validación; criterios QA; diseño de paralelismo | Pendiente |
+| **M1 — Scientific specification** | Ecuaciones METRIC verificadas; productos MODIS; unidades; GWR; variables meteorológicas; referencias; anclas; validación; criterios QA; diseño de paralelismo | En curso |
 | **M2 — METRIC core physics** | Rn, G, rugosidad, rah, dT, H, LE, ET_inst, ETrF, ETa como funciones independientes y testeadas | Pendiente |
 | **M3 — Spatial meteorological forcing / GWR** | Estaciones, QC, GWR (bandwidth, kernel, predicción, diagnósticos), alternativas de referencia | Pendiente |
 | **M4 — MODIS preprocessing** | Lectura y conversión de productos a variables físicas estandarizadas | Pendiente |

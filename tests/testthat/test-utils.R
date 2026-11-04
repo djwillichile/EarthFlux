@@ -34,3 +34,103 @@ test_that("check_logical_no_na() rejects non-logical input and NA", {
   expect_error(check_logical_no_na(c(1, 0)), class = "earthflux_input_error")
   expect_error(check_logical_no_na(c(TRUE, NA)), "missing values")
 })
+
+test_that("check_numeric() accepts double and integer only", {
+  expect_invisible(check_numeric(1.5))
+  expect_invisible(check_numeric(1:3))
+  expect_invisible(check_numeric(matrix(1, 2, 2)))
+  expect_invisible(check_numeric(NA_real_))
+  expect_error(check_numeric("1"), class = "earthflux_input_error")
+  expect_error(check_numeric(TRUE), class = "earthflux_input_error")
+  expect_error(check_numeric(NA), class = "earthflux_input_error")
+  expect_error(check_numeric(factor(1)), class = "earthflux_input_error")
+  expect_error(check_numeric(1i), class = "earthflux_input_error")
+  expect_error(check_numeric("a", arg = "albedo"), "`albedo` must be numeric")
+})
+
+test_that("check_numeric() reports the caller's call", {
+  f <- function(x) check_numeric(x, "x")
+  cnd <- tryCatch(f("a"), error = identity)
+  expect_identical(cnd$call, quote(f("a")))
+})
+
+test_that("check_common_length() returns n and enforces the recycling rule", {
+  expect_identical(check_common_length(list(a = 1, b = 1:3, c = 2)), 3L)
+  expect_identical(check_common_length(list(a = 1, b = 2)), 1L)
+  expect_invisible(check_common_length(list(a = 1:2, b = 3:4)))
+  expect_error(
+    check_common_length(list(a = 1:2, b = 1:3)),
+    class = "earthflux_input_error"
+  )
+  expect_error(
+    check_common_length(list(a = 1:2, b = 1:3, c = 1)),
+    "`a` \\(2\\)"
+  )
+  expect_error(
+    check_common_length(list(a = numeric(0), b = 1)),
+    class = "earthflux_input_error"
+  )
+  expect_error(check_common_length(list(a = numeric(0))), "`a`")
+})
+
+test_that("check_same_dim() requires identical dims of full length", {
+  m <- matrix(1, 2, 3)
+  expect_invisible(check_same_dim(list(a = 1, b = 1:6), n = 6L))
+  expect_invisible(check_same_dim(list(a = m, b = m, c = 1), n = 6L))
+  expect_invisible(check_same_dim(list(a = m, b = 1:6), n = 6L))
+  expect_error(
+    check_same_dim(list(a = m, b = matrix(1, 3, 2)), n = 6L),
+    class = "earthflux_input_error"
+  )
+  # A length-1 array is not recycled against longer arguments.
+  expect_error(
+    check_same_dim(list(a = matrix(1), b = 1:3), n = 3L),
+    class = "earthflux_input_error"
+  )
+})
+
+test_that("check_in_range() enforces closed and open bounds", {
+  expect_invisible(check_in_range(c(0, 0.5, 1), "a", 0, 1))
+  expect_error(check_in_range(1.1, "a", 0, 1), class = "earthflux_domain_error")
+  expect_error(check_in_range(-0.1, "a", 0, 1), class = "earthflux_domain_error")
+  expect_error(
+    check_in_range(0, "a", 0, 1, lower_inclusive = FALSE),
+    class = "earthflux_domain_error"
+  )
+  expect_error(
+    check_in_range(1, "a", 0, 1, upper_inclusive = FALSE),
+    class = "earthflux_domain_error"
+  )
+  expect_invisible(check_in_range(1e6, "a", lower = 0))
+  expect_invisible(check_in_range(integer(0), "a", 0, 1))
+})
+
+test_that("check_in_range() ignores NA/NaN and rejects infinite values", {
+  expect_invisible(check_in_range(c(NA, NaN, 0.5), "a", 0, 1))
+  expect_error(check_in_range(Inf, "a"), class = "earthflux_domain_error")
+  expect_error(check_in_range(c(1, -Inf, Inf), "a"), "2 infinite value")
+})
+
+test_that("check_in_range() errors are classed, counted and named", {
+  cnd <- tryCatch(
+    check_in_range(c(-1, 0.5, 2, NA, 3), "albedo", 0, 1),
+    error = identity
+  )
+  expect_s3_class(cnd, "earthflux_domain_error")
+  expect_s3_class(cnd, "earthflux_input_error")
+  expect_s3_class(cnd, "earthflux_error")
+  expect_match(conditionMessage(cnd), "`albedo` must lie in [0, 1]", fixed = TRUE)
+  expect_match(conditionMessage(cnd), "found 3 value(s)", fixed = TRUE)
+
+  cnd_open <- tryCatch(
+    check_in_range(0, "emissivity", 0, 1, lower_inclusive = FALSE),
+    error = identity
+  )
+  expect_match(conditionMessage(cnd_open), "(0, 1]", fixed = TRUE)
+
+  cnd_inf <- tryCatch(
+    check_in_range(-1, "rl_in", lower = 0, lower_inclusive = FALSE),
+    error = identity
+  )
+  expect_match(conditionMessage(cnd_inf), "(0, Inf)", fixed = TRUE)
+})
