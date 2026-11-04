@@ -25,6 +25,10 @@ No scientific result has been validated yet.
   constant, von Karman constant, gravity, specific heat of air, density of
   water and the FAO-56 latent heat of vaporization) are defined once, with
   their unit, source and verification status.
+* The registry of diagnostic flags is assembled from one table per METRIC
+  stage and records, for each code, its stage, severity (now including
+  `critical`), scope, bit, error counterpart, specification and version.
+  Flag records also carry their stage and scope.
 * Classed conditions can carry optional data fields (for example the
   diagnostics of a failed calibration); new condition classes for
   calibration errors and convergence warnings.

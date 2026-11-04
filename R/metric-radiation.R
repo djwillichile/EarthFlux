@@ -147,3 +147,18 @@ ef_net_radiation <- function(rs_in, albedo, rl_in, rl_out, emissivity) {
 
   (1 - albedo) * rs_in + rl_in - rl_out - (1 - emissivity) * rl_in
 }
+
+# Diagnostic flags of this stage -------------------------------------------------
+
+#' Flag codes owned by the radiation (Rn and components) stage
+#'
+#' Rows of `ef_flag_registry()` for the codes with prefix `EF_RAD_`
+#' (dev/specs/flags.md section 4.2). A code is added here, with
+#' `ef_flag_rows()`, only in the change that implements the function raising
+#' it, its tests and its NEWS entry (dev/specs/flags.md section 7).
+#'
+#' @return A data frame built with `ef_flag_rows()`.
+#' @noRd
+ef_flags_radiation <- function() {
+  ef_flag_rows()
+}
