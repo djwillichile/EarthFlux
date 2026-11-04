@@ -48,7 +48,9 @@ Missing values propagate. Non-numeric or empty input raises
 \code{VERIFICADA} (FAO-56, chapter 3, Eqs. 11 and 12; case V2:
 e°(24.5) = 3.075 kPa, e°(15) = 1.705 kPa). FAO-56 annex 3, Eq. 3-8 uses
 0.611 instead of 0.6108; the chapter 3 form is adopted
-(dev/specs/weather-forcing.md 4.3).
+(dev/specs/weather-forcing.md 4.3). The same function and the same
+daily mean (Tmax and Tmin) and hourly forms are ASCE-EWRI (2005)
+Eqs. 6-7 (p. 11) and Eq. 37 (p. 29).
 }
 
 \examples{
@@ -61,6 +63,14 @@ mean(ef_es(c(24.5, 15)))
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). \emph{Crop
 evapotranspiration: Guidelines for computing crop water requirements}
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+
+ASCE-EWRI (2005). \emph{The ASCE Standardized Reference Evapotranspiration
+Equation}. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 }
 \seealso{
 Other derived meteorological variables:

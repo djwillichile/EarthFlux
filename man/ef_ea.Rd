@@ -29,7 +29,8 @@ quality-control matter, \code{EF_WS_RH_GT100}), never truncated.}
 
 \item{tmin, tmax}{Numeric. Daily minimum and maximum air temperatures
 [degrees Celsius], finite and \verb{> -237.3}; \code{tmin <= tmax}. \code{tmax} is
-not used by \code{method = "rhmax"} and may then be \code{NULL}.}
+not used by \code{method = "rhmax"} and \code{tmin} not by \code{method = "rhmin"};
+they may then be omitted (\code{NULL}).}
 
 \item{k0}{Numeric. Aridity correction \eqn{K_0}{K0} [degC] subtracted
 from \code{tmin} to approximate the dew point, finite and \verb{>= 0}. FAO-56
@@ -39,7 +40,8 @@ default: the choice depends on the climate of the site.}
 
 \item{rh_max, rh_min}{Numeric. Daily maximum and minimum relative humidity
 [\%], finite and \verb{>= 0}. \code{rh_min} is not used by \code{method = "rhmax"}
-and may then be \code{NULL}.}
+and \code{rh_max} not by \code{method = "rhmin"}; they may then be omitted
+(\code{NULL}).}
 
 \item{method}{Character, no default. Formulation of \code{ef_ea_daily()}:
 \itemize{
@@ -47,9 +49,17 @@ and may then be \code{NULL}.}
 \code{rh_min} (recommended by FAO-56);
 \item \code{"rhmax"}: FAO-56 Eq. 18, from \code{tmin} and \code{rh_max} only (when
 \code{rh_min} is doubtful);
+\item \code{"rhmin"}: ASCE-EWRI (2005) Eq. 13, from \code{tmax} and \code{rh_min} only
+(when only good daily minimum humidities are available; less
+desirable than Eqs. 11-12 of the report);
 \item \code{"rhmean"}: FAO-56 Eq. 19, from the mean relative humidity
 \code{(rh_max + rh_min) / 2} and the mean saturation vapour pressure (the
-least desirable of the three, FAO-56).
+least desirable of the FAO-56 forms; not recommended in the ASCE-EWRI
+standardized procedure);
+\item \code{"rhmean_tmean"}: ASCE-EWRI (2005) Eq. 14, from the mean relative
+humidity \code{(rh_max + rh_min) / 2} and the saturation vapour pressure
+at the mean temperature \code{(tmax + tmin) / 2} (the form of the
+standardized procedure when only the mean humidity is usable).
 }}
 }
 \value{
@@ -64,8 +74,8 @@ humidity data available, with the FAO-56 equations:
 \item \code{ef_ea_rh()}: from the air temperature and relative humidity of the
 same period (hourly or shorter);
 \item \code{ef_ea_daily()}: from the daily extreme temperatures and relative
-humidities, with an explicit \code{method} (\code{"rhmax_rhmin"}, \code{"rhmax"} or
-\code{"rhmean"});
+humidities, with an explicit \code{method} (\code{"rhmax_rhmin"}, \code{"rhmax"},
+\code{"rhmin"}, \code{"rhmean"} or \code{"rhmean_tmean"});
 \item \code{ef_ea_tmin()}: from the minimum temperature, only when humidity data
 are missing, with an explicit aridity correction \code{k0}.
 }
@@ -86,16 +96,35 @@ preferably one hour or less; \code{ef_ea_rh()}),
 \deqn{e_a = e^\circ(T_{min}) \frac{RH_{max}}{100}}{ea = e0(Tmin) *
   RHmax / 100}
 (Eq. 18; \code{"rhmax"}),
+\deqn{e_a = e^\circ(T_{max}) \frac{RH_{min}}{100}}{ea = e0(Tmax) *
+  RHmin / 100}
+(ASCE-EWRI 2005, Eq. 13; \code{"rhmin"}),
 \deqn{e_a = \frac{RH_{mean}}{100} \frac{e^\circ(T_{max}) +
   e^\circ(T_{min})}{2}, \quad RH_{mean} = \frac{RH_{max} +
   RH_{min}}{2}}{ea = RHmean / 100 * (e0(Tmax) + e0(Tmin)) / 2, RHmean =
   (RHmax + RHmin) / 2}
-(Eq. 19; \code{"rhmean"}), and
+(Eq. 19; \code{"rhmean"}),
+\deqn{e_a = \frac{RH_{mean}}{100} e^\circ\left(\frac{T_{max} +
+  T_{min}}{2}\right)}{ea = RHmean / 100 * e0((Tmax + Tmin) / 2)}
+(ASCE-EWRI 2005, Eqs. 14 and 2; \code{"rhmean_tmean"}), and
 \deqn{e_a = e^\circ(T_{min} - K_0)}{ea = e0(Tmin - K0)}
 (Eq. 48; annex 6, Eq. 6-6; \code{ef_ea_tmin()}). The last one assumes that
 the dew point is close to the minimum temperature, which holds only at
 well-watered reference sites; FAO-56 recommends it only when humidity
 data are missing.
+
+\strong{ASCE-EWRI (2005).} The report gives the same forms for the
+standardized equation: Eq. 8 and Eq. 38 (dew point; FAO-56 Eq. 14),
+Eq. 41 (hourly relative humidity; FAO-56 Eq. 54), Eq. 11 (FAO-56
+Eq. 17) and Eq. 12 (FAO-56 Eq. 18), with the preference rankings of its
+Tables 3 (daily) and 4 (hourly) (pp. 12, 30). It adds Eq. 13
+(\code{"rhmin"}) and replaces the mean-humidity form: Eq. 14
+(\code{"rhmean_tmean"}) uses \eqn{e^\circ(T_{mean})}{e0(Tmean)}, and the
+FAO-56 Eq. 19 form (\code{"rhmean"}) is "not recommended in the standardized
+procedure" (p. 17). The estimate from the minimum temperature is
+described in its Appendix E (not read; \code{ef_ea_tmin()} stays a FAO-56
+form). The psychrometric forms (report Eqs. 9-10, 39-40) are not
+implemented.
 
 FAO-56 and \code{dev/SCIENTIFIC_SPEC.md} section 5 recommend regionalising the
 actual vapour pressure (nearly constant during the day), not the relative
@@ -113,7 +142,10 @@ required by the method and not supplied raises \code{earthflux_missing_input}.
 \code{VERIFICADA} (FAO-56, chapter 3, Eqs. 14, 17, 18, 19, 48 and 54; annex 6,
 Eq. 6-6; dev/specs/weather-forcing.md 4.4, cases V3 and V17).
 \code{ef_ea_tmin()} is verified as an equation; its use is restricted to
-missing humidity data and \code{k0} is always explicit.
+missing humidity data and \code{k0} is always explicit. \code{"rhmin"} and
+\code{"rhmean_tmean"}: \code{VERIFICADA} (ASCE-EWRI, 2005, Eqs. 13 and 14, pp.
+16-17); the forms shared with FAO-56 are also ASCE-EWRI (2005) Eqs. 8,
+11, 12, 38 and 41 (pp. 13, 15, 30, 32).
 }
 
 \examples{
@@ -124,6 +156,10 @@ ef_ea_daily(tmin = 18, tmax = 25, rh_max = 82, rh_min = 54,
 ef_ea_daily(tmin = 18, tmax = 25, rh_max = 82, rh_min = 54,
             method = "rhmean")
 ef_ea_daily(tmin = 18, rh_max = 82, method = "rhmax")
+# ASCE-EWRI (2005) forms: Eq. 13 and Eq. 14
+ef_ea_daily(tmax = 25, rh_min = 54, method = "rhmin")
+ef_ea_daily(tmin = 18, tmax = 25, rh_max = 82, rh_min = 54,
+            method = "rhmean_tmean")
 
 # From the dew point, and from hourly temperature and humidity
 ef_ea_dewpoint(15)
@@ -136,6 +172,14 @@ ef_ea_tmin(tmin = 12, k0 = 2)
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). \emph{Crop
 evapotranspiration: Guidelines for computing crop water requirements}
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+
+ASCE-EWRI (2005). \emph{The ASCE Standardized Reference Evapotranspiration
+Equation}. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 }
 \seealso{
 Other derived meteorological variables:

@@ -37,16 +37,19 @@ the reference of the reference ET fraction of the cold anchor.}
 \code{interval = 86400} s; FAO-56 Eq. 6 form). The records must be period
 means (\code{timestamp_convention} \code{"end"} or \code{"start"}).}
 
-\item{standard}{Character, no default. \code{"fao56"} (grass only,
-\code{VERIFICADA}) or \code{"asce"} (ASCE-EWRI 2005 standardized constants,
-\code{CANDIDATA}); see \code{\link[=ef_ref_et]{ef_ref_et()}}.}
+\item{standard}{Character, no default. \code{"fao56"} (grass only) or
+\code{"asce"} (ASCE-EWRI 2005 standardized equation), both \code{VERIFICADA};
+see \code{\link[=ef_ref_et]{ef_ref_et()}}. It also selects the constants and limits of the net
+radiation (\code{\link[=ef_ref_net_radiation]{ef_ref_net_radiation()}}) and the treatment of sunrise and
+sunset in the hourly extraterrestrial radiation (\code{\link[=ef_ra_period]{ef_ra_period()}}).}
 
 \item{humidity}{Character, no default. Source of the actual vapour
 pressure: \code{"vapour_pressure"} (column \code{vapour_pressure}),
 \code{"dewpoint_temperature"} (FAO-56 Eq. 14 on \code{dewpoint_temperature}) or
 \code{"relative_humidity"} (hourly: FAO-56 Eq. 54 with \code{air_temperature} and
 \code{relative_humidity}; daily: Eq. 17 with \code{tmin}, \code{tmax}, \code{rh_max} and
-\code{rh_min}).}
+\code{rh_min}). The same forms are ASCE-EWRI (2005) Eqs. 8, 38, 41 and 11,
+ranked first or second in its Tables 3 and 4.}
 
 \item{day_definition}{Character, no default (decision WF-11). Day of the
 daily sums: \code{"utc"} (UTC calendar day) or \code{"local_standard"} (calendar
@@ -63,24 +66,41 @@ valid reference ET; otherwise \code{etr_24} is \code{NA} and flagged
 (required; \code{NULL} for daily): criterion of the daytime periods, which
 select the soil heat flux ratio and, with \code{standard = "asce"}, the
 denominator constant: \code{"ra_positive"} (extraterrestrial radiation of
-the period > 0, i.e. sun above the horizon at the mid-point, FAO-56
-midpoint criterion) or \code{"rn_positive"} (net radiation of the reference
-surface > 0, the criterion that secondary implementations attribute to
-ASCE-EWRI, \code{CANDIDATA}).}
+the period > 0; with \code{standard = "fao56"}, sun above the horizon at the
+mid-point, FAO-56 midpoint criterion) or \code{"rn_positive"} (net radiation
+of the reference surface > 0, the definition of daytime of ASCE-EWRI
+2005, text before Table 1 and Table 2, p. 5; see
+\code{\link[=ef_ref_soil_heat_flux]{ef_ref_soil_heat_flux()}} for the inconsistency of the report at
+\eqn{R_n = 0}{Rn = 0}).}
 
 \item{night_cloudiness}{Character or \code{NULL}. Hourly only (required;
-\code{NULL} for daily): the ratio \eqn{R_s/R_{so}}{Rs/Rso} of the night-time
-periods (\eqn{R_{so} = 0}{Rso = 0}), where it is undefined (FAO-56,
-chapter 4, hourly time step): \code{"before_sunset"} (the ratio of the last
-period of the same station, in the previous 24 hours, whose mid-point
-hour angle lies in \eqn{[\omega_s - 0.79, \omega_s - 0.52]}{[ws - 0.79,
-ws - 0.52]}, i.e. 2-3 hours before sunset; \code{NA} if there is none or its
-ratio is missing) or \code{"fixed"} (the constant \code{night_ratio}).}
+\code{NULL} for daily): the cloudiness term of the periods where the ratio
+\eqn{R_s/R_{so}}{Rs/Rso} is not used:
+\itemize{
+\item \code{"before_sunset"} (FAO-56, chapter 4, hourly time step): night-time
+periods (\eqn{R_{so} = 0}{Rso = 0}) take the term of the last period
+of the same station, in the previous 24 hours, whose mid-point hour
+angle lies in \eqn{[\omega_s - 0.79, \omega_s - 0.52]}{[ws - 0.79, ws
+    - 0.52]}, i.e. 2-3 hours before sunset;
+\item \code{"low_sun"} (ASCE-EWRI 2005, Eq. 46, pp. 35-36): every period whose
+sun angle above the horizon at the mid-point (Eq. 62) is at most
+0.3 rad (night, dusk and dawn, including periods with
+\eqn{R_{so} > 0}{Rso > 0}) takes the term of the last period of the
+same station, in the previous 24 hours, with a sun angle above
+0.3 rad;
+\item \code{"fixed"}: night-time periods take the constant ratio \code{night_ratio}.
+}
 
-\item{night_ratio}{Numeric scalar in [0, 1] or \code{NULL}. The night-time
-ratio \eqn{R_s/R_{so}}{Rs/Rso} for \code{night_cloudiness = "fixed"}
-(FAO-56 suggests 0.4-0.6 in humid and sub-humid and 0.7-0.8 in arid and
-semi-arid climates; 0.3 means complete cloud cover). \code{NULL} otherwise.}
+With \code{"before_sunset"} and \code{"low_sun"} the result is \code{NA} if there is
+no qualifying period or its term is missing (e.g. the first night of a
+series, or a season without any period of sun angle above 0.3 rad).}
+
+\item{night_ratio}{Numeric scalar or \code{NULL}. The night-time ratio
+\eqn{R_s/R_{so}}{Rs/Rso} for \code{night_cloudiness = "fixed"}, in [0, 1]
+for \code{"fao56"} and in [0.3, 1] for \code{"asce"} (FAO-56 suggests 0.4-0.6
+in humid and sub-humid and 0.7-0.8 in arid and semi-arid climates; 0.3
+means complete cloud cover; ASCE-EWRI, p. 36, allows a ratio from 0.3
+to 1 where no period has a sun angle of 0.3 rad). \code{NULL} otherwise.}
 
 \item{overpass}{POSIXct or \code{NULL}. Overpass times at which the
 instantaneous reference ET is wanted (hourly only); converted to UTC.
@@ -151,8 +171,9 @@ defaults.
 }
 \details{
 \strong{Hourly records.} For each record, with \eqn{t} the mid-point of the
-period: \eqn{R_a}{Ra} of the period with \code{\link[=ef_ra_period]{ef_ra_period()}} (FAO-56 Eq. 28,
-midpoint criterion, day of year of \eqn{t} in UTC),
+period: \eqn{R_a}{Ra} of the period with \code{\link[=ef_ra_period]{ef_ra_period()}} (FAO-56 Eq. 28
+or ASCE-EWRI Eq. 48; the treatment of sunrise and sunset follows
+\code{standard}; day of year of \eqn{t} in UTC),
 \eqn{R_{so}}{Rso} with \code{\link[=ef_rso]{ef_rso()}} (Eq. 37, decision WF-12), the air
 pressure from the station elevation (\code{\link[=ef_air_pressure]{ef_air_pressure()}}, Eq. 7, decision
 WF-05; a measured \code{air_pressure} is not used), \eqn{\gamma}{gamma},
@@ -160,9 +181,11 @@ WF-05; a measured \code{air_pressure} is not used), \eqn{\gamma}{gamma},
 temperature, the wind at 2 m from \code{height_wind} (Eq. 47), the solar
 radiation converted from W m-2 to MJ m-2 h-1 (x 0.0036, FAO-56 Table 3),
 then \code{\link[=ef_ref_net_radiation]{ef_ref_net_radiation()}}, \code{\link[=ef_ref_soil_heat_flux]{ef_ref_soil_heat_flux()}} and
-\code{\link[=ef_ref_et]{ef_ref_et()}}. Periods with \eqn{R_{so} > 0}{Rso > 0} use their own
-ratio \eqn{R_s/R_{so}}{Rs/Rso} (limited to 1 inside the cloudiness term
-and flagged \code{EF_WS_RS_RSO_LIMITED}); the others use \code{night_cloudiness}.
+\code{\link[=ef_ref_et]{ef_ref_et()}}. Periods with \eqn{R_{so} > 0}{Rso > 0} (with
+\code{"low_sun"}: with a sun angle above 0.3 rad) use their own ratio
+\eqn{R_s/R_{so}}{Rs/Rso} (limited to the range of the standard inside
+the cloudiness term and flagged \code{EF_WS_RS_RSO_LIMITED}); the others use
+\code{night_cloudiness}.
 
 \strong{Daily records.} Tmean = (Tmax + Tmin)/2 (Eq. 9), \eqn{e_s}{es} =
 mean of \eqn{e^\circ(T_{max})}{e0(Tmax)} and \eqn{e^\circ(T_{min})}{e0(Tmin)}
@@ -174,11 +197,14 @@ cloudiness term and gives \code{NA}.
 
 \strong{Daily sums} (option D1 of the specification for hourly records,
 decision WF-16): \code{etr_24} is the sum of the 24 hourly depths of the day
-(rate in mm h-1 times 1 h); FAO-56 (chapter 4) states that hourly sums
-over 24 hours generally match the daily computation for the grass
-reference; for the alfalfa reference and METRIC this is \code{CANDIDATA}. For
-daily records \code{etr_24} is the daily value of the record (option D2 with
-daily data).
+(rate in mm h-1 times 1 h), negative values included; FAO-56 (chapter 4)
+states that hourly sums over 24 hours generally match the daily
+computation for the grass reference, and ASCE-EWRI (2005, p. 45) sums
+hourly ETos or ETrs over the 24-hour period and recommends retaining the
+negative values; neither source defines the clock of the day (UTC or
+local standard time, WF-11). Its use for METRIC (Allen et al., 2007) is
+\code{TODO}. For daily records \code{etr_24} is the daily value of the record
+(option D2 with daily data).
 
 \strong{Instantaneous reference ET} (decision WF-09): \code{etr_inst} is a rate in
 mm h-1. An overpass time outside the time covered by the records of a
@@ -198,14 +224,16 @@ subclasses.
 }
 \section{Verification status}{
 
-The physics is that of the functions called (FAO-56 grass:
-\code{VERIFICADA}; ASCE-EWRI constants: \code{CANDIDATA}), reproduced through this
-function for FAO-56 example 19. The orchestration choices are recorded
-in the provenance; \code{"before_sunset"} follows FAO-56 (chapter 4) with the
-selection of the last qualifying period as an implementation choice;
-\code{"rn_positive"} and the daily sum of hourly ETr for the alfalfa reference
-are \code{CANDIDATA}; the day definition and the completeness rule are open
-decisions (WF-11).
+The physics is that of the functions called (FAO-56 grass and ASCE-EWRI
+2005 short and tall reference: \code{VERIFICADA}), reproduced through this
+function for FAO-56 examples 18 and 19. The orchestration choices are
+recorded in the provenance: \code{"before_sunset"} follows FAO-56 (chapter 4)
+with the selection of the last qualifying period as an implementation
+choice; \code{"low_sun"} (ASCE-EWRI Eq. 46) and \code{"rn_positive"} (ASCE-EWRI
+p. 5) are \code{VERIFICADA}; the day definition and the completeness rule are
+open decisions (WF-11); the daily sum is \code{TODO} for METRIC. The worked
+examples of ASCE-EWRI (2005), Appendix C, are not reproduced: the copy of
+the report that was read does not include the appendices.
 }
 
 \examples{
@@ -228,8 +256,8 @@ st <- ef_station_table(
 et <- ef_station_ref_et(
   st, reference = "alfalfa", timestep = "hourly", standard = "asce",
   humidity = "relative_humidity", day_definition = "utc",
-  day_completeness = "all_periods", daytime_rule = "ra_positive",
-  night_cloudiness = "before_sunset",
+  day_completeness = "all_periods", daytime_rule = "rn_positive",
+  night_cloudiness = "low_sun",
   overpass = as.POSIXct("2024-01-15 14:48", tz = "UTC"),
   inst_method = "O3"
 )
@@ -242,8 +270,12 @@ evapotranspiration: Guidelines for computing crop water requirements}
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
 
 ASCE-EWRI (2005). \emph{The ASCE Standardized Reference Evapotranspiration
-Equation}. American Society of Civil Engineers.
-\doi{10.1061/9780784408056}
+Equation}. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 }
 \seealso{
 \code{\link[=ef_station_table]{ef_station_table()}}, \code{\link[=ef_station_qc]{ef_station_qc()}}.

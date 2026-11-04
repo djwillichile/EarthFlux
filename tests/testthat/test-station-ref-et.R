@@ -40,7 +40,8 @@ prov_hourly <- list(timestamp_convention = "end", interval = 3600,
 # Hourly synthetic series of one or two stations: smooth diurnal cycles in
 # UTC with a warming trend of 0.1 degC per hour (so that consecutive days
 # differ), solar radiation 60 % of the extraterrestrial radiation of the
-# hour (always below the clear-sky envelope and above zero only by day).
+# sunlit part of the hour (ASCE-EWRI Eq. 56 limits; always below the
+# clear-sky envelope of both standards and above zero only by day).
 hourly_series <- function(start = "2024-01-15 01:00", n = 48L,
                           stations = syn_stations()[1L, , drop = FALSE]) {
   times <- utc(start) + 3600 * (seq_len(n) - 1L)
@@ -49,7 +50,8 @@ hourly_series <- function(start = "2024-01-15 01:00", n = 48L,
     mid <- times - 1800
     lt <- as.POSIXlt(mid, tz = "UTC")
     h <- lt$hour + lt$min / 60
-    ra <- ef_ra_period(s$lat * deg, s$lon * deg, lt$yday + 1L, h, 1)
+    ra <- ef_ra_period(s$lat * deg, s$lon * deg, lt$yday + 1L, h, 1,
+                       standard = "asce")
     sun <- ra / max(ra)
     data.frame(
       station_id = s$station_id, timestamp = times,
@@ -106,13 +108,14 @@ ndiaye_direct <- function(i, reference, standard, daytime, f = NULL) {
   lat <- (16 + 13 / 60) * deg
   lon <- -(16 + 15 / 60) * deg
   ea <- ef_ea_rh(p$t, p$rh)
-  rso <- ef_rso(ef_ra_period(lat, lon, 274, p$h, 1), 8)
+  rso <- ef_rso(ef_ra_period(lat, lon, 274, p$h, 1, standard = standard), 8)
   rn <- if (is.null(f)) {
     ef_ref_net_radiation(p$rs, rso, ea, air_temperature = p$t,
-                         timestep = "hourly")$rn
+                         timestep = "hourly", standard = standard)$rn
   } else {
     ef_ref_net_radiation(p$rs, NULL, ea, air_temperature = p$t,
-                         timestep = "hourly", cloudiness = f)$rn
+                         timestep = "hourly", standard = standard,
+                         cloudiness = f)$rn
   }
   g <- ef_ref_soil_heat_flux(rn, reference, "hourly", standard,
                              daytime = daytime)
@@ -154,7 +157,7 @@ test_that("V15-V16: FAO-56 example 19 through ef_station_ref_et()", {
   expect_identical(et$provenance$status, "VERIFICADA")
 })
 
-test_that("A3: the tall reference through the station table (CANDIDATA)", {
+test_that("A3: the tall reference through the station table", {
   et <- run_hourly(ndiaye, night_cloudiness = "fixed", night_ratio = 0.8)
   # Arithmetic case A3 of spec 8.2 (0.8218 and 0.0067 mm h-1 with u2 = 3.3
   # and 1.9 exactly); here u2 carries the factor 1.00022 of Eq. 47.
@@ -165,7 +168,7 @@ test_that("A3: the tall reference through the station table (CANDIDATA)", {
                  ndiaye_direct(2, "alfalfa", "asce", TRUE)),
                tolerance = 1e-12)
   expect_identical(et$reference, "alfalfa")
-  expect_identical(et$provenance$status, "CANDIDATA")
+  expect_identical(et$provenance$status, "VERIFICADA")
   expect_identical(et$provenance$constants$cn, c(66, 66))
 })
 
@@ -210,7 +213,7 @@ test_that("V14: FAO-56 example 18 through daily records", {
   ea <- ef_ea_daily(12.3, 21.5, 84, 63, method = "rhmax_rhmin")
   rso <- ef_rso(ef_ra_daily((50 + 48 / 60) * deg, 187), 100)
   rn <- ef_ref_net_radiation(22.07, rso, ea, tmax = 21.5, tmin = 12.3,
-                             timestep = "daily")$rn
+                             timestep = "daily", standard = "fao56")$rn
   direct <- ef_ref_et(rn, 0, (21.5 + 12.3) / 2, ef_wind_2m(10 / 3.6, 10),
                       mean(ef_es(c(21.5, 12.3))) - ea,
                       ef_es_slope((21.5 + 12.3) / 2),
@@ -465,6 +468,57 @@ test_that("night-time periods carry the ratio of 2-3 hours before sunset", {
   expect_identical(et$provenance$choices$night_cloudiness, "before_sunset")
 })
 
+test_that("low_sun: ASCE-EWRI Eq. 46 carries fcd of the last beta > 0.3 rad", {
+  x <- hourly_series(start = "2024-01-15 01:00", n = 48L)
+  et <- run_hourly(x, night_cloudiness = "low_sun",
+                   daytime_rule = "rn_positive")
+  s <- et$series
+  st <- x$stations
+  lt <- as.POSIXlt(s$target_time, tz = "UTC")
+  doy <- lt$yday + 1L
+  h <- lt$hour + lt$min / 60
+  lat <- st$lat * deg
+  delta <- ef_declination(doy)
+  omega <- ef_hour_angle(doy, h, st$lon * deg)
+  # Sun angle above the horizon at the mid-point, ASCE-EWRI Eq. 62.
+  beta <- asin(sin(lat) * sin(delta) + cos(lat) * cos(delta) * cos(omega))
+  high <- s$clear_sky_radiation > 0 & beta > 0.3
+  low <- which(!high)
+  # Low sun with Rso > 0 (dusk and dawn) also takes the carried value.
+  expect_gt(sum(s$clear_sky_radiation[low] > 0), 0L)
+  expect_true(all(s$cloudiness_source[high] == "ratio"))
+  expect_identical(unique(s$cloudiness_source[low]), "low_sun")
+  # Own ratio, limited to [0.3, 1] (ASCE-EWRI Eq. 45).
+  ratio <- s$solar_radiation / s$clear_sky_radiation
+  expect_equal(s$cloudiness[high],
+               1.35 * pmin(pmax(ratio[high], 0.3), 1) - 0.35,
+               tolerance = 1e-12)
+  for (i in low) {
+    q <- which(high & s$target_time < s$target_time[i] &
+                 s$target_time > s$target_time[i] - 86400)
+    expected <- if (length(q) == 0L) NA_real_ else s$cloudiness[max(q)]
+    expect_identical(s$cloudiness[i], expected)
+  }
+  # One value per day: the term of the last high-sun period of the
+  # afternoon is used until the sun angle exceeds 0.3 rad again.
+  first_high <- min(which(high))
+  before <- low[low < first_high]
+  expect_gt(length(before), 0L)
+  expect_true(all(is.na(s$net_radiation[before])))
+  expect_true(all(before %in% flag_index(et, "EF_INPUT_NA", "series")))
+  after <- setdiff(low, before)
+  expect_false(anyNA(s$et_ref[after]))
+  # Extraterrestrial radiation with the limits of Eq. 56 and daytime by
+  # Rn > 0.
+  expect_equal(s$extraterrestrial_radiation,
+               ef_ra_period(lat, st$lon * deg, doy, h, 1, standard = "asce"),
+               tolerance = 1e-12)
+  expect_identical(s$daytime, s$net_radiation > 0)
+  expect_identical(et$provenance$choices$night_cloudiness, "low_sun")
+  expect_match(et$provenance$derived$extraterrestrial_radiation, "Eq. 56")
+  expect_match(et$provenance$derived$net_radiation, "ASCE-EWRI")
+})
+
 test_that("the fixed night ratio is used at every night-time period", {
   x <- hourly_series()
   et <- run_hourly(x, night_cloudiness = "fixed", night_ratio = 0.5)
@@ -482,7 +536,7 @@ test_that("the daytime rule selects G and Cd by Ra > 0 or Rn > 0", {
   # First and last daylight hours, clear, hot and dry: Ra > 0 but the net
   # longwave loss exceeds the net shortwave, Rn < 0.
   ra <- ef_ra_period(-35.4 * deg, -71.5 * deg, rep(15:16, each = 2),
-                     rep(c(10.5, 23.5), 2), 1)
+                     rep(c(10.5, 23.5), 2), 1, standard = "asce")
   edge <- obs$timestamp %in% utc(c("2024-01-15 11:00", "2024-01-16 00:00",
                                    "2024-01-16 11:00", "2024-01-17 00:00"))
   expect_true(all(ra > 0))
@@ -504,7 +558,8 @@ test_that("the daytime rule selects G and Cd by Ra > 0 or Rn > 0", {
   expect_true(any(differ))
   expect_false(any(ra$series$et_ref[differ] == rn$series$et_ref[differ]))
   expect_identical(ra$series$et_ref[!differ], rn$series$et_ref[!differ])
-  # G ratios of the tall reference (CANDIDATA): 0.04 by day, 0.2 by night.
+  # G ratios of the tall reference (ASCE-EWRI Eqs. 66a-b): 0.04 by day,
+  # 0.2 by night.
   s <- ra$series
   expect_equal(s$soil_heat_flux,
                ifelse(s$daytime, 0.04, 0.2) * s$net_radiation,
@@ -646,6 +701,13 @@ test_that("choices are explicit and checked", {
   expect_error(call_with(daytime_rule = "beta"),
                class = "earthflux_unknown_method")
   expect_error(call_with(night_ratio = 1.2), class = "earthflux_domain_error")
+  # ASCE-EWRI: Rs/Rso in [0.3, 1] (Eqs. 18 and 45, p. 36).
+  expect_error(call_with(night_ratio = 0.2), class = "earthflux_domain_error")
+  expect_s3_class(call_with(reference = "grass", standard = "fao56",
+                            night_ratio = 0.2),
+                  "earthflux_station_ref_et")
+  expect_error(call_with(night_cloudiness = "low_sun"),
+               class = "earthflux_input_error")
   expect_error(call_with(night_cloudiness = "before_sunset"),
                class = "earthflux_input_error")
   # Overpass and method go together.

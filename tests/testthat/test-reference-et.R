@@ -15,7 +15,9 @@
 # of the rounded intermediate values that the example itself uses); the
 # full-precision "propio" values of section 8.1 with half a unit of their
 # last printed digit; values recomputed here with a relative tolerance of
-# 1e-6. Cases A1-A4 (ASCE-EWRI constants, CANDIDATA) verify arithmetic only.
+# 1e-6. Cases A1-A4 (ASCE-EWRI 2005 constants, VERIFICADA against Table 1)
+# check the arithmetic with the published constants; no ASCE-EWRI worked
+# example is reproduced (Appendix C not available).
 
 deg <- pi / 180
 half_unit <- function(digits) 0.5 * 10^(-digits)
@@ -55,7 +57,7 @@ uccle <- local({
   rs <- (0.25 + 0.50 * 9.25 / n_max) * ra
   rso <- ef_rso(ra, 100)
   rn <- ef_ref_net_radiation(rs, rso, ea, tmax = 21.5, tmin = 12.3,
-                             timestep = "daily")
+                             timestep = "daily", standard = "fao56")
   list(pressure = pressure, gamma = gamma, tmean = tmean, slope = slope,
        u2 = u2, es = es, ea = ea, ra = ra, n_max = n_max, rs = rs,
        rso = rso, rn = rn)
@@ -114,7 +116,7 @@ test_that("V14: FAO-56 example 18, daily grass ETo = 3.9 mm d-1", {
                   c("EF_INPUT_NA", "EF_WS_ETR_NEGATIVE"))
 })
 
-test_that("A4: daily tall reference with ASCE-EWRI constants (CANDIDATA)", {
+test_that("A4: daily tall reference with ASCE-EWRI constants", {
   etr <- ef_ref_et(
     net_radiation = uccle$rn$rn, soil_heat_flux = 0,
     air_temperature = uccle$tmean, wind_speed_2m = uccle$u2,
@@ -123,7 +125,7 @@ test_that("A4: daily tall reference with ASCE-EWRI constants (CANDIDATA)", {
     standard = "asce"
   )
   expect_within(etr$et_ref, 4.6065, half_unit(4))
-  expect_identical(etr$provenance$status, "CANDIDATA")
+  expect_identical(etr$provenance$status, "VERIFICADA")
   expect_identical(etr$provenance$constants$cn, 1600)
   expect_identical(etr$provenance$constants$cd, 0.38)
   # Short reference with ASCE daily constants = FAO-56 Eq. 6.
@@ -132,7 +134,7 @@ test_that("A4: daily tall reference with ASCE-EWRI constants (CANDIDATA)", {
                         reference = "grass", timestep = "daily",
                         standard = "asce")
   expect_within(eto_asce$et_ref, 3.8803, half_unit(4))
-  expect_identical(eto_asce$provenance$status, "CANDIDATA")
+  expect_identical(eto_asce$provenance$status, "VERIFICADA")
 })
 
 # FAO-56 examples 11-12 (daily net radiation) -----------------------------------
@@ -140,7 +142,8 @@ test_that("A4: daily tall reference with ASCE-EWRI constants (CANDIDATA)", {
 test_that("V10-V11: daily Rnl and Rn (FAO-56 examples 11 and 12)", {
   # Inputs as given by the examples: Rs = 14.5, Rso = 0.75 * 25.1.
   rn <- ef_ref_net_radiation(14.5, 0.75 * 25.1, 2.1, tmax = 25.1,
-                             tmin = 19.1, timestep = "daily")
+                             tmin = 19.1, timestep = "daily",
+                             standard = "fao56")
   expect_within(rn$rnl, 3.5, half_unit(1))
   expect_within(rn$rn, 7.6, half_unit(1))
   expect_within(rn$rnl, 3.5270, half_unit(4))
@@ -166,19 +169,20 @@ ndiaye <- local({
     p$slope <- ef_es_slope(p$t)
     p$e0 <- ef_es(p$t)
     p$ea <- ef_ea_rh(p$t, p$rh)
-    p$ra <- ef_ra_period(lat, lon, 274, p$utc_mid, 1)
+    p$ra <- ef_ra_period(lat, lon, 274, p$utc_mid, 1, standard = "fao56")
     assign(nm, p)
   }
   day$rso <- ef_rso(day$ra, 8)
   day$rn <- ef_ref_net_radiation(day$rs, day$rso, day$ea,
                                  air_temperature = day$t,
-                                 timestep = "hourly")
+                                 timestep = "hourly", standard = "fao56")
   # Night: Rs/Rso = 0.8 assumed by the example, passed as the cloudiness
   # term 1.35 * 0.8 - 0.35.
   night$rn <- ef_ref_net_radiation(night$rs, NULL, night$ea,
                                    air_temperature = night$t,
                                    timestep = "hourly",
-                                   cloudiness = 1.35 * 0.8 - 0.35)
+                                   cloudiness = 1.35 * 0.8 - 0.35,
+                                   standard = "fao56")
   list(gamma = gamma, day = day, night = night)
 })
 
@@ -230,7 +234,7 @@ test_that("V16: FAO-56 example 19, 02:00-03:00, ETo = 0.00 mm h-1", {
   expect_within(eto$et_ref, 0.0043, half_unit(4))
 })
 
-test_that("A1-A3: hourly constants of FAO-56 and ASCE-EWRI (CANDIDATA)", {
+test_that("A1-A3: hourly constants of FAO-56 and ASCE-EWRI (Table 1)", {
   d <- ndiaye$day
   n <- ndiaye$night
   # A1 (FAO-56 Eq. 53), A2 (ASCE short), A3 (ASCE tall); arithmetic only.
@@ -267,7 +271,7 @@ test_that("ef_ref_et() hourly ASCE uses Cd by day and night per position", {
   k <- et$provenance$constants
   expect_identical(k$cd[k$period == "day"], 0.25)
   expect_identical(k$cd[k$period == "night"], 1.7)
-  expect_identical(et$provenance$status, "CANDIDATA")
+  expect_identical(et$provenance$status, "VERIFICADA")
   expect_identical(et$provenance$daytime, "supplied by the caller (WF-15)")
 })
 
@@ -281,13 +285,41 @@ test_that("the constants table records source and status per row", {
                                      "period")]), 0L)
   expect_true(all(nzchar(k$source)))
   expect_identical(unique(k$status[k$standard == "fao56"]), "VERIFICADA")
-  expect_identical(unique(k$status[k$standard == "asce"]), "CANDIDATA")
+  expect_identical(unique(k$status[k$standard == "asce"]), "VERIFICADA")
   expect_false(any(k$standard == "fao56" & k$reference == "alfalfa"))
   # FAO-56 Eqs. 6 and 53 are the Cn/Cd form with 900/37 and 0.34.
   fao <- k[k$standard == "fao56", ]
   expect_identical(fao$cn, c(900, 37, 37))
   expect_identical(unique(fao$cd), 0.34)
   expect_identical(fao$g_rn, c(0, 0.1, 0.5))
+})
+
+test_that("the ASCE-EWRI rows are Table 1 and Eqs. 30, 65-66 of the report", {
+  k <- ef_reference_constants()
+  asce <- k[k$standard == "asce", ]
+  key <- paste(asce$reference, asce$timestep, asce$period)
+  # ASCE-EWRI (2005), Table 1 (p. 5): Cn/Cd daily 900/0.34 (short) and
+  # 1600/0.38 (tall); hourly daytime 37/0.24 and 66/0.25; nighttime 37/0.96
+  # and 66/1.7. G: daily 0 (Eq. 30, p. 25); hourly 0.1/0.5 Rn (short,
+  # Eqs. 65a-b) and 0.04/0.2 Rn (tall, Eqs. 66a-b), p. 44.
+  table1 <- data.frame(
+    key = c("grass daily all", "alfalfa daily all", "grass hourly day",
+            "grass hourly night", "alfalfa hourly day",
+            "alfalfa hourly night"),
+    cn = c(900, 1600, 37, 37, 66, 66),
+    cd = c(0.34, 0.38, 0.24, 0.96, 0.25, 1.7),
+    g_rn = c(0, 0, 0.1, 0.5, 0.04, 0.2),
+    eq = c("Eq. 30", "Eq. 30", "Eq. 65a", "Eq. 65b", "Eq. 66a", "Eq. 66b"),
+    stringsAsFactors = FALSE
+  )
+  expect_setequal(key, table1$key)
+  i <- match(table1$key, key)
+  expect_identical(asce$cn[i], table1$cn)
+  expect_identical(asce$cd[i], table1$cd)
+  expect_identical(asce$g_rn[i], table1$g_rn)
+  expect_true(all(grepl("Table 1 (p. 5)", asce$source, fixed = TRUE)))
+  expect_true(all(mapply(grepl, table1$eq, asce$source[i], fixed = TRUE)))
+  expect_false(any(grepl("secondary|not accessible", k$source)))
 })
 
 # Choices and errors ----------------------------------------------------------------
@@ -426,7 +458,8 @@ test_that("negative reference ET is kept and flagged EF_WS_ETR_NEGATIVE", {
 test_that("Rs/Rso is limited to 1 only in the cloudiness term (flagged)", {
   rn <- ef_ref_net_radiation(
     solar_radiation = c(2.0, 3.0, NA), clear_sky_radiation = 2.5,
-    vapour_pressure = 2, air_temperature = 30, timestep = "hourly"
+    vapour_pressure = 2, air_temperature = 30, timestep = "hourly",
+    standard = "fao56"
   )
   # Rs is not modified: Rns = 0.77 Rs.
   expect_equal(rn$rns, 0.77 * c(2.0, 3.0, NA), tolerance = 1e-12)
@@ -438,7 +471,7 @@ test_that("Rs/Rso is limited to 1 only in the cloudiness term (flagged)", {
   expect_true(is.na(rn$rn[3]))
   # Rs = Rso exactly: no limitation, no flag.
   eq <- ef_ref_net_radiation(2.5, 2.5, 2, air_temperature = 30,
-                             timestep = "hourly")
+                             timestep = "hourly", standard = "fao56")
   expect_identical(eq$flags, list())
   expect_setequal(eq$provenance$flags_evaluated,
                   c("EF_INPUT_NA", "EF_WS_RS_RSO_LIMITED"))
@@ -446,75 +479,166 @@ test_that("Rs/Rso is limited to 1 only in the cloudiness term (flagged)", {
 
 test_that("hourly Rnl uses sigma / 24 and T_hr; daily the mean of T^4", {
   rn_h <- ef_ref_net_radiation(1, 2, 1.5, air_temperature = 20,
-                               timestep = "hourly")
+                               timestep = "hourly", standard = "fao56")
   expected <- 4.903e-9 / 24 * (20 + 273.16)^4 * (0.34 - 0.14 * sqrt(1.5)) *
     (1.35 * 0.5 - 0.35)
   expect_equal(rn_h$rnl, expected, tolerance = 1e-12)
   rn_d <- ef_ref_net_radiation(20, 25, 1.5, tmax = 25, tmin = 15,
-                               timestep = "daily")
+                               timestep = "daily", standard = "fao56")
   expected <- 4.903e-9 * ((25 + 273.16)^4 + (15 + 273.16)^4) / 2 *
     (0.34 - 0.14 * sqrt(1.5)) * (1.35 * 0.8 - 0.35)
   expect_equal(rn_d$rnl, expected, tolerance = 1e-12)
   expect_equal(rn_d$rn, 0.77 * 20 - expected, tolerance = 1e-12)
 })
 
-test_that("ef_ref_net_radiation() checks timestep, inputs and domain", {
-  expect_error(ef_ref_net_radiation(1, 2, 1.5, air_temperature = 20),
+test_that("ASCE-EWRI net radiation: sigma of Eqs. 17 and 44", {
+  # Same inputs as the FAO-56 case above: only sigma changes.
+  rn_h <- ef_ref_net_radiation(1, 2, 1.5, air_temperature = 20,
+                               timestep = "hourly", standard = "asce")
+  expected <- 2.042e-10 * (20 + 273.16)^4 * (0.34 - 0.14 * sqrt(1.5)) *
+    (1.35 * 0.5 - 0.35)
+  expect_equal(rn_h$rnl, expected, tolerance = 1e-12)
+  rn_d <- ef_ref_net_radiation(20, 25, 1.5, tmax = 25, tmin = 15,
+                               timestep = "daily", standard = "asce")
+  expected <- 4.901e-9 * ((25 + 273.16)^4 + (15 + 273.16)^4) / 2 *
+    (0.34 - 0.14 * sqrt(1.5)) * (1.35 * 0.8 - 0.35)
+  expect_equal(rn_d$rnl, expected, tolerance = 1e-12)
+  expect_equal(rn_d$rn, 0.77 * 20 - expected, tolerance = 1e-12)
+  expect_identical(rn_d$standard, "asce")
+  expect_identical(rn_d$provenance$status, "VERIFICADA")
+  expect_identical(rn_d$provenance$constants$sigma, 4.901e-9)
+  expect_identical(rn_d$provenance$constants$ratio_limits, c(0.3, 1))
+  # FAO-56 example 18 inputs: the two sigma values differ by 0.04 %.
+  fao <- ef_ref_net_radiation(22.07, 30.90, 1.409, tmax = 21.5, tmin = 12.3,
+                              timestep = "daily", standard = "fao56")
+  asce <- ef_ref_net_radiation(22.07, 30.90, 1.409, tmax = 21.5, tmin = 12.3,
+                               timestep = "daily", standard = "asce")
+  expect_equal(asce$rnl / fao$rnl, 4.901 / 4.903, tolerance = 1e-12)
+})
+
+test_that("ASCE-EWRI limits 0.3 <= Rs/Rso <= 1 (Eqs. 18 and 45), flagged", {
+  rn <- ef_ref_net_radiation(
+    solar_radiation = c(0.5, 1.0, 3.0, 2.0), clear_sky_radiation = 2.5,
+    vapour_pressure = 2, air_temperature = 30, timestep = "hourly",
+    standard = "asce"
+  )
+  # Ratios 0.2, 0.4, 1.2 and 0.8: the first is raised to 0.3 (fcd =
+  # 1.35 * 0.3 - 0.35 = 0.055; the report states 0.05, pp. 20 and 35), the
+  # third lowered to 1 (fcd = 1).
+  expect_equal(rn$cloudiness, c(0.055, 1.35 * 0.4 - 0.35, 1,
+                                1.35 * 0.8 - 0.35), tolerance = 1e-12)
+  expect_equal(rn$rns, 0.77 * c(0.5, 1.0, 3.0, 2.0), tolerance = 1e-12)
+  expect_identical(flag_index(rn, "EF_WS_RS_RSO_LIMITED"), c(1L, 3L))
+  # FAO-56 has no lower limit: the same first ratio is not flagged.
+  fao <- ef_ref_net_radiation(0.5, 2.5, 2, air_temperature = 30,
+                              timestep = "hourly", standard = "fao56")
+  expect_equal(fao$cloudiness, 1.35 * 0.2 - 0.35, tolerance = 1e-12)
+  expect_identical(fao$flags, list())
+  # Daily step, same limits.
+  d <- ef_ref_net_radiation(5, 25, 1.5, tmax = 25, tmin = 15,
+                            timestep = "daily", standard = "asce")
+  expect_equal(d$cloudiness, 0.055, tolerance = 1e-12)
+  expect_identical(flag_index(d, "EF_WS_RS_RSO_LIMITED"), 1L)
+  # A supplied cloudiness term must be in the stated range of the standard,
+  # 0.05 <= fcd <= 1 (Eqs. 17 and 44).
+  expect_error(ef_ref_net_radiation(0, NULL, 2, air_temperature = 20,
+                                    timestep = "hourly", standard = "asce",
+                                    cloudiness = 0),
+               class = "earthflux_domain_error")
+  ok <- ef_ref_net_radiation(0, NULL, 2, air_temperature = 20,
+                             timestep = "hourly", standard = "asce",
+                             cloudiness = 0.05)
+  expect_equal(ok$rnl, 2.042e-10 * 293.16^4 * (0.34 - 0.14 * sqrt(2)) * 0.05,
+               tolerance = 1e-12)
+})
+
+test_that("ef_ref_net_radiation() requires an explicit standard", {
+  expect_error(ef_ref_net_radiation(1, 2, 1.5, air_temperature = 20,
+                                    timestep = "hourly"),
                class = "earthflux_missing_input")
   expect_error(ef_ref_net_radiation(1, 2, 1.5, air_temperature = 20,
-                                    timestep = "10min"),
+                                    timestep = "hourly", standard = "fao"),
+               class = "earthflux_unknown_method")
+})
+
+test_that("ef_ref_net_radiation() checks timestep, inputs and domain", {
+  expect_error(ef_ref_net_radiation(1, 2, 1.5, air_temperature = 20,
+                                    standard = "fao56"),
+               class = "earthflux_missing_input")
+  expect_error(ef_ref_net_radiation(1, 2, 1.5, air_temperature = 20,
+                                    timestep = "10min", standard = "fao56"),
                class = "earthflux_unknown_method")
   expect_error(ef_ref_net_radiation(1, 2, 1.5, air_temperature = 20,
-                                    timestep = "daily"),
+                                    timestep = "daily", standard = "fao56"),
                class = "earthflux_missing_input")
   expect_error(ef_ref_net_radiation(1, 2, 1.5, tmax = 25, tmin = 15,
-                                    timestep = "hourly"),
+                                    timestep = "hourly", standard = "fao56"),
                class = "earthflux_missing_input")
   expect_error(ef_ref_net_radiation(1, NULL, 1.5, air_temperature = 20,
-                                    timestep = "hourly"),
+                                    timestep = "hourly", standard = "fao56"),
                class = "earthflux_missing_input")
   # Rso = 0 (night) without cloudiness: ratio undefined.
   expect_error(ef_ref_net_radiation(0, 0, 1.5, air_temperature = 20,
-                                    timestep = "hourly"),
+                                    timestep = "hourly", standard = "fao56"),
                class = "earthflux_domain_error")
   expect_error(ef_ref_net_radiation(1, 2, 1.5, tmax = 15, tmin = 25,
-                                    timestep = "daily"),
+                                    timestep = "daily", standard = "fao56"),
                class = "earthflux_domain_error")
   expect_error(ef_ref_net_radiation(-1, 2, 1.5, air_temperature = 20,
-                                    timestep = "hourly"),
+                                    timestep = "hourly", standard = "fao56"),
                class = "earthflux_domain_error")
   expect_error(ef_ref_net_radiation(1, 2, -0.1, air_temperature = 20,
-                                    timestep = "hourly"),
+                                    timestep = "hourly", standard = "fao56"),
                class = "earthflux_domain_error")
   expect_error(ef_ref_net_radiation(1, 2, 1.5, air_temperature = -280,
-                                    timestep = "hourly"),
+                                    timestep = "hourly", standard = "fao56"),
                class = "earthflux_domain_error")
   expect_error(ef_ref_net_radiation(0, NULL, 1.5, air_temperature = 20,
-                                    timestep = "hourly", cloudiness = 1.2),
+                                    timestep = "hourly", cloudiness = 1.2,
+                                    standard = "fao56"),
                class = "earthflux_domain_error")
   expect_error(ef_ref_net_radiation(c(1, 2), 2, c(1, 1, 1),
                                     air_temperature = 20,
-                                    timestep = "hourly"),
+                                    timestep = "hourly", standard = "fao56"),
                class = "earthflux_input_error")
 })
 
 test_that("ef_ref_net_radiation() keeps dim and propagates NA", {
   m <- matrix(c(1, 2, NA, 1.5), 2)
   rn <- ef_ref_net_radiation(m, 2.5, 1.5, air_temperature = 25,
-                             timestep = "hourly")
+                             timestep = "hourly", standard = "fao56")
   for (nm in c("rn", "rns", "rnl", "cloudiness")) {
     expect_identical(dim(rn[[nm]]), c(2L, 2L), info = nm)
   }
   expect_identical(which(is.na(rn$rn)), 3L)
   # A supplied cloudiness with NA propagates.
   rn_c <- ef_ref_net_radiation(c(0, 0), NULL, 3.4, air_temperature = 28,
-                               timestep = "hourly", cloudiness = c(0.73, NA))
+                               timestep = "hourly", cloudiness = c(0.73, NA),
+                               standard = "fao56")
   expect_identical(is.na(rn_c$rn), c(FALSE, TRUE))
   expect_identical(flag_index(rn_c, "EF_INPUT_NA"), 2L)
   expect_false("EF_WS_RS_RSO_LIMITED" %in% rn_c$provenance$flags_evaluated)
 })
 
 # Soil heat flux of the reference surface ---------------------------------------------
+
+test_that("the ASCE-EWRI daytime rule Rn > 0 makes Rn = 0 night-time", {
+  # ASCE-EWRI (2005), text before Table 1 and Table 2 (p. 5): daytime when
+  # Rn > 0, night-time when Rn <= 0 (p. 44 and the glossary say Rn < 0 for
+  # night-time; at Rn = 0 only Cd differs, G is 0 either way).
+  rn <- c(0.5, 0, -0.1)
+  daytime <- rn > 0
+  g <- ef_ref_soil_heat_flux(rn, "alfalfa", "hourly", "asce", daytime)
+  expect_equal(g, c(0.02, 0, -0.02), tolerance = 1e-12)
+  et <- ef_ref_et(rn, g, 20, 2, 1, ef_es_slope(20), 0.066,
+                  reference = "alfalfa", timestep = "hourly",
+                  standard = "asce", daytime = daytime)
+  cd <- c(0.25, 1.7, 1.7)
+  delta <- ef_es_slope(20)
+  expected <- (0.408 * delta * (rn - g) + 0.066 * 66 / 293 * 2 * 1) /
+    (delta + 0.066 * (1 + cd * 2))
+  expect_equal(et$et_ref, expected, tolerance = 1e-12)
+})
 
 test_that("ef_ref_soil_heat_flux() uses the ratios of the constants table", {
   rn <- c(2, -0.2)

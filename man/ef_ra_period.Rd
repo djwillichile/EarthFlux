@@ -4,7 +4,7 @@
 \alias{ef_ra_period}
 \title{Extraterrestrial radiation of an hourly or shorter period}
 \usage{
-ef_ra_period(lat, lon, doy, utc_mid, period_hours)
+ef_ra_period(lat, lon, doy, utc_mid, period_hours, standard)
 }
 \arguments{
 \item{lat}{Numeric. Latitude \eqn{\phi}{phi} [rad], in [-pi/2, pi/2],
@@ -22,6 +22,12 @@ decimal hours in [0, 24). For a period 14:00-15:00 UTC, 14.5.}
 
 \item{period_hours}{Numeric. Length of the period \eqn{t_1}{t1} [h], in
 (0, 1] (1 for hourly, 0.5 for 30 min).}
+
+\item{standard}{Character, no default. Treatment of the periods that
+contain sunrise or sunset: \code{"fao56"} (midpoint criterion of FAO-56:
+\eqn{R_a = 0}{Ra = 0} when the sun is below the horizon at the midpoint,
+otherwise the full integral) or \code{"asce"} (limits of integration set to
+the sunrise and sunset hour angles, ASCE-EWRI 2005 Eq. 56). See Details.}
 }
 \value{
 A numeric vector of extraterrestrial radiation of the period
@@ -54,13 +60,29 @@ west), with the exact 1/15 h per degree instead of 0.06667 (decision
 WF-10). It is computed by the internal hour angle of
 \code{\link[=ef_solar_geometry]{ef_solar_geometry()}}.
 
-Sun below the horizon: when the hour angle of the midpoint lies outside
-\eqn{[-\omega_s, \omega_s]}{[-ws, ws]} (Eq. 25), \eqn{R_a = 0}{Ra = 0} by
-definition (FAO-56 midpoint criterion). A period that contains sunrise or
-sunset therefore gets either its full integral or zero; trimming
-\eqn{\omega_1, \omega_2}{w1, w2} to the sunrise and sunset angles,
-attributed to ASCE-EWRI (2005) by secondary implementations, is
-\code{CANDIDATA} and is not applied (decision WF-10).
+The same equations are ASCE-EWRI (2005) Eqs. 48 and 50-58 (pp. 39-42),
+with \eqn{G_{sc}}{Gsc} = 4.92 MJ m-2 h-1 (= 0.0820 MJ m-2 min-1) and
+the same coefficients of \eqn{d_r}{dr}, \eqn{\delta}{delta},
+\eqn{S_c}{Sc} and \eqn{b}{b}.
+
+\strong{Sunrise and sunset} (\code{standard}, decision WF-10). With
+\code{standard = "fao56"}, when the hour angle of the midpoint lies outside
+\eqn{[-\omega_s, \omega_s]}{[-ws, ws]} (Eq. 25), \eqn{R_a = 0}{Ra = 0}
+by definition (FAO-56 midpoint criterion); a period that contains sunrise
+or sunset gets either its full integral or zero. With \code{standard = "asce"}, the limits of integration are set with the conditionals of
+ASCE-EWRI (2005) Eq. 56 (p. 41): \eqn{\omega_1}{w1} and
+\eqn{\omega_2}{w2} are limited to \eqn{[-\omega_s, \omega_s]}{[-ws,
+ws]} and \eqn{\omega_1 \le \omega_2}{w1 <= w2}, applied to every period
+as the report allows ("can be applied for all timesteps"); a period
+entirely below the horizon gets 0 and a period containing sunrise or
+sunset gets the integral over its sunlit part. The report also states
+(p. 41) that a midpoint outside \eqn{[-\omega_s, \omega_s]}{[-ws, ws]}
+means \eqn{R_a = 0}{Ra = 0}; for a period whose midpoint is below the
+horizon but which contains sunrise or sunset the two statements differ,
+and Eq. 56 is followed. In polar day (\eqn{\omega_s = \pi}{ws = pi})
+there is no sunrise or sunset and the limits are not changed (the
+literal limitation to \eqn{[-\pi, \pi]}{[-pi, pi]} would cut the
+periods around solar midnight).
 
 Missing values propagate. Values outside the domains above raise
 \code{earthflux_domain_error}; a non-integer \code{doy} raises
@@ -68,9 +90,11 @@ Missing values propagate. Values outside the domains above raise
 }
 \section{Verification status}{
 
-\code{VERIFICADA} (FAO-56, chapter 3, Eqs. 28-33; case V15: 14:00-15:00 local
-standard time on 1 October at 16 degrees 13' N, 16 degrees 15' W gives
-3.543 MJ m-2 h-1).
+\code{standard = "fao56"}: \code{VERIFICADA} (FAO-56, chapter 3, Eqs. 28-33; case
+V15: 14:00-15:00 local standard time on 1 October at 16 degrees 13' N,
+16 degrees 15' W gives 3.543 MJ m-2 h-1). \code{standard = "asce"}:
+\code{VERIFICADA} (ASCE-EWRI, 2005, Eqs. 48, 53-58, pp. 39-42; Eq. 56 for the
+limits of integration).
 }
 
 \examples{
@@ -78,16 +102,31 @@ deg <- pi / 180
 # FAO-56 example 19: 1 October, 14:00-15:00 local standard time in a
 # time zone 15 degrees west of Greenwich, i.e. 15:00-16:00 UTC
 ef_ra_period(lat = (16 + 13 / 60) * deg, lon = -(16 + 15 / 60) * deg,
-             doy = 274, utc_mid = 15.5, period_hours = 1)
+             doy = 274, utc_mid = 15.5, period_hours = 1,
+             standard = "fao56")
 
-# Hourly course of one day (midpoints 00:30 ... 23:30 UTC)
-ef_ra_period(lat = -35 * deg, lon = 0, doy = 15,
-             utc_mid = 0:23 + 0.5, period_hours = 1)
+# Hourly course of one day (midpoints 00:30 ... 23:30 UTC): the two
+# standards differ only in the periods containing sunrise and sunset
+fao <- ef_ra_period(lat = -35 * deg, lon = 0, doy = 15,
+                    utc_mid = 0:23 + 0.5, period_hours = 1,
+                    standard = "fao56")
+asce <- ef_ra_period(lat = -35 * deg, lon = 0, doy = 15,
+                     utc_mid = 0:23 + 0.5, period_hours = 1,
+                     standard = "asce")
+which(fao != asce)
 }
 \references{
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). \emph{Crop
 evapotranspiration: Guidelines for computing crop water requirements}
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+
+ASCE-EWRI (2005). \emph{The ASCE Standardized Reference Evapotranspiration
+Equation}. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 }
 \seealso{
 Other derived meteorological variables:

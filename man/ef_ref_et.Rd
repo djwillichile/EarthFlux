@@ -54,13 +54,15 @@ reference fraction on an alfalfa basis are not interchangeable.}
 \item{timestep}{Character, no default. \code{"daily"} or \code{"hourly"}.}
 
 \item{standard}{Character, no default. \code{"fao56"} (FAO-56 Eqs. 6 and 53;
-grass only, \code{VERIFICADA}) or \code{"asce"} (ASCE-EWRI 2005 standardized
-constants, \code{CANDIDATA}).}
+grass only) or \code{"asce"} (ASCE-EWRI 2005 standardized equation, Eq. 1
+and Table 1); both \code{VERIFICADA}.}
 
 \item{daytime}{Logical or \code{NULL}. Required for \code{timestep = "hourly"} with
 \code{standard = "asce"}, where \eqn{C_d}{Cd} differs by day and night:
 \code{TRUE} for daytime periods (\code{NA} gives \code{NA}); the day/night criterion is
-the caller's choice (decision WF-15). Not used with
+the caller's choice (decision WF-15); ASCE-EWRI (2005, p. 5) defines
+daytime as \eqn{R_n > 0}{Rn > 0} (see \code{\link[=ef_ref_soil_heat_flux]{ef_ref_soil_heat_flux()}}). Not
+used with
 \code{standard = "fao56"} (\eqn{C_d}{Cd} = 0.34 day and night); must be
 \code{NULL} for daily steps.}
 }
@@ -76,8 +78,7 @@ codes that hold somewhere: \code{EF_INPUT_NA} and \code{EF_WS_ETR_NEGATIVE}
 (negative reference ET, kept; the code covers ETo and ETr);
 \item \code{provenance}: the rows of the constants table used (\code{constants},
 with source and status of each), the verification \code{status}
-(\code{"VERIFICADA"} for FAO-56 grass, \code{"CANDIDATA"} otherwise),
-references, \code{flags_evaluated} and package version.
+(\code{"VERIFICADA"}), references, \code{flags_evaluated} and package version.
 }
 }
 \description{
@@ -95,20 +96,32 @@ psychrometric constant, vapour pressure deficit, wind at 2 m).
   \frac{C_n}{T + 273} u_2 (e_s - e_a)}{\Delta + \gamma (1 + C_d u_2)}}{
   ETref = (0.408 * Delta * (Rn - G) + gamma * Cn / (T + 273) * u2 *
   (es - ea)) / (Delta + gamma * (1 + Cd * u2))}
-With \eqn{C_n}{Cn} = 900 and \eqn{C_d}{Cd} = 0.34 it is FAO-56 Eq. 6
-(daily ETo, mm d-1); with \eqn{C_n}{Cn} = 37 and \eqn{C_d}{Cd} = 0.34,
-FAO-56 Eq. 53 (hourly ETo, mm h-1). The constants come from one internal
-table with the source and status of each row
+This is the standardized reference evapotranspiration equation of
+ASCE-EWRI (2005, Eq. 1, p. 4), with ETos (short) and ETrs (tall
+reference). With \eqn{C_n}{Cn} = 900 and \eqn{C_d}{Cd} = 0.34 it is
+FAO-56 Eq. 6 (daily ETo, mm d-1); with \eqn{C_n}{Cn} = 37 and
+\eqn{C_d}{Cd} = 0.34, FAO-56 Eq. 53 (hourly ETo, mm h-1). The constants
+come from one internal table with the source and status of each row
 (dev/specs/weather-forcing.md 5.3):\tabular{llll}{
-   Reference, standard, step \tab \eqn{C_n}{Cn} \tab \eqn{C_d}{Cd} \tab Status \cr
-   grass, \code{"fao56"}, daily \tab 900 \tab 0.34 \tab \code{VERIFICADA} \cr
-   grass, \code{"fao56"}, hourly \tab 37 \tab 0.34 \tab \code{VERIFICADA} \cr
-   grass, \code{"asce"}, daily \tab 900 \tab 0.34 \tab \code{CANDIDATA} \cr
-   alfalfa, \code{"asce"}, daily \tab 1600 \tab 0.38 \tab \code{CANDIDATA} \cr
-   grass, \code{"asce"}, hourly \tab 37 \tab 0.24 day / 0.96 night \tab \code{CANDIDATA} \cr
-   alfalfa, \code{"asce"}, hourly \tab 66 \tab 0.25 day / 1.7 night \tab \code{CANDIDATA} \cr
+   Reference, standard, step \tab \eqn{C_n}{Cn} \tab \eqn{C_d}{Cd} \tab Source \cr
+   grass, \code{"fao56"}, daily \tab 900 \tab 0.34 \tab FAO-56 Eq. 6 \cr
+   grass, \code{"fao56"}, hourly \tab 37 \tab 0.34 \tab FAO-56 Eq. 53 \cr
+   grass, \code{"asce"}, daily \tab 900 \tab 0.34 \tab ASCE-EWRI Table 1 \cr
+   alfalfa, \code{"asce"}, daily \tab 1600 \tab 0.38 \tab ASCE-EWRI Table 1 \cr
+   grass, \code{"asce"}, hourly \tab 37 \tab 0.24 day / 0.96 night \tab ASCE-EWRI Table 1 \cr
+   alfalfa, \code{"asce"}, hourly \tab 66 \tab 0.25 day / 1.7 night \tab ASCE-EWRI Table 1 \cr
 }
 
+
+All rows are \code{VERIFICADA}. Units (ASCE-EWRI, p. 4): \eqn{C_n}{Cn} in K
+mm s3 Mg-1 d-1 or h-1 (it absorbs the time conversion, the
+\eqn{K_{time}}{Ktime} of 86400 s d-1 or 3600 s h-1 of the full
+Penman-Monteith form), \eqn{C_d}{Cd} in s m-1 and 0.408 in m2 mm MJ-1
+(1 / 2.45 MJ kg-1 with a water density of 1 Mg m-3, pp. 9 and 27). The
+report fixes the reference heights (0.12 m short, 0.50 m tall), the
+surface resistances (daily 70 and 45 s m-1; hourly 50 and 30 s m-1 by
+day, 200 s m-1 by night) and \eqn{\lambda}{lambda} = 2.45 MJ kg-1
+behind these constants (Table 2, p. 5).
 
 FAO-56 reference surface: hypothetical grass 0.12 m high, fixed surface
 resistance 70 s m-1 and albedo 0.23, with measurements at 2 m (FAO-56,
@@ -120,15 +133,16 @@ and that hourly values summed over 24 hours generally match the daily
 computation.
 
 \strong{\code{standard} matters for the grass reference.} For hourly grass, FAO-56
-uses \eqn{C_d}{Cd} = 0.34 day and night, while the ASCE-EWRI candidate
-constants use 0.24 / 0.96: with the inputs of FAO-56 example 19
-(14:00-15:00) they give 0.627 and 0.656 mm h-1.
+uses \eqn{C_d}{Cd} = 0.34 day and night, while ASCE-EWRI (2005) uses
+0.24 / 0.96: with the inputs of FAO-56 example 19 (14:00-15:00) they give
+0.627 and 0.656 mm h-1.
 
 \code{standard = "fao56"} with \code{reference = "alfalfa"} raises
 \code{earthflux_undefined_reference} (also \code{earthflux_input_error}): FAO-56
-does not define the tall reference. The constants of the alfalfa
-reference verify only the arithmetic here: a verification case for ETr
-requires the examples of ASCE-EWRI (2005), not yet read.
+does not define the tall reference. The worked examples of ASCE-EWRI
+(2005) (its Appendix C, Greeley, Colorado) are not part of the copy of
+the report that was read, so no published ETrs value is reproduced yet
+(dev/specs/weather-forcing.md 8.2).
 
 The instantaneous reference ET at the satellite overpass (spec 5.5) and
 the daily ETr from hourly values (spec 5.6) belong to the station
@@ -137,7 +151,8 @@ orchestration \code{\link[=ef_station_ref_et]{ef_station_ref_et()}}, not to this
 Missing values propagate (and are flagged \code{EF_INPUT_NA}). Negative
 results (for example at night, when \eqn{R_n - G < 0}{Rn - G < 0} with a
 small deficit) are kept and flagged \code{EF_WS_ETR_NEGATIVE} (principle 6),
-never truncated. Missing or unknown choices raise
+never truncated; ASCE-EWRI (2005, p. 45) states that it "may be
+appropriate to retain the negative values" in the 24-hour sums. Missing or unknown choices raise
 \code{earthflux_missing_input} or \code{earthflux_unknown_method}; values outside
 the domains above raise \code{earthflux_domain_error}.
 }
@@ -146,10 +161,10 @@ the domains above raise \code{earthflux_domain_error}.
 \code{standard = "fao56"}, \code{reference = "grass"}: \code{VERIFICADA} (FAO-56,
 chapter 4, Eqs. 6 and 53; examples 18 and 19, cases V14-V16 of
 dev/specs/weather-forcing.md 8.1). \code{standard = "asce"} (short and tall
-reference, daily and hourly, day and night \eqn{C_d}{Cd}): \code{CANDIDATA}
-(ASCE-EWRI, 2005, was not accessible; constants from secondary
-implementations; implemented as \code{CANDIDATA} by direction of the author to
-advance milestone M3; dev/specs/weather-forcing.md 13).
+reference, daily and hourly, day and night \eqn{C_d}{Cd}): \code{VERIFICADA}
+(ASCE-EWRI, 2005, Eq. 1, p. 4, and Table 1, p. 5; the values are those
+first implemented from secondary sources, unchanged). No worked example
+of ASCE-EWRI (2005) is reproduced yet (Appendix C not read).
 }
 
 \examples{
@@ -171,7 +186,7 @@ eto <- ef_ref_et(
 )
 eto$et_ref
 
-# Same inputs, tall reference with the ASCE-EWRI candidate constants
+# Same inputs, tall reference with the ASCE-EWRI (2005) constants
 ef_ref_et(
   net_radiation = rn, soil_heat_flux = 0, air_temperature = tmean,
   wind_speed_2m = ef_wind_2m(10 / 3.6, 10),
@@ -186,8 +201,12 @@ evapotranspiration: Guidelines for computing crop water requirements}
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
 
 ASCE-EWRI (2005). \emph{The ASCE Standardized Reference Evapotranspiration
-Equation}. American Society of Civil Engineers.
-\doi{10.1061/9780784408056}
+Equation}. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 }
 \seealso{
 Other reference evapotranspiration functions:

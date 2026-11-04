@@ -15,8 +15,9 @@
 #     Cn, Cd and G/Rn per reference, standard, time step and day/night, with
 #     the source and verification status of each row (spec 5.3).
 #   - ef_ref_net_radiation() (exported): Rns, Rnl and Rn of the reference
-#     surface, daily and hourly (FAO-56 Eqs. 38-40 and the hourly
-#     adaptation; VERIFICADA). Returns an `earthflux_reference_net_radiation`
+#     surface, daily and hourly, for the explicit `standard` (FAO-56
+#     Eqs. 38-40 and the hourly adaptation; ASCE-EWRI 2005 Eqs. 15-18 and
+#     42-45; VERIFICADA). Returns an `earthflux_reference_net_radiation`
 #     object with the flags EF_INPUT_NA and EF_WS_RS_RSO_LIMITED.
 #   - ef_ref_soil_heat_flux() (exported): G of the reference surface from
 #     the constants table (numeric).
@@ -37,17 +38,17 @@
 # Verification status (spec 5.3): FAO-56 grass reference rows are
 #   VERIFICADA (FAO-56 Eqs. 6, 42, 45, 46, 53). The ASCE-EWRI (2005)
 #   standardized rows (short and tall reference, daily and hourly, day and
-#   night Cd, G/Rn ratios) are CANDIDATA: ASCE-EWRI (2005) was not
-#   accessible; the values come from secondary implementations (`SPEI`
-#   1.8.1, `water` 1.0) as recorded in the spec. They were implemented as
-#   CANDIDATA by direction of the author to advance M3 (spec section 13;
-#   the integrator records it in dev/DECISIONS.md).
+#   night Cd, G/Rn ratios) are VERIFICADA against the Task Committee final
+#   report of January 2005 (Eq. 1, p. 4; Table 1, p. 5; Eq. 30, p. 25;
+#   Eqs. 65-66, p. 44); they were first implemented as CANDIDATA from
+#   secondary implementations (`SPEI` 1.8.1, `water` 1.0) and the values
+#   did not change (spec sections 5.3 and 13).
 #
 # Conventions: air temperature in degrees Celsius (P0-4, WF-02); radiation
 #   and soil heat flux in MJ m-2 per period (d-1 or h-1) as in FAO-56;
-#   normative literals of the standard (0.23, 4.903e-9, 273.16 in Rnl, 273 in
-#   the aerodynamic term, 0.408) kept inside these functions (decision
-#   WF-14). Vectorised; NA propagated; classed errors; nothing truncated
+#   normative literals of each standard (0.23; sigma 4.903e-9 of FAO-56 or
+#   4.901e-9 and 2.042e-10 of ASCE-EWRI; 273.16 in Rnl, 273 in the
+#   aerodynamic term, 0.408) kept inside these functions (decision WF-14). Vectorised; NA propagated; classed errors; nothing truncated
 #   (negative reference ET is kept and flagged, principle 6).
 
 # Constants table --------------------------------------------------------------
@@ -63,8 +64,9 @@
 #' @return A data frame with one row per combination and the columns
 #'   `reference` (`"grass"`, `"alfalfa"`), `standard` (`"fao56"`,
 #'   `"asce"`), `timestep` (`"daily"`, `"hourly"`), `period` (`"all"`,
-#'   `"day"`, `"night"`), `cn`, `cd`, `g_rn`, `status` (`"VERIFICADA"` or
-#'   `"CANDIDATA"`) and `source`.
+#'   `"day"`, `"night"`), `cn`, `cd`, `g_rn`, `status` (`"VERIFICADA"` for
+#'   every row: FAO-56 and ASCE-EWRI 2005) and `source` (equation, table and
+#'   page of the primary source).
 #' @noRd
 ef_reference_constants <- function() {
   data.frame(
@@ -89,23 +91,23 @@ ef_reference_constants <- function() {
     g_rn = c(0, 0.1, 0.5,
              0, 0,
              0.1, 0.5, 0.04, 0.2),
-    status = c(rep("VERIFICADA", 3L), rep("CANDIDATA", 6L)),
+    status = rep("VERIFICADA", 9L),
     source = c(
       "FAO-56 (Allen et al., 1998), chapter 4, Eq. 6; G: chapter 4, Eq. 42",
       "FAO-56 (Allen et al., 1998), chapter 4, Eq. 53; G: chapter 4, Eq. 45",
       "FAO-56 (Allen et al., 1998), chapter 4, Eq. 53; G: chapter 4, Eq. 46",
-      paste("ASCE-EWRI (2005), not accessible; equal to FAO-56 Eq. 6;",
-            "secondary: SPEI 1.8.1 (crop = \"short\")"),
-      paste("ASCE-EWRI (2005), not accessible;",
-            "secondary: SPEI 1.8.1 (crop = \"tall\")"),
-      paste("ASCE-EWRI (2005), not accessible;",
-            "secondary: water 1.0, asceHourly() (\"Table 1\")"),
-      paste("ASCE-EWRI (2005), not accessible;",
-            "secondary: water 1.0, asceHourly() (\"Table 1\")"),
-      paste("ASCE-EWRI (2005), not accessible;",
-            "secondary: water 1.0, asceHourly() (\"Table 1\")"),
-      paste("ASCE-EWRI (2005), not accessible;",
-            "secondary: water 1.0, asceHourly() (\"Table 1\")")
+      paste("ASCE-EWRI (2005), Eq. 1 (p. 4) and Table 1 (p. 5), daily,",
+            "short reference (ETos); G: Eq. 30 (p. 25)"),
+      paste("ASCE-EWRI (2005), Eq. 1 (p. 4) and Table 1 (p. 5), daily,",
+            "tall reference (ETrs); G: Eq. 30 (p. 25)"),
+      paste("ASCE-EWRI (2005), Table 1 (p. 5), hourly during daytime,",
+            "short reference (ETos); G: Eq. 65a (p. 44)"),
+      paste("ASCE-EWRI (2005), Table 1 (p. 5), hourly during nighttime,",
+            "short reference (ETos); G: Eq. 65b (p. 44)"),
+      paste("ASCE-EWRI (2005), Table 1 (p. 5), hourly during daytime,",
+            "tall reference (ETrs); G: Eq. 66a (p. 44)"),
+      paste("ASCE-EWRI (2005), Table 1 (p. 5), hourly during nighttime,",
+            "tall reference (ETrs); G: Eq. 66b (p. 44)")
     ),
     stringsAsFactors = FALSE
   )
@@ -135,7 +137,7 @@ check_reference_setup <- function(reference, timestep, standard,
       paste0(
         "FAO-56 defines only the grass reference: `standard = \"fao56\"` ",
         "cannot be used with `reference = \"alfalfa\"`; use ",
-        "`standard = \"asce\"` (CANDIDATA) for the tall reference."
+        "`standard = \"asce\"` (ASCE-EWRI 2005) for the tall reference."
       ),
       class = c("earthflux_undefined_reference", "earthflux_input_error"),
       reference = reference,
@@ -200,10 +202,11 @@ check_daytime <- function(daytime, needed, timestep, args,
 #'
 #' @description
 #' Computes the net radiation \eqn{R_n}{Rn} of the hypothetical reference
-#' surface of FAO-56 (albedo 0.23) and its components, the net shortwave
-#' radiation \eqn{R_{ns}}{Rns} and the net outgoing longwave radiation
-#' \eqn{R_{nl}}{Rnl}, for a daily or an hourly time step. It is the
-#' net radiation entering [ef_ref_et()] and [ef_ref_soil_heat_flux()]; it is
+#' surface (albedo 0.23) and its components, the net shortwave radiation
+#' \eqn{R_{ns}}{Rns} and the net outgoing longwave radiation
+#' \eqn{R_{nl}}{Rnl}, for a daily or an hourly time step and the explicit
+#' standard (FAO-56 or the ASCE-EWRI standardized procedure). It is the net
+#' radiation entering [ef_ref_et()] and [ef_ref_soil_heat_flux()]; it is
 #' **not** the net radiation of a pixel ([ef_net_radiation()]).
 #'
 #' @param solar_radiation Numeric. Measured (or estimated) solar radiation
@@ -223,14 +226,20 @@ check_daytime <- function(daytime, needed, timestep, args,
 #' @param tmax,tmin Numeric or `NULL`. Daily maximum and minimum air
 #'   temperatures \[degrees Celsius\], required for `timestep = "daily"`
 #'   (and `NULL` for `"hourly"`). Finite, `> -273.16` and `tmin <= tmax`.
-#' @param timestep Character, no default. `"daily"` (FAO-56 Eq. 39) or
-#'   `"hourly"` (FAO-56 chapter 4, "Hourly time step").
+#' @param timestep Character, no default. `"daily"` (FAO-56 Eq. 39;
+#'   ASCE-EWRI Eq. 17) or `"hourly"` (FAO-56 chapter 4, "Hourly time
+#'   step"; ASCE-EWRI Eq. 44).
+#' @param standard Character, no default. `"fao56"` or `"asce"`
+#'   (ASCE-EWRI 2005 standardized procedure). It selects the
+#'   Stefan-Boltzmann constant and the limits of the relative solar
+#'   radiation (see Details).
 #' @param cloudiness Numeric or `NULL`. The cloudiness term
 #'   \eqn{f = 1.35 R_s/R_{so} - 0.35}{f = 1.35 * Rs / Rso - 0.35} \[-\] to
 #'   use instead of computing it from `solar_radiation` and
-#'   `clear_sky_radiation`, in \[-0.35, 1\]. It serves night-time periods,
-#'   where \eqn{R_{so} = 0}{Rso = 0} and FAO-56 carries the ratio of a
-#'   period before sunset (see Details). When supplied it is used at every
+#'   `clear_sky_radiation`, in \[-0.35, 1\] for `"fao56"` and in
+#'   \[0.05, 1\] for `"asce"` (the ranges of each standard). It serves night-time (and, for ASCE-EWRI, low sun angle)
+#'   periods, where the ratio is undefined or unreliable and is carried from
+#'   an earlier period (see Details). When supplied it is used at every
 #'   position. Default `NULL`: computed from the radiation.
 #'
 #' @return An object of class `earthflux_reference_net_radiation`: a list
@@ -242,73 +251,99 @@ check_daytime <- function(daytime, needed, timestep, args,
 #'
 #'   all numeric \[MJ m-2 d-1 or MJ m-2 h-1, the unit of
 #'   `solar_radiation`\] with the common length (and `dim`) of the inputs;
-#'   * `timestep`;
+#'   * `timestep`, `standard`;
 #'   * `flags`: list of `earthflux_flag` records (record scope) for the
 #'     codes that hold somewhere: `EF_INPUT_NA` (a required input is
-#'     missing) and `EF_WS_RS_RSO_LIMITED` (\eqn{R_s/R_{so} > 1}{Rs / Rso >
-#'     1}, limited to 1 in the cloudiness term);
-#'   * `provenance`: time step, verification status, constants, source of
-#'     the cloudiness term, references, `flags_evaluated` and package
-#'     version.
+#'     missing) and `EF_WS_RS_RSO_LIMITED` (\eqn{R_s/R_{so}}{Rs / Rso}
+#'     outside the range of the standard, limited inside the cloudiness
+#'     term);
+#'   * `provenance`: time step, standard, verification status, constants,
+#'     source of the cloudiness term, references, `flags_evaluated` and
+#'     package version.
 #'
 #' @details
 #' \deqn{R_{ns} = (1 - \alpha) R_s, \quad \alpha = 0.23}{Rns = (1 - 0.23) *
 #'   Rs}
-#' (FAO-56, chapter 3, Eq. 38; albedo of the grass reference),
+#' (FAO-56, chapter 3, Eq. 38; ASCE-EWRI, 2005, Eqs. 16 and 43: albedo
+#' fixed at 0.23 for the short and the tall reference, daily and hourly),
 #' \deqn{R_{nl} = \sigma \frac{T_{max,K}^4 + T_{min,K}^4}{2} (0.34 - 0.14
 #'   \sqrt{e_a}) \left(1.35 \frac{R_s}{R_{so}} - 0.35\right)}{Rnl = sigma *
 #'   (TmaxK^4 + TminK^4) / 2 * (0.34 - 0.14 * sqrt(ea)) * (1.35 * Rs / Rso -
 #'   0.35)}
-#' with \eqn{\sigma}{sigma} = 4.903e-9 MJ K-4 m-2 d-1 and
-#' \eqn{T_K = T + 273.16}{TK = T + 273.16} (FAO-56, chapter 3, Eq. 39), and
-#' \eqn{R_n = R_{ns} - R_{nl}}{Rn = Rns - Rnl} (Eq. 40). For the hourly time
-#' step (FAO-56, chapter 4, "Hourly time step") the mean of the fourth
-#' powers is replaced by \eqn{T_{hr,K}^4}{ThrK^4} and
-#' \eqn{\sigma = 4.903 \times 10^{-9}/24}{sigma = 4.903e-9 / 24} =
-#' 2.043e-10 MJ K-4 m-2 h-1.
+#' with \eqn{T_K = T + 273.16}{TK = T + 273.16} (FAO-56, chapter 3, Eq. 39;
+#' ASCE-EWRI Eqs. 17-18), and \eqn{R_n = R_{ns} - R_{nl}}{Rn = Rns - Rnl}
+#' (FAO-56 Eq. 40; ASCE-EWRI Eqs. 15 and 42). For the hourly time step
+#' (FAO-56, chapter 4, "Hourly time step"; ASCE-EWRI Eqs. 44-45) the mean of
+#' the fourth powers is replaced by \eqn{T_{hr,K}^4}{ThrK^4}.
 #'
-#' **Limit Rs/Rso <= 1.** FAO-56 defines Eq. 39 with
-#' \eqn{R_s/R_{so} \le 1}{Rs / Rso <= 1}. The limit is applied only inside
-#' the cloudiness term; `solar_radiation` and `rns` are not modified, and
-#' the positions where it acts are flagged `EF_WS_RS_RSO_LIMITED`. The lower
-#' limit of 0.3 attributed to ASCE-EWRI (2005) by secondary implementations
-#' is `CANDIDATA` and is not applied.
+#' **Constants and limits of each standard** (decision WF-14: the literals
+#' of each standard are used as written):
 #'
-#' **Night-time periods.** With \eqn{R_{so} = 0}{Rso = 0} the ratio is
-#' undefined. FAO-56 sets it to the value of a period 2-3 hours before
-#' sunset, identified by \eqn{\omega_s - 0.79 \le \omega \le \omega_s -
-#' 0.52}{ws - 0.79 <= w <= ws - 0.52}, or, approximately, to 0.4-0.6 in
+#' | | `"fao56"` | `"asce"` |
+#' |---|---|---|
+#' | \eqn{\sigma}{sigma}, daily \[MJ K-4 m-2 d-1\] | 4.903e-9 (Eq. 39) | 4.901e-9 (Eq. 17, p. 19) |
+#' | \eqn{\sigma}{sigma}, hourly \[MJ K-4 m-2 h-1\] | 4.903e-9 / 24 | 2.042e-10 (Eq. 44, p. 34) |
+#' | \eqn{R_s/R_{so}}{Rs/Rso} in the cloudiness term | \eqn{\le 1}{<= 1} (Eq. 39) | in \[0.3, 1\] (Eqs. 18 and 45, pp. 20 and 35) |
+#' | cloudiness term \eqn{f}{f} | \[-0.35, 1\] | \[0.05, 1\] (Eqs. 17 and 44) |
+#'
+#' The limits act only inside the cloudiness term; `solar_radiation` and
+#' `rns` are not modified, and the positions where a limit acts are flagged
+#' `EF_WS_RS_RSO_LIMITED`. The report is not consistent here: it states
+#' that the ratio limits \eqn{0.3 \le R_s/R_{so} \le 1}{0.3 <= Rs/Rso <= 1}
+#' give \eqn{0.05 \le f \le 1}{0.05 <= f <= 1} (pp. 20 and 35), but
+#' \eqn{1.35 \times 0.3 - 0.35 = 0.055}{1.35 * 0.3 - 0.35 = 0.055}. The ratio
+#' limit is applied (so a computed term is at least 0.055), and a supplied
+#' `cloudiness` is accepted in the stated range \[0.05, 1\]. The two Stefan-Boltzmann values differ by 0.04 %
+#' (daily); the ASCE-EWRI hourly value is the published one (4.901e-9 / 24
+#' = 2.04208e-10).
+#'
+#' **Night-time and low sun angle.** With \eqn{R_{so} = 0}{Rso = 0} the
+#' ratio is undefined. FAO-56 sets it to the value of a period 2-3 hours
+#' before sunset, identified by \eqn{\omega_s - 0.79 \le \omega \le \omega_s
+#' - 0.52}{ws - 0.79 <= w <= ws - 0.52}, or, approximately, to 0.4-0.6 in
 #' humid and sub-humid and 0.7-0.8 in arid and semi-arid climates (0.3 means
-#' complete cloud cover). Selecting that value is the task of the station
+#' complete cloud cover). ASCE-EWRI (2005, Eq. 46, pp. 35-36) uses, for
+#' every period whose sun angle at the midpoint is below 0.3 rad (night,
+#' dusk and dawn), the cloudiness term of the last period before the sun
+#' angle fell below 0.3 rad. Selecting that value is the task of the station
 #' orchestration ([ef_station_ref_et()], argument `night_cloudiness`); here
 #' the resulting term is passed as `cloudiness` (for a ratio \eqn{r}{r},
 #' `cloudiness = 1.35 * r - 0.35`).
 #'
-#' **Normative constants** (decision WF-14): \eqn{\sigma}{sigma} of FAO-56
-#' (4.903e-9 MJ m-2 d-1 K-4, about 5.6748e-8 W m-2 K-4, 0.08 % below the
+#' **Normative constants.** \eqn{\sigma}{sigma} of each standard (FAO-56
+#' 4.903e-9 MJ m-2 d-1 K-4, about 5.6748e-8 W m-2 K-4, 0.08 % below the
 #' CODATA value used elsewhere in the package) and 273.16 in the conversion
-#' to kelvin, as written in Eq. 39; the package constants
-#' (`EF_STEFAN_BOLTZMANN`, 273.15) are not used inside the reference
-#' surface equations. \eqn{R_{nl}}{Rnl} is an empirical longwave balance of
-#' the reference surface and is not interchangeable with the incoming and
+#' to kelvin, as written in both standards; the package constants
+#' (`EF_STEFAN_BOLTZMANN`, 273.15) are not used inside the reference surface
+#' equations. \eqn{R_{nl}}{Rnl} is an empirical longwave balance of the
+#' reference surface and is not interchangeable with the incoming and
 #' emitted longwave radiation of a pixel.
 #'
 #' Missing values propagate (and are flagged `EF_INPUT_NA`). Missing,
-#' unknown or inconsistent `timestep` and temperature arguments raise
-#' `earthflux_missing_input`, `earthflux_unknown_method` or
+#' unknown or inconsistent `timestep`, `standard` and temperature arguments
+#' raise `earthflux_missing_input`, `earthflux_unknown_method` or
 #' `earthflux_input_error`; values outside the domains above (including
 #' \eqn{R_{so} = 0}{Rso = 0} without `cloudiness`, and `tmin > tmax`) raise
 #' `earthflux_domain_error`.
 #'
 #' @section Verification status:
-#' `VERIFICADA` (FAO-56, chapter 3, Eqs. 38-40; chapter 4, hourly time
-#' step; cases V10, V11, V14, V15 and V16 of
-#' dev/specs/weather-forcing.md 8.1).
+#' `standard = "fao56"`: `VERIFICADA` (FAO-56, chapter 3, Eqs. 38-40;
+#' chapter 4, hourly time step; cases V10, V11, V14, V15 and V16 of
+#' dev/specs/weather-forcing.md 8.1). `standard = "asce"`: `VERIFICADA`
+#' (ASCE-EWRI, 2005, Eqs. 15-18, pp. 17-20, and Eqs. 42-45, pp. 32-35).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family reference evapotranspiration functions
 #' @export
@@ -317,23 +352,33 @@ check_daytime <- function(daytime, needed, timestep, args,
 #' # FAO-56 example 18 (Uccle, 6 July): daily step
 #' rn <- ef_ref_net_radiation(
 #'   solar_radiation = 22.07, clear_sky_radiation = 30.90,
-#'   vapour_pressure = 1.409, tmax = 21.5, tmin = 12.3, timestep = "daily"
+#'   vapour_pressure = 1.409, tmax = 21.5, tmin = 12.3, timestep = "daily",
+#'   standard = "fao56"
 #' )
 #' rn$rn
+#'
+#' # Same inputs with the ASCE-EWRI constants (sigma = 4.901e-9)
+#' ef_ref_net_radiation(
+#'   solar_radiation = 22.07, clear_sky_radiation = 30.90,
+#'   vapour_pressure = 1.409, tmax = 21.5, tmin = 12.3, timestep = "daily",
+#'   standard = "asce"
+#' )$rn
 #'
 #' # FAO-56 example 19, 02:00-03:00: night, Rs/Rso = 0.8 carried
 #' ef_ref_net_radiation(
 #'   solar_radiation = 0, clear_sky_radiation = NULL,
 #'   vapour_pressure = 3.402, air_temperature = 28, timestep = "hourly",
-#'   cloudiness = 1.35 * 0.8 - 0.35
+#'   standard = "fao56", cloudiness = 1.35 * 0.8 - 0.35
 #' )$rn
 ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
                                  vapour_pressure, air_temperature = NULL,
-                                 tmax = NULL, tmin = NULL, timestep,
+                                 tmax = NULL, tmin = NULL, timestep, standard,
                                  cloudiness = NULL) {
   call <- sys.call()
-  check_method(timestep, c("hourly", "daily"), arg = "timestep",
-               call = call)
+  check_method(if (missing(timestep)) NULL else timestep,
+               c("hourly", "daily"), arg = "timestep", call = call)
+  check_method(if (missing(standard)) NULL else standard, c("asce", "fao56"),
+               arg = "standard", call = call)
   if (missing(clear_sky_radiation)) {
     clear_sky_radiation <- NULL
   }
@@ -393,7 +438,8 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
   check_in_range(solar_radiation, "solar_radiation", lower = 0, call = call)
   check_in_range(vapour_pressure, "vapour_pressure", lower = 0, call = call)
   for (nm in names(temps)) {
-    # T + 273.16 > 0 (FAO-56 Eq. 39 conversion to kelvin).
+    # T + 273.16 > 0 (conversion to kelvin of FAO-56 Eq. 39 and ASCE-EWRI
+    # Eqs. 17 and 44).
     check_in_range(temps[[nm]], nm, lower = -273.16, lower_inclusive = FALSE,
                    call = call)
   }
@@ -401,14 +447,16 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
     check_condition(tmin <= tmax, "`tmin` must not exceed `tmax`", call)
   }
 
+  # Limits of the relative solar radiation Rs/Rso inside the cloudiness
+  # term: FAO-56 Eq. 39 (<= 1); ASCE-EWRI (2005) Eqs. 18 and 45 ([0.3, 1]).
+  ratio_min <- if (standard == "asce") 0.3 else 0
   limited <- NULL
   if (is.null(cloudiness)) {
     check_in_range(clear_sky_radiation, "clear_sky_radiation", lower = 0,
                    lower_inclusive = FALSE, call = call)
     ratio <- solar_radiation / clear_sky_radiation
-    limited <- !is.na(ratio) & ratio > 1
-    # FAO-56 Eq. 39: Rs/Rso <= 1, inside the cloudiness term only.
-    f <- 1.35 * pmin(ratio, 1) - 0.35
+    limited <- !is.na(ratio) & (ratio > 1 | ratio < ratio_min)
+    f <- 1.35 * pmin(pmax(ratio, ratio_min), 1) - 0.35
     cloud_source <- "computed from solar_radiation / clear_sky_radiation"
     cloud_inputs <- list(solar_radiation = solar_radiation,
                          clear_sky_radiation = clear_sky_radiation)
@@ -417,26 +465,36 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
       check_in_range(clear_sky_radiation, "clear_sky_radiation", lower = 0,
                      call = call)
     }
-    check_in_range(cloudiness, "cloudiness", lower = -0.35, upper = 1,
-                   call = call)
+    # Range of the cloudiness term: FAO-56 [-0.35, 1] (Rs/Rso in [0, 1]);
+    # ASCE-EWRI (2005), Eqs. 17 and 44: 0.05 <= fcd <= 1.
+    check_in_range(cloudiness, "cloudiness",
+                   lower = if (standard == "asce") 0.05 else -0.35,
+                   upper = 1, call = call)
     f <- cloudiness
     cloud_source <- "supplied in `cloudiness`"
     cloud_inputs <- list(cloudiness = cloudiness)
   }
 
-  # FAO-56, chapter 3, Eq. 38 (albedo of the grass reference, WF-14).
+  # FAO-56, chapter 3, Eq. 38; ASCE-EWRI (2005), Eqs. 16 and 43 (albedo of
+  # the reference surface, WF-14).
   rns <- (1 - 0.23) * solar_radiation
-  # FAO-56, chapter 3, Eq. 39 (sigma and 273.16 of the standard, WF-14);
-  # hourly: chapter 4, "Hourly time step" (sigma / 24, T_hr^4).
+  # FAO-56, chapter 3, Eq. 39 (hourly: chapter 4, sigma / 24, T_hr^4);
+  # ASCE-EWRI (2005), Eq. 17 (daily) and Eq. 44 (hourly). Literals of each
+  # standard, with 273.16 (WF-14).
+  sigma <- switch(
+    paste(standard, timestep),
+    "fao56 daily" = 4.903e-9,
+    "fao56 hourly" = 4.903e-9 / 24,
+    "asce daily" = 4.901e-9,
+    "asce hourly" = 2.042e-10
+  )
   if (timestep == "daily") {
-    sigma <- 4.903e-9
     sigma_t4 <- sigma * ((tmax + 273.16)^4 + (tmin + 273.16)^4) / 2
   } else {
-    sigma <- 4.903e-9 / 24
     sigma_t4 <- sigma * (air_temperature + 273.16)^4
   }
   rnl <- sigma_t4 * (0.34 - 0.14 * sqrt(vapour_pressure)) * f
-  # FAO-56, chapter 3, Eq. 40.
+  # FAO-56, chapter 3, Eq. 40; ASCE-EWRI (2005), Eqs. 15 and 42.
   rn <- rns - rnl
 
   rn <- ef_reshape(rn, n, d)
@@ -457,17 +515,25 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
       rnl = ef_reshape(rnl, n, d),
       cloudiness = ef_reshape(f, n, d),
       timestep = timestep,
+      standard = standard,
       flags = flags$flags,
       provenance = list(
         timestep = timestep,
+        standard = standard,
         fun = "ef_ref_net_radiation",
         status = "VERIFICADA",
-        references = c(
-          "FAO-56 (Allen et al., 1998), chapter 3, Eqs. 38-40",
-          "FAO-56 (Allen et al., 1998), chapter 4, hourly time step"
-        ),
+        references = if (standard == "fao56") {
+          c(
+            "FAO-56 (Allen et al., 1998), chapter 3, Eqs. 38-40",
+            "FAO-56 (Allen et al., 1998), chapter 4, hourly time step"
+          )
+        } else {
+          paste("ASCE-EWRI (2005), Eqs. 15-18 (daily, pp. 17-20) and",
+                "Eqs. 42-45 (hourly, pp. 32-35)")
+        },
         constants = list(albedo = 0.23, sigma = sigma,
-                         kelvin_offset = 273.16),
+                         kelvin_offset = 273.16,
+                         ratio_limits = c(ratio_min, 1)),
         cloudiness = cloud_source,
         flags_evaluated = flags$evaluated,
         earthflux_version = as.character(getNamespaceVersion("EarthFlux"))
@@ -496,13 +562,13 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
 #'   reference, 0.12 m) or `"alfalfa"` (tall reference, about 0.5 m).
 #' @param timestep Character, no default. `"daily"` or `"hourly"`.
 #' @param standard Character, no default. `"fao56"` (FAO-56, grass only) or
-#'   `"asce"` (ASCE-EWRI 2005 standardized equation, `CANDIDATA`).
+#'   `"asce"` (ASCE-EWRI 2005 standardized equation).
 #' @param daytime Logical or `NULL`. For `timestep = "hourly"`, `TRUE` for
 #'   daytime and `FALSE` for night-time periods (required); must be `NULL`
-#'   for `"daily"`. `NA` gives `NA`. The criterion (for example
-#'   \eqn{R_n > 0}{Rn > 0} or \eqn{R_a > 0}{Ra > 0}) is the caller's
-#'   choice: FAO-56 speaks of "daylight periods" without a threshold
-#'   (decision WF-15).
+#'   for `"daily"`. `NA` gives `NA`. The criterion is the caller's choice
+#'   (decision WF-15): FAO-56 speaks of "daylight periods" without a
+#'   threshold; ASCE-EWRI (2005) defines daytime as a positive hourly net
+#'   radiation, `daytime = net_radiation > 0` (see Details).
 #'
 #' @return A numeric vector of soil heat flux of the reference surface
 #'   \eqn{G}{G} in the unit of `net_radiation`, with the common length of
@@ -517,12 +583,25 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
 #' | Reference, standard | Daily | Hourly, day | Hourly, night | Status |
 #' |---|---|---|---|---|
 #' | grass, `"fao56"` | 0 (Eq. 42) | 0.1 (Eq. 45) | 0.5 (Eq. 46) | `VERIFICADA` |
-#' | grass, `"asce"` | 0 | 0.1 | 0.5 | `CANDIDATA` |
-#' | alfalfa, `"asce"` | 0 | 0.04 | 0.2 | `CANDIDATA` |
+#' | grass, `"asce"` | 0 (Eq. 30) | 0.1 (Eq. 65a) | 0.5 (Eq. 65b) | `VERIFICADA` |
+#' | alfalfa, `"asce"` | 0 (Eq. 30) | 0.04 (Eq. 66a) | 0.2 (Eq. 66b) | `VERIFICADA` |
 #'
-#' FAO-56 (Eq. 42) states that the daily soil heat flux beneath the grass
-#' reference is small and may be ignored (G about 0). The monthly forms
-#' (FAO-56 Eqs. 43-44) are out of scope. `standard = "fao56"` with
+#' FAO-56 (Eq. 42) and ASCE-EWRI (2005, Eq. 30, p. 25) state that the daily
+#' soil heat flux beneath the reference surface is small and is ignored
+#' (G = 0). The monthly forms (FAO-56 Eqs. 43-44; ASCE-EWRI Eqs. 31-32) are
+#' out of scope.
+#'
+#' **Day and night in ASCE-EWRI (2005).** The report defines daytime as a
+#' positive mean net radiation of the hourly period (text before Table 1,
+#' p. 5; Table 2, p. 5: daytime \eqn{R_n > 0}{Rn > 0}, night-time
+#' \eqn{R_n \le 0}{Rn <= 0}), which `daytime = net_radiation > 0` follows
+#' (option `"rn_positive"` of [ef_station_ref_et()]). The report is not
+#' consistent at \eqn{R_n = 0}{Rn = 0}: p. 44 (after Eqs. 65-66) and the
+#' glossary (p. 58) define night-time as \eqn{R_n < 0}{Rn < 0} and daytime
+#' as \eqn{R_n \ge 0}{Rn >= 0}. At \eqn{R_n = 0}{Rn = 0} G is 0 under
+#' both readings; only \eqn{C_d}{Cd} of [ef_ref_et()] depends on it.
+#'
+#' `standard = "fao56"` with
 #' `reference = "alfalfa"` raises `earthflux_undefined_reference` (also
 #' `earthflux_input_error`): FAO-56 does not define the tall reference.
 #'
@@ -534,9 +613,8 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
 #'
 #' @section Verification status:
 #' FAO-56 grass rows: `VERIFICADA` (FAO-56, chapter 4, Eqs. 42, 45, 46;
-#' cases V15 and V16). ASCE-EWRI rows: `CANDIDATA` (ASCE-EWRI, 2005, was not
-#' accessible; values from secondary implementations, implemented as
-#' `CANDIDATA` by direction of the author to advance milestone M3).
+#' cases V15 and V16). ASCE-EWRI rows: `VERIFICADA` (ASCE-EWRI, 2005,
+#' Eq. 30, p. 25; Eqs. 65a-b and 66a-b, p. 44).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -544,8 +622,12 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
 #'
 #' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
-#' Equation*. American Society of Civil Engineers.
-#' \doi{10.1061/9780784408056}
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family reference evapotranspiration functions
 #' @export
@@ -555,6 +637,11 @@ ef_ref_net_radiation <- function(solar_radiation, clear_sky_radiation,
 #' ef_ref_soil_heat_flux(c(1.749, -0.100), reference = "grass",
 #'                       timestep = "hourly", standard = "fao56",
 #'                       daytime = c(TRUE, FALSE))
+#'
+#' # Tall reference, ASCE-EWRI daytime rule (Rn > 0)
+#' rn <- c(1.749, -0.100)
+#' ef_ref_soil_heat_flux(rn, reference = "alfalfa", timestep = "hourly",
+#'                       standard = "asce", daytime = rn > 0)
 #'
 #' # Daily step: G = 0
 #' ef_ref_soil_heat_flux(13.28, reference = "grass", timestep = "daily",
@@ -624,12 +711,14 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #'   reference fraction on an alfalfa basis are not interchangeable.
 #' @param timestep Character, no default. `"daily"` or `"hourly"`.
 #' @param standard Character, no default. `"fao56"` (FAO-56 Eqs. 6 and 53;
-#'   grass only, `VERIFICADA`) or `"asce"` (ASCE-EWRI 2005 standardized
-#'   constants, `CANDIDATA`).
+#'   grass only) or `"asce"` (ASCE-EWRI 2005 standardized equation, Eq. 1
+#'   and Table 1); both `VERIFICADA`.
 #' @param daytime Logical or `NULL`. Required for `timestep = "hourly"` with
 #'   `standard = "asce"`, where \eqn{C_d}{Cd} differs by day and night:
 #'   `TRUE` for daytime periods (`NA` gives `NA`); the day/night criterion is
-#'   the caller's choice (decision WF-15). Not used with
+#'   the caller's choice (decision WF-15); ASCE-EWRI (2005, p. 5) defines
+#'   daytime as \eqn{R_n > 0}{Rn > 0} (see [ef_ref_soil_heat_flux()]). Not
+#'   used with
 #'   `standard = "fao56"` (\eqn{C_d}{Cd} = 0.34 day and night); must be
 #'   `NULL` for daily steps.
 #'
@@ -643,28 +732,39 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #'     (negative reference ET, kept; the code covers ETo and ETr);
 #'   * `provenance`: the rows of the constants table used (`constants`,
 #'     with source and status of each), the verification `status`
-#'     (`"VERIFICADA"` for FAO-56 grass, `"CANDIDATA"` otherwise),
-#'     references, `flags_evaluated` and package version.
+#'     (`"VERIFICADA"`), references, `flags_evaluated` and package version.
 #'
 #' @details
 #' \deqn{ET_{ref} = \frac{0.408\,\Delta (R_n - G) + \gamma
 #'   \frac{C_n}{T + 273} u_2 (e_s - e_a)}{\Delta + \gamma (1 + C_d u_2)}}{
 #'   ETref = (0.408 * Delta * (Rn - G) + gamma * Cn / (T + 273) * u2 *
 #'   (es - ea)) / (Delta + gamma * (1 + Cd * u2))}
-#' With \eqn{C_n}{Cn} = 900 and \eqn{C_d}{Cd} = 0.34 it is FAO-56 Eq. 6
-#' (daily ETo, mm d-1); with \eqn{C_n}{Cn} = 37 and \eqn{C_d}{Cd} = 0.34,
-#' FAO-56 Eq. 53 (hourly ETo, mm h-1). The constants come from one internal
-#' table with the source and status of each row
+#' This is the standardized reference evapotranspiration equation of
+#' ASCE-EWRI (2005, Eq. 1, p. 4), with ETos (short) and ETrs (tall
+#' reference). With \eqn{C_n}{Cn} = 900 and \eqn{C_d}{Cd} = 0.34 it is
+#' FAO-56 Eq. 6 (daily ETo, mm d-1); with \eqn{C_n}{Cn} = 37 and
+#' \eqn{C_d}{Cd} = 0.34, FAO-56 Eq. 53 (hourly ETo, mm h-1). The constants
+#' come from one internal table with the source and status of each row
 #' (dev/specs/weather-forcing.md 5.3):
 #'
-#' | Reference, standard, step | \eqn{C_n}{Cn} | \eqn{C_d}{Cd} | Status |
+#' | Reference, standard, step | \eqn{C_n}{Cn} | \eqn{C_d}{Cd} | Source |
 #' |---|---|---|---|
-#' | grass, `"fao56"`, daily | 900 | 0.34 | `VERIFICADA` |
-#' | grass, `"fao56"`, hourly | 37 | 0.34 | `VERIFICADA` |
-#' | grass, `"asce"`, daily | 900 | 0.34 | `CANDIDATA` |
-#' | alfalfa, `"asce"`, daily | 1600 | 0.38 | `CANDIDATA` |
-#' | grass, `"asce"`, hourly | 37 | 0.24 day / 0.96 night | `CANDIDATA` |
-#' | alfalfa, `"asce"`, hourly | 66 | 0.25 day / 1.7 night | `CANDIDATA` |
+#' | grass, `"fao56"`, daily | 900 | 0.34 | FAO-56 Eq. 6 |
+#' | grass, `"fao56"`, hourly | 37 | 0.34 | FAO-56 Eq. 53 |
+#' | grass, `"asce"`, daily | 900 | 0.34 | ASCE-EWRI Table 1 |
+#' | alfalfa, `"asce"`, daily | 1600 | 0.38 | ASCE-EWRI Table 1 |
+#' | grass, `"asce"`, hourly | 37 | 0.24 day / 0.96 night | ASCE-EWRI Table 1 |
+#' | alfalfa, `"asce"`, hourly | 66 | 0.25 day / 1.7 night | ASCE-EWRI Table 1 |
+#'
+#' All rows are `VERIFICADA`. Units (ASCE-EWRI, p. 4): \eqn{C_n}{Cn} in K
+#' mm s3 Mg-1 d-1 or h-1 (it absorbs the time conversion, the
+#' \eqn{K_{time}}{Ktime} of 86400 s d-1 or 3600 s h-1 of the full
+#' Penman-Monteith form), \eqn{C_d}{Cd} in s m-1 and 0.408 in m2 mm MJ-1
+#' (1 / 2.45 MJ kg-1 with a water density of 1 Mg m-3, pp. 9 and 27). The
+#' report fixes the reference heights (0.12 m short, 0.50 m tall), the
+#' surface resistances (daily 70 and 45 s m-1; hourly 50 and 30 s m-1 by
+#' day, 200 s m-1 by night) and \eqn{\lambda}{lambda} = 2.45 MJ kg-1
+#' behind these constants (Table 2, p. 5).
 #'
 #' FAO-56 reference surface: hypothetical grass 0.12 m high, fixed surface
 #' resistance 70 s m-1 and albedo 0.23, with measurements at 2 m (FAO-56,
@@ -676,15 +776,16 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #' computation.
 #'
 #' **`standard` matters for the grass reference.** For hourly grass, FAO-56
-#' uses \eqn{C_d}{Cd} = 0.34 day and night, while the ASCE-EWRI candidate
-#' constants use 0.24 / 0.96: with the inputs of FAO-56 example 19
-#' (14:00-15:00) they give 0.627 and 0.656 mm h-1.
+#' uses \eqn{C_d}{Cd} = 0.34 day and night, while ASCE-EWRI (2005) uses
+#' 0.24 / 0.96: with the inputs of FAO-56 example 19 (14:00-15:00) they give
+#' 0.627 and 0.656 mm h-1.
 #'
 #' `standard = "fao56"` with `reference = "alfalfa"` raises
 #' `earthflux_undefined_reference` (also `earthflux_input_error`): FAO-56
-#' does not define the tall reference. The constants of the alfalfa
-#' reference verify only the arithmetic here: a verification case for ETr
-#' requires the examples of ASCE-EWRI (2005), not yet read.
+#' does not define the tall reference. The worked examples of ASCE-EWRI
+#' (2005) (its Appendix C, Greeley, Colorado) are not part of the copy of
+#' the report that was read, so no published ETrs value is reproduced yet
+#' (dev/specs/weather-forcing.md 8.2).
 #'
 #' The instantaneous reference ET at the satellite overpass (spec 5.5) and
 #' the daily ETr from hourly values (spec 5.6) belong to the station
@@ -693,7 +794,8 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #' Missing values propagate (and are flagged `EF_INPUT_NA`). Negative
 #' results (for example at night, when \eqn{R_n - G < 0}{Rn - G < 0} with a
 #' small deficit) are kept and flagged `EF_WS_ETR_NEGATIVE` (principle 6),
-#' never truncated. Missing or unknown choices raise
+#' never truncated; ASCE-EWRI (2005, p. 45) states that it "may be
+#' appropriate to retain the negative values" in the 24-hour sums. Missing or unknown choices raise
 #' `earthflux_missing_input` or `earthflux_unknown_method`; values outside
 #' the domains above raise `earthflux_domain_error`.
 #'
@@ -701,10 +803,10 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #' `standard = "fao56"`, `reference = "grass"`: `VERIFICADA` (FAO-56,
 #' chapter 4, Eqs. 6 and 53; examples 18 and 19, cases V14-V16 of
 #' dev/specs/weather-forcing.md 8.1). `standard = "asce"` (short and tall
-#' reference, daily and hourly, day and night \eqn{C_d}{Cd}): `CANDIDATA`
-#' (ASCE-EWRI, 2005, was not accessible; constants from secondary
-#' implementations; implemented as `CANDIDATA` by direction of the author to
-#' advance milestone M3; dev/specs/weather-forcing.md 13).
+#' reference, daily and hourly, day and night \eqn{C_d}{Cd}): `VERIFICADA`
+#' (ASCE-EWRI, 2005, Eq. 1, p. 4, and Table 1, p. 5; the values are those
+#' first implemented from secondary sources, unchanged). No worked example
+#' of ASCE-EWRI (2005) is reproduced yet (Appendix C not read).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -712,8 +814,12 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
 #'
 #' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
-#' Equation*. American Society of Civil Engineers.
-#' \doi{10.1061/9780784408056}
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family reference evapotranspiration functions
 #' @export
@@ -737,7 +843,7 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #' )
 #' eto$et_ref
 #'
-#' # Same inputs, tall reference with the ASCE-EWRI candidate constants
+#' # Same inputs, tall reference with the ASCE-EWRI (2005) constants
 #' ef_ref_et(
 #'   net_radiation = rn, soil_heat_flux = 0, air_temperature = tmean,
 #'   wind_speed_2m = ef_wind_2m(10 / 3.6, 10),
@@ -789,8 +895,8 @@ ef_ref_et <- function(net_radiation, soil_heat_flux, air_temperature,
     cd <- k$cd[1L]
   }
 
-  # Combination equation (FAO-56 Eqs. 6 and 53; general Cn/Cd form, spec
-  # 5.2): 0.408 and 273 are literals of the standard (WF-14).
+  # Combination equation (FAO-56 Eqs. 6 and 53; ASCE-EWRI 2005 Eq. 1, the
+  # general Cn/Cd form): 0.408 and 273 are literals of the standard (WF-14).
   et_ref <- (0.408 * slope * (net_radiation - soil_heat_flux) +
                psychrometric * cn / (air_temperature + 273) * wind_speed_2m *
                  vapour_pressure_deficit) /
@@ -804,8 +910,6 @@ ef_ref_et <- function(net_radiation, soil_heat_flux, air_temperature,
       n = n
     )
   )
-  status <- if (standard == "fao56") "VERIFICADA" else "CANDIDATA"
-
   new_ef_object(
     list(
       et_ref = et_ref,
@@ -818,16 +922,14 @@ ef_ref_et <- function(net_radiation, soil_heat_flux, air_temperature,
         timestep = timestep,
         standard = standard,
         fun = "ef_ref_et",
-        status = status,
+        status = "VERIFICADA",
         constants = k,
         daytime = if (split) "supplied by the caller (WF-15)" else "not used",
         references = if (standard == "fao56") {
           "FAO-56 (Allen et al., 1998), chapter 4, Eqs. 6 and 53"
         } else {
-          c(
-            "ASCE-EWRI (2005), doi:10.1061/9780784408056 (not accessible; constants CANDIDATA)",
-            "Secondary: SPEI 1.8.1 (daily Cn/Cd); water 1.0, asceHourly() (hourly Cn/Cd/G)"
-          )
+          paste("ASCE-EWRI (2005), Eq. 1 (p. 4) and Table 1 (p. 5);",
+                "G: Eq. 30 (p. 25), Eqs. 65-66 (p. 44)")
         },
         flags_evaluated = flags$evaluated,
         earthflux_version = as.character(getNamespaceVersion("EarthFlux"))
@@ -869,7 +971,8 @@ ef_diagnose_reference_et <- function(et_ref, inputs, n) {
 #' Registry rows owned by this file and by the station orchestration
 #' `ef_station_ref_et()` (`R/prep-weather.R`) (dev/specs/flags.md section
 #' 4.2, stage `WS`): `EF_WS_RS_RSO_LIMITED` (class I-m, the limit
-#' Rs/Rso <= 1 of FAO-56 Eq. 39, `VERIFICADA`), `EF_WS_ETR_NEGATIVE`
+#' Rs/Rso <= 1 of FAO-56 Eq. 39 and the limits 0.3 <= Rs/Rso <= 1 of
+#' ASCE-EWRI 2005 Eqs. 18 and 45, `VERIFICADA`), `EF_WS_ETR_NEGATIVE`
 #' (class I; the normalised name of `EF_ETREF_NEGATIVE`),
 #' `EF_WS_INCOMPLETE_DAY` (class I, QC-10: a day without all its periods
 #' gives no daily sum) and `EF_WS_OVERPASS_OUTSIDE_RECORDS` (class I, cause
@@ -890,7 +993,8 @@ ef_flags_reference_et <- function() {
     error_class = rep(NA_character_, 4L),
     description = c(
       paste(
-        "The ratio Rs/Rso exceeds 1 and is limited to 1 inside the",
+        "The ratio Rs/Rso is outside the range of the standard (above 1;",
+        "for ASCE-EWRI also below 0.3) and is limited inside the",
         "cloudiness term of the reference net longwave radiation;",
         "Rs is unchanged."
       ),
@@ -988,10 +1092,12 @@ ef_ref_et_inst_interp <- function(et_ref, period_mid, overpass) {
 #'   hourly data).
 #' @return Named numeric daily reference ET \[mm d-1\], one per day in order
 #'   of first appearance.
-#' @section Verification status: `TODO` for the tall reference (D1 for
+#' @section Verification status: `TODO` for the use in METRIC (D1 for
 #'   METRIC, Allen et al., 2007, not verified); FAO-56 (chapter 4) states
 #'   that hourly sums over 24 hours generally match the daily computation
-#'   for grass.
+#'   for grass, and ASCE-EWRI (2005, p. 45) sums hourly ETos or ETrs "over
+#'   the 24-hour period" keeping negative values, without defining the
+#'   clock of the day (WF-11).
 #' @noRd
 ef_ref_et_daily_sum <- function(et_ref, day, periods_per_day) {
   call <- sys.call()

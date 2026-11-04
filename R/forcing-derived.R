@@ -12,20 +12,24 @@
 #   section 11 (open decisions). Names: dev/NAMING.md (forcing table).
 #
 # Implemented (all exported, numeric, VERIFICADA against FAO-56 unless
-#   stated):
+#   stated, and also against the ASCE-EWRI (2005) standardized procedure,
+#   which uses the same forms except where noted in each function: the
+#   daily ea forms "rhmin" and "rhmean_tmean" and the sunrise/sunset limits
+#   of the hourly Ra, both selected explicitly):
 #   - ef_psychrometric()  gamma, FAO-56 Eq. 8;
 #   - ef_es()             saturation vapour pressure e°(T), Eq. 11 (with
 #                         Eq. 12 for periods of a day or longer, in Details);
 #   - ef_es_slope()       slope Delta of the saturation curve, Eq. 13;
 #   - actual vapour pressure family (one Rd, topic `ef_ea`):
 #       ef_ea_dewpoint() Eq. 14, ef_ea_rh() Eq. 54, ef_ea_tmin() Eq. 48,
-#       ef_ea_daily(..., method) Eqs. 17-19 (rule N6b: one function with
-#       `method`, no default, returns numeric);
+#       ef_ea_daily(..., method) Eqs. 17-19 and ASCE-EWRI Eqs. 13-14 (rule
+#       N6b: one function with `method`, no default, returns numeric);
 #   - ef_dewpoint()       dew point from vapour pressure, annex 3 Eq. 3-11;
 #   - ef_wind_2m()        logarithmic wind profile over short grass, Eq. 47;
 #   - ef_ra_daily()       daily extraterrestrial radiation, Eqs. 21-25;
 #   - ef_ra_period()      extraterrestrial radiation of an hourly or shorter
-#                         period, Eqs. 28-33 (midpoint criterion, WF-10);
+#                         period, Eqs. 28-33 (`standard`: FAO-56 midpoint
+#                         criterion or ASCE-EWRI Eq. 56 limits, WF-10);
 #   - ef_rso()            clear-sky radiation from elevation, Eq. 37.
 #   Internal: sat_vp() (Eq. 11 without checks), ef_sunset_hour_angle()
 #   (Eq. 25) and ef_daylight_hours() (Eq. 34).
@@ -152,12 +156,24 @@ ef_daylight_hours <- function(lat, doy) {
 #'
 #' @section Verification status:
 #' `VERIFICADA` (FAO-56, chapter 3, Eq. 8; dev/specs/weather-forcing.md
-#' 4.2, case V1: P = 81.8 kPa gives 0.054 kPa degC-1).
+#' 4.2, case V1: P = 81.8 kPa gives 0.054 kPa degC-1). The same
+#' coefficient, \eqn{\gamma = 0.000665 P}{gamma = 0.000665 * P}, is
+#' ASCE-EWRI (2005) Eqs. 4 and 35 (pp. 10, 28), with \eqn{\lambda}{lambda}
+#' = 2.45 MJ kg-1 (pp. 9, 27); the pressure of [ef_air_pressure()] is its
+#' Eqs. 3 and 34.
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family derived meteorological variables
 #' @export
@@ -215,12 +231,22 @@ ef_psychrometric <- function(pressure) {
 #' `VERIFICADA` (FAO-56, chapter 3, Eqs. 11 and 12; case V2:
 #' e°(24.5) = 3.075 kPa, e°(15) = 1.705 kPa). FAO-56 annex 3, Eq. 3-8 uses
 #' 0.611 instead of 0.6108; the chapter 3 form is adopted
-#' (dev/specs/weather-forcing.md 4.3).
+#' (dev/specs/weather-forcing.md 4.3). The same function and the same
+#' daily mean (Tmax and Tmin) and hourly forms are ASCE-EWRI (2005)
+#' Eqs. 6-7 (p. 11) and Eq. 37 (p. 29).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family derived meteorological variables
 #' @export
@@ -261,14 +287,27 @@ ef_es <- function(air_temperature) {
 #' @section Verification status:
 #' `VERIFICADA` (FAO-56, chapter 3, Eq. 13; case V14: 0.122 kPa degC-1 at
 #' 16.9 degrees C). FAO-56 annex 3, Eq. 3-9 writes the same quantity with
-#' 2504 and 237.2 in the exponent; the chapter 3 form is adopted. The
-#' coefficient 2503 attributed to ASCE-EWRI (2005) by secondary
-#' implementations is `CANDIDATA` and not used (weather-forcing.md 4.3).
+#' 2504 and 237.2 in the exponent; the chapter 3 form is adopted.
+#' ASCE-EWRI (2005) Eqs. 5 and 36 (pp. 10, 28) write
+#' \eqn{\Delta = 2503 \exp(17.27 T / (T + 237.3)) / (T + 237.3)^2}{Delta
+#' = 2503 * exp(17.27 * T / (T + 237.3)) / (T + 237.3)^2}: 2503 is the
+#' product 4098 x 0.6108 = 2503.06 rounded, so the two forms differ by a
+#' constant factor of 2.3e-5 (relative), far below the precision of the
+#' published values; the FAO-56 form is used for both standards
+#' (dev/specs/weather-forcing.md 4.3).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family derived meteorological variables
 #' @export
@@ -294,8 +333,8 @@ ef_es_slope <- function(air_temperature) {
 #' * `ef_ea_rh()`: from the air temperature and relative humidity of the
 #'   same period (hourly or shorter);
 #' * `ef_ea_daily()`: from the daily extreme temperatures and relative
-#'   humidities, with an explicit `method` (`"rhmax_rhmin"`, `"rhmax"` or
-#'   `"rhmean"`);
+#'   humidities, with an explicit `method` (`"rhmax_rhmin"`, `"rhmax"`,
+#'   `"rhmin"`, `"rhmean"` or `"rhmean_tmean"`);
 #' * `ef_ea_tmin()`: from the minimum temperature, only when humidity data
 #'   are missing, with an explicit aridity correction `k0`.
 #'
@@ -308,10 +347,12 @@ ef_es_slope <- function(air_temperature) {
 #'   quality-control matter, `EF_WS_RH_GT100`), never truncated.
 #' @param tmin,tmax Numeric. Daily minimum and maximum air temperatures
 #'   \[degrees Celsius\], finite and `> -237.3`; `tmin <= tmax`. `tmax` is
-#'   not used by `method = "rhmax"` and may then be `NULL`.
+#'   not used by `method = "rhmax"` and `tmin` not by `method = "rhmin"`;
+#'   they may then be omitted (`NULL`).
 #' @param rh_max,rh_min Numeric. Daily maximum and minimum relative humidity
 #'   \[%\], finite and `>= 0`. `rh_min` is not used by `method = "rhmax"`
-#'   and may then be `NULL`.
+#'   and `rh_max` not by `method = "rhmin"`; they may then be omitted
+#'   (`NULL`).
 #' @param k0 Numeric. Aridity correction \eqn{K_0}{K0} \[degC\] subtracted
 #'   from `tmin` to approximate the dew point, finite and `>= 0`. FAO-56
 #'   (annex 6, Eq. 6-6) gives 0 degC for humid and sub-humid climates and
@@ -322,9 +363,17 @@ ef_es_slope <- function(air_temperature) {
 #'     `rh_min` (recommended by FAO-56);
 #'   * `"rhmax"`: FAO-56 Eq. 18, from `tmin` and `rh_max` only (when
 #'     `rh_min` is doubtful);
+#'   * `"rhmin"`: ASCE-EWRI (2005) Eq. 13, from `tmax` and `rh_min` only
+#'     (when only good daily minimum humidities are available; less
+#'     desirable than Eqs. 11-12 of the report);
 #'   * `"rhmean"`: FAO-56 Eq. 19, from the mean relative humidity
 #'     `(rh_max + rh_min) / 2` and the mean saturation vapour pressure (the
-#'     least desirable of the three, FAO-56).
+#'     least desirable of the FAO-56 forms; not recommended in the ASCE-EWRI
+#'     standardized procedure);
+#'   * `"rhmean_tmean"`: ASCE-EWRI (2005) Eq. 14, from the mean relative
+#'     humidity `(rh_max + rh_min) / 2` and the saturation vapour pressure
+#'     at the mean temperature `(tmax + tmin) / 2` (the form of the
+#'     standardized procedure when only the mean humidity is usable).
 #'
 #' @return A numeric vector of actual vapour pressure \eqn{e_a}{ea} \[kPa\]
 #'   with the common length of the inputs, keeping their `dim`.
@@ -345,16 +394,35 @@ ef_es_slope <- function(air_temperature) {
 #' \deqn{e_a = e^\circ(T_{min}) \frac{RH_{max}}{100}}{ea = e0(Tmin) *
 #'   RHmax / 100}
 #' (Eq. 18; `"rhmax"`),
+#' \deqn{e_a = e^\circ(T_{max}) \frac{RH_{min}}{100}}{ea = e0(Tmax) *
+#'   RHmin / 100}
+#' (ASCE-EWRI 2005, Eq. 13; `"rhmin"`),
 #' \deqn{e_a = \frac{RH_{mean}}{100} \frac{e^\circ(T_{max}) +
 #'   e^\circ(T_{min})}{2}, \quad RH_{mean} = \frac{RH_{max} +
 #'   RH_{min}}{2}}{ea = RHmean / 100 * (e0(Tmax) + e0(Tmin)) / 2, RHmean =
 #'   (RHmax + RHmin) / 2}
-#' (Eq. 19; `"rhmean"`), and
+#' (Eq. 19; `"rhmean"`),
+#' \deqn{e_a = \frac{RH_{mean}}{100} e^\circ\left(\frac{T_{max} +
+#'   T_{min}}{2}\right)}{ea = RHmean / 100 * e0((Tmax + Tmin) / 2)}
+#' (ASCE-EWRI 2005, Eqs. 14 and 2; `"rhmean_tmean"`), and
 #' \deqn{e_a = e^\circ(T_{min} - K_0)}{ea = e0(Tmin - K0)}
 #' (Eq. 48; annex 6, Eq. 6-6; `ef_ea_tmin()`). The last one assumes that
 #' the dew point is close to the minimum temperature, which holds only at
 #' well-watered reference sites; FAO-56 recommends it only when humidity
 #' data are missing.
+#'
+#' **ASCE-EWRI (2005).** The report gives the same forms for the
+#' standardized equation: Eq. 8 and Eq. 38 (dew point; FAO-56 Eq. 14),
+#' Eq. 41 (hourly relative humidity; FAO-56 Eq. 54), Eq. 11 (FAO-56
+#' Eq. 17) and Eq. 12 (FAO-56 Eq. 18), with the preference rankings of its
+#' Tables 3 (daily) and 4 (hourly) (pp. 12, 30). It adds Eq. 13
+#' (`"rhmin"`) and replaces the mean-humidity form: Eq. 14
+#' (`"rhmean_tmean"`) uses \eqn{e^\circ(T_{mean})}{e0(Tmean)}, and the
+#' FAO-56 Eq. 19 form (`"rhmean"`) is "not recommended in the standardized
+#' procedure" (p. 17). The estimate from the minimum temperature is
+#' described in its Appendix E (not read; `ef_ea_tmin()` stays a FAO-56
+#' form). The psychrometric forms (report Eqs. 9-10, 39-40) are not
+#' implemented.
 #'
 #' FAO-56 and `dev/SCIENTIFIC_SPEC.md` section 5 recommend regionalising the
 #' actual vapour pressure (nearly constant during the day), not the relative
@@ -371,12 +439,23 @@ ef_es_slope <- function(air_temperature) {
 #' `VERIFICADA` (FAO-56, chapter 3, Eqs. 14, 17, 18, 19, 48 and 54; annex 6,
 #' Eq. 6-6; dev/specs/weather-forcing.md 4.4, cases V3 and V17).
 #' `ef_ea_tmin()` is verified as an equation; its use is restricted to
-#' missing humidity data and `k0` is always explicit.
+#' missing humidity data and `k0` is always explicit. `"rhmin"` and
+#' `"rhmean_tmean"`: `VERIFICADA` (ASCE-EWRI, 2005, Eqs. 13 and 14, pp.
+#' 16-17); the forms shared with FAO-56 are also ASCE-EWRI (2005) Eqs. 8,
+#' 11, 12, 38 and 41 (pp. 13, 15, 30, 32).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family derived meteorological variables
 #' @name ef_ea
@@ -389,6 +468,10 @@ ef_es_slope <- function(air_temperature) {
 #' ef_ea_daily(tmin = 18, tmax = 25, rh_max = 82, rh_min = 54,
 #'             method = "rhmean")
 #' ef_ea_daily(tmin = 18, rh_max = 82, method = "rhmax")
+#' # ASCE-EWRI (2005) forms: Eq. 13 and Eq. 14
+#' ef_ea_daily(tmax = 25, rh_min = 54, method = "rhmin")
+#' ef_ea_daily(tmin = 18, tmax = 25, rh_max = 82, rh_min = 54,
+#'             method = "rhmean_tmean")
 #'
 #' # From the dew point, and from hourly temperature and humidity
 #' ef_ea_dewpoint(15)
@@ -450,13 +533,17 @@ ef_ea_tmin <- function(tmin, k0) {
 #' @export
 ef_ea_daily <- function(tmin, tmax = NULL, rh_max, rh_min = NULL, method) {
   call <- sys.call()
-  check_method(method, c("rhmax_rhmin", "rhmax", "rhmean"), call = call)
+  check_method(method,
+               c("rhmax_rhmin", "rhmax", "rhmin", "rhmean", "rhmean_tmean"),
+               call = call)
 
   required <- switch(
     method,
     rhmax_rhmin = c("tmin", "tmax", "rh_max", "rh_min"),
     rhmax = c("tmin", "rh_max"),
-    rhmean = c("tmin", "tmax", "rh_max", "rh_min")
+    rhmin = c("tmax", "rh_min"),
+    rhmean = c("tmin", "tmax", "rh_max", "rh_min"),
+    rhmean_tmean = c("tmin", "tmax", "rh_max", "rh_min")
   )
   if (missing(tmin)) {
     tmin <- NULL
@@ -481,11 +568,17 @@ ef_ea_daily <- function(tmin, tmax = NULL, rh_max, rh_min = NULL, method) {
   }
 
   n <- check_core_args(inputs, call)
-  check_celsius_vp(tmin, "tmin", call)
-  check_in_range(rh_max, "rh_max", lower = 0, call = call)
+  if ("tmin" %in% required) {
+    check_celsius_vp(tmin, "tmin", call)
+  }
   if ("tmax" %in% required) {
     check_celsius_vp(tmax, "tmax", call)
+  }
+  if (all(c("tmin", "tmax") %in% required)) {
     check_condition(tmin <= tmax, "`tmin` must not exceed `tmax`", call)
+  }
+  if ("rh_max" %in% required) {
+    check_in_range(rh_max, "rh_max", lower = 0, call = call)
   }
   if ("rh_min" %in% required) {
     check_in_range(rh_min, "rh_min", lower = 0, call = call)
@@ -498,9 +591,13 @@ ef_ea_daily <- function(tmin, tmax = NULL, rh_max, rh_min = NULL, method) {
                      sat_vp(tmax) * rh_min / 100) / 2,
     # FAO-56, chapter 3, Eq. 18.
     rhmax = sat_vp(tmin) * rh_max / 100,
+    # ASCE-EWRI (2005), Eq. 13.
+    rhmin = sat_vp(tmax) * rh_min / 100,
     # FAO-56, chapter 3, Eq. 19 (RHmean = (RHmax + RHmin) / 2).
     rhmean = (rh_max + rh_min) / 2 / 100 *
-      (sat_vp(tmax) + sat_vp(tmin)) / 2
+      (sat_vp(tmax) + sat_vp(tmin)) / 2,
+    # ASCE-EWRI (2005), Eq. 14 with Tmean of Eq. 2.
+    rhmean_tmean = (rh_max + rh_min) / 2 / 100 * sat_vp((tmax + tmin) / 2)
   )
   ef_reshape(ea, n, common_dim(inputs))
 }
@@ -606,12 +703,24 @@ ef_wind_2m_min_height <- function() {
 #' infinite values raise `earthflux_domain_error`.
 #'
 #' @section Verification status:
-#' `VERIFICADA` (FAO-56, chapter 3, Eq. 47; cases V12 and V13).
+#' `VERIFICADA` (FAO-56, chapter 3, Eq. 47; cases V12 and V13). The same
+#' equation is ASCE-EWRI (2005) Eq. 33 (p. 26) and Eq. 67 (p. 44; the text
+#' on that page calls it "Eq. 68", a typographical error), for measurements
+#' above clipped grass; the report directs wind measured above other
+#' surfaces (e.g. alfalfa) to its Appendix B, not implemented here.
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family derived meteorological variables
 #' @export
@@ -677,7 +786,10 @@ ef_wind_2m <- function(wind_speed, height) {
 #'
 #' @section Verification status:
 #' `VERIFICADA` (FAO-56, chapter 3, Eqs. 21-25; cases V7 and V9: 20 degrees
-#' S on 3 September gives 32.2 MJ m-2 d-1). The limitation of the arc
+#' S on 3 September gives 32.2 MJ m-2 d-1). The same equations are
+#' ASCE-EWRI (2005) Eqs. 21-24 and 27-29 (pp. 23-25), written with
+#' \eqn{G_{sc}}{Gsc} = 4.92 MJ m-2 h-1 and the factor 24 / pi (identical
+#' to 0.0820 MJ m-2 min-1 and 24 * 60 / pi). The limitation of the arc
 #' cosine argument in polar conditions is an implementation choice
 #' (dev/specs/weather-forcing.md 13).
 #'
@@ -685,6 +797,14 @@ ef_wind_2m <- function(wind_speed, height) {
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family derived meteorological variables
 #' @export
@@ -730,6 +850,11 @@ ef_ra_daily <- function(lat, doy) {
 #'   decimal hours in \[0, 24). For a period 14:00-15:00 UTC, 14.5.
 #' @param period_hours Numeric. Length of the period \eqn{t_1}{t1} \[h\], in
 #'   (0, 1\] (1 for hourly, 0.5 for 30 min).
+#' @param standard Character, no default. Treatment of the periods that
+#'   contain sunrise or sunset: `"fao56"` (midpoint criterion of FAO-56:
+#'   \eqn{R_a = 0}{Ra = 0} when the sun is below the horizon at the midpoint,
+#'   otherwise the full integral) or `"asce"` (limits of integration set to
+#'   the sunrise and sunset hour angles, ASCE-EWRI 2005 Eq. 56). See Details.
 #'
 #' @return A numeric vector of extraterrestrial radiation of the period
 #'   \eqn{R_a}{Ra} \[MJ m-2 per period\] with the common length of the
@@ -755,27 +880,54 @@ ef_ra_daily <- function(lat, doy) {
 #' WF-10). It is computed by the internal hour angle of
 #' [ef_solar_geometry()].
 #'
-#' Sun below the horizon: when the hour angle of the midpoint lies outside
-#' \eqn{[-\omega_s, \omega_s]}{[-ws, ws]} (Eq. 25), \eqn{R_a = 0}{Ra = 0} by
-#' definition (FAO-56 midpoint criterion). A period that contains sunrise or
-#' sunset therefore gets either its full integral or zero; trimming
-#' \eqn{\omega_1, \omega_2}{w1, w2} to the sunrise and sunset angles,
-#' attributed to ASCE-EWRI (2005) by secondary implementations, is
-#' `CANDIDATA` and is not applied (decision WF-10).
+#' The same equations are ASCE-EWRI (2005) Eqs. 48 and 50-58 (pp. 39-42),
+#' with \eqn{G_{sc}}{Gsc} = 4.92 MJ m-2 h-1 (= 0.0820 MJ m-2 min-1) and
+#' the same coefficients of \eqn{d_r}{dr}, \eqn{\delta}{delta},
+#' \eqn{S_c}{Sc} and \eqn{b}{b}.
+#'
+#' **Sunrise and sunset** (`standard`, decision WF-10). With
+#' `standard = "fao56"`, when the hour angle of the midpoint lies outside
+#' \eqn{[-\omega_s, \omega_s]}{[-ws, ws]} (Eq. 25), \eqn{R_a = 0}{Ra = 0}
+#' by definition (FAO-56 midpoint criterion); a period that contains sunrise
+#' or sunset gets either its full integral or zero. With `standard =
+#' "asce"`, the limits of integration are set with the conditionals of
+#' ASCE-EWRI (2005) Eq. 56 (p. 41): \eqn{\omega_1}{w1} and
+#' \eqn{\omega_2}{w2} are limited to \eqn{[-\omega_s, \omega_s]}{[-ws,
+#' ws]} and \eqn{\omega_1 \le \omega_2}{w1 <= w2}, applied to every period
+#' as the report allows ("can be applied for all timesteps"); a period
+#' entirely below the horizon gets 0 and a period containing sunrise or
+#' sunset gets the integral over its sunlit part. The report also states
+#' (p. 41) that a midpoint outside \eqn{[-\omega_s, \omega_s]}{[-ws, ws]}
+#' means \eqn{R_a = 0}{Ra = 0}; for a period whose midpoint is below the
+#' horizon but which contains sunrise or sunset the two statements differ,
+#' and Eq. 56 is followed. In polar day (\eqn{\omega_s = \pi}{ws = pi})
+#' there is no sunrise or sunset and the limits are not changed (the
+#' literal limitation to \eqn{[-\pi, \pi]}{[-pi, pi]} would cut the
+#' periods around solar midnight).
 #'
 #' Missing values propagate. Values outside the domains above raise
 #' `earthflux_domain_error`; a non-integer `doy` raises
 #' `earthflux_input_error`.
 #'
 #' @section Verification status:
-#' `VERIFICADA` (FAO-56, chapter 3, Eqs. 28-33; case V15: 14:00-15:00 local
-#' standard time on 1 October at 16 degrees 13' N, 16 degrees 15' W gives
-#' 3.543 MJ m-2 h-1).
+#' `standard = "fao56"`: `VERIFICADA` (FAO-56, chapter 3, Eqs. 28-33; case
+#' V15: 14:00-15:00 local standard time on 1 October at 16 degrees 13' N,
+#' 16 degrees 15' W gives 3.543 MJ m-2 h-1). `standard = "asce"`:
+#' `VERIFICADA` (ASCE-EWRI, 2005, Eqs. 48, 53-58, pp. 39-42; Eq. 56 for the
+#' limits of integration).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family derived meteorological variables
 #' @export
@@ -785,13 +937,22 @@ ef_ra_daily <- function(lat, doy) {
 #' # FAO-56 example 19: 1 October, 14:00-15:00 local standard time in a
 #' # time zone 15 degrees west of Greenwich, i.e. 15:00-16:00 UTC
 #' ef_ra_period(lat = (16 + 13 / 60) * deg, lon = -(16 + 15 / 60) * deg,
-#'              doy = 274, utc_mid = 15.5, period_hours = 1)
+#'              doy = 274, utc_mid = 15.5, period_hours = 1,
+#'              standard = "fao56")
 #'
-#' # Hourly course of one day (midpoints 00:30 ... 23:30 UTC)
-#' ef_ra_period(lat = -35 * deg, lon = 0, doy = 15,
-#'              utc_mid = 0:23 + 0.5, period_hours = 1)
-ef_ra_period <- function(lat, lon, doy, utc_mid, period_hours) {
+#' # Hourly course of one day (midpoints 00:30 ... 23:30 UTC): the two
+#' # standards differ only in the periods containing sunrise and sunset
+#' fao <- ef_ra_period(lat = -35 * deg, lon = 0, doy = 15,
+#'                     utc_mid = 0:23 + 0.5, period_hours = 1,
+#'                     standard = "fao56")
+#' asce <- ef_ra_period(lat = -35 * deg, lon = 0, doy = 15,
+#'                      utc_mid = 0:23 + 0.5, period_hours = 1,
+#'                      standard = "asce")
+#' which(fao != asce)
+ef_ra_period <- function(lat, lon, doy, utc_mid, period_hours, standard) {
   call <- sys.call()
+  check_method(if (missing(standard)) NULL else standard, c("asce", "fao56"),
+               arg = "standard", call = call)
   args <- list(lat = lat, lon = lon, doy = doy, utc_mid = utc_mid,
                period_hours = period_hours)
   n <- check_core_args(args, call)
@@ -807,18 +968,30 @@ ef_ra_period <- function(lat, lon, doy, utc_mid, period_hours) {
   delta <- ef_declination(doy)
   omega <- ef_hour_angle(doy, utc_mid, lon)
   ws <- ef_sunset_hour_angle(lat, delta)
-  # FAO-56, chapter 3, Eqs. 29-30.
-  w1 <- omega - pi * period_hours / 24
-  w2 <- omega + pi * period_hours / 24
+  # FAO-56, chapter 3, Eqs. 29-30 (ASCE-EWRI 2005, Eqs. 53-54).
+  w1 <- rep_len(as.vector(omega - pi * period_hours / 24), n)
+  w2 <- rep_len(as.vector(omega + pi * period_hours / 24), n)
+  if (standard == "asce") {
+    # ASCE-EWRI (2005), Eq. 56: limits of integration within [-ws, ws] and
+    # w1 <= w2 (not in polar day, ws = pi, where the sun does not set).
+    ws_n <- rep_len(as.vector(ws), n)
+    clip <- !is.na(ws_n) & ws_n < pi
+    w1[clip] <- pmin(pmax(w1[clip], -ws_n[clip]), ws_n[clip])
+    w2[clip] <- pmin(pmax(w2[clip], -ws_n[clip]), ws_n[clip])
+    swap <- !is.na(w1) & !is.na(w2) & w1 > w2
+    w1[swap] <- w2[swap]
+  }
   gsc <- EF_SOLAR_CONSTANT * 60 / 1e6 # W m-2 to MJ m-2 min-1 (0.0820)
-  # FAO-56, chapter 3, Eq. 28.
+  # FAO-56, chapter 3, Eq. 28 (ASCE-EWRI 2005, Eq. 48).
   ra <- 12 * 60 / pi * gsc * dr *
     ((w2 - w1) * sin(lat) * sin(delta) +
        cos(lat) * cos(delta) * (sin(w2) - sin(w1)))
-  # Midpoint criterion: sun below the horizon at the midpoint -> Ra = 0.
-  below <- !is.na(omega) & !is.na(ws) & (omega < -ws | omega > ws)
-  ra[below & !is.na(ra)] <- 0
-  ef_reshape(ra, n, common_dim(args))
+  if (standard == "fao56") {
+    # Midpoint criterion: sun below the horizon at the midpoint -> Ra = 0.
+    below <- !is.na(omega) & !is.na(ws) & (omega < -ws | omega > ws)
+    ra[below & !is.na(ra)] <- 0
+  }
+  ef_reshape(as.vector(ra), n, common_dim(args))
 }
 
 #' Clear-sky solar radiation
@@ -859,12 +1032,23 @@ ef_ra_period <- function(lat, lon, doy, utc_mid, period_hours) {
 #'
 #' @section Verification status:
 #' `VERIFICADA` (FAO-56, chapter 3, Eq. 37; annex 3, Eq. 3-13; cases V14
-#' and V15).
+#' and V15). The same equation is the default clear-sky radiation of the
+#' ASCE-EWRI (2005) standardized procedure for daily (Eq. 19, p. 22) and
+#' hourly periods (Eq. 47, p. 37); the report reserves the more complex
+#' forms of its Appendix D for assessing the solar radiation data.
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+#'
+#' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family derived meteorological variables
 #' @export
