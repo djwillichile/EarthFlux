@@ -28,52 +28,8 @@
 #   displacement) are explicit arguments without defaults (DECISIONS.md
 #   section 1.0).
 
-# Internal helpers -----------------------------------------------------------------
-
-# check_core_args() is defined in R/solar-geometry.R (shared core helper).
-
-#' Check a condition that involves several arguments
-#'
-#' Raises a classed domain error when `ok` is `FALSE` for some element;
-#' missing values in `ok` are ignored (they propagate).
-#'
-#' TODO(shared): generic helper; candidate for `R/utils.R`.
-#'
-#' @param ok Logical vector, `TRUE` where the condition holds.
-#' @param what Character. Description of the condition for the message.
-#' @param call The call to report.
-#' @return `TRUE`, invisibly.
-#' @noRd
-check_condition <- function(ok, what, call) {
-  n_bad <- sum(!ok, na.rm = TRUE)
-  if (n_bad > 0L) {
-    ef_abort(
-      sprintf("%s; found %d value(s) violating it.", what, n_bad),
-      class = c("earthflux_domain_error", "earthflux_input_error"),
-      call = call
-    )
-  }
-  invisible(TRUE)
-}
-
-#' Check that a scalar argument is a single finite number
-#'
-#' @param x Object to check.
-#' @param arg Name of the argument.
-#' @param call The call to report.
-#' @return `x`, invisibly.
-#' @noRd
-check_scalar <- function(x, arg, call) {
-  if (!is.numeric(x) || length(x) != 1L || is.na(x)) {
-    ef_abort(
-      sprintf("`%s` must be a single non-missing number.", arg),
-      class = "earthflux_input_error",
-      call = call
-    )
-  }
-  check_in_range(x, arg, call = call)
-  invisible(x)
-}
+# Shared input checks (check_core_args(), check_condition(), check_scalar())
+# are in R/utils.R.
 
 # Momentum roughness length ----------------------------------------------------------
 

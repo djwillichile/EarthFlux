@@ -35,15 +35,8 @@
 #
 # Conventions: those of ef_net_radiation() (dev/ARCHITECTURE.md section 3.1).
 
-# Unit conversion factors ------------------------------------------------------------
-
-# TODO(shared): move to R/constants.R (named in
-#   dev/specs/evapotranspiration.md section 6.1). Exact by definition of the
-#   units; they are not physical constants.
-# Seconds per hour [s h-1].
-EF_SECONDS_PER_HOUR <- 3600
-# Millimetres per metre [mm m-1].
-EF_MM_PER_M <- 1000
+# Unit conversion factors (EF_SECONDS_PER_HOUR, EF_MM_PER_M) are defined in
+# R/constants.R.
 
 # Reference crop types accepted by ef_etrf() and ef_et_daily_etrf(); names as
 # in dev/specs/weather-forcing.md section 5 (`reference`).

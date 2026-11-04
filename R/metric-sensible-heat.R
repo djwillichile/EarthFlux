@@ -238,7 +238,7 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
     )
   }
   for (nm in c(required, "tol", "maxit", "damping")) {
-    check_scalar(get(nm), nm, call)
+    check_scalar(get(nm), nm, call = call)
   }
   check_in_range(z1, "z1", lower = 0, lower_inclusive = FALSE, call = call)
   check_condition(z2 > z1, "`z2` must be greater than `z1`", call)
@@ -468,9 +468,9 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
              class = "earthflux_input_error", call = call)
   }
   control <- do.call(ef_h_control, control)
-  check_scalar(lapse_rate, "lapse_rate", call)
+  check_scalar(lapse_rate, "lapse_rate", call = call)
   check_in_range(lapse_rate, "lapse_rate", lower = 0, call = call)
-  check_scalar(datum_elevation, "datum_elevation", call)
+  check_scalar(datum_elevation, "datum_elevation", call = call)
   cp <- EF_SPECIFIC_HEAT_AIR
 
   anc <- h_anchor_inputs(anchors, control, call)

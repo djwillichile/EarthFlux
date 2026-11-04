@@ -89,3 +89,17 @@ EF_WATER_DENSITY <- 1000
 #   (dev/specs/evapotranspiration.md section 4.1).
 # Status: VERIFICADA. Used by ef_lambda(method = "constant").
 EF_LATENT_HEAT_FAO56 <- 2.45e6
+
+# Unit conversion factors --------------------------------------------------------
+#
+# Exact by definition of the units; they are not physical constants, but they
+# are named so that the conversions of the latent heat flux to a depth of
+# water read without bare literals (dev/specs/evapotranspiration.md section
+# 6.1). Used by ef_et_inst() and its inverse ef_et_inst_to_latent_heat(),
+# which is also the conversion of the cold anchor boundary condition.
+
+# Seconds per hour [s h-1]. Exact.
+EF_SECONDS_PER_HOUR <- 3600
+
+# Millimetres per metre [mm m-1]. Exact.
+EF_MM_PER_M <- 1000

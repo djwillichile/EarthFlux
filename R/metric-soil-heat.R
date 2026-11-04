@@ -368,26 +368,6 @@ ef_g_rn_ratio <- function(g, rn) {
   ratio
 }
 
-#' Missing-input flag of a dispatcher
-#'
-#' Builds the `EF_INPUT_NA` record (cell scope) for the positions where any
-#' of the required inputs is missing.
-#'
-#' TODO(shared): generic helper for every dispatcher; move to
-#' R/diagnostics.R when a second stage needs it.
-#'
-#' @param inputs Named list of the required inputs (length 1 or `n`).
-#' @param n Integer. Common length of the call.
-#' @return A list with one `earthflux_flag` record, or an empty list.
-#' @noRd
-ef_input_na_flags <- function(inputs, n) {
-  mask <- Reduce(`|`, lapply(inputs, function(x) rep_len(is.na(x), n)))
-  if (!any(mask)) {
-    return(list())
-  }
-  list(ef_flag(as.vector(mask), "EF_INPUT_NA", scope = "cell"))
-}
-
 #' Cell diagnostics of the soil heat flux stage
 #'
 #' Builds the cell-scope flag records of the G stage from the outputs of a

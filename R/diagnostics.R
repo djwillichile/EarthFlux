@@ -381,3 +381,27 @@ ef_flag <- function(mask, code, scope = NULL) {
     class = "earthflux_flag"
   )
 }
+
+#' Missing-input flag of a dispatcher
+#'
+#' Builds the transversal `EF_INPUT_NA` record (cell scope) for the
+#' positions where any of the required inputs is missing (`NA` or `NaN`).
+#' Shared by every dispatcher of the METRIC core (dev/ARCHITECTURE.md
+#' section 3.2).
+#'
+#' @param inputs Named list of the required inputs (each of length 1 or
+#'   `n`); `NULL` elements are ignored.
+#' @param n Integer. Common length of the call.
+#' @return A list with one `earthflux_flag` record, or an empty list.
+#' @noRd
+ef_input_na_flags <- function(inputs, n) {
+  inputs <- inputs[!vapply(inputs, is.null, logical(1))]
+  if (length(inputs) == 0L) {
+    return(list())
+  }
+  mask <- Reduce(`|`, lapply(inputs, function(x) rep_len(is.na(x), n)))
+  if (!any(mask)) {
+    return(list())
+  }
+  list(ef_flag(as.vector(mask), "EF_INPUT_NA", scope = "cell"))
+}

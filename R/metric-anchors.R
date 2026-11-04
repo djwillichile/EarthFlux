@@ -65,25 +65,6 @@ anchor_require <- function(is_missing, arg, call) {
   invisible(TRUE)
 }
 
-#' Check a single finite number, optionally bounded
-#' @noRd
-anchor_check_scalar <- function(x, arg, lower = -Inf, upper = Inf,
-                                lower_inclusive = TRUE, upper_inclusive = TRUE,
-                                whole = FALSE, call) {
-  if (!is.numeric(x) || length(x) != 1L || is.na(x)) {
-    ef_abort(sprintf("`%s` must be a single non-missing number.", arg),
-             class = "earthflux_input_error", call = call)
-  }
-  check_in_range(x, arg, lower = lower, upper = upper,
-                 lower_inclusive = lower_inclusive,
-                 upper_inclusive = upper_inclusive, call = call)
-  if (whole && x != round(x)) {
-    ef_abort(sprintf("`%s` must be a whole number.", arg),
-             class = "earthflux_input_error", call = call)
-  }
-  invisible(x)
-}
-
 # Base R statistics ------------------------------------------------------------
 
 #' Sample quantiles (Hyndman and Fan types 1-9)
@@ -304,14 +285,14 @@ ef_homogeneity <- function(variable, window, stat, max, window_na) {
   check_method(variable, anchor_layer_variables(), arg = "variable",
                call = call)
   anchor_require(missing(window), "window", call)
-  anchor_check_scalar(window, "window", lower = 3, whole = TRUE, call = call)
+  check_scalar(window, "window", lower = 3, whole = TRUE, call = call)
   if (window %% 2 != 1) {
     ef_abort("`window` must be an odd number of cells.",
              class = "earthflux_input_error", call = call)
   }
   check_method(stat, "sd", arg = "stat", call = call)
   anchor_require(missing(max), "max", call)
-  anchor_check_scalar(max, "max", lower = 0, call = call)
+  check_scalar(max, "max", lower = 0, call = call)
   check_method(window_na, c("exclude", "available"), arg = "window_na",
                call = call)
   structure(
@@ -369,10 +350,10 @@ ef_anchor_pick <- function(variable, method, value) {
                          "highest"), call = call)
   anchor_require(missing(value), "value", call)
   if (method %in% c("lowest_fraction", "highest_fraction")) {
-    anchor_check_scalar(value, "value", lower = 0, upper = 1,
+    check_scalar(value, "value", lower = 0, upper = 1,
                         lower_inclusive = FALSE, call = call)
   } else {
-    anchor_check_scalar(value, "value", lower = 1, whole = TRUE, call = call)
+    check_scalar(value, "value", lower = 1, whole = TRUE, call = call)
   }
   structure(
     list(variable = variable, method = method, value = as.numeric(value)),
@@ -505,7 +486,7 @@ ef_anchor_criteria <- function(cold, hot, homogeneity, select,
   }
   check_method(percentile_domain, c("usable", "land"),
                arg = "percentile_domain", call = call)
-  anchor_check_scalar(quantile_type, "quantile_type", lower = 1, upper = 9,
+  check_scalar(quantile_type, "quantile_type", lower = 1, upper = 9,
                       whole = TRUE, call = call)
   check_string(source, "source")
   check_method(status, anchor_statuses(), arg = "status", call = call)
@@ -569,7 +550,7 @@ anchor_grid <- function(lst, cell_size, origin, crs, call) {
              class = "earthflux_input_error", call = call)
   }
   if (!is.null(cell_size)) {
-    anchor_check_scalar(cell_size, "cell_size", lower = 0,
+    check_scalar(cell_size, "cell_size", lower = 0,
                         lower_inclusive = FALSE, call = call)
   }
   if (!is.null(origin)) {
@@ -1941,7 +1922,7 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
   check_in_range(etr_inst, "etr_inst", lower = 0, lower_inclusive = FALSE,
                  call = call)
   check_latent_heat_units(lambda, "lambda", call = call)
-  anchor_check_scalar(etrf_cold, "etrf_cold", lower = 0,
+  check_scalar(etrf_cold, "etrf_cold", lower = 0,
                       lower_inclusive = FALSE, call = call)
   if (is.null(etrf_hot) == is.null(le_hot)) {
     ef_abort(
@@ -1951,9 +1932,9 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
     )
   }
   if (!is.null(etrf_hot)) {
-    anchor_check_scalar(etrf_hot, "etrf_hot", lower = 0, call = call)
+    check_scalar(etrf_hot, "etrf_hot", lower = 0, call = call)
   } else {
-    anchor_check_scalar(le_hot, "le_hot", lower = 0, call = call)
+    check_scalar(le_hot, "le_hot", lower = 0, call = call)
   }
   check_method(reference, c("alfalfa", "grass"), arg = "reference",
                call = call)
