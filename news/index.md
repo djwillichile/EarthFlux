@@ -223,9 +223,13 @@ yet.
   `"exclude_critical"`) and the counts in the provenance. Registered
   codes: `EF_WS_OUT_OF_DOMAIN` and `EF_WS_TMIN_GT_TMAX` (physical or
   logical impossibilities, severity `critical`), `EF_WS_RH_GT100`,
-  `EF_WS_TDEW_GT_TAIR`, `EF_WS_TIME_GAP`, `EF_WS_TIME_IRREGULAR`,
-  `EF_WS_HEIGHT_MISSING` and `EF_WS_HEIGHT_NONSTANDARD`. Tests that need
-  a threshold without a documented reference (plausible ranges,
+  `EF_WS_TDEW_GT_TAIR` (dew point above air temperature, or vapour
+  pressure above the saturation vapour pressure), `EF_WS_RS_GT_RA` (mean
+  solar radiation above the extraterrestrial radiation of the record
+  window), `EF_WS_TIME_GAP`, `EF_WS_TIME_IRREGULAR`,
+  `EF_WS_HEIGHT_MISSING` and `EF_WS_HEIGHT_NONSTANDARD`. Negative solar
+  radiation and precipitation are physical impossibilities. Tests that
+  need a threshold without a documented reference (plausible ranges,
   persistence, steps, …) are not evaluated and are listed as such in the
   provenance.
 
@@ -282,6 +286,25 @@ yet.
   (the ratio Rs/Rso is limited to 1 inside the FAO-56 cloudiness term,
   Rs is not modified) and `EF_WS_ETR_NEGATIVE` (negative reference ET,
   kept).
+
+- [`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md)
+  computes the reference ET series of every station of a
+  quality-controlled station table (hourly or daily records), using only
+  the values not excluded by the QC policy, and from it the
+  instantaneous reference ET at given overpass times (`etr_inst`, mm
+  h-1; option `"O1"`, the period that contains the time, or `"O3"`,
+  linear interpolation between period mid-points) and the daily
+  reference ET of given dates (`etr_24`, mm d-1; sum of the 24 hourly
+  values of complete days, or the daily record). The open choices are
+  explicit arguments without defaults: humidity source, day definition
+  (UTC or local standard time with a UTC offset) and completeness rule,
+  day/night criterion, night-time cloudiness (ratio of the period 2-3
+  hours before sunset, or a fixed ratio) and the overpass method. It
+  reproduces FAO-56 examples 18 and 19 and returns an
+  `earthflux_station_ref_et` object whose flags name the table they
+  refer to; days without all their periods (`EF_WS_INCOMPLETE_DAY`) and
+  overpass times outside the records (`EF_WS_OVERPASS_OUTSIDE_RECORDS`)
+  give `NA` and are flagged.
 
 #### Dispatchers, flags and provenance
 

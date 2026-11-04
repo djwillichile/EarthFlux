@@ -162,7 +162,9 @@ requires the examples of ASCE-EWRI (2005), not yet read.
 
 The instantaneous reference ET at the satellite overpass (spec 5.5) and
 the daily ETr from hourly values (spec 5.6) belong to the station
-orchestration, not to this function.
+orchestration
+[`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md),
+not to this function.
 
 Missing values propagate (and are flagged `EF_INPUT_NA`). Negative
 results (for example at night, when \\R_n - G \< 0\\ with a small
@@ -195,7 +197,8 @@ Equation*. American Society of Civil Engineers.
 
 Other reference evapotranspiration functions:
 [`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md),
-[`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md)
+[`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md),
+[`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md)
 
 ## Examples
 

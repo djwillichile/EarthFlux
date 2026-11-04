@@ -108,7 +108,10 @@ brackets):</p><ul><li><p><code>EF_WS_OUT_OF_DOMAIN</code> [critical] (QC-01a): p
 value: relative humidity (<code>relative_humidity</code>, <code>rh_max</code>, <code>rh_min</code>)
 <code>&lt; 0</code>, <code>wind_speed &lt; 0</code>, temperature (<code>air_temperature</code>,
 <code>dewpoint_temperature</code>, <code>tmax</code>, <code>tmin</code>) <code>&lt;= -273.15</code> degC,
-<code>air_pressure &lt;= 0</code>, <code>vapour_pressure &lt; 0</code>.</p></li>
+<code>air_pressure &lt;= 0</code>, <code>vapour_pressure &lt; 0</code>, <code>solar_radiation &lt; 0</code>,
+<code>precipitation &lt; 0</code>. A negative solar radiation (for example the
+night-time offset of a thermopile pyranometer) is excluded by the
+default policy; it is not set to zero.</p></li>
 <li><p><code>EF_WS_TMIN_GT_TMAX</code> [critical] (QC-03): <code>tmin &gt; tmax</code> in the same
 record; both variables are flagged.</p></li>
 <li><p><code>EF_WS_RH_GT100</code> [info] (QC-02): relative humidity <code>&gt; 100</code> %.
@@ -116,8 +119,23 @@ Values slightly above 100 % occur (e.g. early morning or rain); FAO-56
 Annex 5 relates records exceeding 100 % by more than 3-5 % to a need of
 recalibration, a class II test not evaluated until its margin is chosen
 (WF-06).</p></li>
-<li><p><code>EF_WS_TDEW_GT_TAIR</code> [warning] (QC-04): <code>dewpoint_temperature &gt; air_temperature</code>, without tolerance (equivalent to a relative humidity
-above 100 %, FAO-56 Eqs. 10 and 14); both variables are flagged.</p></li>
+<li><p><code>EF_WS_TDEW_GT_TAIR</code> [warning] (QC-04): <code>dewpoint_temperature &gt; air_temperature</code>, or <code>vapour_pressure</code> greater than the saturation
+vapour pressure at <code>air_temperature</code> (\(e_a &gt; e^\circ(T)\), <code><a href="ef_es.html">ef_es()</a></code>), without tolerance (both are equivalent to a relative
+humidity above 100 %, FAO-56 Eqs. 10, 11 and 14); the variables
+compared are flagged (the air temperature once per record). The
+threshold is the air temperature for the dew point, \(e^\circ(T)\)
+for the vapour pressure and the dew point of the vapour pressure
+(<code><a href="ef_dewpoint.html">ef_dewpoint()</a></code>) for the air temperature.</p></li>
+<li><p><code>EF_WS_RS_GT_RA</code> [warning] (QC-05b): the mean <code>solar_radiation</code> of
+the record is greater than the mean extraterrestrial radiation of the
+same time window (the window of <code>interval</code> seconds of the record,
+located by <code>timestamp_convention</code>). The extraterrestrial radiation is
+the integral of FAO-56 Eq. 28 over the part of the window with the sun
+above the horizon (for a one-day window, Eq. 21). Windows with the sun
+below the horizon during the whole window (night-time radiation, test
+QC-05d, class II) are not tested. Evaluated for period means
+(<code>timestamp_convention</code> <code>"end"</code> or <code>"start"</code>) with an <code>interval</code> of at
+most one day.</p></li>
 <li><p><code>EF_WS_TIME_GAP</code> [warning] and <code>EF_WS_TIME_IRREGULAR</code> [warning]
 (QC-09), per station in time order: the time since the previous record
 is a whole multiple (two or more) of the declared <code>interval</code> (gap: the
@@ -140,9 +158,10 @@ conditions, diurnal stability of the vapour pressure, time shift,
 spatial consistency, cloudy overpass): they need thresholds with a
 documented reference that are not available, so their codes are not
 registered and no threshold is assumed. Also not evaluated here:
-<code>EF_WS_RS_GT_RA</code> (needs the extraterrestrial radiation of the record
-window) and <code>EF_WS_INCOMPLETE_DAY</code> (evaluated with the daily reference
-ET). They are listed in <code>provenance$qc$not_evaluated</code>.</p>
+<code>EF_WS_INCOMPLETE_DAY</code> (QC-10), which depends on the definition of the
+day and is raised by the daily sums of <code><a href="ef_station_ref_et.html">ef_station_ref_et()</a></code>. They are
+listed in <code>provenance$qc$not_evaluated</code> (with <code>EF_WS_RS_GT_RA</code> when the
+table has solar radiation that cannot be tested).</p>
 <p><strong>Status and policy.</strong> The status of an observed value is the highest
 severity among the flags of its record that concern its variable or the
 timestamp: <code>"excluded"</code> if that severity is excluded by <code>qc_policy</code>,
@@ -160,7 +179,7 @@ FAO Irrigation and Drainage Paper 56. FAO, Rome. ISBN 92-5-104219-5.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="ef_station_table.html">ef_station_table()</a></code>.</p></div>
+    <div class="dont-index"><p><code><a href="ef_station_table.html">ef_station_table()</a></code>, <code><a href="ef_station_ref_et.html">ef_station_ref_et()</a></code>.</p></div>
     </div>
 
     <div class="section level2">

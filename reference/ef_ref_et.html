@@ -187,7 +187,7 @@ reference verify only the arithmetic here: a verification case for ETr
 requires the examples of ASCE-EWRI (2005), not yet read.</p>
 <p>The instantaneous reference ET at the satellite overpass (spec 5.5) and
 the daily ETr from hourly values (spec 5.6) belong to the station
-orchestration, not to this function.</p>
+orchestration <code><a href="ef_station_ref_et.html">ef_station_ref_et()</a></code>, not to this function.</p>
 <p>Missing values propagate (and are flagged <code>EF_INPUT_NA</code>). Negative
 results (for example at night, when \(R_n - G &lt; 0\) with a
 small deficit) are kept and flagged <code>EF_WS_ETR_NEGATIVE</code> (principle 6),
@@ -220,7 +220,8 @@ Equation</em>. American Society of Civil Engineers.
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other reference evapotranspiration functions:
 <code><a href="ef_ref_net_radiation.html">ef_ref_net_radiation()</a></code>,
-<code><a href="ef_ref_soil_heat_flux.html">ef_ref_soil_heat_flux()</a></code></p></div>
+<code><a href="ef_ref_soil_heat_flux.html">ef_ref_soil_heat_flux()</a></code>,
+<code><a href="ef_station_ref_et.html">ef_station_ref_et()</a></code></p></div>
     </div>
 
     <div class="section level2">

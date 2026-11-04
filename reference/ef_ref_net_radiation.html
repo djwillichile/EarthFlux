@@ -158,8 +158,9 @@ sunset, identified by \(\omega_s - 0.79 \le \omega \le \omega_s -
 0.52\), or, approximately, to 0.4-0.6 in
 humid and sub-humid and 0.7-0.8 in arid and semi-arid climates (0.3 means
 complete cloud cover). Selecting that value is the task of the station
-orchestration; here the resulting term is passed as <code>cloudiness</code>
-(for a ratio \(r\), <code>cloudiness = 1.35 * r - 0.35</code>).</p>
+orchestration (<code><a href="ef_station_ref_et.html">ef_station_ref_et()</a></code>, argument <code>night_cloudiness</code>); here
+the resulting term is passed as <code>cloudiness</code> (for a ratio \(r\),
+<code>cloudiness = 1.35 * r - 0.35</code>).</p>
 <p><strong>Normative constants</strong> (decision WF-14): \(\sigma\) of FAO-56
 (4.903e-9 MJ m-2 d-1 K-4, about 5.6748e-8 W m-2 K-4, 0.08 % below the
 CODATA value used elsewhere in the package) and 273.16 in the conversion
@@ -193,7 +194,8 @@ evapotranspiration: Guidelines for computing crop water requirements</em>
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other reference evapotranspiration functions:
 <code><a href="ef_ref_et.html">ef_ref_et()</a></code>,
-<code><a href="ef_ref_soil_heat_flux.html">ef_ref_soil_heat_flux()</a></code></p></div>
+<code><a href="ef_ref_soil_heat_flux.html">ef_ref_soil_heat_flux()</a></code>,
+<code><a href="ef_station_ref_et.html">ef_station_ref_et()</a></code></p></div>
     </div>
 
     <div class="section level2">

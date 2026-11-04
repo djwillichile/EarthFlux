@@ -103,7 +103,8 @@ Equation*. American Society of Civil Engineers.
 
 Other reference evapotranspiration functions:
 [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md),
-[`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md)
+[`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md),
+[`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md)
 
 ## Examples
 

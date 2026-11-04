@@ -123,9 +123,10 @@ FAO-56 sets it to the value of a period 2-3 hours before sunset,
 identified by \\\omega_s - 0.79 \le \omega \le \omega_s - 0.52\\, or,
 approximately, to 0.4-0.6 in humid and sub-humid and 0.7-0.8 in arid and
 semi-arid climates (0.3 means complete cloud cover). Selecting that
-value is the task of the station orchestration; here the resulting term
-is passed as `cloudiness` (for a ratio \\r\\,
-`cloudiness = 1.35 * r - 0.35`).
+value is the task of the station orchestration
+([`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md),
+argument `night_cloudiness`); here the resulting term is passed as
+`cloudiness` (for a ratio \\r\\, `cloudiness = 1.35 * r - 0.35`).
 
 **Normative constants** (decision WF-14): \\\sigma\\ of FAO-56 (4.903e-9
 MJ m-2 d-1 K-4, about 5.6748e-8 W m-2 K-4, 0.08 % below the CODATA value
@@ -159,7 +160,8 @@ evapotranspiration: Guidelines for computing crop water requirements*
 
 Other reference evapotranspiration functions:
 [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md),
-[`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md)
+[`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md),
+[`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md)
 
 ## Examples
 

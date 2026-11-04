@@ -282,7 +282,8 @@ point, wind speed at 2 m, extraterrestrial and clear-sky radiation
 
 Net radiation and soil heat flux of the reference surface and the
 reference evapotranspiration, with explicit reference crop, time step
-and standard.
+and standard; the reference evapotranspiration series of the stations,
+at the overpass time and as daily sums.
 
 - [`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md)
   : Net radiation of the reference surface
@@ -290,6 +291,8 @@ and standard.
   : Soil heat flux of the reference surface
 - [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md)
   : Reference evapotranspiration (grass ETo, alfalfa ETr)
+- [`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md)
+  : Reference evapotranspiration at weather stations
 
 ## Spatial regionalization (GWR)
 

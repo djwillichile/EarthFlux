@@ -69,7 +69,10 @@ brackets):
   value: relative humidity (`relative_humidity`, `rh_max`, `rh_min`)
   `< 0`, `wind_speed < 0`, temperature (`air_temperature`,
   `dewpoint_temperature`, `tmax`, `tmin`) `<= -273.15` degC,
-  `air_pressure <= 0`, `vapour_pressure < 0`.
+  `air_pressure <= 0`, `vapour_pressure < 0`, `solar_radiation < 0`,
+  `precipitation < 0`. A negative solar radiation (for example the
+  night-time offset of a thermopile pyranometer) is excluded by the
+  default policy; it is not set to zero.
 
 - `EF_WS_TMIN_GT_TMAX` \[critical\] (QC-03): `tmin > tmax` in the same
   record; both variables are flagged.
@@ -81,9 +84,28 @@ brackets):
   chosen (WF-06).
 
 - `EF_WS_TDEW_GT_TAIR` \[warning\] (QC-04):
-  `dewpoint_temperature > air_temperature`, without tolerance
-  (equivalent to a relative humidity above 100 %, FAO-56 Eqs. 10 and
-  14); both variables are flagged.
+  `dewpoint_temperature > air_temperature`, or `vapour_pressure` greater
+  than the saturation vapour pressure at `air_temperature` (\\e_a \>
+  e^\circ(T)\\,
+  [`ef_es()`](https://djwillichile.github.io/EarthFlux/reference/ef_es.md)),
+  without tolerance (both are equivalent to a relative humidity above
+  100 %, FAO-56 Eqs. 10, 11 and 14); the variables compared are flagged
+  (the air temperature once per record). The threshold is the air
+  temperature for the dew point, \\e^\circ(T)\\ for the vapour pressure
+  and the dew point of the vapour pressure
+  ([`ef_dewpoint()`](https://djwillichile.github.io/EarthFlux/reference/ef_dewpoint.md))
+  for the air temperature.
+
+- `EF_WS_RS_GT_RA` \[warning\] (QC-05b): the mean `solar_radiation` of
+  the record is greater than the mean extraterrestrial radiation of the
+  same time window (the window of `interval` seconds of the record,
+  located by `timestamp_convention`). The extraterrestrial radiation is
+  the integral of FAO-56 Eq. 28 over the part of the window with the sun
+  above the horizon (for a one-day window, Eq. 21). Windows with the sun
+  below the horizon during the whole window (night-time radiation, test
+  QC-05d, class II) are not tested. Evaluated for period means
+  (`timestamp_convention` `"end"` or `"start"`) with an `interval` of at
+  most one day.
 
 - `EF_WS_TIME_GAP` \[warning\] and `EF_WS_TIME_IRREGULAR` \[warning\]
   (QC-09), per station in time order: the time since the previous record
@@ -110,9 +132,11 @@ conditions, diurnal stability of the vapour pressure, time shift,
 spatial consistency, cloudy overpass): they need thresholds with a
 documented reference that are not available, so their codes are not
 registered and no threshold is assumed. Also not evaluated here:
-`EF_WS_RS_GT_RA` (needs the extraterrestrial radiation of the record
-window) and `EF_WS_INCOMPLETE_DAY` (evaluated with the daily reference
-ET). They are listed in `provenance$qc$not_evaluated`.
+`EF_WS_INCOMPLETE_DAY` (QC-10), which depends on the definition of the
+day and is raised by the daily sums of
+[`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md).
+They are listed in `provenance$qc$not_evaluated` (with `EF_WS_RS_GT_RA`
+when the table has solar radiation that cannot be tested).
 
 **Status and policy.** The status of an observed value is the highest
 severity among the flags of its record that concern its variable or the
@@ -131,7 +155,8 @@ FAO Irrigation and Drainage Paper 56. FAO, Rome. ISBN 92-5-104219-5.
 
 ## See also
 
-[`ef_station_table()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_table.md).
+[`ef_station_table()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_table.md),
+[`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md).
 
 ## Examples
 
