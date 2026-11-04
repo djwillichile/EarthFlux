@@ -369,7 +369,43 @@ primary references; no scientific result has been validated yet.
   `EF_GWR_GLOBAL_PREFERRED`, `EF_GWR_SURFACE_COVARIATE`,
   `EF_GWR_SINGLE_STATION` (object) and `EF_GWR_STATION_EXCLUDED` (record).
 
-### Surface state (MODIS, in progress)
+### Surface state (MODIS)
+
+* Internal MODIS product table: one table holds the scale, offset and its
+  convention, valid range, fill value, data type, HDF-EOS grid and QA
+  layout of every supported layer of MOD11A1/MYD11A1, MOD21A1D/MYD21A1D,
+  MOD09GA, MOD09GQ, MOD13Q1, MOD13A2, MCD43A3, MCD43A2 (snow), MCD15A2H
+  and MCD12Q1, collection 6.1, each row with its citation to the official
+  user guide or file specification. Layers whose facts are not verified
+  are refused with a classed error (`earthflux_modis_unsupported`).
+
+* Internal readers for local files only (no downloads, no credentials):
+  raw digital numbers of official HDF4/HDF-EOS files through `terra`/GDAL,
+  matched to the layer names of the table, never scaled by GDAL, with the
+  sinusoidal geometry of the tile, the file's scale and its NoData checked
+  against the table; converted rasters (e.g. GeoTIFF) only with an explicit
+  declaration of whether their values are already scaled; MODIS file name
+  parsing (product, UTC date, tile, collection); cropping to an area of
+  interest in the native sinusoidal grid; and mosaics of adjacent tiles.
+
+* Scaling of digital numbers into physical values from the table (LST in
+  K, emissivity, view angle, NDVI, albedo, LAI, reflectance), with fill
+  values and values outside the valid range set to `NA` and returned as
+  masks, and decoding of the QA bit fields and QA codes of every supported
+  product (bit 0 least significant, exact for 32-bit QA).
+
+* QA policy as an explicit argument without default (`"flag"` or
+  `"mask"`): values are set to `NA` only for the documented causes (fill,
+  out of range, not produced because of clouds or other reasons,
+  non-vegetated LAI classes); `"mask"` additionally masks the conditions
+  listed by the user, keeps their flags and counts them.
+
+* Diagnostic flags registered for the surface stage (cell scope, bits 1-12
+  of the surface flag word): `EF_SURF_FILL`, `EF_SURF_CLOUD`,
+  `EF_SURF_NOT_PRODUCED`, `EF_SURF_DN_OUT_OF_RANGE`, `EF_SURF_LAI_NONVEG`
+  (causes of `NA`), `EF_SURF_QA_OTHER`, `EF_SURF_CLOUD_ADJACENT`,
+  `EF_SURF_SNOW`, `EF_SURF_WATER`, `EF_SURF_SALT_PAN`, `EF_SURF_LAI_BACKUP`
+  and `EF_SURF_ALBEDO_MAGNITUDE` (values kept).
 
 * Internal MODIS preparation steps (not exported yet): conversion of the
   MOD11A1/MYD11A1 day view time (local solar time) to UTC day of year and

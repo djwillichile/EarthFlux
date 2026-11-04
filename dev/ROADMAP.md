@@ -32,7 +32,7 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 - [ ] Verificar Allen et al. (2007) y ASCE-EWRI (2005) en la fuente
       primaria.
 
-## M2 — METRIC core physics (objetivo: 0.1.0)
+## M2 — METRIC core physics
 - [x] Convenciones comunes del núcleo (`ARCHITECTURE.md` §3), constantes
       físicas, registro de flags por etapa, condiciones con datos,
       `ef_air_pressure()` y `ef_lambda()`.
@@ -45,7 +45,6 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       procedencia; una convención de diagnósticos; auxiliares compartidos;
       `DECISIONS.md` §1.2) y test de extremo a extremo de la cadena
       (`tests/testthat/test-metric-chain.R`).
-- [ ] Primer release experimental `0.1.0` con pipeline parcial testeado.
 
 ## M3 — Spatial meteorological forcing / GWR
 - [x] Tabla estándar de estaciones y QC (`ef_station_table()`,
@@ -76,9 +75,13 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       opciones O2/O4/O5 de ETr_inst, traspaso de `etr_inst`/`etr_24` a la
       tabla de regionalización, `datatype` en disco (D-PP-05).
 
-## M4 — MODIS preprocessing
+## M4 — MODIS preprocessing (objetivo: 0.1.0)
 - [ ] Lectura y escalado de productos; QA como flags; conversión a UTC.
 - [ ] Dataset de ejemplo compatible con CRAN.
+- [ ] Primer release experimental `0.1.0` al cierre de M4, con la escena de
+      ejemplo de Cauquenes (opción B, decisión del autor del 2026-11-04;
+      `DECISIONS.md` §1.4, M4-00); antes previsto al cierre de M2 con el
+      pipeline parcial testeado.
 
 ## M5 — Integrated pipeline
 - [ ] `earthflux()` sobre el núcleo; objeto de resultado con diagnósticos y

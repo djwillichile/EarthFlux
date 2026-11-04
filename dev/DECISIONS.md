@@ -234,6 +234,46 @@ nuevas: se registran para que el autor las resuelva en el documento dueño.
 | A-5 | WF-09, WF-11 (reloj del día de las sumas horarias), WF-15 (para FAO-56), WF-16, GW-04, GW-05, GW-07, GW-08 y decisión 5.1 | Expuestas como argumentos sin defecto (M3-11 … M3-17, M3-20, M3-27 … M3-30); `earthflux()` necesitará defectos documentados | Especificaciones respectivas |
 | A-6 | Otros pendientes: caso numérico ASCE publicado (Apéndice C de ASCE-EWRI, 2005, no disponible); elección del último período en `"before_sunset"` (M3-14); D-PP-05 (`datatype` en disco); traspaso de `etr_inst`, `etr_24`, u₂ y `clearness` de `ef_station_ref_et()` a la tabla de regionalización (`station_regionalization_input()`) | Sin implementar o provisional | `weather-forcing.md` §13.3, §13.4; `parallel-processing.md` |
 
+### 1.4 Decisiones de M4 (2026-11-04)
+
+Tomadas al planificar e implementar M4 (preprocesamiento MODIS). M4-00 es
+una decisión del autor (`DECIDIDA`); las demás son decisiones de
+implementación con estado **`DECIDIDA (provisional)`, 2026-11-04**,
+revisables por el autor antes de `0.1.0`. Ninguna cierra una decisión
+científica abierta: cuando la elección depende de una pregunta abierta
+(MP-01, MP-04, MP-06, MP-09), se expone como **argumento explícito sin
+defecto** (regla M2 de §1.0). El documento dueño registra el detalle en su
+bloque de estado de M4 (`specs/modis-products.md`, al inicio).
+
+| ID | Decisión | Fundamento | Dónde |
+|---|---|---|---|
+| M4-00 | **Primer release experimental `0.1.0` al cierre de M4**, con la escena de ejemplo de Cauquenes (opción B, decisión del autor, 2026-11-04). El ítem pasa de M2 a M4 en `ROADMAP.md`; el release incluye el núcleo METRIC (M2), el forzamiento y la regionalización (M3), el preprocesamiento MODIS y el conjunto de datos de ejemplo compatible con CRAN (M4) | Decisión del autor; el AOI de ejemplo ya estaba decidido (MP-12: provincia de Cauquenes, Región del Maule) | `ROADMAP.md` (M2, M4); `specs/modis-products.md` §12, MP-12 |
+
+**Tabla de productos, lectura, escalado y QA** (`R/io-modis.R`,
+`R/modis-qa.R`, `R/io-aoi.R`; `specs/modis-products.md` §3–§5, §10, §11,
+§13.1–§13.2)
+
+| ID | Decisión | Fundamento | Dónde |
+|---|---|---|---|
+| M4-01 | **Una tabla interna de producto** (`modis_product_table()`; `modis_product_spec(product, collection = "061")`, `modis_layer_spec()`), única fuente de constantes MODIS: solo filas `VERIFICADA` de §5, cada una con su cita `[Dn, p., Tabla]`; rango físico `DERIVADA`. Productos: MOD11A1/MYD11A1, MOD21A1D/MYD21A1D, MOD09GA, MOD09GQ, MOD13Q1, MOD13A2, MCD43A3, MCD15A2H, MCD12Q1 y MCD43A2 (solo `Snow_BRDF_Albedo`, D9). Solo colección 061 (**MP-13** adoptada: otra colección → `earthflux_modis_unsupported`). Fuera de la tabla (hechos `TODO` o incompletos): capas nocturnas de MOD11A1 ("equivalentes" sin valores por capa), `Fpar_500m`, `LaiStdDev_500m`, calidades de MCD43A3 distintas de `shortwave` (tipo y rango solo dados para `shortwave`), demás capas de MCD43A2, productos MYD09/MYD13 (D12 leído solo para MOD) | Regla de hechos de producto (§0.1); MP-13 | §13.1; bloque de estado |
+| M4-02 | **Convenciones de escala** por fila: `scale_offset` (DN · escala + offset; MOD11 según D10, MOD21 según D2/D11), `offset_scale` ((DN − offset) · escala; MCD43 según D8/D9) y `scale_only` (DN · escala) para las fichas que declaran escala y **ningún offset** (MOD09 —D12 "N/A"—, MOD13, MCD15). **MP-11** adoptada: lectura con `raw = TRUE`, verificación de que los valores son DN enteros dentro del tipo de dato (`earthflux_modis_dn_error`) y escala/offset aplicados solo desde la tabla. La escala declarada por el archivo debe coincidir con la tabla y, en capas sin offset, el offset del archivo debe ser 0 (contraste en tiempo de lectura de §16, punto 15); un offset no nulo de una capa con offset (Emis, ángulo de visión) solo se registra, porque la convención de GDAL para HDF4 es `TODO` (§16, punto 12) | §11.3; MP-11 | §11.3; bloque de estado |
+| M4-03 | **QA → flags** según §10.2, por tabla QA (`modis_qa_rules()`): MODLAND 01 → `EF_SURF_QA_OTHER`, 10 → `EF_SURF_CLOUD`, 11 → `EF_SURF_NOT_PRODUCED`; nube adyacente/cirros (MOD21 bits 5–4 = 01 o 10; MOD09 bits 13 y 9–8 ≠ 00; MOD13 bit 8) → `EF_SURF_CLOUD_ADJACENT`; nieve (MOD09 bits 12 y 15; MOD13 bit 14; MCD15 extra bit 2; MCD43A2 = 1) → `EF_SURF_SNOW`; tierra/agua ≠ tierra (literal de §10.2: incluye costas) → `EF_SURF_WATER`; MOD09 bit 14 → `EF_SURF_SALT_PAN`; MCD15 SCF_QC 010/011 → `EF_SURF_LAI_BACKUP`, 100 → `EF_SURF_NOT_PRODUCED` y MODLAND de 1 bit = 1 → `EF_SURF_QA_OTHER`; MCD43 calidad 1, 3, 5, 7 → `EF_SURF_ALBEDO_MAGNITUDE`. MODLAND 10 de MOD13 ("producido, probablemente nuboso") y de MOD21 (discrepancia d4) se tratan como `EF_SURF_CLOUD` (causa obligatoria de `NA`) | Transcripción de §10.2 y de las tablas QA de §5; d4 | §10.2; bloque de estado |
+| M4-04 | **Campos QA sin código**: se decodifican y se conservan, pero no levantan flag porque §10.2 no tiene fila para ellos: estado de nubes, sombra, nube interna, fuego y aerosol de MOD09 `state_1km_1`; nubes = 11 de MOD21; estado de nubes, aerosol, cirros, nube interna y sombra de MCD15; *pixel reliability* de MOD13; `QC` de MCD12Q1. Los bits 3–2 de `QC_Day` (MOD11) **no se decodifican** (discrepancia d2) | No inventar correspondencias; ver abiertas A-M4-1 y A-M4-2 | §5, §10.2 |
+| M4-05 | **Política QA** (`qa_policy`, §10.3): `"flag"` o `"mask"`, **sin defecto** en las funciones internas (la recomendación `"flag"` de **MP-09 es provisional**; MP-09 sigue `ABIERTA`). Bajo ambas, `NA` solo por las causas obligatorias de §10.2: relleno, DN fuera del rango válido, MODLAND 10/11 y clases LAI 249–254. `"mask"` exige `mask_codes` explícitos (subconjunto de los códigos *warning*: `QA_OTHER`, `CLOUD_ADJACENT`, `SNOW`, `WATER`, `SALT_PAN`, `LAI_BACKUP`, `ALBEDO_MAGNITUDE`), conserva los flags y cuenta las celdas enmascaradas (`policy$n_masked`). El nivel "Anclas" de §10.3 no es una política de valores: queda para la especificación de anclas. **MP-06**: LAI de clase no vegetada → `NA` + `EF_SURF_LAI_NONVEG` + clase conservada; la asignación explícita (p. ej., 0) no se implementó | §10.2–§10.3; `flags.md` §6.6; T-15 | §10.3; bloque de estado |
+| M4-06 | **Formatos convertidos** (**MP-10** adoptada): `modis_read_converted(path, product, layer, scaled)` exige declarar `scaled` (faltante → `earthflux_missing_input`). Con `scaled = TRUE` el valor se devuelve a DN invirtiendo la conversión de la tabla y debe quedar a ≤ 0,01 DN de un entero dentro del tipo (convención numérica: el almacenamiento en precisión simple queda en ~10⁻³ DN); un archivo con escala declarada y `scaled = TRUE` es ambiguo y se rechaza. Con `scaled = FALSE`, un NoData igual al relleno de la capa vuelve a ser el DN de relleno (y se marca); otro NoData es dato faltante (`EF_INPUT_NA`). La geometría de un convertido no se contrasta con la grilla sinusoidal (pudo reproyectarse) | §11.2; MP-10 | §11.2; bloque de estado |
+| M4-07 | **Lectura HDF4** (`modis_read_raw(path, layers, aoi = NULL)`): producto, fecha UTC, tesela y colección desde el nombre (§4); capas resueltas por **coincidencia exacta** del nombre de SDS contra la lista de subdatasets, con las grafías oficiales alternativas (MOD13A2 "1 km"/"1km") y la grilla HDF-EOS cuando se conoce; el NoData del archivo debe ser el relleno de la tabla (si no, `earthflux_modis_metadata_error`). Geometría contrastada en cada lectura: CRS sinusoidal, tamaño de celda = lado de tesela / celdas por tesela y extensión = la de la tesela del nombre (`modis_tile_extent()`, `DERIVADA`), tolerancia 10⁻³ celda; 250 m sin contraste (`TODO`). Driver HDF4 ausente → `earthflux_modis_driver_error` (usar convertidos). AOI (`SpatVector` en cualquier CRS, densificado cada 1000 m si es geográfico, o `SpatExtent` en el CRS del ráster) recortado en la grilla nativa antes de cualquier reproyección, con `snap = "out"`. Mosaico (`modis_mosaic_tiles()`): mismas capas, CRS, celda, alineación y etiquetas de producto/fecha; teselas solapadas rechazadas (la continuidad entre teselas es `TODO`) | §4, §11.1, §11.4; MP-08 (grilla nativa) | §11; bloque de estado |
+| M4-08 | **Flags de `surface`**: `ef_flags_surface()` (`R/modis-qa.R`) registra los 12 códigos de clase I que levantan los decodificadores, con los bits de `flags.md` §6.4 (1–12) y las severidades de §4.2; `EF_INPUT_NA` (bit 0) marca DN faltantes. `EF_SURF_OVERPASS_MISSING` (bit 13) y `EF_SURF_ALBEDO_GT1` (bit 14, clase III) quedan para las funciones que producen hora de paso y albedo de banda ancha; los de clase II siguen en la guardia. Un QA en relleno no se evalúa (sin código). `modis_flag_word()` arma la palabra de bits leyendo el registro. `R/modis-qa.R` se suma a los archivos MODIS de la regla arquitectónica (§1) | `flags.md` §4.2, §6.4, §7 | `flags.md` §3.1, §4.2, §4.4 |
+| M4-09 | **Interfaz común de los conversores** (`modis_variable()`, base de `modis_lst()`, `modis_view_zenith()`, `modis_band_emissivity()`, `modis_lai()`, `modis_land_cover()`): lista simple con `value` (unidad de la capa), `product`, `layer`, `unit`, `masks` (máscaras lógicas por código, en orden de bit), `na`, `flags` (registros con atributo `evaluated`), `qa` (QA decodificado), `policy` y `source` (filas de la tabla con sus citas). Núcleo numérico sobre vectores (orden de celdas) con adaptadores `SpatRaster` (`modis_values()`, `modis_as_raster()`); las capas QA deben estar en las mismas celdas (remuestrear QA es tarea de quien llama, nunca por interpolación, §9.2) | `ARCHITECTURE.md` §3.2; §14 ("mismo resultado en vector y `SpatRaster`") | §13.2; bloque de estado |
+| M4-10 | **Condiciones nuevas** (todas `earthflux_error`): `earthflux_modis_unsupported`, `earthflux_modis_filename_error`, `earthflux_modis_layer_error`, `earthflux_modis_dn_error`, `earthflux_modis_metadata_error`, `earthflux_modis_grid_error` (subclases de `earthflux_input_error`) y `earthflux_modis_driver_error` | `ARCHITECTURE.md` §3.3 | Cabecera de `R/io-modis.R` |
+
+**Abiertas detectadas en M4 (requieren al autor).**
+
+| ID | Pregunta | Situación actual | Documento dueño |
+|---|---|---|---|
+| A-M4-1 | ¿Qué bits de nubosidad sin fila en §10.2 deben marcarse o enmascararse (MOD09 `state_1km_1` bits 1–0, 2 y 10; MOD21 nubes = 11; MCD15 bits 4–3)? Importa para NDVI diario y albedo banda angosta desde MOD09GA (T4, A5) | Decodificados, sin flag (M4-04) | `specs/modis-products.md` §10.2 |
+| A-M4-2 | ¿`EF_SURF_WATER` debe incluir "costas y orillas" (MOD09/MOD13 clase 010; MCD15 01)? ¿MODLAND 10 de MOD13 ("producido, probablemente nuboso") debe ser `NA` obligatorio o conservarse con flag? | Literal de §10.2: ≠ tierra → agua; MODLAND 10 → `NA` (M4-03) | `specs/modis-products.md` §10.2 |
+| A-M4-3 | Contraste con archivos reales (§16, puntos 1, 12, 13, 15 y 16): nombres de grilla de MOD09/MOD13/MCD15/MCD12, `add_offset` y NoData expuestos por GDAL, anidamiento 500 m/1 km | Los lectores los contrastan en cada lectura y fallan con error clasificado si difieren; falta un granulo real (MP-12) | `specs/modis-products.md` §16 |
+
 ### 1.1 Preguntas P0
 
 Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
@@ -362,7 +402,8 @@ Recuento a la fecha de corte. La adopción provisional de §1.0 pasa
 `ABIERTA`, 50 `DECIDIDA`, 3 `CERRADA`); las decisiones de implementación
 de M3 (§1.3) pasan **8 filas** más (WF-03, WF-04, WF-13, GW-02, GW-03,
 GW-22, GW-23 y ARCH-6.3b para M3): 101 `ABIERTA`, 58 `DECIDIDA`, 3
-`CERRADA`. Las tablas de esta sección y de §5 conservan el recuento
+`CERRADA`; las de M4 (§1.4) pasan **3 filas** más (MP-10, MP-11 y
+MP-13): 98 `ABIERTA`, 61 `DECIDIDA`, 3 `CERRADA`. Las tablas de esta sección y de §5 conservan el recuento
 original salvo en la columna de estado.
 
 Decisiones abiertas por prioridad:
@@ -907,7 +948,8 @@ Todas `ABIERTA` a la fecha de corte; las adoptadas provisionalmente el
 
 ### 5.10 `specs/modis-products.md`
 
-Todas `ABIERTA`.
+Todas `ABIERTA` salvo MP-10, MP-11 y MP-13, adoptadas provisionalmente al
+implementar M4 (§1.4).
 
 | ID | Título | Opciones | Recomendación | Pr. | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|---|
@@ -920,10 +962,10 @@ Todas `ABIERTA`.
 | MP-07 | Desfase temporal | T1–T5 | T2 (NDVI/LAI), T5 (albedo) | P1 | §9.1, §15 | T-19 |
 | MP-08 | Grilla y remuestreo | LST 1 km sinusoidal / otra | Grilla LST nativa; agregación por factor entero | P1 | §9.2, §15 | T-18 |
 | MP-09 | Política QA por defecto | `"flag"` / `"mask"` | `"flag"`; anclas con filtro estricto | P1 | §10.3, §15 | D-AP-01 (QA de anclas `TODO`) |
-| MP-10 | Formatos de entrada | Solo HDF4 / HDF4 + convertidos | HDF4 + convertidos con declaración | P1 | §11, §15 | — |
-| MP-11 | Escala/offset | GDAL / ficha interna | Ficha interna | P1 | §11.3, §15 | — |
+| MP-10 | Formatos de entrada | Solo HDF4 / HDF4 + convertidos | HDF4 + convertidos con declaración; DECIDIDA (provisional, 2026-11-04): HDF4 + convertidos con `scaled` obligatorio, M4-06 | P1 | §11, §15 | — |
+| MP-11 | Escala/offset | GDAL / ficha interna | Ficha interna; DECIDIDA (provisional, 2026-11-04): ficha interna, `raw = TRUE`, M4-02 | P1 | §11.3, §15 | — |
 | MP-12 | Datos de ejemplo | AOI, fecha, productos | **AOI decidido por el autor (2026-11-04): provincia de Cauquenes, Región del Maule**, el área de estudio habitual del autor (también en `thermify`). Fecha despejada pre-2020 y productos (Terra) por definir | P1 | §12, §15 | ARCH-6.6b; DEV §6 |
-| MP-13 | Migración a C7 de tierra | Esperar / ambas | Fichas por colección; C6.1 por ahora | P2 | §3, §15 | — |
+| MP-13 | Migración a C7 de tierra | Esperar / ambas | Fichas por colección; C6.1 por ahora; DECIDIDA (provisional, 2026-11-04): solo 061, M4-01 | P2 | §3, §15 | — |
 | MP-14 | Continuidad | VIIRS / Landsat / Sentinel-3 | Módulo de sensor separado; fuera de M4 | P2 | §7.3, §15 | — |
 
 ### 5.11 `decisions/gwr-backend.md`

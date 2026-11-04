@@ -281,7 +281,7 @@ de nombres `EF_*` (colisión C9, §3.3).
 | Prefijo | Módulo (`ARCHITECTURE.md` §2) | Archivos | Qué marca |
 |---|---|---|---|
 | `EF_INPUT_` | orquestación (transversal) | `diagnostics.R`, `api-*.R` | Propagación de `NA` de entradas |
-| `EF_SURF_` | `surface` | `io-modis.R`, `prep-modis.R`, `io-aoi.R` | QA del producto, plausibilidad y tiempo del estado de superficie |
+| `EF_SURF_` | `surface` | `io-modis.R`, `modis-qa.R`, `prep-modis.R`, `io-aoi.R` | QA del producto, plausibilidad y tiempo del estado de superficie |
 | `EF_WS_` | `forcing` | `io-weather.R`, `prep-weather.R`, `prep-qc.R` | QC de estaciones y variables derivadas en estación (incluida ETr) |
 | `EF_GWR_` | `spatial` | `gwr-*.R` (y alternativas C1/C2) | Ajuste, bandwidth, extrapolación y dominio de las superficies |
 | `EF_RAD_` | `metric` (Rn y componentes) | `metric-radiation.R` | Geometría solar, onda corta/larga, Rn |
@@ -432,9 +432,9 @@ códigos y de bits por etapa (R1, R7). Dueños: `ef_flags_core()`
 (`metric-anchors.R`, `EF_ANCHOR_`), `ef_flags_sensible_heat()`
 (`metric-sensible-heat.R`, `EF_H_`), `ef_flags_et()` (`metric-et.R`,
 `EF_ET_`), `ef_flags_reference_et()` (`reference-et.R`, `EF_WS_`),
-`ef_flags_stations()` (`prep-qc.R`, `EF_WS_`) y `ef_flags_gwr()`
-(`gwr-diagnostics.R`, `EF_GWR_`); solo `surface` agregará la suya con su
-primer código. El registro es estático: `ef_flag_registry()` lo guarda la
+`ef_flags_stations()` (`prep-qc.R`, `EF_WS_`), `ef_flags_gwr()`
+(`gwr-diagnostics.R`, `EF_GWR_`) y, desde M4, `ef_flags_surface()`
+(`modis-qa.R`, `EF_SURF_`). El registro es estático: `ef_flag_registry()` lo guarda la
 primera vez que se usa y `ef_flag_registry_build()` lo reconstruye sin
 caché para los tests de §8 (`DECISIONS.md` §1.3, M3-37). Registrados: `EF_INPUT_NA` (`INPUT`, info, `cell,record`, bit 0) y
 `EF_ET_NEGATIVE` (`ET`, warning, `cell`, bit 1), ambos con las columnas de
@@ -449,7 +449,10 @@ levantados por `ef_station_ref_et()`, `weather-forcing.md` §13.4); el QC
 de estaciones (`ef_flags_stations()`, `prep-qc.R`) registra 9 códigos
 `EF_WS_` (incluido `EF_WS_RS_GT_RA`). El núcleo GWR y la orquestación de
 la regionalización (`ef_flags_gwr()`, `gwr-diagnostics.R`) registran 13
-códigos `EF_GWR_`. Total registrado: 54 códigos (§4.4). Las demás filas de
+códigos `EF_GWR_`. En M4, los decodificadores QA de MODIS
+(`ef_flags_surface()`, `modis-qa.R`) registran 12 códigos `EF_SURF_` de
+clase I (bits 1–12; `modis-products.md`, bloque de estado de M4). Total
+registrado: 66 códigos (§4.4). Las demás filas de
 este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
@@ -462,18 +465,18 @@ este catálogo siguen sin registrar y se registran según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_SURF_FILL` | `EF_MODIS_FILL` | prefijo | I | info* | cell | 1 | Causa de `NA` |
-| `EF_SURF_CLOUD` | `EF_MODIS_CLOUD` | prefijo | I | info* | cell | 2 | Causa de `NA`; ambigüedad MOD21 d4 (`modis-products.md` §5.2) se resuelve en la tabla de producto |
-| `EF_SURF_NOT_PRODUCED` | `EF_MODIS_NOT_PRODUCED` | prefijo | I | info* | cell | 3 | Causa de `NA` |
-| `EF_SURF_DN_OUT_OF_RANGE` | `EF_MODIS_OUT_OF_RANGE` | prefijo + renombre (C10) | I | info* | cell | 4 | Causa de `NA` (rango válido del producto, no dominio físico) |
-| `EF_SURF_LAI_NONVEG` | `EF_MODIS_LAI_NONVEG` | prefijo | I | info* | cell | 5 | Causa de `NA` en `lai` |
-| `EF_SURF_QA_OTHER` | `EF_MODIS_QA_OTHER` | prefijo | I | warning* | cell | 6 | Enmascarable con `qa_policy = "mask"` |
-| `EF_SURF_CLOUD_ADJACENT` | `EF_MODIS_CLOUD_ADJACENT` | prefijo | I | warning* | cell | 7 | – |
-| `EF_SURF_SNOW` | `EF_MODIS_SNOW` | prefijo | I | warning* | cell | 8 | Formulaciones de G/z_om no válidas sobre nieve |
-| `EF_SURF_WATER` | `EF_MODIS_WATER` | prefijo | I | warning* | cell | 9 | Ídem para agua |
-| `EF_SURF_SALT_PAN` | `EF_MODIS_SALT_PAN` | prefijo | I | warning* | cell | 10 | Relevante en salares altiplánicos |
-| `EF_SURF_LAI_BACKUP` | `EF_MODIS_LAI_BACKUP` | prefijo | I | warning* | cell | 11 | – |
-| `EF_SURF_ALBEDO_MAGNITUDE` | `EF_MODIS_ALBEDO_MAGNITUDE` | prefijo | I | warning* | cell | 12 | – |
+| `EF_SURF_FILL` | `EF_MODIS_FILL` | prefijo | I (registrado; `modis_apply_scale()`, `modis_variable()`) | info* | cell | 1 | Causa de `NA` |
+| `EF_SURF_CLOUD` | `EF_MODIS_CLOUD` | prefijo | I (registrado; `modis_qa_masks()` (MODLAND 10)) | info* | cell | 2 | Causa de `NA`; ambigüedad MOD21 d4 (`modis-products.md` §5.2) se resuelve en la tabla de producto |
+| `EF_SURF_NOT_PRODUCED` | `EF_MODIS_NOT_PRODUCED` | prefijo | I (registrado; `modis_qa_masks()` (MODLAND 11; MCD15 SCF_QC 100)) | info* | cell | 3 | Causa de `NA` |
+| `EF_SURF_DN_OUT_OF_RANGE` | `EF_MODIS_OUT_OF_RANGE` | prefijo + renombre (C10) | I (registrado; `modis_apply_scale()`, `modis_variable()`) | info* | cell | 4 | Causa de `NA` (rango válido del producto, no dominio físico) |
+| `EF_SURF_LAI_NONVEG` | `EF_MODIS_LAI_NONVEG` | prefijo | I (registrado; `modis_lai()`) | info* | cell | 5 | Causa de `NA` en `lai` |
+| `EF_SURF_QA_OTHER` | `EF_MODIS_QA_OTHER` | prefijo | I (registrado; `modis_qa_masks()` (MODLAND 01)) | warning* | cell | 6 | Enmascarable con `qa_policy = "mask"` |
+| `EF_SURF_CLOUD_ADJACENT` | `EF_MODIS_CLOUD_ADJACENT` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 7 | – |
+| `EF_SURF_SNOW` | `EF_MODIS_SNOW` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 8 | Formulaciones de G/z_om no válidas sobre nieve |
+| `EF_SURF_WATER` | `EF_MODIS_WATER` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 9 | Ídem para agua |
+| `EF_SURF_SALT_PAN` | `EF_MODIS_SALT_PAN` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 10 | Relevante en salares altiplánicos |
+| `EF_SURF_LAI_BACKUP` | `EF_MODIS_LAI_BACKUP` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 11 | – |
+| `EF_SURF_ALBEDO_MAGNITUDE` | `EF_MODIS_ALBEDO_MAGNITUDE` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 12 | – |
 | `EF_SURF_OVERPASS_MISSING` | `EF_OVERPASS_TIME_MISSING` | prefijo + renombre | I | warning* | cell | 13 | LST conservada; geometría solar `NA` aguas abajo |
 | `EF_SURF_ALBEDO_GT1` | `EF_MODIS_ALBEDO_GT1` | prefijo | **III** | critical* | cell | 14 | `earthflux_domain_error` en G y Rn (C12) |
 | `EF_SURF_LST_ERROR` | `EF_MODIS_LST_ERROR` | prefijo | II | warning* | cell | libre | Qué categoría de error `TODO` |
@@ -628,7 +631,7 @@ división).
 | Prefijo | I | II | III | Total | Registrados |
 |---|---|---|---|---|---|
 | `INPUT` | 1 | 0 | 0 | 1 | 1 |
-| `SURF` | 13 | 7 | 1 | 21 | 0 |
+| `SURF` | 13 | 7 | 1 | 21 | 12 |
 | `WS` | 11 | 13 | 2 | 26 | 13 |
 | `GWR` | 14 | 4 | 1 | 19 | 13 |
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
@@ -636,7 +639,7 @@ división).
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
 | `H` | 11 | 2 | 0 | 13 | 8 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **73** | **35** | **4** | **112** | **54** |
+| **Total** | **73** | **35** | **4** | **112** | **66** |
 
 Registrados (armonización M3, 2026-11-04; recuento de
 `ef_flag_registry()`): **54 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
