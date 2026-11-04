@@ -13,6 +13,7 @@ ORCID [0000-0002-7864-4899](https://orcid.org/0000-0002-7864-4899) ·
 - `dev/` está versionado en Git y excluido del tarball (`.Rbuildignore`).
 - Prefijo de funciones públicas de bajo nivel: `ef_` (p. ej.,
   `ef_net_radiation()`). Función de alto nivel futura: `earthflux()`.
+  Reglas de nombres y tabla de nombres cortos en [`NAMING.md`](NAMING.md).
 - API pública deliberadamente pequeña: no exportar funciones internas.
 - Ninguna referencia a herramientas de asistencia en código, documentación,
   commits, ramas, issues, releases ni sitio pkgdown. No se agregan archivos de
