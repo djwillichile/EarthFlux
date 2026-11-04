@@ -9,7 +9,7 @@ Este plan separa dos actividades distintas:
 |---|---|---|
 | Pregunta | ¿El código implementa correctamente lo especificado? | ¿Lo especificado representa adecuadamente la realidad? |
 | Referencia | Ecuaciones de `SCIENTIFIC_SPEC.md` y `specs/`, casos calculados a mano o publicados, implementaciones independientes | Observaciones independientes |
-| Dónde vive | `tests/testthat/` (corre en `R CMD check`); `inst/verification/` para cruces con código GPL (fuera del tarball) | Repositorio/proyecto de experimentos (fuera del tarball) |
+| Dónde vive | `tests/testthat/` (corre en `R CMD check`); `dev/verification/` para cruces con código GPL (fuera del tarball; `inst/` sí se incluiría en el paquete) | Repositorio/proyecto de experimentos (fuera del tarball) |
 | Hito | M2–M5 | M6 |
 
 Regla común: ninguna de las dos actividades anticipa resultados. La parte 1
