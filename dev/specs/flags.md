@@ -436,8 +436,11 @@ código. Registrados: `EF_INPUT_NA` (`INPUT`, info, `cell,record`, bit 0) y
 `EF_ET_NEGATIVE` (`ET`, warning, `cell`, bit 1), ambos con las columnas de
 §7, y los diez códigos de clase I de `EF_ANCHOR_` (ámbitos `object`/`record`,
 sin bit), registrados con `ef_select_anchors()`, `ef_anchors()` y
-`ef_anchor_conditions()` (`metric-anchors.R`). Las demás filas de este catálogo siguen sin registrar y se registran
-según §7.
+`ef_anchor_conditions()` (`metric-anchors.R`). En M3, la etapa de ET de
+referencia (`ef_flags_reference_et()`, `reference-et.R`, prefijo `EF_WS_`)
+registra `EF_WS_RS_RSO_LIMITED` (I-m) y `EF_WS_ETR_NEGATIVE` (I), ambos
+informativos, de ámbito `record` y sin bit (`weather-forcing.md` §13). Las
+demás filas de este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
 
@@ -485,9 +488,9 @@ según §7.
 | `EF_WS_INCOMPLETE_DAY` | `EF_WS_INCOMPLETE_DAY` | — | I | warning | record | — | Política de huecos `TODO` (WF-11) no cambia la condición |
 | `EF_WS_HEIGHT_MISSING` | `EF_WS_HEIGHT_MISSING` | — | I | warning | record | — | – |
 | `EF_WS_HEIGHT_NONSTANDARD` | `EF_WS_HEIGHT_NONSTANDARD` | — | I | warning | record | — | Altura ≠ 2 m exacta |
-| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
+| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | I | info* | record | — | Causa de `NA` |
-| `EF_WS_ETR_NEGATIVE` | `EF_ETREF_NEGATIVE` | prefijo + renombre | I | info | record | — | Cubre ETr y ETo (tipo en la procedencia); ámbito `cell` si se adopta la opción C (FL-09) |
+| `EF_WS_ETR_NEGATIVE` | `EF_ETREF_NEGATIVE` | prefijo + renombre | I (registrado; `ef_ref_et()`, `R/reference-et.R`) | info | record | — | Cubre ETr y ETo (tipo en la procedencia); ámbito `cell` si se adopta la opción C (FL-09) |
 | `EF_WS_IMPLAUSIBLE` | `EF_WS_IMPLAUSIBLE` | — | II | warning | record | — | Límites de `water` sin cita: no se adoptan |
 | `EF_WS_RH_RECALIBRATE` | `EF_WS_RH_RECALIBRATE` | — | II | warning | record | — | Rango [3, 5] % de FAO-56; falta elegir δ (WF-06) |
 | `EF_WS_RS_GT_RSO` | `EF_WS_RS_GT_RSO` | — | II | warning | record | — | Margen `TODO` |
