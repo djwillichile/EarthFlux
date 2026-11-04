@@ -24,6 +24,11 @@ Convención de trazabilidad usada en este documento:
   explícitos) a partir de las formas candidatas; verifican aritmética, no
   la física.
 
+> **Estado de implementación (M2, 2026-11-04).** Implementado en
+> `R/solar-geometry.R` (§6.1) y `R/metric-radiation.R` (§6.3–§6.6), con
+> tests en `tests/testthat/test-solar-geometry.R` y `test-radiation.R`.
+> Detalle de las decisiones tomadas al implementar en §12.
+
 ---
 
 ## 0. Índice
@@ -1240,3 +1245,57 @@ citation` cuando se integre este documento (no se editan aquí).
   espacialmente variable (más allá del ρ_g simple).
 - Registro de los flags en `ef_flag_registry()` y actualización del índice
   de `SCIENTIFIC_SPEC.md` (se hará al integrar este documento).
+
+---
+
+## 12. Estado de implementación (M2, 2026-11-04)
+
+Nombres según `NAMING.md` (tabla "Radiación"). Todas las formas siguen
+`CANDIDATA` salvo lo indicado; las elecciones no verificadas son argumentos
+explícitos sin defecto (`DECISIONS.md` §1.0).
+
+| Función | Exportada | Estado | Notas de implementación |
+|---|---|---|---|
+| `ef_solar_geometry(doy, utc_hour, lat, lon, slope = 0, aspect = 0)` | Sí | δ, dr, Sc, ω `VERIFICADA` (FAO-56 Ec. 23, 24, 31–33; `weather-forcing.md` §4.6); cos θ_h identidad trigonométrica; cos θ_rel `CANDIDATA` | Devuelve lista simple `cos_zenith`, `cos_incidence`, `declination`, `hour_angle`, `inv_distance`, todas con la forma común (RC-15) |
+| `ef_declination()`, `ef_inv_distance()`, `ef_equation_of_time()`, `ef_hour_angle()`, `ef_cos_incidence()` | No (RC-05) | Como arriba | Reutilizables por `ef_ra_daily()`/`ef_ra_period()` (`weather-forcing.md` §4.6) sin duplicar ecuaciones |
+| `ef_tau_sw(..., method)` → `ef_tau_sw_allen(cos_zenith, pressure, vapour_pressure, turbidity)`, `ef_tau_sw_elevation(elevation)` | Sí | `allen` `CANDIDATA`; `elevation` con la forma de FAO-56 Ec. 37, uso instantáneo `CANDIDATA` | `turbidity` **sin defecto** (el valor 1 no está verificado). `allen` devuelve lista (`beam`, `diffuse`, `total`); `elevation`, numérico; el despachador devuelve el tipo del método |
+| `ef_atm_emissivity(tau_sw)` | Sí | `CANDIDATA` | Dominio (0, 1) abierto; ε_a > 1 se conserva y se marca |
+| `ef_rs_in(..., method)` → `ef_rs_in_modelled(cos_zenith, cos_incidence, inv_distance, tau_beam, tau_diffuse, slope, ground_albedo = NULL)`, `ef_rs_in_measured(rs_horizontal, diffuse_fraction, cos_zenith, cos_incidence, slope, ground_albedo = NULL)` | Sí | `CANDIDATA` (proyección isotrópica; RC-09 abierta); en el camino medido la fuente de k_d sigue `TODO` (RC-10) | `slope` **sin defecto** (evita combinar un cos θ_rel de ladera con difusa de plano); `ground_albedo = NULL` solo si ninguna pendiente es > 0; τ_b + τ_d ∈ (0, 1) (suma 0 excluida: k_d indefinida); proyección común interna `ef_rs_to_slope()` |
+| `ef_rl_in(temperature, atm_emissivity)` | Sí | `CANDIDATA`; T sin defecto (RC-12 / P0-3 abiertas) | Agnóstica respecto de la temperatura |
+| `ef_rl_out(lst, emissivity)` | Sí | `CANDIDATA` (corroborada, como `ef_net_radiation()`) | Onda larga **emitida** (C1) |
+| `ef_diagnose_radiation(...)` | No | — | Flags de celda de la etapa (ver abajo) |
+
+Decisiones tomadas al implementar:
+
+1. **Tiempo (RC-03).** El núcleo recibe `doy` de la fecha UTC y `utc_hour`
+   UTC; la ecuación del tiempo se aplica una sola vez, en `ef_hour_angle()`,
+   con t_s = (utc_hour + λ·12/π + Sc) mod 24 y ω ∈ [−π, π). La conversión
+   del *view time* de MOD11A1 (hora solar media) a UTC queda fuera del
+   núcleo (`modis-products.md` §6.2); no se acepta `solar_hour`. Test de
+   equivalencia con FAO-56 Ec. 31 (longitudes al oeste, 0–360) y con los
+   valores publicados de los Ejemplos 8 y 19.
+2. **Argumento `inv_distance`** (no `inv_rel_distance`): coincide con
+   `ef_inv_distance()` (regla N5 de `NAMING.md`).
+3. **NA.** Propagación aritmética a las salidas que dependen de la entrada
+   faltante (`total` siempre); no se fuerza `NA` en componentes calculables
+   (p. ej., `diffuse_fraction` no depende de cos θ_h).
+4. **Gsc** = `EF_SOLAR_CONSTANT` (1366,67 W m⁻², FAO-56 Ec. 21; adopción
+   `CANDIDATA`, RC-06). Los casos S1–S4 (calculados con 1367) se verifican
+   reescalando por 1367/Gsc, ya que Rs↓ es proporcional a Gsc.
+5. **Caso integrado (§7)** con un único τ_sw coherente (0,7431396):
+   Rs↓ = 831,9506; ε_a = 0,7619914; RL↓ = 319,0960; RL↑ = 450,1143;
+   Rn = 528,1603 W m⁻² (α = 0,2; ε₀ = 0,98; T = 293,15 K).
+6. **Discrepancia RC-08** (FAO-56 Anexo 3 Ec. 3-18/3-20 frente a la forma de
+   §6.3.A) registrada en la documentación de `ef_tau_sw_allen()`.
+7. **Flags registrados** (clase I, `flags.md` §4.2 y §6.4):
+   `EF_RAD_SELF_SHADED` (bit 1), `EF_RAD_ATM_EMISSIVITY_GT1` (bit 2),
+   `EF_RAD_RS_GT_RA` (bit 3; ámbitos `cell,record`, evaluado en `cell` con
+   R_a,h = Gsc·dr·max(cos θ_h, 0)) y `EF_RAD_RN_NEGATIVE` (bit 4). Los
+   construye `ef_diagnose_radiation()`, que evalúa cada código solo si
+   recibe todas sus entradas y devuelve un registro por código evaluado
+   (aunque no marque celdas). `EF_RAD_SUN_LOW` (clase II) no se registra.
+
+Fuera de esta implementación: emisividad superficial ε₀ (módulo `surface`,
+RC-14), formulación de Brutsaert para ε_a (RC-13), modelos de
+descomposición para k_d (RC-10), corrección anisotrópica de la difusa
+(RC-09) y comparación con efemérides de mayor precisión (RC-04).
