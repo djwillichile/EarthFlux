@@ -192,9 +192,30 @@ mp_rows <- function(product, layer, grid, resolution, cells_per_tile,
 #' `modis_qa_layouts()`), `status`, `source`, `note`, `physical_min`,
 #' `physical_max` (`DERIVADA`).
 #'
+#' The table is static (built from code): `modis_product_table()` builds it
+#' once per session and then returns the cached copy (as
+#' `ef_flag_registry()` does; building it costs about 0.1 s and the readers
+#' and converters look it up for every layer); `modis_product_table_build()`
+#' always rebuilds it.
+#'
 #' @return A data frame.
 #' @noRd
 modis_product_table <- function() {
+  tab <- modis_table_cache$table
+  if (is.null(tab)) {
+    tab <- modis_product_table_build()
+    assign("table", tab, envir = modis_table_cache)
+  }
+  tab
+}
+
+#' Cache of the MODIS product table
+#' @noRd
+modis_table_cache <- new.env(parent = emptyenv())
+
+#' @rdname modis_product_table
+#' @noRd
+modis_product_table_build <- function() {
   lst <- c("MOD11A1", "MYD11A1")
   src11 <- "D1 p. 17, Tabla 9; D10; D12 (modis-products.md 5.1 b)"
   g11 <- "MODIS_Grid_Daily_1km_LST"

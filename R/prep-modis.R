@@ -39,16 +39,20 @@
 #   coefficients are TODO (A5, A6) are not implemented: requesting them
 #   raises earthflux_method_not_implemented (subclass of
 #   earthflux_unknown_method and earthflux_input_error; fields `method` and
-#   `choices`, the available methods). # TODO(shared): list this class in
-#   the condition-class catalogue at the top of R/utils.R.
+#   `choices`, the available methods; listed in the condition catalogue of
+#   R/utils.R). The implemented and planned options of each step are listed
+#   once, in modis_albedo_methods(), modis_emissivity_methods(),
+#   modis_composite_methods() and modis_grid_methods(), shared with the
+#   options of modis_surface_state() (R/modis-surface.R).
 #
 # Flags: these functions raise no flag. They return logical masks that the
-#   surface stage (ef_flags_surface(), owned by the product/QA module) maps
-#   to EF_SURF_ codes (dev/specs/flags.md 4.2, bits 6.4):
+#   surface state (modis_surface_state(), R/modis-surface.R) maps to the
+#   EF_SURF_ codes registered in ef_flags_surface() (R/modis-qa.R;
+#   dev/specs/flags.md 4.2, bits 6.4):
 #   - modis_overpass_time()$missing  -> EF_SURF_OVERPASS_MISSING (bit 13,
 #     class I) where the LST is valid;
 #   - modis_albedo()$gt1             -> EF_SURF_ALBEDO_GT1 (bit 14, class
-#     III, critical);
+#     III, critical; excluded before the core, surface_exclusion());
 #   - modis_to_grid()$incomplete     -> EF_SURF_AGG_INCOMPLETE (class II,
 #     threshold TODO: must not be registered yet);
 #   - modis_match_composite()$lag_days feeds EF_SURF_COMPOSITE_LAG (class
@@ -74,22 +78,24 @@
 #'   options listed in dev/specs/modis-products.md but not implemented;
 #'   values explain why (status and section).
 #' @param call The call to report.
+#' @param arg Character. Name of the argument, for the messages.
 #' @return `method`, invisibly. A planned method raises
 #'   `c("earthflux_method_not_implemented", "earthflux_unknown_method",
 #'   "earthflux_input_error")` with fields `method` and `choices` (the
 #'   available methods); missing, malformed or unknown methods raise the
 #'   classes of `check_method()`.
 #' @noRd
-modis_check_method <- function(method, available, planned, call) {
+modis_check_method <- function(method, available, planned, call,
+                               arg = "method") {
   if (!missing(method) && is.character(method) && length(method) == 1L &&
       !is.na(method) && method %in% names(planned)) {
     ef_abort(
       sprintf(
         paste0(
-          "`method = \"%s\"` is not implemented: %s. ",
-          "Available methods: %s."
+          "`%s = \"%s\"` is not implemented: %s. ",
+          "Available: %s."
         ),
-        method, planned[[method]],
+        arg, method, planned[[method]],
         paste0("\"", available, "\"", collapse = ", ")
       ),
       class = c("earthflux_method_not_implemented",
@@ -99,7 +105,99 @@ modis_check_method <- function(method, available, planned, call) {
       call = call
     )
   }
-  check_method(method, available, call = call)
+  check_method(method, available, arg = arg, call = call)
+}
+
+#' Methods of the MODIS preparation steps
+#'
+#' The single list of the implemented (`available`) and planned but not
+#' implemented (`planned`, named by method with the reason) options of each
+#' preparation step, shared by the step functions and by the options of
+#' `modis_surface_state()` (checked before any file is read).
+#'
+#' * `modis_albedo_methods()`: options A1-A6 of
+#'   dev/specs/modis-products.md 8.1 (`modis_albedo()`);
+#' * `modis_emissivity_methods()`: options E1-E4 of section 8.2
+#'   (`modis_broadband_emissivity()`);
+#' * `modis_composite_methods()`: options T1-T5 of section 9.1
+#'   (`modis_match_composite()`);
+#' * `modis_grid_methods()`: aggregation rules of section 9.2
+#'   (`modis_to_grid()`).
+#'
+#' @return A list with `available` (character) and `planned` (named
+#'   character).
+#' @noRd
+modis_albedo_methods <- function() {
+  list(
+    available = c("blue_sky", "white_sky", "black_sky"),
+    planned = c(
+      bsa_at_overpass = paste0(
+        "option A4 (BSA at the overpass from the MCD43A1 BRDF ",
+        "parameters) is TODO in dev/specs/modis-products.md 8.1"
+      ),
+      narrow_to_broadband = paste0(
+        "option A5 needs the narrowband-to-broadband coefficients of ",
+        "Liang (2001), TODO in dev/specs/modis-products.md 8.1"
+      ),
+      metric_tasumi = paste0(
+        "option A6 (Tasumi et al., 2008) is not given with a formula and ",
+        "its transferability to MODIS is TODO (dev/specs/modis-products.md ",
+        "8.1)"
+      )
+    )
+  )
+}
+
+#' @rdname modis_albedo_methods
+#' @noRd
+modis_emissivity_methods <- function() {
+  list(
+    available = "lai_empirical",
+    planned = c(
+      split_window_regression = paste0(
+        "option E1 (regression on the band 31/32 emissivities, Wang et ",
+        "al., 2005) has its coefficients TODO in ",
+        "dev/specs/modis-products.md 8.2"
+      ),
+      tes_regression = paste0(
+        "option E2 (regression on the MOD21A1D emissivities) is TODO in ",
+        "dev/specs/modis-products.md 8.2"
+      ),
+      camel = paste0(
+        "option E4 (CAMEL broadband product) is TODO in ",
+        "dev/specs/modis-products.md 8.2"
+      )
+    )
+  )
+}
+
+#' @rdname modis_albedo_methods
+#' @noRd
+modis_composite_methods <- function() {
+  list(
+    available = c("period", "period_pixel_lag", "same_day"),
+    planned = c(
+      interpolate = paste0(
+        "option T3 (linear interpolation between adjacent composites) ",
+        "needs a reference instant per composite, not defined in ",
+        "dev/specs/modis-products.md 9.1"
+      )
+    )
+  )
+}
+
+#' @rdname modis_albedo_methods
+#' @noRd
+modis_grid_methods <- function() {
+  list(
+    available = c("mean", "median", "modal", "any"),
+    planned = c(
+      bilinear = paste0(
+        "interpolation is never used to aggregate MODIS layers ",
+        "(dev/specs/modis-products.md 9.2, rule 1)"
+      )
+    )
+  )
 }
 
 #' Check which optional inputs a method uses
@@ -487,26 +585,8 @@ modis_overpass_time <- function(view_time_h, lon_deg = NULL, date_utc) {
 modis_albedo <- function(bsa = NULL, wsa = NULL, diffuse_fraction = NULL,
                          method) {
   call <- sys.call()
-  available <- c("blue_sky", "white_sky", "black_sky")
-  modis_check_method(
-    method, available,
-    planned = c(
-      bsa_at_overpass = paste0(
-        "option A4 (BSA at the overpass from the MCD43A1 BRDF ",
-        "parameters) is TODO in dev/specs/modis-products.md 8.1"
-      ),
-      narrow_to_broadband = paste0(
-        "option A5 needs the narrowband-to-broadband coefficients of ",
-        "Liang (2001), TODO in dev/specs/modis-products.md 8.1"
-      ),
-      metric_tasumi = paste0(
-        "option A6 (Tasumi et al., 2008) is not given with a formula and ",
-        "its transferability to MODIS is TODO (dev/specs/modis-products.md ",
-        "8.1)"
-      )
-    ),
-    call = call
-  )
+  m <- modis_albedo_methods()
+  modis_check_method(method, m$available, m$planned, call = call)
   args <- list(bsa = bsa, wsa = wsa, diffuse_fraction = diffuse_fraction)
   used <- switch(method,
     blue_sky = c("bsa", "wsa", "diffuse_fraction"),
@@ -600,25 +680,8 @@ modis_albedo <- function(bsa = NULL, wsa = NULL, diffuse_fraction = NULL,
 modis_broadband_emissivity <- function(e31 = NULL, e32 = NULL, lai = NULL,
                                        method) {
   call <- sys.call()
-  modis_check_method(
-    method, "lai_empirical",
-    planned = c(
-      split_window_regression = paste0(
-        "option E1 (regression on the band 31/32 emissivities, Wang et ",
-        "al., 2005) has its coefficients TODO in ",
-        "dev/specs/modis-products.md 8.2"
-      ),
-      tes_regression = paste0(
-        "option E2 (regression on the MOD21A1D emissivities) is TODO in ",
-        "dev/specs/modis-products.md 8.2"
-      ),
-      camel = paste0(
-        "option E4 (CAMEL broadband product) is TODO in ",
-        "dev/specs/modis-products.md 8.2"
-      )
-    ),
-    call = call
-  )
+  m <- modis_emissivity_methods()
+  modis_check_method(method, m$available, m$planned, call = call)
   args <- list(e31 = e31, e32 = e32, lai = lai)
   modis_check_used(args, "lai", method, call)
   if (modis_any_raster(list(lai = lai))) {
@@ -782,18 +845,8 @@ modis_match_composite <- function(lst_date, composite_start,
                                   composite_end = NULL, method,
                                   composite_doy = NULL) {
   call <- sys.call()
-  available <- c("period", "period_pixel_lag", "same_day")
-  modis_check_method(
-    method, available,
-    planned = c(
-      interpolate = paste0(
-        "option T3 (linear interpolation between adjacent composites) ",
-        "needs a reference instant per composite, not defined in ",
-        "dev/specs/modis-products.md 9.1"
-      )
-    ),
-    call = call
-  )
+  m <- modis_composite_methods()
+  modis_check_method(method, m$available, m$planned, call = call)
   used <- switch(method,
     period = "composite_end",
     period_pixel_lag = c("composite_end", "composite_doy"),
@@ -986,16 +1039,8 @@ modis_pixel_lag <- function(composite_doy, lst_date, start, end, call) {
 #' @noRd
 modis_to_grid <- function(x, template, method, min_valid_fraction) {
   call <- sys.call()
-  modis_check_method(
-    method, c("mean", "median", "modal", "any"),
-    planned = c(
-      bilinear = paste0(
-        "interpolation is never used to aggregate MODIS layers ",
-        "(dev/specs/modis-products.md 9.2, rule 1)"
-      )
-    ),
-    call = call
-  )
+  m <- modis_grid_methods()
+  modis_check_method(method, m$available, m$planned, call = call)
   if (missing(min_valid_fraction)) {
     ef_abort("`min_valid_fraction` must be supplied explicitly.",
              class = c("earthflux_missing_input", "earthflux_input_error"),
