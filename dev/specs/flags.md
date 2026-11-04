@@ -27,8 +27,8 @@ mayúsculas (`EF_*`); las descripciones del registro, en inglés (en-GB,
 |---|---|
 | Filas de inventario (propuestas por documento, §2) | 122 |
 | Códigos/condiciones distintos inventariados | 120 (119 con nombre + 1 sin nombre: "Rn negativo") |
-| Códigos tras normalizar (§3–§4) | **112** |
-| Clase I — inequívocos, sin umbral: registrables con su módulo | **73** (2 ya registrados + 71 pendientes) |
+| Códigos tras normalizar (§3–§4) | **113** (112 de la normalización de M1 + `EF_SURF_LAI_ASSIGNED`, agregado en M4 con la opción `lai_nonveg`, MP-06; §4.2) |
+| Clase I — inequívocos, sin umbral: registrables con su módulo | **74** (65 registrados + 9 pendientes al 2026-11-04, §4.4) |
 | Clase II — requieren umbral (o verificación de fuente): `TODO`, no registrar | **35** |
 | Clase III — imposibilidad física/lógica: **error** en el núcleo; flag `critical` solo en módulos de datos | **4** |
 | Fusiones (mismo hecho, nombres distintos) | 5 (eliminan 5 códigos) |
@@ -419,7 +419,7 @@ corrida); **Bit** = bit planificado en la palabra de la etapa (§6.4; solo
 bit libre al registrarse). **Sev.** marcada con `*` = cambia respecto de
 la fuente o la fuente no la indicaba (justificación en §5.4).
 
-### 4.2 Catálogo (112 códigos)
+### 4.2 Catálogo (113 códigos)
 
 **Estado de implementación (2026-11-04).** El registro se ensambla por
 etapa: `ef_flag_registry()` (`R/diagnostics.R`) une las filas que cada
@@ -455,8 +455,14 @@ clase I (bits 1–12; `modis-products.md`, bloque de estado de M4), y el
 ensamblaje del estado de superficie (`modis_surface_state()`,
 `modis-surface.R`) levanta `EF_SURF_OVERPASS_MISSING` (clase I, bit 13) y
 el de clase III `EF_SURF_ALBEDO_GT1` (bit 14, `critical`, contraparte
-`earthflux_domain_error`), registrados en la misma función. Total
-registrado: 68 códigos (§4.4). Las demás filas de
+`earthflux_domain_error`), registrados en la misma función. La opción
+explícita `lai_nonveg` (LAI asignado a las clases no vegetadas de
+MCD15A2H, MP-06; `modis_lai()`, `modis_surface_options()`) agrega en M4
+`EF_SURF_LAI_ASSIGNED` (clase I, `info`, bit 15), código nuevo que no
+proviene del inventario de §2: ningún código existente significaba "valor
+asignado por una opción del usuario", y `EF_SURF_LAI_NONVEG` es una causa
+de `NA` (§7, punto 6: un código registrado no cambia de significado).
+Total registrado: 69 códigos (§4.4). Las demás filas de
 este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
@@ -465,7 +471,7 @@ este catálogo siguen sin registrar y se registran según §7.
 |---|---|---|---|---|---|---|---|
 | `EF_INPUT_NA` | `EF_INPUT_NA`, `EF_ETRF_NO_VALID_DATE` | fusión (C8) | I (registrado; levantado por los despachadores de M2 con `ef_input_na_flags()`, tests en los módulos) | info | cell, record | 0 (en todas las palabras) | Construido por los despachadores y la orquestación con `!is.na()`; nunca por la función numérica |
 
-#### `EF_SURF_` (21)
+#### `EF_SURF_` (22)
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
@@ -483,6 +489,7 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_SURF_ALBEDO_MAGNITUDE` | `EF_MODIS_ALBEDO_MAGNITUDE` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 12 | – |
 | `EF_SURF_OVERPASS_MISSING` | `EF_OVERPASS_TIME_MISSING` | prefijo + renombre | I (registrado; `modis_surface_state()` con la máscara `missing` de `modis_overpass_time()`, solo donde la LST es válida) | warning* | cell | 13 | LST conservada; geometría solar `NA` aguas abajo |
 | `EF_SURF_ALBEDO_GT1` | `EF_MODIS_ALBEDO_GT1` | prefijo | **III** (registrado; `modis_surface_state()` con la máscara `gt1` de `modis_albedo()`; exclusión antes del núcleo con `surface_exclusion()`) | critical* | cell | 14 | `earthflux_domain_error` en G y Rn (C12); valor conservado |
+| `EF_SURF_LAI_ASSIGNED` | — (nuevo en M4; `modis-products.md` MP-06) | nuevo | I (registrado; `modis_lai()` con la opción `lai_nonveg`; `modis_surface_state()` lo lleva a `flags_lai` y a `flags_emissivity`) | info* | cell | 15 | LAI de una clase no vegetada (249–254) **asignado** por el usuario (no recuperado), valor conservado; `EF_SURF_LAI_NONVEG` conserva su significado (LAI `NA`) y **no** se levanta en las celdas asignadas (sí en las clases no asignadas). No enmascarable ni causa de `NA` |
 | `EF_SURF_LST_ERROR` | `EF_MODIS_LST_ERROR` | prefijo | II | warning* | cell | libre | Qué categoría de error `TODO` |
 | `EF_SURF_EMIS_ERROR` | `EF_MODIS_EMIS_ERROR` | prefijo | II | warning* | cell | libre | `TODO` |
 | `EF_SURF_VIEW_ANGLE_HIGH` | `EF_MODIS_VIEW_ANGLE_HIGH` | prefijo | II | warning* | cell | libre | Absorbe `EF_ANCHOR_HIGH_VIEW_ANGLE` por herencia |
@@ -635,7 +642,7 @@ división).
 | Prefijo | I | II | III | Total | Registrados |
 |---|---|---|---|---|---|
 | `INPUT` | 1 | 0 | 0 | 1 | 1 |
-| `SURF` | 13 | 7 | 1 | 21 | 14 |
+| `SURF` | 14 | 7 | 1 | 22 | 15 |
 | `WS` | 11 | 13 | 2 | 26 | 13 |
 | `GWR` | 14 | 4 | 1 | 19 | 13 |
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
@@ -643,22 +650,23 @@ división).
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
 | `H` | 11 | 2 | 0 | 13 | 8 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **73** | **35** | **4** | **112** | **68** |
+| **Total** | **74** | **35** | **4** | **113** | **69** |
 
-Registrados (armonización M4, 2026-11-04; recuento de
-`ef_flag_registry()`): **68 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
+Registrados (M4, 2026-11-04, tras la opción `lai_nonveg`; recuento de
+`ef_flag_registry()`): **69 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
 `ANCHOR` 10, `H` 8, `ET` 1 (los 28 de M2), `WS` 13 y `GWR` 13 (los 26 de
-M3) y `SURF` 14 (M4); 64 de clase I y 4 de clase III
+M3) y `SURF` 15 (M4); 65 de clase I y 4 de clase III
 (`EF_WS_OUT_OF_DOMAIN`, `EF_WS_TMIN_GT_TMAX`, `EF_GWR_OUT_OF_DOMAIN`,
 `EF_SURF_ALBEDO_GT1`), todos ejercitados por un test de su módulo (R11,
 sin excepciones); ningún código de clase II (los 35 siguen en la guardia
 de `test-diagnostics.R`).
 
-Superficie (M4, 2026-11-04): los 13 `EF_SURF_*` de clase I y el de clase
+Superficie (M4, 2026-11-04): los 14 `EF_SURF_*` de clase I y el de clase
 III están registrados en `ef_flags_surface()` (`R/modis-qa.R`): 12
 levantados por los decodificadores (bits 1–12), `EF_SURF_OVERPASS_MISSING`
 (bit 13) y `EF_SURF_ALBEDO_GT1` (bit 14, `critical`) levantados por
-`modis_surface_state()` (`R/modis-surface.R`). Los 7 de clase II siguen en
+`modis_surface_state()` (`R/modis-surface.R`) y `EF_SURF_LAI_ASSIGNED`
+(bit 15, `info`) levantado por `modis_lai()` con la opción `lai_nonveg`. Los 7 de clase II siguen en
 la guardia; `EF_SURF_AGG_INCOMPLETE` y `EF_SURF_COMPOSITE_LAG` tienen ya
 sus insumos (`modis_to_grid()$incomplete`, `lag_days`) a la espera de un
 umbral con referencia.
@@ -756,6 +764,7 @@ todavía ningún código registrado lo usa.
 | `EF_SURF_ALBEDO_GT1` | — | `critical` | Imposible por definición; G y Rn lo rechazan con error (C12) |
 | `EF_H_CALIBRATION_NOT_CONVERGED` | warning (escena) | `critical` | La calibración no cumplió su propio criterio; H, LE y ET de toda la escena dependen de ella. Se conserva el `earthflux_convergence_warning` |
 | `EF_H_DT_SLOPE_NONPOSITIVE` | warning | `critical` | Con anclas bien ordenadas, b ≤ 0 hace que H no crezca con Ts: la calibración contradice el supuesto de linealidad dT–Ts de METRIC |
+| `EF_SURF_LAI_ASSIGNED` | — (nuevo, M4) | info | Registro de una opción explícita del usuario aplicada (§5.3, `info`); el valor asignado queda identificado y en la procedencia |
 | `EF_SURF_*` (resto) | — | info (causas de `NA`) / warning (valores conservados) | `modis-products.md` §10.2 no indicaba severidades; se aplica §5.3 |
 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | info | Causa de `NA` |
 | `EF_RAD_RN_NEGATIVE` | "sin warning" | info | Coherente: el flag no emite `warning()` |
@@ -863,7 +872,7 @@ código entra al registro (§7). Los códigos de clase II con ámbito `cell`
 reciben el siguiente bit libre al registrarse. Un bit asignado nunca se
 reutiliza ni se renumera (aunque el código se retire).
 
-| Bit | `SURF` (lst, emissivity, albedo, ndvi, lai, overpass_time) | `GWR` (cada variable × `target_time`) | `RAD` (rn y componentes) | `G` (g, g_rn_ratio) | `H` (h, rah, dt) | `ET` (et_inst, etrf, eta_24, et_period) |
+| Bit | `SURF` (lst, emissivity, albedo, ndvi, lai, overpass_time, emis_31, emis_32) | `GWR` (cada variable × `target_time`) | `RAD` (rn y componentes) | `G` (g, g_rn_ratio) | `H` (h, rah, dt) | `ET` (et_inst, etrf, eta_24, et_period) |
 |---|---|---|---|---|---|---|
 | 0 | `EF_INPUT_NA` | `EF_INPUT_NA` | `EF_INPUT_NA` | `EF_INPUT_NA` | `EF_INPUT_NA` | `EF_INPUT_NA` |
 | 1 | `EF_SURF_FILL` | `EF_GWR_EXTRAPOLATION_COVARIATE` | `EF_RAD_SELF_SHADED` | `EF_G_RN_NONPOSITIVE` | `EF_H_ZOM_FLOOR_APPLIED` | `EF_ET_NEGATIVE` |
@@ -880,10 +889,11 @@ reutiliza ni se renumera (aunque el código se retire).
 | 12 | `EF_SURF_ALBEDO_MAGNITUDE` | | | | | |
 | 13 | `EF_SURF_OVERPASS_MISSING` | | | | | |
 | 14 | `EF_SURF_ALBEDO_GT1` | | | | | |
-| 15–30 | libres | 7–30 libres | 5–30 libres | 5–30 libres | 10–30 libres | 6–30 libres |
+| 15 | `EF_SURF_LAI_ASSIGNED` | | | | | |
+| 16–30 | libres | 7–30 libres | 5–30 libres | 5–30 libres | 10–30 libres | 6–30 libres |
 
 Ocupación si se registraran **todos** los códigos `cell` (incluidos los
-de clase II): `SURF` 22/31, `GWR` 9/31, `RAD` 6/31, `G` 7/31, `H` 12/31,
+de clase II): `SURF` 23/31, `GWR` 9/31, `RAD` 6/31, `G` 7/31, `H` 12/31,
 `ET` 8/31 (contando el bit 0). Una sola palabra para toda la cadena
 `metric` (RAD + G + H + ET) ocuparía 30/31 bits: por eso las palabras son
 por etapa y por capa.
