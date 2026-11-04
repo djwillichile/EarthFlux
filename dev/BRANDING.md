@@ -158,12 +158,14 @@ La coherencia no exige logotipos idénticos, sino un lenguaje gráfico común.
 | `branding/earthflux-hex.png` | ✅ Renderizado del SVG (1040 × 1200, fondo transparente) | Usos raster |
 | `branding/earthflux-icon.png` | ✅ Renderizado cuadrado del ícono (600 × 600) | Base de favicons |
 | `branding/earthflux-hex-original.png` | Referencia histórica | Propuesta raster original del autor |
-| `branding/earthflux-horizontal.png` | ✅ PNG 2172 × 724 (raster) | README, web, presentaciones |
+| `branding/earthflux-horizontal.svg` | ✅ Maestro vectorial: emblema circular con el paisaje del hexágono + nombre (Inter Bold en trazos); fondo `#012C35`, "Earth" `#F8F8F4` (14,0:1), "Flux" `#5CD0E8` (8,2:1) | README, web, presentaciones sobre fondo oscuro |
+| `branding/earthflux-horizontal-light.svg` | ✅ Versión para fondo claro, fondo transparente; "Earth" `#01303A` (14,1:1), "Flux" `#087E9C` (contraste AA) | Documentos, pósteres, fondos claros |
+| `branding/earthflux-horizontal.png`, `branding/earthflux-horizontal-light.png` | ✅ Renderizados 1720 × 540 | Usos raster |
+| `branding/earthflux-horizontal-original.png` | Referencia histórica | Propuesta raster original del autor |
+| `branding/src/earthflux_scene.py`, `make-wordmark.py` | ✅ Geometría compartida por todos los logos y generador del logo horizontal (`python3 make-wordmark.py salida.svg [--light]`) | Regenerar los logos |
 | `man/figures/logo.png` | ✅ 240 × 277 desde el SVG | Logo del paquete; README y pkgdown |
 | `pkgdown/favicon/` | ✅ favicon.svg, favicon.ico y PNG de 16 a 512 px desde el ícono SVG | Sitio web |
-| `branding/earthflux-horizontal.svg` | ⏳ Pendiente (mismo estilo que el hexágono v7) | Maestro vectorial |
 | `branding/earthflux-monochrome.svg` | ⏳ Pendiente | Impresión y fondos especiales |
-| Versiones sobre fondo claro | ⏳ Pendiente | Documentos y pósteres |
 
 El tema del sitio pkgdown usa `#003B46` como color primario y `#00606F` para
 enlaces (contraste 7,2:1 sobre blanco). La carpeta `branding/` está excluida
