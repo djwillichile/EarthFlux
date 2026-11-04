@@ -319,6 +319,43 @@ Convención:
   *Ecography*, 40(8), 913–929. https://doi.org/10.1111/ecog.02881
   `VERIFIED (2026-11-04, Crossref)`
 
+
+### Validation design (added 2026-11-04)
+
+Metadatos `VERIFIED (2026-11-04, Crossref)`; contenido leído solo a nivel
+de título o resumen (ver `VALIDATION_PLAN.md` §2.12).
+
+- Alvarez-Garreton, C., Mendoza, P. A., Boisier, J. P., Addor, N.,
+  Galleguillos, M., Zambrano-Bigiarini, M., et al. (2018). The CAMELS-CL
+  dataset: catchment attributes and meteorology for large sample studies –
+  Chile dataset. *Hydrology and Earth System Sciences*, 22(11), 5817–5846.
+  https://doi.org/10.5194/hess-22-5817-2018
+- Box, G. E. P., & Hunter, J. S. (1961). The 2^(k−p) fractional factorial
+  designs. *Technometrics*, 3(3), 311–351.
+  https://doi.org/10.1080/00401706.1961.10489951
+- Carrasco-Benavides, M., Ortega-Farías, S., Lagos, L., Kleissl, J.,
+  Morales-Salinas, L., & Kilic, A. (2014). Parameterization of the
+  satellite-based model (METRIC) for the estimation of instantaneous surface
+  energy balance components over a drip-irrigated vineyard. *Remote
+  Sensing*, 6(11), 11342–11371. https://doi.org/10.3390/rs61111342
+- Efron, B. (1979). Bootstrap methods: another look at the jackknife. *The
+  Annals of Statistics*, 7(1), 1–26. https://doi.org/10.1214/aos/1176344552
+- Kling, H., Fuchs, M., & Paulin, M. (2012). Runoff conditions in the upper
+  Danube basin under an ensemble of climate change scenarios. *Journal of
+  Hydrology*, 424–425, 264–277. https://doi.org/10.1016/j.jhydrol.2012.01.011
+- Kljun, N., Calanca, P., Rotach, M. W., & Schmid, H. P. (2015). A simple
+  two-dimensional parameterisation for Flux Footprint Prediction (FFP).
+  *Geoscientific Model Development*, 8(11), 3695–3713.
+  https://doi.org/10.5194/gmd-8-3695-2015
+- Pastorello, G., Trotta, C., Canfora, E., et al. (2020). The FLUXNET2015
+  dataset and the ONEFlux processing pipeline for eddy covariance data.
+  *Scientific Data*, 7, 225. https://doi.org/10.1038/s41597-020-0534-3
+- Selles, G., Ferreyra, R., Aspillaga, C., Ortega-Farias, S., Villagra, P.,
+  & García de Cortázar, V. (2011). Estimation of water requirements of
+  'Thompson Seedless' trained on an overhead trellised system using an eddy
+  covariance method in the Aconcagua Valley, Chile. *Acta Horticulturae*,
+  889, 137–143. https://doi.org/10.17660/actahortic.2011.889.14
+
 ## Author's prior work (antecedentes del autor)
 
 Trabajos con participación del autor que aportan evidencia a decisiones de
