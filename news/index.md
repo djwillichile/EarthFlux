@@ -2,6 +2,11 @@
 
 ## EarthFlux 0.0.0.9000 (development version)
 
+- README, introductory vignette and package documentation describe the
+  current development status and include an executable
+  [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md)
+  example.
+
 - New
   [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md):
   instantaneous net radiation at the land surface from incoming
@@ -12,11 +17,14 @@
   propagate. The form of the equation has been cross-checked against
   secondary sources; verification against the primary reference (Allen
   et al., 2007) is still pending.
+
 - Initial package infrastructure: package skeleton, MIT license,
   testthat (3rd edition), roxygen2 with Markdown, pkgdown, README,
   citation and an introductory vignette.
+
 - Modular source layout for the planned surface, forcing, spatial (GWR),
   METRIC, diagnostics, validation and API modules. No scientific
   function is implemented yet.
+
 - Internal infrastructure for classed conditions and diagnostic flags
   (results are flagged, never silently corrected).

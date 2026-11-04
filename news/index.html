@@ -35,10 +35,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.0.9000" id="earthflux-0009000-development-version">EarthFlux 0.0.0.9000 (development version)<a class="anchor" aria-label="anchor" href="#earthflux-0009000-development-version"></a></h2>
-<ul><li>New <code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code>: instantaneous net radiation at the land surface from incoming shortwave, albedo, incoming longwave, emitted longwave and surface emissivity (METRIC surface radiation balance), with the reflected incoming longwave term kept explicit. Inputs are validated (type, recycling and physical domain, with classed errors) and missing values propagate. The form of the equation has been cross-checked against secondary sources; verification against the primary reference (Allen et al., 2007) is still pending.</li>
-<li>Initial package infrastructure: package skeleton, MIT license, testthat (3rd edition), roxygen2 with Markdown, pkgdown, README, citation and an introductory vignette.</li>
-<li>Modular source layout for the planned surface, forcing, spatial (GWR), METRIC, diagnostics, validation and API modules. No scientific function is implemented yet.</li>
-<li>Internal infrastructure for classed conditions and diagnostic flags (results are flagged, never silently corrected).</li>
+<ul><li><p>README, introductory vignette and package documentation describe the current development status and include an executable <code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code> example.</p></li>
+<li><p>New <code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code>: instantaneous net radiation at the land surface from incoming shortwave, albedo, incoming longwave, emitted longwave and surface emissivity (METRIC surface radiation balance), with the reflected incoming longwave term kept explicit. Inputs are validated (type, recycling and physical domain, with classed errors) and missing values propagate. The form of the equation has been cross-checked against secondary sources; verification against the primary reference (Allen et al., 2007) is still pending.</p></li>
+<li><p>Initial package infrastructure: package skeleton, MIT license, testthat (3rd edition), roxygen2 with Markdown, pkgdown, README, citation and an introductory vignette.</p></li>
+<li><p>Modular source layout for the planned surface, forcing, spatial (GWR), METRIC, diagnostics, validation and API modules. No scientific function is implemented yet.</p></li>
+<li><p>Internal infrastructure for classed conditions and diagnostic flags (results are flagged, never silently corrected).</p></li>
 </ul></div>
   </main></div>
 

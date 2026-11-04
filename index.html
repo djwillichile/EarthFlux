@@ -67,7 +67,8 @@
 </h2>
 <p>EarthFlux is in <strong>active early development</strong> and is <strong>not on CRAN</strong>.</p>
 <ul>
-<li>No scientific function is available yet. The current version contains the package architecture, internal diagnostics infrastructure and test scaffolding.</li>
+<li>The first METRIC component is available: <code><a href="reference/ef_net_radiation.html">ef_net_radiation()</a></code>, the instantaneous surface net radiation. Its equation form is corroborated by secondary sources; verification against the primary reference (Allen et al., 2007) is pending.</li>
+<li>Soil heat flux, anchor pixel selection, sensible heat flux, the evapotranspiration chain, the spatial forcing module (GWR) and MODIS preprocessing are being specified before implementation.</li>
 <li>Equations are implemented only after their reference, units, assumptions, domain of validity and a verifiable test case are documented.</li>
 <li>No validation results exist yet. Do not use EarthFlux for operational or decision-making purposes.</li>
 </ul>
@@ -95,6 +96,27 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"djwillichile/EarthFlux"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+</h2>
+<p>Net radiation for two pixels, with illustrative input values (not observations). <code>rl_out</code> is the longwave radiation emitted by the surface and <code>emissivity</code> must be the emissivity used to compute it; a scalar <code>rl_in</code> is recycled.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/djwillichile/EarthFlux" class="external-link">EarthFlux</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/ef_net_radiation.html">ef_net_radiation</a></span><span class="op">(</span></span>
+<span>  rs_in <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">800</span>, <span class="fl">650</span><span class="op">)</span>,        <span class="co"># incoming shortwave [W m-2]</span></span>
+<span>  albedo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.20</span>, <span class="fl">0.25</span><span class="op">)</span>,     <span class="co"># broadband albedo [-]</span></span>
+<span>  rl_in <span class="op">=</span> <span class="fl">320</span>,                <span class="co"># incoming longwave [W m-2]</span></span>
+<span>  rl_out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">450.08</span>, <span class="fl">430.50</span><span class="op">)</span>, <span class="co"># emitted longwave [W m-2]</span></span>
+<span>  emissivity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.98</span>, <span class="fl">0.97</span><span class="op">)</span>  <span class="co"># broadband emissivity [-]</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 503.52 367.40</span></span></code></pre></div>
+<p>Invalid inputs are rejected with classed errors instead of being silently corrected:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/ef_net_radiation.html">ef_net_radiation</a></span><span class="op">(</span>rs_in <span class="op">=</span> <span class="fl">800</span>, albedo <span class="op">=</span> <span class="fl">1.2</span>, rl_in <span class="op">=</span> <span class="fl">320</span>, rl_out <span class="op">=</span> <span class="fl">450</span>, emissivity <span class="op">=</span> <span class="fl">0.98</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in `ef_net_radiation()`:</span></span>
+<span><span class="co">#&gt; ! `albedo` must lie in [0, 1]; found 1 value(s) outside this interval.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="related-work">Related work<a class="anchor" aria-label="anchor" href="#related-work"></a>

@@ -14,8 +14,11 @@ chain
 **MODIS + METRIC + GWR → ETa**
 
 This vignette describes the planned workflow. EarthFlux is in early
-development: **no scientific function is available yet**, and no result
-shown in the package documentation should be interpreted as validated.
+development: the first METRIC component,
+[`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md),
+is available, and the remaining components are being specified. No
+result shown in the package documentation should be interpreted as
+validated.
 
 ## Conceptual workflow
 
@@ -44,8 +47,25 @@ be run with (i) a single representative weather station, (ii) a
 reference spatial interpolation method and (iii) GWR, and compared
 against independent observations.
 
+## Net radiation
+
+The surface net radiation is the first available component. All fluxes
+are instantaneous at the satellite overpass, in W m-2; the input values
+below are illustrative.
+
+``` r
+
+ef_net_radiation(
+  rs_in = 800, albedo = 0.20, rl_in = 320,
+  rl_out = 450.0846, emissivity = 0.98
+)
+#> [1] 503.5154
+```
+
 ## Next steps
 
-The next development stage documents and verifies the METRIC equations,
-their units and their domain of validity before any implementation. The
-first planned function is the computation of net radiation.
+The METRIC components that follow net radiation (soil heat flux, anchor
+pixels, aerodynamic resistance and sensible heat flux, latent heat flux
+and evapotranspiration), the spatial forcing module and MODIS
+preprocessing are being specified, with their equations, units and
+domain of validity, before implementation.

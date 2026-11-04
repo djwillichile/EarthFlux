@@ -14,9 +14,11 @@ represent spatially varying meteorological forcing.
 
 ## Details
 
-**Development status.** No scientific function is exported yet. The
-package currently contains its architecture, internal diagnostic
-infrastructure and test scaffolding. The use of GWR for meteorological
+**Development status.** The first METRIC component,
+[`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md),
+is available; its equation form is corroborated by secondary sources and
+verification against the primary reference is pending. The remaining
+components are being specified. The use of GWR for meteorological
 forcing is treated as a research hypothesis that has not been validated.
 
 **Design principles.**
