@@ -439,8 +439,12 @@ sin bit), registrados con `ef_select_anchors()`, `ef_anchors()` y
 `ef_anchor_conditions()` (`metric-anchors.R`). En M3, la etapa de ET de
 referencia (`ef_flags_reference_et()`, `reference-et.R`, prefijo `EF_WS_`)
 registra `EF_WS_RS_RSO_LIMITED` (I-m) y `EF_WS_ETR_NEGATIVE` (I), ambos
-informativos, de ámbito `record` y sin bit (`weather-forcing.md` §13). Las
-demás filas de este catálogo siguen sin registrar y se registran según §7.
+informativos, de ámbito `record` y sin bit (`weather-forcing.md` §13), y
+además `EF_WS_INCOMPLETE_DAY` y `EF_WS_OVERPASS_OUTSIDE_RECORDS` (I,
+levantados por `ef_station_ref_et()`, `weather-forcing.md` §13.4); el QC
+de estaciones (`ef_flags_stations()`, `prep-qc.R`) registra 9 códigos
+`EF_WS_` (incluido `EF_WS_RS_GT_RA`). Las demás filas de este catálogo
+siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
 
@@ -478,21 +482,18 @@ demás filas de este catálogo siguen sin registrar y se registran según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_WS_OUT_OF_DOMAIN` | `EF_WS_IMPOSSIBLE` | renombre (C10) | **III** (registrado; `ef_station_qc()`) | critical* | record | — | En `stations` (metadatos) y en el núcleo: `earthflux_domain_error` (WF §2.6, WF-04) |
+| `EF_WS_OUT_OF_DOMAIN` | `EF_WS_IMPOSSIBLE` | renombre (C10) | **III** (registrado; `ef_station_qc()`) | critical* | record | — | En `stations` (metadatos) y en el núcleo: `earthflux_domain_error` (WF §2.6, WF-04). Incluye Rs < 0 y precipitación < 0 (M3, `ef_station_ref_et()`) |
 | `EF_WS_TMIN_GT_TMAX` | `EF_WS_TMIN_GT_TMAX` | — | **III** (registrado; `ef_station_qc()`) | critical* | record | — | En funciones diarias de ETr: `earthflux_domain_error` |
 | `EF_WS_RH_GT100` | `EF_WS_RH_GT100` | — | I (registrado; `ef_station_qc()`) | info | record | — | – |
-| `EF_WS_TDEW_GT_TAIR` | `EF_WS_TDEW_GT_TAIR` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Sin tolerancia (una tolerancia instrumental sería clase II) |
-| `EF_WS_RS_GT_RA` | `EF_RS_EXCEEDS_EXTRATERRESTRIAL` (QC-05b) | división (C5) | I | warning | record | — | Ra de la misma ventana |
+| `EF_WS_TDEW_GT_TAIR` | `EF_WS_TDEW_GT_TAIR` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Sin tolerancia (una tolerancia instrumental sería clase II). Dos variantes: Tdew > T y eₐ > e°(T) (`vapour_pressure`) |
+| `EF_WS_RS_GT_RA` | `EF_RS_EXCEEDS_EXTRATERRESTRIAL` (QC-05b) | división (C5) | I (registrado; `ef_station_qc()`) | warning | record | — | Ra de la misma ventana (integral de la Ec. 28 sobre la parte con sol de la ventana); ventanas con Ra = 0 quedan para QC-05d (clase II) |
 | `EF_WS_TIME_GAP` | `EF_WS_TIME_GAP` | — | I (registrado; `ef_station_qc()`) | warning | record | — | – |
 | `EF_WS_TIME_IRREGULAR` | `EF_WS_TIME_IRREGULAR` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Inequívoco dado el `timestep` declarado (no estaba en la lista de candidatos de WF §3.2) |
-| `EF_WS_INCOMPLETE_DAY` | `EF_WS_INCOMPLETE_DAY` | — | I | warning | record | — | Política de huecos `TODO` (WF-11) no cambia la condición |
-| `EF_WS_HEIGHT_MISSING` | `EF_WS_HEIGHT_MISSING` | — | I | warning | record | — | – |
-| `EF_WS_HEIGHT_NONSTANDARD` | `EF_WS_HEIGHT_NONSTANDARD` | — | I | warning | record | — | Altura ≠ 2 m exacta |
-| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
+| `EF_WS_INCOMPLETE_DAY` | `EF_WS_INCOMPLETE_DAY` | — | I (registrado en `ef_flags_reference_et()`; lo levanta `ef_station_ref_et()`, tabla `etr_24`) | warning | record | — | Política de huecos (WF-11): solo `day_completeness = "all_periods"`; no cambia la condición |
 | `EF_WS_HEIGHT_MISSING` | `EF_WS_HEIGHT_MISSING` | — | I (registrado; `ef_station_qc()`) | warning | record | — | – |
 | `EF_WS_HEIGHT_NONSTANDARD` | `EF_WS_HEIGHT_NONSTANDARD` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Altura ≠ 2 m exacta |
-| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
-| `EF_WS_OVERPASS_OUTSIDE_RECORDS` | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | I | info* | record | — | Causa de `NA` |
+| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
+| `EF_WS_OVERPASS_OUTSIDE_RECORDS` | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | I (registrado en `ef_flags_reference_et()`; lo levanta `ef_station_ref_et()`, tabla `etr_inst`) | info* | record | — | Causa de `NA`; el soporte depende de la opción (O1: inicio del primer período a fin del último; O3: primer a último punto medio) |
 | `EF_WS_ETR_NEGATIVE` | `EF_ETREF_NEGATIVE` | prefijo + renombre | I (registrado; `ef_ref_et()`, `R/reference-et.R`) | info | record | — | Cubre ETr y ETo (tipo en la procedencia); ámbito `cell` si se adopta la opción C (FL-09) |
 | `EF_WS_IMPLAUSIBLE` | `EF_WS_IMPLAUSIBLE` | — | II | warning | record | — | Límites de `water` sin cita: no se adoptan |
 | `EF_WS_RH_RECALIBRATE` | `EF_WS_RH_RECALIBRATE` | — | II | warning | record | — | Rango [3, 5] % de FAO-56; falta elegir δ (WF-06) |
@@ -622,14 +623,14 @@ división).
 |---|---|---|---|---|---|
 | `INPUT` | 1 | 0 | 0 | 1 | 1 |
 | `SURF` | 13 | 7 | 1 | 21 | 0 |
-| `WS` | 11 | 13 | 2 | 26 | 10 |
+| `WS` | 11 | 13 | 2 | 26 | 13 |
 | `GWR` | 14 | 4 | 1 | 19 | 10 |
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
 | `G` | 4 | 2 | 0 | 6 | 4 |
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
 | `H` | 11 | 2 | 0 | 13 | 8 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **73** | **35** | **4** | **112** | **48** |
+| **Total** | **73** | **35** | **4** | **112** | **51** |
 
 Registrados (actualizado con la armonización M2, 2026-11-04): 28 códigos,
 todos de clase I y ejercitados por un test de su módulo (R11, sin
@@ -642,6 +643,13 @@ registrar en M2: `EF_H_ZOM_FLOOR_APPLIED` (I-m, SH-02),
 `EF_H_ZOM_TERRAIN_ADJUSTED` (método de terreno no implementado),
 `EF_H_WIND_FLOOR_APPLIED` (SH-06) y los 4 `EF_ET_PERIOD_*` de clase I
 (`ef_et_period()` no implementada); ningún código de clase II ni III.
+
+Estaciones y ET de referencia (M3, 2026-11-04): los 13 `EF_WS_*` de
+clase I y III están registrados: 9 en `ef_flags_stations()` (`ef_station_qc()`;
+los 2 de clase III con severidad `critical`) y 4 en
+`ef_flags_reference_et()` (`EF_WS_RS_RSO_LIMITED`, `EF_WS_ETR_NEGATIVE`,
+`EF_WS_INCOMPLETE_DAY`, `EF_WS_OVERPASS_OUTSIDE_RECORDS`); los 13 de clase
+II siguen en la guardia.
 
 Núcleo GWR (M3, 2026-11-04): 10 `EF_GWR_*` de clase I registrados en
 `ef_flags_gwr()` (`R/gwr-diagnostics.R`) y levantados por `ef_gwr_fit()`,
