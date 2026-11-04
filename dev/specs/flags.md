@@ -478,17 +478,20 @@ demás filas de este catálogo siguen sin registrar y se registran según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_WS_OUT_OF_DOMAIN` | `EF_WS_IMPOSSIBLE` | renombre (C10) | **III** | critical* | record | — | En `stations` (metadatos) y en el núcleo: `earthflux_domain_error` (WF §2.6, WF-04) |
-| `EF_WS_TMIN_GT_TMAX` | `EF_WS_TMIN_GT_TMAX` | — | **III** | critical* | record | — | En funciones diarias de ETr: `earthflux_domain_error` |
-| `EF_WS_RH_GT100` | `EF_WS_RH_GT100` | — | I | info | record | — | – |
-| `EF_WS_TDEW_GT_TAIR` | `EF_WS_TDEW_GT_TAIR` | — | I | warning | record | — | Sin tolerancia (una tolerancia instrumental sería clase II) |
+| `EF_WS_OUT_OF_DOMAIN` | `EF_WS_IMPOSSIBLE` | renombre (C10) | **III** (registrado; `ef_station_qc()`) | critical* | record | — | En `stations` (metadatos) y en el núcleo: `earthflux_domain_error` (WF §2.6, WF-04) |
+| `EF_WS_TMIN_GT_TMAX` | `EF_WS_TMIN_GT_TMAX` | — | **III** (registrado; `ef_station_qc()`) | critical* | record | — | En funciones diarias de ETr: `earthflux_domain_error` |
+| `EF_WS_RH_GT100` | `EF_WS_RH_GT100` | — | I (registrado; `ef_station_qc()`) | info | record | — | – |
+| `EF_WS_TDEW_GT_TAIR` | `EF_WS_TDEW_GT_TAIR` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Sin tolerancia (una tolerancia instrumental sería clase II) |
 | `EF_WS_RS_GT_RA` | `EF_RS_EXCEEDS_EXTRATERRESTRIAL` (QC-05b) | división (C5) | I | warning | record | — | Ra de la misma ventana |
-| `EF_WS_TIME_GAP` | `EF_WS_TIME_GAP` | — | I | warning | record | — | – |
-| `EF_WS_TIME_IRREGULAR` | `EF_WS_TIME_IRREGULAR` | — | I | warning | record | — | Inequívoco dado el `timestep` declarado (no estaba en la lista de candidatos de WF §3.2) |
+| `EF_WS_TIME_GAP` | `EF_WS_TIME_GAP` | — | I (registrado; `ef_station_qc()`) | warning | record | — | – |
+| `EF_WS_TIME_IRREGULAR` | `EF_WS_TIME_IRREGULAR` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Inequívoco dado el `timestep` declarado (no estaba en la lista de candidatos de WF §3.2) |
 | `EF_WS_INCOMPLETE_DAY` | `EF_WS_INCOMPLETE_DAY` | — | I | warning | record | — | Política de huecos `TODO` (WF-11) no cambia la condición |
 | `EF_WS_HEIGHT_MISSING` | `EF_WS_HEIGHT_MISSING` | — | I | warning | record | — | – |
 | `EF_WS_HEIGHT_NONSTANDARD` | `EF_WS_HEIGHT_NONSTANDARD` | — | I | warning | record | — | Altura ≠ 2 m exacta |
 | `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
+| `EF_WS_HEIGHT_MISSING` | `EF_WS_HEIGHT_MISSING` | — | I (registrado; `ef_station_qc()`) | warning | record | — | – |
+| `EF_WS_HEIGHT_NONSTANDARD` | `EF_WS_HEIGHT_NONSTANDARD` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Altura ≠ 2 m exacta |
+| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | I | info* | record | — | Causa de `NA` |
 | `EF_WS_ETR_NEGATIVE` | `EF_ETREF_NEGATIVE` | prefijo + renombre | I (registrado; `ef_ref_et()`, `R/reference-et.R`) | info | record | — | Cubre ETr y ETo (tipo en la procedencia); ámbito `cell` si se adopta la opción C (FL-09) |
 | `EF_WS_IMPLAUSIBLE` | `EF_WS_IMPLAUSIBLE` | — | II | warning | record | — | Límites de `water` sin cita: no se adoptan |
