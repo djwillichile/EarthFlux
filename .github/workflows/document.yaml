@@ -1,5 +1,6 @@
 # Checks that the roxygen2 documentation (man/, NAMESPACE, DESCRIPTION) is
-# up to date with the source code. It never commits: if the check fails,
+# up to date with the source code, and that README.md is regenerated
+# whenever README.Rmd changes in a pull request. It never commits: if the check fails,
 # regenerate locally with the pinned roxygen2 version and commit the result:
 #
 #   pak::pak("roxygen2@8.1.1"); devtools::document()
@@ -22,6 +23,17 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Fail if README.Rmd changed without regenerating README.md
+        if: github.event_name == 'pull_request'
+        run: |
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          if echo "$changed" | grep -qx 'README.Rmd' && ! echo "$changed" | grep -qx 'README.md'; then
+            echo "::error::README.Rmd changed but README.md was not regenerated. Run devtools::build_readme() and commit README.md."
+            exit 1
+          fi
 
       - uses: r-lib/actions/setup-r@v2
         with:

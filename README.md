@@ -42,9 +42,13 @@ this package.
 
 EarthFlux is in **active early development** and is **not on CRAN**.
 
-- No scientific function is available yet. The current version contains
-  the package architecture, internal diagnostics infrastructure and test
-  scaffolding.
+- The first METRIC component is available: `ef_net_radiation()`, the
+  instantaneous surface net radiation. Its equation form is corroborated
+  by secondary sources; verification against the primary reference
+  (Allen et al., 2007) is pending.
+- Soil heat flux, anchor pixel selection, sensible heat flux, the
+  evapotranspiration chain, the spatial forcing module (GWR) and MODIS
+  preprocessing are being specified before implementation.
 - Equations are implemented only after their reference, units,
   assumptions, domain of validity and a verifiable test case are
   documented.
@@ -74,6 +78,35 @@ You can install the development version of EarthFlux from GitHub with:
 ``` r
 # install.packages("pak")
 pak::pak("djwillichile/EarthFlux")
+```
+
+## Example
+
+Net radiation for two pixels, with illustrative input values (not
+observations). `rl_out` is the longwave radiation emitted by the surface
+and `emissivity` must be the emissivity used to compute it; a scalar
+`rl_in` is recycled.
+
+``` r
+library(EarthFlux)
+
+ef_net_radiation(
+  rs_in = c(800, 650),        # incoming shortwave [W m-2]
+  albedo = c(0.20, 0.25),     # broadband albedo [-]
+  rl_in = 320,                # incoming longwave [W m-2]
+  rl_out = c(450.08, 430.50), # emitted longwave [W m-2]
+  emissivity = c(0.98, 0.97)  # broadband emissivity [-]
+)
+#> [1] 503.52 367.40
+```
+
+Invalid inputs are rejected with classed errors instead of being
+silently corrected:
+
+``` r
+ef_net_radiation(rs_in = 800, albedo = 1.2, rl_in = 320, rl_out = 450, emissivity = 0.98)
+#> Error in `ef_net_radiation()`:
+#> ! `albedo` must lie in [0, 1]; found 1 value(s) outside this interval.
 ```
 
 ## Related work

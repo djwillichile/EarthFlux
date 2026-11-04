@@ -18,10 +18,12 @@ geographically weighted regression (GWR) is investigated as a way to
 represent spatially varying meteorological forcing.
 }
 \details{
-\strong{Development status.} No scientific function is exported yet. The
-package currently contains its architecture, internal diagnostic
-infrastructure and test scaffolding. The use of GWR for meteorological
-forcing is treated as a research hypothesis that has not been validated.
+\strong{Development status.} The first METRIC component,
+\code{\link[=ef_net_radiation]{ef_net_radiation()}}, is available; its equation form is corroborated by
+secondary sources and verification against the primary reference is
+pending. The remaining components are being specified. The use of GWR for
+meteorological forcing is treated as a research hypothesis that has not
+been validated.
 
 \strong{Design principles.}
 \itemize{

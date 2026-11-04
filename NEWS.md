@@ -1,5 +1,9 @@
 # EarthFlux 0.0.0.9000 (development version)
 
+* README, introductory vignette and package documentation describe the
+  current development status and include an executable `ef_net_radiation()`
+  example.
+
 * New `ef_net_radiation()`: instantaneous net radiation at the land surface
   from incoming shortwave, albedo, incoming longwave, emitted longwave and
   surface emissivity (METRIC surface radiation balance), with the reflected
