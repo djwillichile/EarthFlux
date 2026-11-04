@@ -4,7 +4,7 @@
 \name{EarthFlux-package}
 \alias{EarthFlux}
 \alias{EarthFlux-package}
-\title{EarthFlux: METRIC Evapotranspiration with Spatially Varying Weather Forcing}
+\title{EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data}
 \description{
 EarthFlux is an R package under active development that aims to provide a
 reproducible, testable and auditable workflow for estimating spatially

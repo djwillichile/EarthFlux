@@ -1,4 +1,4 @@
-#' EarthFlux: METRIC Evapotranspiration with Spatially Varying Weather Forcing
+#' EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data
 #'
 #' @description
 #' EarthFlux is an R package under active development that aims to provide a

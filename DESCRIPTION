@@ -1,5 +1,5 @@
 Package: EarthFlux
-Title: METRIC Evapotranspiration with Spatially Varying Weather Forcing
+Title: Land-Surface Energy and Water Fluxes from Earth Observation Data
 Version: 0.0.0.9000
 Authors@R:
     person("Guillermo Servando", "Fuentes-Jaque", , "gfuentesj@correo.uss.cl", role = c("aut", "cre", "cph"),
