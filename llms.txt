@@ -1,4 +1,4 @@
-# EarthFlux
+# ![EarthFlux](reference/figures/logo-horizontal.svg)
 
 ### Land-Surface Energy and Water Fluxes from Earth Observation Data
 
