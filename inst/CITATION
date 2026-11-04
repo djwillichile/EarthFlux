@@ -1,0 +1,18 @@
+# Citation for EarthFlux.
+# Update when available: Zenodo DOI (add `doi =`), CRAN version, and the
+# associated software/methods article (add a second bibentry of type
+# "Article").
+
+bibentry(
+  bibtype = "Manual",
+  title = "{EarthFlux}: {METRIC} Evapotranspiration with Spatially Varying Weather Forcing",
+  author = person("Guillermo Servando", "Fuentes Jaque"),
+  year = "2026",
+  note = paste("R package version", meta$Version),
+  url = "https://github.com/djwillichile/EarthFlux",
+  textVersion = paste0(
+    "Fuentes Jaque, G. S. (2026). EarthFlux: METRIC Evapotranspiration ",
+    "with Spatially Varying Weather Forcing. R package version ",
+    meta$Version, ". https://github.com/djwillichile/EarthFlux"
+  )
+)

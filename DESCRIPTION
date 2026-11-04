@@ -1,0 +1,29 @@
+Package: EarthFlux
+Title: METRIC Evapotranspiration with Spatially Varying Weather Forcing
+Version: 0.0.0.9000
+Authors@R:
+    person("Guillermo Servando", "Fuentes Jaque", , "maintainer-email-TODO@example.com", role = c("aut", "cre", "cph"))
+Description: Tools for estimating spatially distributed actual
+    evapotranspiration from Earth observation data using the METRIC
+    (Mapping EvapoTranspiration at high Resolution with Internalized
+    Calibration) surface energy balance framework, combined with
+    meteorological forcing that may vary in space, for example through
+    geographically weighted regression (GWR). The package is designed for
+    reproducible processing, diagnostics, validation and scientific
+    analysis. It is under active development and its methods have not yet
+    been scientifically validated.
+License: MIT + file LICENSE
+URL: https://github.com/djwillichile/EarthFlux
+BugReports: https://github.com/djwillichile/EarthFlux/issues
+Depends:
+    R (>= 4.1.0)
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Encoding: UTF-8
+Language: en-GB
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1

@@ -1,0 +1,24 @@
+url: ~
+
+template:
+  bootstrap: 5
+
+authors:
+  Guillermo Servando Fuentes Jaque:
+    href: https://github.com/djwillichile
+
+articles:
+  - title: Getting started
+    contents:
+      - earthflux-introduction
+
+# Reference index. Sections are added as functions are exported, to avoid
+# empty documentation. Planned sections (in this order):
+#   - Data preparation
+#   - MODIS
+#   - Meteorological forcing
+#   - GWR
+#   - METRIC
+#   - Evapotranspiration
+#   - Diagnostics
+#   - Validation
