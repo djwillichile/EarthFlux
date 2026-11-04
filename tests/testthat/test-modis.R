@@ -427,7 +427,7 @@ test_that("MCD15 extra QC, MCD43 mandatory quality and MCD43A2 snow", {
 
 # Flags and QA policy -------------------------------------------------------------------
 
-test_that("the surface stage registers its class I codes with the bits of 6.4", {
+test_that("the surface stage registers its codes with the bits of 6.4", {
   reg <- ef_flag_registry_build()
   surf <- reg[reg$stage == "SURF", ]
   expect_identical(
@@ -436,16 +436,22 @@ test_that("the surface stage registers its class I codes with the bits of 6.4", 
       EF_SURF_DN_OUT_OF_RANGE = 4L, EF_SURF_LAI_NONVEG = 5L,
       EF_SURF_QA_OTHER = 6L, EF_SURF_CLOUD_ADJACENT = 7L, EF_SURF_SNOW = 8L,
       EF_SURF_WATER = 9L, EF_SURF_SALT_PAN = 10L, EF_SURF_LAI_BACKUP = 11L,
-      EF_SURF_ALBEDO_MAGNITUDE = 12L)
+      EF_SURF_ALBEDO_MAGNITUDE = 12L, EF_SURF_OVERPASS_MISSING = 13L,
+      EF_SURF_ALBEDO_GT1 = 14L)
   )
   expect_true(all(surf$scope == "cell"))
-  expect_identical(surf$severity, c(rep("info", 5), rep("warning", 7)))
+  expect_identical(surf$severity,
+                   c(rep("info", 5), rep("warning", 8), "critical"))
   expect_true(all(modis_na_codes() %in% surf$code[surf$severity == "info"]))
   expect_true(all(modis_maskable_codes() %in%
                     surf$code[surf$severity == "warning"]))
-  # bits 13 (view time) and 14 (albedo > 1, class III) are not registered here
+  # bit 14 (albedo > 1) is class III: critical with its error counterpart;
+  # it is never maskable by the QA policy (the core excludes it)
+  expect_identical(surf$error_class[surf$code == "EF_SURF_ALBEDO_GT1"],
+                   "earthflux_domain_error")
+  expect_true(all(is.na(surf$error_class[surf$code != "EF_SURF_ALBEDO_GT1"])))
   expect_false(any(c("EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1") %in%
-                     reg$code))
+                     modis_maskable_codes()))
   # every code that a QA rule raises is registered
   rule_codes <- unique(unlist(lapply(modis_qa_rules(), function(rs) {
     vapply(rs, `[[`, character(1), "code")

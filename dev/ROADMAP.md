@@ -76,8 +76,19 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       tabla de regionalización, `datatype` en disco (D-PP-05).
 
 ## M4 — MODIS preprocessing (objetivo: 0.1.0)
-- [ ] Lectura y escalado de productos; QA como flags; conversión a UTC.
-- [ ] Dataset de ejemplo compatible con CRAN.
+- [x] Lectura y escalado de productos; QA como flags; conversión a UTC
+      (tabla de producto, lectores HDF4 y convertidos, política QA,
+      `EF_SURF_*`; `DECISIONS.md` §1.4, M4-01 … M4-18).
+- [x] Conversiones a banda ancha, desfase de compuestos y agregación a la
+      grilla de trabajo (opciones `CANDIDATA` sin defecto).
+- [x] Ensamblaje del estado de superficie (`earthflux_surface_state`,
+      contrato de `ARCHITECTURE.md` §4) con flags por capa y procedencia;
+      armonización de M4 y test de extremo a extremo superficie → núcleo
+      METRIC (`tests/testthat/test-surface-chain.R`; M4-19 … M4-25).
+- [ ] Dataset de ejemplo compatible con CRAN: límite de la provincia de
+      Cauquenes y script reproducible listos (`data-raw/modis-example.R`,
+      M4-26); falta elegir la fecha (MP-12), descargar con un token
+      Earthdata y generar `inst/extdata/modis-example/`.
 - [ ] Primer release experimental `0.1.0` al cierre de M4, con la escena de
       ejemplo de Cauquenes (opción B, decisión del autor del 2026-11-04;
       `DECISIONS.md` §1.4, M4-00); antes previsto al cierre de M2 con el

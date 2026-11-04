@@ -1,7 +1,9 @@
 # EarthFlux — Especificación: productos MODIS → variables de superficie
 
-Estado: **borrador M1** · Componente: `surface` · Archivos de destino:
-`R/io-modis.R`, `R/prep-modis.R` · Tests: `tests/testthat/test-modis.R`
+Estado: **borrador M1; implementado en M4** (bloque de estado abajo) ·
+Componente: `surface` · Archivos: `R/io-modis.R`, `R/modis-qa.R`,
+`R/prep-modis.R`, `R/modis-surface.R`, `R/io-aoi.R` · Tests:
+`tests/testthat/test-modis*.R`, `test-surface-chain.R`
 
 > Este documento detalla la sección 4 ("Productos MODIS candidatos") y las
 > filas Ts, NDVI, LAI, α y ε₀ de la tabla de variables de
@@ -14,62 +16,85 @@ Estado: **borrador M1** · Componente: `surface` · Archivos de destino:
 Revisión documental: **2026-11-04**. Todas las fuentes de §2 se leyeron en
 esa fecha.
 
-> **Estado de implementación (M4, 2026-11-04): tabla de productos, I/O,
-> escalado y QA.** Implementado como funciones internas (`@noRd`, prefijo
-> `modis_`) en `R/io-modis.R` (tabla, nombres de archivo, lectores,
-> mosaico, escalado), `R/modis-qa.R` (decodificación QA, flags
-> `EF_SURF_*`, política QA y conversores) y `R/io-aoi.R` (AOI). Tests:
+> **Estado de implementación (M4, 2026-11-04; bloque único tras la
+> armonización de M4).** Implementado como funciones internas (`@noRd`,
+> prefijo `modis_`) en `R/io-modis.R` (tabla, DOI, nombres de archivo,
+> lectores, mosaico, escalado), `R/modis-qa.R` (decodificación QA, flags
+> `EF_SURF_*`, política QA y conversores), `R/prep-modis.R` (hora de paso,
+> banda ancha, NDVI desde reflectancia, desfase y agregación),
+> `R/modis-surface.R` (ensamblaje del estado de superficie y procedencia) y
+> `R/io-aoi.R` (AOI y límite de Cauquenes). Tests:
 > `tests/testthat/test-modis.R` (S1–S10, Q1–Q5, MODLAND 00/01/10/11, LAI
-> 253, política) y `tests/testthat/test-modis-io.R` (GeoTIFF y HDF4
-> sintéticos; los de HDF4 se omiten sin el driver). Decisiones: M4-01 …
-> M4-10 de `DECISIONS.md` §1.4; abiertas A-M4-1 … A-M4-3.
+> 253, política), `test-modis-io.R` (GeoTIFF y HDF4 sintéticos; los de
+> HDF4 se omiten sin el driver), `test-modis-prep.R` (V1–V4, N1, G1,
+> vector = ráster), `test-modis-surface.R` (estado de superficie, flags
+> positivos y negativos, política, AOI, procedencia) y
+> `test-surface-chain.R` (de extremo a extremo hasta Rn y G). Decisiones:
+> M4-01 … M4-26 de `DECISIONS.md` §1.4; abiertas A-M4-1 … A-M4-7.
 >
-> 1. **Tabla única** (§13.1): `modis_product_spec(product, collection =
->    "061")` y `modis_layer_spec(product, layer, collection = "061")`
->    devuelven filas de `modis_product_table()` con columnas `product`,
->    `collection`, `layer`, `sds_alternatives`, `grid`, `resolution`,
->    `cells_per_tile`, `data_type`, `kind`, `conversion`, `scale`,
->    `offset`, `valid_min`, `valid_max`, `fill`, `special_min`,
->    `special_max`, `special_flag`, `unit`, `qa_table`, `status`, `source`,
->    `note`, `physical_min`, `physical_max`. Solo filas `VERIFICADA` con su
->    cita; colección 061 (MP-13). Capas con hechos `TODO` → error
->    `earthflux_modis_unsupported` (M4-01).
-> 2. **Escalado** (§11.3, MP-11): `modis_apply_scale(dn, spec_row)` con las
->    convenciones `scale_offset` (D10), `offset_scale` (D8/D9) y
->    `scale_only` (fichas sin offset); relleno, fuera de rango y códigos
->    especiales → `NA` con máscaras lógicas. Los lectores usan `raw = TRUE`,
->    verifican DN enteros dentro del tipo y contrastan la escala del archivo
->    con la tabla (M4-02).
-> 3. **QA** (§10.4): `modis_qa_field(qa, start, n)` (bit 0 = LSB, exacto
->    hasta uint32), `modis_qa_decode(qa, product, layer)`,
->    `modis_qa_masks(decoded)`, `modis_qa_flags(decoded, qa_policy,
->    mask_codes)`. Correspondencia campo → código según §10.2 (M4-03);
->    campos sin fila en §10.2 se decodifican sin flag (M4-04); bits 3–2 de
->    `QC_Day` sin decodificar (d2).
-> 4. **Política** (§10.3, MP-09 abierta): `qa_policy` = `"flag"` o
+> 1. **Tabla única** (§13.1; M4-01): `modis_product_spec(product,
+>    collection = "061")` y `modis_layer_spec(product, layer, collection =
+>    "061")` devuelven filas de `modis_product_table()` (construida una vez
+>    por sesión) con columnas `product`, `collection`, `layer`,
+>    `sds_alternatives`, `grid`, `resolution`, `cells_per_tile`,
+>    `data_type`, `kind`, `conversion`, `scale`, `offset`, `valid_min`,
+>    `valid_max`, `fill`, `special_min`, `special_max`, `special_flag`,
+>    `unit`, `qa_table`, `status`, `source`, `note`, `physical_min`,
+>    `physical_max`. Solo filas `VERIFICADA` con su cita; colección 061
+>    (MP-13). Capas con hechos `TODO` → `earthflux_modis_unsupported`. DOI
+>    por producto en `modis_product_doi()` (M4-25).
+> 2. **Escalado** (§11.3, MP-11; M4-02): `modis_apply_scale(dn,
+>    spec_row)` con las convenciones `scale_offset` (D10), `offset_scale`
+>    (D8/D9) y `scale_only`; relleno, fuera de rango y códigos especiales →
+>    `NA` con máscaras. Lectores con `raw = TRUE`, DN enteros dentro del
+>    tipo y escala del archivo contrastada con la tabla.
+> 3. **QA** (§10.4; M4-03, M4-04): `modis_qa_field()`,
+>    `modis_qa_decode()`, `modis_qa_masks()`, `modis_qa_flags()`;
+>    correspondencia campo → código según §10.2; campos sin fila se
+>    decodifican sin flag; bits 3–2 de `QC_Day` sin decodificar (d2).
+> 4. **Política** (§10.3, MP-09 abierta; M4-05): `qa_policy` = `"flag"` o
 >    `"mask"` sin defecto; `NA` obligatorio solo por relleno, rango,
 >    MODLAND 10/11 y LAI 249–254; `"mask"` con `mask_codes` explícitos y
->    conteo (M4-05).
-> 5. **Conversores** (§13.2): `modis_variable()` (motor común),
+>    conteo.
+> 5. **Conversores** (§13.2; M4-09): `modis_variable()` (motor común),
 >    `modis_lst()`, `modis_view_zenith()`, `modis_band_emissivity()`,
->    `modis_lai()`, `modis_land_cover()`; interfaz común en M4-09.
-> 6. **I/O** (§11): `modis_parse_filename()`, `modis_list_layers()`,
->    `modis_read_raw(path, layers, aoi)`, `modis_read_converted(path,
->    product, layer, scaled, aoi)` (MP-10), `modis_mosaic_tiles()`;
->    geometría sinusoidal contrastada en cada lectura HDF4 (M4-06, M4-07).
->    Sin descargas ni credenciales (§11.5).
-> 7. **Flags** (`flags.md` §4.2, §6.4): `ef_flags_surface()` registra 12
->    códigos de clase I (bits 1–12): `FILL`, `CLOUD`, `NOT_PRODUCED`,
->    `DN_OUT_OF_RANGE`, `LAI_NONVEG`, `QA_OTHER`, `CLOUD_ADJACENT`, `SNOW`,
->    `WATER`, `SALT_PAN`, `LAI_BACKUP`, `ALBEDO_MAGNITUDE`;
->    `modis_flag_word()` arma la palabra por capa (M4-08).
->    `R/modis-qa.R` se suma a los archivos que conocen convenciones MODIS
->    (regla arquitectónica de §1).
-> 8. **Pendiente en este bloque**: hora de paso → UTC (§6), conversiones
->    a banda ancha (§8), desfase y remuestreo (§9), ensamblaje del estado
->    de superficie y procedencia (§13.2: `modis_surface_state()`,
->    `modis_provenance()`), datos de ejemplo (§12) y el contraste con
->    granulos reales (§16; A-M4-3).
+>    `modis_lai()`, `modis_land_cover()`.
+> 6. **I/O** (§11; M4-06, M4-07): `modis_parse_filename()`,
+>    `modis_list_layers()`, `modis_read_raw(path, layers, aoi)`,
+>    `modis_read_converted(path, product, layer, scaled, aoi)` (MP-10),
+>    `modis_mosaic_tiles()`; geometría sinusoidal contrastada en cada
+>    lectura HDF4. Sin descargas ni credenciales en el paquete (§11.5).
+> 7. **Preparación** (§6, §8, §9; M4-11 … M4-18): `modis_overpass_time()`
+>    (hora solar media → `doy` + `utc_hour` UTC, sin ecuación del tiempo),
+>    `modis_cell_lonlat()`, `modis_albedo()` (A1–A3),
+>    `modis_broadband_emissivity()` (E3), `modis_ndvi_from_reflectance()`,
+>    `modis_match_composite()` (T1, T2, T4/T5) y `modis_to_grid()`
+>    (agregación por factor entero); opciones `TODO` →
+>    `earthflux_method_not_implemented`; listas de opciones únicas en
+>    `modis_*_methods()`.
+> 8. **Estado de superficie** (§1, §13.2; M4-19 … M4-24):
+>    `modis_surface_state(files, aoi, options)` con `modis_source()`
+>    (HDF4 oficial o convertidos declarados, período del compuesto) y
+>    `modis_surface_options()` (todas las elecciones sin defecto) devuelve
+>    `earthflux_surface_state` en la grilla de 1 km de la LST: `lst`,
+>    `albedo`, `ndvi`, `lai`, `emissivity`, `overpass_time` (`doy`,
+>    `utc_hour`, `time`), `lonlat`, `qa` (palabra de flags por capa,
+>    fracciones válidas, desfases, política), `units`, `flags` (con
+>    `target`) y `provenance` (`modis_provenance()`, M4-25). Traspaso al
+>    núcleo y exclusiones: `ARCHITECTURE.md` §4 y `surface_exclusion()`.
+> 9. **Flags** (`flags.md` §4.2, §6.4; M4-08, M4-22): `ef_flags_surface()`
+>    registra 14 códigos (bits 1–14): los 12 de clase I de los
+>    decodificadores, `EF_SURF_OVERPASS_MISSING` (clase I, donde falta la
+>    hora de paso y la LST es válida) y `EF_SURF_ALBEDO_GT1` (clase III,
+>    `critical`, contraparte `earthflux_domain_error`, valor conservado y
+>    excluido antes de G y Rn). Los 7 de clase II siguen sin registrar.
+> 10. **Datos de ejemplo** (§12, MP-12; M4-26): límite de la provincia de
+>    Cauquenes en `inst/extdata/cauquenes-province.gpkg` (DPA 2023, desde
+>    `thermify`) con `aoi_cauquenes()`; script reproducible
+>    `data-raw/modis-example.R` (CMR + LP DAAC con `EARTHDATA_TOKEN` del
+>    entorno). **Pendiente**: elegir la fecha y generar la escena
+>    `inst/extdata/modis-example/`; contraste con granulos reales (§16;
+>    A-M4-3); fixtures de DN crudos reales (`tests/testthat/fixtures/`).
 
 ---
 
@@ -126,8 +151,9 @@ Fuera de alcance: MDE (`elevation`, `slope`, `aspect`), forzamiento
 meteorológico, descarga automática de datos (ver §11.5).
 
 Regla arquitectónica (`ARCHITECTURE.md` principio 2): **solo** `io-modis.R`,
-`modis-qa.R` (desde M4) y `prep-modis.R` conocen escalas, rellenos, bits QA, nombres de SDS y hora
-de paso de MODIS. Las funciones `metric-*.R` reciben las variables del
+`modis-qa.R`, `prep-modis.R` y `modis-surface.R` (los dos últimos desde
+M4) conocen escalas, rellenos, bits QA, nombres de SDS y hora de paso de
+MODIS. Las funciones `metric-*.R` reciben las variables del
 contrato.
 
 ---
@@ -1106,88 +1132,12 @@ bajo nivel, `DEVELOPMENT.md` §1). El paralelismo sigue `ARCHITECTURE.md`
 | `modis_land_cover(raw)` | DN MCD12Q1 | Clase IGBP + QC |
 | `modis_to_grid(x, template, method, min_valid_fraction)` | `SpatRaster` | `SpatRaster` en la grilla de trabajo + fracción válida |
 | `modis_match_composite(lst_date, composite_dates)` | `Date` | Índice del compuesto y desfase [días] |
-| `modis_surface_state(files, aoi, options)` | Rutas, AOI, opciones (producto LST, métodos, `qa_policy`) | Objeto con el contrato de `surface` (`lst`, `albedo`, `ndvi`, `lai`, `emissivity`, `overpass_time`, `qa`) + procedencia |
-| `modis_provenance(...)` | Metadatos | Lista: granulos, colecciones, DOI, métodos, versiones de GDAL/`terra` |
+| `modis_surface_state(files, aoi, options)` (`R/modis-surface.R`) | Fuentes `modis_source()` o rutas HDF4, AOI, `modis_surface_options()` (producto LST, métodos, `qa_policy`) | `earthflux_surface_state` con el contrato de `surface` (`lst`, `albedo`, `ndvi`, `lai`, `emissivity`, `overpass_time`, `qa`) + procedencia (`ARCHITECTURE.md` §4) |
+| `modis_provenance(sources, options, rows)` (`R/modis-surface.R`) | Fuentes, opciones, filas de la tabla | Lista: granulos, colecciones, DOI, métodos, estados, filas de la tabla, versiones de GDAL/`terra`/PROJ/GEOS/R |
 
-> **Estado de implementación — preparación independiente de las fichas
-> de producto (M4, 2026-11-04).** Implementadas en `R/prep-modis.R`
-> (internas, `@noRd`; tests sintéticos en
-> `tests/testthat/test-modis-prep.R`): `modis_overpass_time()`,
-> `modis_cell_lonlat()` (nueva: longitud/latitud del centro de celda,
-> §6.1 punto 2), `modis_albedo()`, `modis_broadband_emissivity()`,
-> `modis_ndvi_from_reflectance()`, `modis_match_composite()` y
-> `modis_to_grid()`. Decisiones de implementación (a trasladar a
-> `DECISIONS.md`):
->
-> 1. **Hora de paso (§6.2, `CANDIDATA`; RC-03, MP-01, MP-02).** Entrada en
->    horas ya escaladas (`Day_view_time`; el relleno llega como `NA`);
->    t_utc = (t_ls − λ/15) mod 24 con la longitud del centro de celda; la
->    fecha UTC del archivo nunca se desplaza (la fecha solar local puede
->    diferir en ±1 día; casos V2/V3), `doy` = día del año de esa fecha.
->    **Sin ecuación del tiempo**: es hora solar media (§6.1); la ecuación
->    del tiempo se aplica una sola vez, en `ef_hour_angle()`; un test
->    encadena `modis_overpass_time()` → `ef_solar_geometry()` y comprueba
->    que la hora solar del ángulo horario es t_ls + S_c. Un resultado que
->    por redondeo vale 24 h pasa a 0 h de la misma fecha. Donde no hay
->    hora, `doy`, `utc_hour` y el `POSIXct` son `NA` y la máscara
->    `missing` es `TRUE` (→ `EF_SURF_OVERPASS_MISSING` donde la LST es
->    válida; lo emite la etapa `surface`, no esta función). Solo
->    MOD11A1/MYD11A1 (§6.4 sigue `TODO`); Terra y Aqua se tratan igual.
-> 2. **Albedo (§8.1, MP-03).** Opciones A1 `"blue_sky"` (con
->    `diffuse_fraction` explícita, sin valor por defecto, por la
->    circularidad con `ef_tau_sw_allen()`, T-11), A2 `"white_sky"` y A3
->    `"black_sky"`, todas `CANDIDATA`; A4–A6 → error
->    `earthflux_method_not_implemented` (A4 `TODO`; coeficientes de A5 y
->    fórmula de A6 no dados). Albedo > 1 se conserva y se devuelve la
->    máscara `gt1` (→ `EF_SURF_ALBEDO_GT1`, clase III). Los insumos no
->    usados por el método deben ser `NULL` (error si se entregan).
-> 3. **Emisividad de banda ancha (§8.2, MP-04, RC-14).** Solo E3
->    `"lai_empirical"` (ε₀ = min(0.95 + 0.01·LAI, 0.98), `CANDIDATA`,
->    desacoplada de la LST); E1 (coeficientes `TODO`), E2 y E4 (`TODO`) →
->    `earthflux_method_not_implemented`. `e31`/`e32` quedan reservados
->    para E1. Las clases no vegetadas de LAI deben llegar como `NA`
->    (MP-06).
-> 4. **NDVI (D4 ec. 1, `VERIFICADA` la forma; MP-05).** Denominador
->    ρ_NIR + ρ_red ≤ 0 → `NA` + máscara `undefined`; |NDVI| > 1 (posible
->    con reflectancias válidas negativas) se conserva con máscara
->    `outside_unit`. Ninguna de las dos tiene código en `flags.md` §4.2
->    (pregunta abierta). El orden agregar-luego-NDVI o NDVI-luego-agregar
->    queda a cargo del llamador y debe registrarse en la procedencia.
-> 5. **Desfase temporal (§9.1, MP-07).** `method` sin valor por defecto:
->    `"period"` (T1), `"period_pixel_lag"` (T2, desfase por píxel
->    `lst_date − fecha del píxel` [días], positivo si el compuesto es
->    anterior; períodos que cruzan el año se resuelven dentro del
->    período) y `"same_day"` (T4/T5, por fecha nominal). T3
->    `"interpolate"` → `earthflux_method_not_implemented` (instante de
->    referencia del compuesto no definido). Los períodos (`composite_start`,
->    `composite_end`) los entrega el llamador: la relación fecha del
->    nombre ↔ período de MOD13/MCD15 no está en esta especificación.
->    Períodos solapados o fechas duplicadas → error; sin compuesto →
->    índice `NA`. Se devuelve además la cota `lag_bound_days`. No se
->    calcula máscara de `EF_SURF_COMPOSITE_LAG` (clase II, umbral `TODO`).
-> 6. **Remuestreo (§9.2, MP-08).** Solo agregación por factor entero entre
->    grillas anidadas (mismo CRS y misma extensión; si no, error: regla de
->    alineación `TODO`); métodos `"mean"`, `"median"`, `"modal"` (empates
->    al valor menor, determinista) y `"any"` (capas 0/1 de condiciones QA
->    decodificadas: peor caso); `"bilinear"` →
->    `earthflux_method_not_implemented`. `min_valid_fraction` explícito en
->    (0, 1], sin valor por defecto (umbral `TODO`). Devuelve `value`,
->    `valid_fraction` e `incomplete` (0 < fracción < umbral →
->    `EF_SURF_AGG_INCOMPLETE`, clase II, no registrable aún). Fracciones
->    por clase de cobertura: pendiente.
-> 7. **Rásteres.** `modis_overpass_time()`, `modis_albedo()`,
->    `modis_broadband_emissivity()`, `modis_ndvi_from_reflectance()` y el
->    `composite_doy` de T2 aceptan `SpatRaster` de una capa con geometría
->    común; se aplica el mismo código numérico a los valores de celda
->    (tests de igualdad vector = ráster).
-> 8. **Clase de condición nueva:** `earthflux_method_not_implemented`
->    (subclase de `earthflux_unknown_method` y `earthflux_input_error`;
->    campos `method` y `choices` = métodos disponibles) para opciones de la
->    especificación no implementables (`TODO`). Pendiente listarla en el
->    catálogo de `R/utils.R`.
->
-> Ningún código `EF_SURF_` se registra aquí: las máscaras se cablean en
-> `ef_flags_surface()` (módulo de producto/QA).
+Estado de implementación: bloque único al inicio de este documento; las
+decisiones de implementación de esta sección son M4-11 … M4-26 de
+`DECISIONS.md` §1.4.
 
 ---
 

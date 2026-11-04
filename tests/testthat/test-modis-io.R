@@ -386,3 +386,22 @@ test_that("reading HDF4 needs the driver; a missing driver is a classed error", 
   expect_error(modis_read_raw(f, "LST_Day_1km"),
                class = "earthflux_modis_driver_error")
 })
+
+# Example area of interest ---------------------------------------------------------
+
+test_that("the Cauquenes province boundary is shipped and usable as AOI", {
+  p <- aoi_cauquenes()
+  expect_s4_class(p, "SpatVector")
+  expect_equal(nrow(p), 1)
+  expect_identical(names(p), c("CUT_REG", "CUT_PROV", "PROVINCIA", "REGION",
+                               "SUPERFICIE"))
+  expect_identical(p$CUT_PROV, "072")
+  expect_identical(terra::crs(p, describe = TRUE)$code, "5360")
+  # geodesic area within 0.1 % of the official area (DPA 2023, km2)
+  expect_lt(abs(terra::expanse(p, unit = "km") / p$SUPERFICIE - 1), 1e-3)
+  # inside tile h12v12 once projected to the sinusoidal grid
+  e <- as.vector(aoi_extent(p, tile_window()))
+  te <- as.vector(modis_tile_extent(12, 12))
+  expect_true(e[["xmin"]] > te[["xmin"]] && e[["xmax"]] < te[["xmax"]] &&
+                e[["ymin"]] > te[["ymin"]] && e[["ymax"]] < te[["ymax"]])
+})

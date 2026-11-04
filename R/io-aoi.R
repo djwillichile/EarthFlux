@@ -12,7 +12,12 @@
 #   aoi_crop_extent()  the same, intersected with the raster, with a classed
 #                      error when they do not overlap
 #
-# Not implemented yet: the target processing grid (decision MP-08).
+#   aoi_cauquenes()    boundary of the Cauquenes province shipped in
+#                      inst/extdata (area of interest of the example scene,
+#                      decision MP-12)
+#
+# The working grid (decision MP-08) is the LST grid cropped to the AOI;
+# it is built by modis_surface_state() (R/modis-surface.R).
 
 #' Extent of an area of interest in the CRS of a raster
 #'
@@ -72,4 +77,41 @@ aoi_crop_extent <- function(x, aoi) {
     v[c("ymin", "ymax")] <- v[c("ymin", "ymax")] + c(1, -1) * eps[2L]
   }
   terra::ext(v)
+}
+
+#' Boundary of the Cauquenes province (example area of interest)
+#'
+#' Reads `inst/extdata/cauquenes-province.gpkg`: the official boundary of
+#' the Cauquenes province (Maule Region, Chile) from the 2023 Political and
+#' Administrative Division of Chile (DPA 2023; SUBDERE, published through
+#' IDE Chile, 2023; circulation authorised by DIFROL Resolucion No 87 of
+#' 2023), in SIRGAS-Chile 2002 geographic coordinates (EPSG:5360), original
+#' geometry, with the attributes `CUT_REG`, `CUT_PROV`, `PROVINCIA`,
+#' `REGION` and `SUPERFICIE` (official area, km2). The feature was taken
+#' unchanged from the dataset `cauquenes` of the author's package thermify;
+#' the full citation and the circulation notice are in
+#' `inst/extdata/cauquenes-province.yml` and `data-raw/cauquenes-province.R`.
+#' The boundary is public information of the Government of Chile and is not
+#' covered by the MIT license of the package code.
+#'
+#' It is the area of interest of the MODIS example scene (decision MP-12;
+#' `data-raw/modis-example.R`) and can be passed as `aoi` to
+#' `modis_surface_state()` or `modis_read_raw()` (projected to the
+#' sinusoidal grid by `aoi_extent()`).
+#'
+#' Example: `province <- aoi_cauquenes()`; `terra::expanse(province, unit =
+#' "km")` is about 3021.7 km2; `modis_surface_state(files, aoi = province,
+#' options)` crops every product to the province (bounding box in the
+#' sinusoidal grid).
+#'
+#' @return A `SpatVector` with one polygon. Error `earthflux_input_error`
+#'   when the file is not installed.
+#' @noRd
+aoi_cauquenes <- function() {
+  f <- system.file("extdata", "cauquenes-province.gpkg", package = "EarthFlux")
+  if (!nzchar(f)) {
+    ef_abort("The file extdata/cauquenes-province.gpkg is not installed.",
+             class = "earthflux_input_error")
+  }
+  terra::vect(f, layer = "cauquenes_province")
 }

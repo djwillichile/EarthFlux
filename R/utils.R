@@ -60,6 +60,28 @@
 #                                   (field profile),
 #                                   earthflux_gwr_singular_error
 #                                   (field stations)
+#   earthflux_method_not_implemented  an option listed in the specification
+#                                   but not implementable yet (facts or
+#                                   coefficients TODO), e.g. MODIS albedo A4,
+#                                   emissivity E1, LST from MOD21A1D
+#                                   (R/prep-modis.R, R/modis-surface.R);
+#                                   subclass of earthflux_unknown_method and
+#                                   earthflux_input_error (fields method,
+#                                   choices = the available options)
+#   earthflux_modis_unsupported     MODIS product, collection or layer
+#                                   without a verified sheet
+#   earthflux_modis_filename_error  file name outside the MODIS convention
+#   earthflux_modis_layer_error     layer missing or ambiguous in a file
+#   earthflux_modis_dn_error        values are not raw DN of the declared
+#                                   type (e.g. already scaled)
+#   earthflux_modis_metadata_error  file scale, offset or NoData contradict
+#                                   the product table
+#   earthflux_modis_grid_error      CRS, cell size, tile extent, AOI overlap,
+#                                   mosaic or nesting of grids inconsistent
+#                                   (these six: R/io-modis.R, subclasses of
+#                                   earthflux_input_error)
+#   earthflux_modis_driver_error    GDAL HDF4 driver not available
+#                                   (R/io-modis.R; earthflux_error only)
 #
 # Dimension mismatches are earthflux_input_error everywhere (no
 # earthflux_dimension_error class; DECISIONS.md section 1.3).

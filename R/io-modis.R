@@ -16,6 +16,7 @@
 #   modis_tile_extent()          extent of tile hXXvYY (DERIVADA)
 #   modis_product_table()        every supported layer of every product
 #   modis_product_spec()         the rows of one product and collection
+#   modis_product_doi()          data set DOI of each product (provenance)
 #   modis_layer_spec()           the row of one layer
 #   modis_parse_filename()       product, UTC date, tile, collection, ...
 #   modis_has_hdf4()             is the GDAL HDF4 driver available?
@@ -192,9 +193,30 @@ mp_rows <- function(product, layer, grid, resolution, cells_per_tile,
 #' `modis_qa_layouts()`), `status`, `source`, `note`, `physical_min`,
 #' `physical_max` (`DERIVADA`).
 #'
+#' The table is static (built from code): `modis_product_table()` builds it
+#' once per session and then returns the cached copy (as
+#' `ef_flag_registry()` does; building it costs about 0.1 s and the readers
+#' and converters look it up for every layer); `modis_product_table_build()`
+#' always rebuilds it.
+#'
 #' @return A data frame.
 #' @noRd
 modis_product_table <- function() {
+  tab <- modis_table_cache$table
+  if (is.null(tab)) {
+    tab <- modis_product_table_build()
+    assign("table", tab, envir = modis_table_cache)
+  }
+  tab
+}
+
+#' Cache of the MODIS product table
+#' @noRd
+modis_table_cache <- new.env(parent = emptyenv())
+
+#' @rdname modis_product_table
+#' @noRd
+modis_product_table_build <- function() {
   lst <- c("MOD11A1", "MYD11A1")
   src11 <- "D1 p. 17, Tabla 9; D10; D12 (modis-products.md 5.1 b)"
   g11 <- "MODIS_Grid_Daily_1km_LST"
@@ -374,6 +396,42 @@ modis_product_table <- function() {
   tab$physical_max <- modis_convert(tab$valid_max, tab)
   rownames(tab) <- NULL
   tab
+}
+
+#' DOI of the MODIS products
+#'
+#' Data set DOIs of the collection 6.1 products, for the provenance of the
+#' surface state (`modis_provenance()`). `VERIFICADA` where the product
+#' sheet gives the DOI (dev/specs/modis-products.md 5.1 a, 5.2 a, 5.6 a:
+#' MOD11A1, MYD11A1, MOD21A1D, MYD21A1D, MCD43A3); `DERIVADA` for the other
+#' products of the catalogue pages D12, from the pattern
+#' `10.5067/MODIS/<product>.061` that every page of D12 shows (section 3,
+#' `VERIFICADA`). MCD43A2 is not among the pages of D12 and has no row
+#' (its DOI is `NA` in the provenance).
+#'
+#' @return A data frame with `product`, `collection`, `doi`, `status` and
+#'   `source`.
+#' @noRd
+modis_product_doi <- function() {
+  sheet <- c("MOD11A1", "MYD11A1", "MOD21A1D", "MYD21A1D", "MCD43A3")
+  pattern <- c("MOD09GA", "MOD09GQ", "MOD13Q1", "MOD13A2", "MCD15A2H",
+               "MCD12Q1")
+  product <- c(sheet, pattern)
+  data.frame(
+    product = product,
+    collection = "061",
+    doi = sprintf("10.5067/MODIS/%s.061", product),
+    status = c(rep("VERIFICADA", length(sheet)),
+               rep("DERIVADA", length(pattern))),
+    source = c(
+      rep("D12 (modis-products.md 5.1 a)", 2L),
+      rep("D2 p. 10, Tabla 2; D12 (modis-products.md 5.2 a)", 2L),
+      "D12 (modis-products.md 5.6 a)",
+      rep(paste0("D12, DOI 10.5067/MODIS/<product>.061 on every catalogue ",
+                 "page (modis-products.md 3)"), length(pattern))
+    ),
+    stringsAsFactors = FALSE
+  )
 }
 
 #' Supported MODIS products
