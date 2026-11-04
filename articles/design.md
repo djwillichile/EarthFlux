@@ -121,8 +121,8 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| `ef_station_table()` | Standard station and observation tables (explicit time zone, measurement heights) | Planned |
-| `ef_station_qc()` | Station quality control (values are flagged, never deleted) | Planned |
+| [`ef_station_table()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_table.md) | Standard station and observation tables (explicit time zone, measurement heights) | Planned |
+| [`ef_station_qc()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_qc.md) | Station quality control (values are flagged, never deleted) | Planned |
 | [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md) | Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and daily | Planned; FAO-56 grass reference verified, alfalfa constants candidate |
 
 Specification:
