@@ -24,6 +24,13 @@ reference:
   - subtitle: Net radiation
     contents:
       - ef_net_radiation
+  - title: Shared physical quantities
+    desc: >
+      Atmospheric and thermodynamic quantities used by several modules
+      (radiation, sensible heat, evapotranspiration and reference ET).
+    contents:
+      - ef_air_pressure
+      - ef_latent_heat_vaporization
 
 # Reference index. Sections are added as functions are exported, to avoid
 # empty documentation. Planned sections (in this order):
@@ -32,6 +39,7 @@ reference:
 #   - Meteorological forcing
 #   - GWR
 #   - METRIC (started above)
+#   - Shared physical quantities (started above)
 #   - Evapotranspiration
 #   - Diagnostics
 #   - Validation

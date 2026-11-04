@@ -1,6 +1,7 @@
 # EarthFlux — Arquitectura
 
-Estado: **borrador M0** · Complementa `SCIENTIFIC_SPEC.md`.
+Estado: **borrador M0**; §3–§4 actualizadas para M2 (2026-11-04) ·
+Complementa `SCIENTIFIC_SPEC.md`.
 
 ## 1. Principios
 
@@ -63,11 +64,14 @@ Estado: **borrador M0** · Complementa `SCIENTIFIC_SPEC.md`.
 | `validation` | Métricas de concordancia y comparación entre configuraciones | `validation.R`, `api-validate.R` | Ajustar el modelo a los datos de validación |
 | `api` | Orquestación de alto nivel | `api-earthflux.R`, `api-prepare.R`, `api-run.R` | Implementar ecuaciones |
 
-Soporte transversal: `classes.R`, `print.R`, `plot.R`, `utils.R`.
+Soporte transversal: `classes.R`, `print.R`, `plot.R`, `utils.R`,
+`constants.R` (constantes físicas, una por magnitud) y `shared-physics.R`
+(magnitudes usadas por varios módulos: P(z), λ; RC-17 = WF-01).
 
 ## 3. Núcleo físico: funciones numéricas vectorizadas
 
-Recomendación de diseño (a confirmar en M1):
+Estado: **DECIDIDA (provisional, 2026-11-04)**, P0-12 (`DECISIONS.md`
+§1.0); revisable por el autor antes de `0.1.0`.
 
 - Las funciones `ef_*()` del núcleo operan sobre **vectores numéricos**
   (o arreglos) y son puramente aritméticas.
@@ -78,9 +82,109 @@ Ventajas: tests unitarios triviales y rápidos sin dependencias espaciales;
 independencia del backend ráster; verificación numérica directa contra casos
 de la literatura; compatibilidad CRAN.
 
+### 3.1 Contrato de entrada del núcleo `metric` (P0-4, P0-5, P0-11, P0-12)
+
+Modelo de referencia: `ef_net_radiation()` (`specs/ef_net_radiation.md`
+§3.1, §5, §6).
+
+| Aspecto | Regla |
+|---|---|
+| Unidades | **K** para temperaturas y **radianes** para todos los ángulos, incluidas latitud y longitud (RC-01); SI para el resto (W m⁻², kPa para presiones, m, m s⁻¹, J kg⁻¹, kg m⁻³). °C solo en `forcing` y en las funciones de ET de referencia (FAO-56 formulada en °C), con conversión explícita a K en la frontera usando `EF_KELVIN_OFFSET` = 273.15 (WF-02, G-D9). Coordenadas en grados solo en contratos de entrada/salida (estaciones, *view time*), convertidas a radianes antes del núcleo |
+| Tiempo | `doy` (día del año de la fecha **UTC**, 1–366) y `utc_hour` (h decimal, [0, 24)) **numéricos**; un envoltorio convierte desde `POSIXct` siempre con `tz = "UTC"` y rechaza fechas como texto (RC-03). MOD11A1: hora de paso = hora solar media (`specs/modis-products.md` §6.1–6.2); la ecuación del tiempo se aplica una sola vez, en `ef_solar_geometry()` |
+| Tipo | `double` o `integer`; sin coerción silenciosa (`check_numeric()`) |
+| Longitud | 1 o longitud común n (reciclaje de longitud 1); **longitud 0 rechazada** (`check_common_length()`, NR-D5) |
+| `dim` | Los argumentos con `dim` no se reciclan y deben compartir `dim`; el resultado lo conserva (`check_same_dim()`, NR-D6; revisar con `SpatRaster`) |
+| NA | `NA`/`NaN` se propagan sin error ni warning; la comprobación de dominio los ignora; `EF_INPUT_NA` lo construye la orquestación |
+| Dominio | Valor imposible o infinito → `earthflux_domain_error` (subclase de `earthflux_input_error`) con nombre del argumento y conteo (`check_in_range()`). Nunca se corrige, trunca ni recorta. Política única (P0-11, T-13): error por defecto en el núcleo; la orquestación convierte en `NA` + flag lo marcado aguas arriba (QA, QC, superficies GWR) **antes** de llamar al núcleo; no hay opción `on_invalid` |
+| `method` | Sin valor por defecto y con coincidencia exacta (`check_method()`): faltante → `earthflux_missing_input`; desconocido → `earthflux_unknown_method` (ambas subclases de `earthflux_input_error`). `earthflux()` podrá fijar un defecto documentado solo para formulaciones `VERIFICADA` (T-15) |
+| Formulaciones no verificadas | Mientras P0-1 … P0-3 sigan abiertas: `CANDIDATA`, expuestas mediante argumentos explícitos **sin defecto** (p. ej., `stable_psi_m_height` en el control de H, SH-11; `ef_longwave_in(temperature, …)` agnóstica, RC-12) y rotuladas como `CANDIDATA` en roxygen |
+| Constantes | Una por magnitud en `R/constants.R` (`EF_KELVIN_OFFSET`, `EF_STEFAN_BOLTZMANN`, `EF_SOLAR_CONSTANT`, `EF_VON_KARMAN`, `EF_GRAVITY`, `EF_SPECIFIC_HEAT_AIR`, `EF_WATER_DENSITY`, `EF_LATENT_HEAT_FAO56`), cada una con unidad, fuente y estado (P0-5). Los coeficientes normativos (FAO-56, ASCE-EWRI) quedan como literales solo dentro de la función que implementa esa ecuación (WF-14) |
+| Magnitudes compartidas | `ef_air_pressure()` y `ef_latent_heat_vaporization()` en `R/shared-physics.R`; ningún módulo las reimplementa. La misma λ (mismo `method`) se usa en el ancla fría y en LE → ET (P0-7) |
+
+### 3.2 Objetos de retorno (convención M2; P0-12, T-17)
+
+1. **Funciones numéricas** (una ecuación, p. ej., `ef_net_radiation()`,
+   `ef_air_pressure()`): devuelven `numeric` simple, con la longitud común
+   y el `dim` de las entradas; sin clase, sin atributos propios, sin flags
+   ni procedencia. Si una función produce varias magnitudes inseparables
+   (p. ej., geometría solar), devuelve una lista simple, sin clase, de
+   arreglos numéricos de igual forma (RC-15, abierta).
+2. **Diagnósticos por celda.** Los flags de ámbito `cell` de una etapa los
+   construye una función interna `ef_diagnose_<etapa>()` (p. ej.,
+   `ef_diagnose_soil_heat()`), que recibe las entradas y salidas numéricas y
+   devuelve una lista (posiblemente vacía) de registros `earthflux_flag`
+   creados con `ef_flag(mask, code, scope)` y máscaras
+   `!is.na(x) & condición`. **La función numérica nunca construye flags.**
+3. **Procedimientos de ámbito objeto** (selección de anclas, calibración de
+   H) y **despachadores**: listas livianas con clase, creadas con
+   `new_ef_object(x, class)` (`R/classes.R`): clase
+   `c("earthflux_<tipo>", "list")` (`earthflux_anchors`,
+   `earthflux_h_calibration`, …), elementos con nombre único y siempre un
+   elemento `flags` (lista de `earthflux_flag`, posiblemente vacía); según
+   el caso, además `method`, `provenance` y los valores numéricos. Cada tipo
+   añade su validador junto a su constructor. Los flags de objeto usan una
+   máscara de longitud 1 (`ef_flag(TRUE, code)`).
+4. **Una función exportada por método** (aritmética pura, p. ej.,
+   `ef_soil_heat_flux_tasumi()`) más un **despachador delgado**
+   (`ef_soil_heat_flux(…, method)`) con `method` sin defecto, que valida,
+   despacha, llama a `ef_diagnose_<etapa>()` y registra procedencia
+   (`specs/soil-heat-flux.md` §5.2, opción C; G-5.2, G-D3). Test obligatorio:
+   despachador ≡ llamada directa. Las auxiliares quedan internas; el tamaño
+   de la API se revisa en conjunto antes de `0.1.0` (T-16).
+5. **No convergencia**: el procedimiento devuelve el último iterado, emite
+   `earthflux_convergence_warning` y agrega el flag de objeto
+   correspondiente; nunca en silencio (`specs/sensible-heat.md` §11.6).
+
+### 3.3 Condiciones con clase
+
+`ef_abort(message, class = NULL, ..., call = sys.call(-1))` y
+`ef_warn(message, class = NULL, ..., call = sys.call(-1))` (`R/utils.R`)
+aceptan campos de datos opcionales con nombre en `...` (D-AP-10), que el
+manejador lee como `cnd$campo` (p. ej., embudo y umbrales de una selección
+de anclas fallida, último iterado de una calibración). Nombres únicos,
+distintos de `message` y `call`.
+
+| Clase | Hereda de | Uso |
+|---|---|---|
+| `earthflux_input_error` | `earthflux_error` | Tipo, longitud, `dim` o argumento inválido |
+| `earthflux_domain_error` | `earthflux_input_error` | Valor fuera del dominio físico o infinito |
+| `earthflux_missing_input` | `earthflux_input_error` | Argumento requerido no entregado (incl. `method`) |
+| `earthflux_unknown_method` | `earthflux_input_error` | `method` fuera de los valores aceptados |
+| `earthflux_unknown_flag` | `earthflux_error` | Código de flag no registrado |
+| `earthflux_registry_error` | `earthflux_error` | Fila mal formada del registro de flags (error de desarrollo) |
+| `earthflux_calibration_error` | `earthflux_error` | La calibración interna no puede continuar (p. ej., `NA` o valores no finitos en un ancla; SH-18) |
+| `earthflux_convergence_warning` | `earthflux_warning` | Iteración detenida sin cumplir su criterio (SH-18) |
+
+Las subclases específicas de un módulo (p. ej.,
+`earthflux_anchor_no_candidates`) se crean con la función que las levanta y
+heredan de una de las clases anteriores.
+
+### 3.4 Registro de flags por etapa
+
+Cada etapa es dueña de sus filas del registro, en su propio archivo, para
+evitar conflictos al desarrollar los módulos en paralelo
+(`specs/flags.md` §7). `ef_flag_registry()` (`R/diagnostics.R`) une:
+
+| Función | Archivo | Prefijo |
+|---|---|---|
+| `ef_flags_core()` | `diagnostics.R` | `EF_INPUT_` |
+| `ef_flags_radiation()` | `metric-radiation.R` | `EF_RAD_` |
+| `ef_flags_soil_heat()` | `metric-soil-heat.R` | `EF_G_` |
+| `ef_flags_anchors()` | `metric-anchors.R` | `EF_ANCHOR_` |
+| `ef_flags_sensible_heat()` | `metric-sensible-heat.R` | `EF_H_` |
+| `ef_flags_et()` | `metric-et.R` | `EF_ET_` |
+
+Cada función devuelve `ef_flag_rows(code, stage, severity, scope, bit,
+error_class, description, spec, since)` (sin argumentos: tabla de cero
+filas). Los módulos `surface`, `forcing` y `spatial` agregan su
+`ef_flags_<etapa>()` con su primer código. Las columnas, la severidad
+`critical` y las reglas de validación están en `specs/flags.md` §4.2, §5 y
+§8.
+
 ## 4. Contratos de datos (borrador)
 
-`TODO (M1)`: completar con nombres definitivos, unidades y validadores.
+`TODO`: completar con nombres definitivos y validadores. Unidades y
+tiempo: **DECIDIDA (provisional, 2026-11-04)**, P0-4 (§3.1).
 
 **Estado de superficie** (salida de `surface`):
 
@@ -92,14 +196,14 @@ de la literatura; compatibilidad CRAN.
 | `lai` | m² m⁻² | Según método de G/rugosidad |
 | `emissivity` | – | Sí |
 | `elevation`, `slope`, `aspect` | m, rad, rad | Para corrección por terreno |
-| `overpass_time` | POSIXct (UTC) | Sí |
+| `overpass_time` | POSIXct (UTC); el núcleo recibe `doy` + `utc_hour` numéricos (§3.1) | Sí |
 | `qa` | flags | Sí |
 
 **Forzamiento meteorológico** (salida de `forcing`/`spatial`):
 
 | Nombre | Unidad | Obligatorio |
 |---|---|---|
-| `air_temperature` | °C `TODO: decidir K vs °C` | Sí |
+| `air_temperature` | °C en `forcing`/`spatial`; convertida explícitamente a K (`EF_KELVIN_OFFSET`) al entrar al núcleo `metric` (WF-02, §3.1) | Sí |
 | `vapour_pressure` | kPa | Sí |
 | `wind_speed` + altura de medición | m s⁻¹, m | Sí |
 | `solar_radiation` | W m⁻² | Sí |
@@ -118,6 +222,8 @@ procedencia (versiones, productos, escenas, estaciones, parámetros, semilla).
   dependencia y fricción en rásteres). Se prefieren nombres claros,
   documentación explícita y validación de rangos plausibles.
 - Reevaluar en M2 si aparecen errores de unidades difíciles de prevenir.
+- Convenciones de unidades del núcleo y constantes físicas: §3.1
+  (`R/constants.R`).
 
 ## 6. Decisiones abiertas
 

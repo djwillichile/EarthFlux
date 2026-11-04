@@ -190,6 +190,12 @@ con argumentos con nombre en la orquestación y en los ejemplos.
 
 ## 4. Calor latente de vaporización y densidad del agua — `ef_latent_heat_vaporization()`
 
+> **Implementada (2026-11-04)** en `R/shared-physics.R` (archivo compartido
+> con `ef_air_pressure()`, porque la usan el módulo de anclas y la cadena
+> de ET; P0-7), con los métodos `"constant"` y `"fao56"`; `"metric"` no se
+> implementa hasta V2. La guarda de unidades de ET-D2 es el helper interno
+> `check_latent_heat_units()`, para las funciones que reciben `lambda`.
+
 Unidad de salida propuesta: **J kg⁻¹** (SI), para que la conversión de §5
 opere con W m⁻² sin factores ocultos. Las fuentes expresan λ en MJ kg⁻¹; la
 conversión ×10⁶ es interna y está documentada.

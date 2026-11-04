@@ -495,6 +495,8 @@ presión medida o regionalizada. Es insumo de τ_sw (y, fuera de este
 documento, de ρ_air y de la constante psicrométrica de ETr).
 
 **Interfaz propuesta.** `ef_air_pressure(elevation)` → P [kPa].
+**Implementada (2026-11-04)** en `R/shared-physics.R` (RC-17, archivo
+compartido), exportada.
 
 **Ecuación** (`VERIFICADA` 2026-11-04: idéntica a FAO-56, Cap. 3, Ec. 7,
 leída en la edición abierta de FAO; ver `weather-forcing.md` §4; también
