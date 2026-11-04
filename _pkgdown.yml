@@ -61,6 +61,15 @@ reference:
       - ef_et_inst
       - ef_etrf
       - ef_et_daily
+  - subtitle: Anchor pixels
+    contents:
+      - ef_select_anchors
+      - ef_anchors
+      - ef_anchor_criteria
+      - ef_anchor_rule
+      - ef_homogeneity
+      - ef_anchor_pick
+      - ef_anchor_conditions
   - title: Shared physical quantities
     desc: >
       Atmospheric and thermodynamic quantities used by several modules
