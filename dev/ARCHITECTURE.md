@@ -1,7 +1,7 @@
 # EarthFlux — Arquitectura
 
-Estado: **borrador M0**; §3–§4 actualizadas para M2 y M3, §6.3 con el
-estado de M3 (2026-11-04) · Complementa `SCIENTIFIC_SPEC.md`.
+Estado: **borrador M0**; §3–§4 actualizadas para M2, M3 y M4 (contrato de
+superficie), §6.3 con el estado de M3 (2026-11-04) · Complementa `SCIENTIFIC_SPEC.md`.
 
 ## 1. Principios
 
@@ -56,7 +56,7 @@ estado de M3 (2026-11-04) · Complementa `SCIENTIFIC_SPEC.md`.
 
 | Módulo | Responsabilidad | Archivos | No hace |
 |---|---|---|---|
-| `surface` | Leer productos satelitales y convertirlos en variables físicas estandarizadas (Ts, α, NDVI, LAI, ε₀) con QA y procedencia | `io-modis.R`, `prep-modis.R`, `io-aoi.R` | Ecuaciones de balance de energía |
+| `surface` | Leer productos satelitales y convertirlos en variables físicas estandarizadas (Ts, α, NDVI, LAI, ε₀) con QA y procedencia | `io-modis.R` (tabla de producto, lectores, escalado), `modis-qa.R` (QA → flags, política QA), `prep-modis.R` (hora de paso, banda ancha, desfase, agregación), `modis-surface.R` (ensamblaje del estado de superficie), `io-aoi.R` | Ecuaciones de balance de energía |
 | `forcing` | Leer, estandarizar y controlar calidad de datos de estaciones; derivar variables (ea, u a altura de referencia, ETr) | `io-weather.R`, `prep-qc.R`, `forcing-derived.R`, `reference-et.R`, `prep-weather.R` | Interpolación espacial |
 | `spatial` | Regionalizar variables meteorológicas (GWR; alternativas de referencia) y conservar parámetros, kernel, bandwidth, criterios, residuos, AICc, CV, diagnósticos y flags | `gwr-fit.R`, `gwr-bandwidth.R`, `gwr-predict.R`, `gwr-diagnostics.R` (núcleo); `regionalize.R`, `regionalize-methods.R`, `regionalize-baselines.R`, `regionalize-cv.R` (orquestación, C1/C2, CV) | Conocer METRIC |
 | `metric` | Núcleo físico modular: Rn, G, anclas, rah, dT, H, LE, ET_inst, ETrF, ETa | `metric-*.R` | Leer archivos o conocer el sensor |
@@ -203,6 +203,14 @@ cabecera de `R/utils.R`):
 | `earthflux_gwr_insufficient_stations` | `earthflux_gwr_error` | GWR, C2 | Menos estaciones válidas que las necesarias (campos `n`, `p`); lo reutilizan OLS e IDW |
 | `earthflux_gwr_no_feasible_bandwidth` | `earthflux_gwr_error` | GWR | Ningún bandwidth del perfil es factible (campo `profile`) |
 | `earthflux_gwr_singular_error` | `earthflux_gwr_error` | GWR | Diseño local de rango deficiente en una estación con bandwidth del usuario (campo `stations`) |
+| `earthflux_method_not_implemented` | `earthflux_unknown_method` (y `earthflux_input_error`) | MODIS (M4) | Opción listada en la especificación pero no implementable aún (hechos o coeficientes `TODO`): albedo A4–A6, emisividad E1/E2/E4, T3, `"bilinear"`, LST de MOD21A1D, NDVI de MOD13Q1/MOD09; campos `method` y `choices` (opciones disponibles) |
+| `earthflux_modis_unsupported` | `earthflux_input_error` | MODIS (M4) | Producto, colección o capa sin ficha `VERIFICADA` (campos `product`, `collection`/`layer`) |
+| `earthflux_modis_filename_error` | `earthflux_input_error` | MODIS (M4) | Nombre de archivo fuera de la convención MODIS (campo `file`) |
+| `earthflux_modis_layer_error` | `earthflux_input_error` | MODIS (M4) | Capa ausente o ambigua en un archivo HDF4 (campo `layer`) |
+| `earthflux_modis_dn_error` | `earthflux_input_error` | MODIS (M4) | Valores que no son DN crudos del tipo declarado (p. ej., ya escalados; MP-11) |
+| `earthflux_modis_metadata_error` | `earthflux_input_error` | MODIS (M4) | Escala, offset o NoData del archivo en contradicción con la tabla de producto |
+| `earthflux_modis_grid_error` | `earthflux_input_error` | MODIS (M4) | CRS, celda, extensión de tesela, solape con el AOI, mosaico o anidamiento de grillas inconsistente |
+| `earthflux_modis_driver_error` | `earthflux_error` | MODIS (M4) | Driver GDAL HDF4 no disponible (usar archivos convertidos, MP-10) |
 
 Los errores de dimensión son `earthflux_input_error` en todo el paquete
 (como `check_same_dim()`); **no** se creó `earthflux_dimension_error`, que
@@ -225,14 +233,16 @@ evitar conflictos al desarrollar los módulos en paralelo
 | `ef_flags_reference_et()` | `reference-et.R` | `EF_WS_` (ET de referencia y serie por estación) |
 | `ef_flags_stations()` | `prep-qc.R` | `EF_WS_` (QC de estaciones) |
 | `ef_flags_gwr()` | `gwr-diagnostics.R` | `EF_GWR_` (núcleo GWR y orquestación) |
+| `ef_flags_surface()` | `modis-qa.R` | `EF_SURF_` (QA de productos MODIS y estado de superficie, M4) |
 
 Cada función devuelve `ef_flag_rows(code, stage, severity, scope, bit,
 error_class, description, spec, since)` (sin argumentos: tabla de cero
-filas). Falta solo el módulo `surface`, que agregará su
-`ef_flags_<etapa>()` con su primer código. Las columnas, la severidad
-`critical` y las reglas de validación están en `specs/flags.md` §4.2, §5 y
-§8. Recuento al 2026-11-04: 54 códigos (`INPUT` 1, `RAD` 4, `G` 4,
-`ANCHOR` 10, `H` 8, `ET` 1, `WS` 13, `GWR` 13; `specs/flags.md` §4.4).
+filas). Las nueve etapas de la lista cerrada de `specs/flags.md` §3.1
+tienen ya su función. Las columnas, la severidad `critical` y las reglas
+de validación están en `specs/flags.md` §4.2, §5 y §8. Recuento al
+2026-11-04 (armonización M4): 68 códigos (`INPUT` 1, `RAD` 4, `G` 4,
+`ANCHOR` 10, `H` 8, `ET` 1, `WS` 13, `GWR` 13, `SURF` 14;
+`specs/flags.md` §4.4).
 
 El registro es estático: `ef_flag_registry_build()` une y valida las filas
 y `ef_flag_registry()` lo guarda en un entorno del paquete la primera vez
@@ -250,9 +260,14 @@ referirse `index` agrega el campo `target` con el nombre de esa tabla o
 capa (`specs/flags.md` §6.2). Primer uso, `ef_station_ref_et()`:
 `target` ∈ {`"series"`, `"etr_inst"`, `"etr_24"`}, y la procedencia
 registra `flags_evaluated` y `flags_evaluated_by_target` (`DECISIONS.md`
-§1.3, M3-18). Los objetos con una sola tabla o vector no lo llevan. Los
-flags de celda de las superficies regionalizadas no son registros con
-índice: viven en la palabra de flags (`flag_word`, §4).
+§1.3, M3-18). Desde M4, los registros de `earthflux_surface_state` llevan
+`target` = capa (`"lst"`, `"overpass_time"`, `"albedo"`, `"ndvi"`,
+`"lai"`, `"emissivity"`), con `index` = celda de la grilla de trabajo, y
+la procedencia registra `flags_evaluated_by_target`; el mismo contenido
+está en la palabra de flags de cada capa (`qa$flag_word`, §4). Los
+objetos con una sola tabla o vector no lo llevan. Los flags de celda de
+las superficies regionalizadas no son registros con índice: viven en la
+palabra de flags (`flag_word`, §4).
 
 ## 4. Contratos de datos (borrador)
 
@@ -271,6 +286,58 @@ tiempo: **DECIDIDA (provisional, 2026-11-04)**, P0-4 (§3.1).
 | `elevation`, `slope`, `aspect` | m, rad, rad | Para corrección por terreno |
 | `overpass_time` | POSIXct (UTC); el núcleo recibe `doy` + `utc_hour` numéricos (§3.1) | Sí |
 | `qa` | flags | Sí |
+
+**Implementación MODIS (M4): `earthflux_surface_state`**, salida de
+`modis_surface_state(files, aoi, options)` (interna, `R/modis-surface.R`;
+`specs/modis-products.md` §13.2; `DECISIONS.md` §1.4, M4-19 …). Lista
+creada con `new_ef_object()`; todas las capas en la **grilla de trabajo**
+(grilla sinusoidal nativa de 1 km del archivo de LST recortada al AOI,
+MP-08), orden de celdas de `terra`:
+
+| Elemento | Contenido | Unidad |
+|---|---|---|
+| `lst` | `SpatRaster` (1 capa) | K |
+| `albedo` | `SpatRaster`; albedo de banda ancha (`modis_albedo()`, método explícito), **valores > 1 conservados** | – |
+| `ndvi` | `SpatRaster` (MOD13A2) | – |
+| `lai` | `SpatRaster` (MCD15A2H agregado; clases no vegetadas `NA`, MP-06) | m² m⁻² |
+| `emissivity` | `SpatRaster`; ε₀ de banda ancha (E3, `CANDIDATA`; `NA` donde LAI es `NA`) | – |
+| `overpass_time` | Lista: `doy` y `utc_hour` (`SpatRaster`; día del año de la fecha UTC y hora UTC), `time` (`POSIXct` UTC, orden de celdas) | –, h |
+| `lonlat` | `SpatRaster` `lon`, `lat` de los centros de celda (WGS84) | grados |
+| `qa` | `flag_word` (`SpatRaster` entero, una capa por salida: `flags_lst`, `flags_overpass_time`, `flags_albedo`, `flags_ndvi`, `flags_lai`, `flags_emissivity`, bits de la etapa `SURF`), `flag_bits` (vista del registro), `valid_fraction` (fracción de subceldas válidas de cada insumo agregado), `composite` (período, `lag_bound_days` y `lag_days` por píxel de NDVI con T2), `policy` (`qa_policy`, `mask_codes`, `n_masked`) | – |
+| `units`, `flags`, `provenance` | Unidades; registros `earthflux_flag` con `target` = capa (§3.5); granulos, productos, colección, DOI, métodos, filas de la tabla de producto, versiones, `flags_evaluated(_by_target)` y `flags` (`specs/flags.md` §6.7) | – |
+
+**Traspaso al núcleo `metric` (obligación de M5).** La orquestación:
+
+1. Extrae vectores numéricos en orden de celdas (`terra::values(x, mat =
+   FALSE)`) o aplica el núcleo por bloques; unidades del contrato: `lst`
+   en K (sin conversión), `albedo`, `ndvi`, `emissivity` adimensionales,
+   `lai` en m² m⁻²; `lon`/`lat` en grados → **radianes** (× π/180) antes de
+   `ef_solar_geometry()` (RC-01).
+2. Pasa `doy` y `utc_hour` de `overpass_time` tal cual a
+   `ef_solar_geometry()`: son hora **UTC** derivada de la hora solar
+   **media** (sin ecuación del tiempo); la ecuación del tiempo se aplica una
+   sola vez, dentro de `ef_hour_angle()`. Donde falta la hora de paso
+   (`EF_SURF_OVERPASS_MISSING`, bit 13 de `flags_overpass_time`, o `NA` en
+   `doy`/`utc_hour`), la geometría solar es `NA` y con ella Rs↓, Rn, G y lo
+   que sigue en esa celda; la LST se conserva.
+3. **Excluye antes de `ef_net_radiation()` y `ef_g()`** las celdas con un
+   bit `critical` de la etapa `SURF` activo en cualquier palabra
+   (`surface_exclusion()`; hoy `EF_SURF_ALBEDO_GT1`, bit 14 de
+   `flags_albedo`): pone su albedo (y lo que dependa de él) en `NA` y
+   **cuenta** la exclusión (`counts`) en la procedencia del resultado; sin
+   esa exclusión el núcleo da `earthflux_domain_error` (clase III, P0-11,
+   `specs/flags.md` §6.6). Los bits se leen del registro, nunca por número.
+4. Excluye también las celdas `NA` de cada capa (relleno, nubes, no
+   producido, fuera de rango, clases no vegetadas, enmascaradas por
+   `qa_policy = "mask"`): el núcleo las propaga como `NA` y sus
+   despachadores marcan `EF_INPUT_NA`; la causa original queda en la palabra
+   de la capa de superficie (`specs/flags.md` §6.5).
+5. Usa la **misma** `emissivity` en `ef_rl_out()` y en `ef_net_radiation()`
+   (RC-14, requisito C2), y conserva `qa$flag_word` completo en el
+   resultado (las palabras de etapas distintas no se combinan bit a bit).
+
+El test `tests/testthat/test-surface-chain.R` recorre exactamente estos
+pasos con un granulo sintético.
 
 **Forzamiento meteorológico** (salida de `forcing`/`spatial`):
 
