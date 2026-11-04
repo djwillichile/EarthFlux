@@ -496,9 +496,9 @@ documento, de ρ_air y de la constante psicrométrica de ETr).
 
 **Interfaz propuesta.** `ef_air_pressure(elevation)` → P [kPa].
 
-**Ecuación candidata** (`CANDIDATA`; forma observada en `water` v1.0,
-función `SWtransmissivity()`; atribuida habitualmente a FAO-56 y ASCE-EWRI
-`TODO: verify equation number`):
+**Ecuación** (`VERIFICADA` 2026-11-04: idéntica a FAO-56, Cap. 3, Ec. 7,
+leída en la edición abierta de FAO; ver `weather-forcing.md` §4; también
+observada en `water` v1.0, función `SWtransmissivity()`):
 
 ```text
 P = 101.3 · ((293 − 0.0065·z) / 293)^5.26          [kPa], z en m
@@ -517,9 +517,11 @@ flag con umbral `TODO`; no error.
 
 **NA.** Propaga.
 
-**Estado.** `CANDIDATA`.
+**Estado.** `VERIFICADA` (FAO-56 Ec. 7). Supuestos según FAO-56 Anexo 3
+(Ec. 3-2): 9.807/(0.0065·287) = 5.257 ≈ 5.26.
 
-**Referencias.** Allen et al. (1998) FAO-56 `TODO`; ASCE-EWRI (2005) `TODO`.
+**Referencias.** Allen et al. (1998) FAO-56, Cap. 3, Ec. 7; ASCE-EWRI (2005)
+`TODO` (sin acceso).
 
 **Caso numérico.** z = 0 → P = 101.3 kPa (exacto). z = 1000 m:
 (293 − 6.5)/293 = 0.9778157; 0.9778157^5.26 = 0.8886932;

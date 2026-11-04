@@ -59,9 +59,11 @@ procedencia.
 | `water`, `roadto1/Sam-review.md` (notas de revisión incluidas en el repositorio; autoría y método no verificables) | Terciaria | Afirma números de ecuación y página de Allen et al. (2007) para G y para agua/nieve | No verificable; solo sirve para orientar qué buscar en la fuente primaria. |
 | `SCIENTIFIC_SPEC.md` §3 (fila G) | Interna | Forma `CANDIDATA` de Bastiaanssen ya registrada | Mismo estado `CANDIDATA`. |
 
-Intento de verificación de metadatos de citas vía `api.crossref.org`:
-**bloqueado** por el proxy de salida (no se reintentó). Ningún DOI de este
-documento está verificado.
+Verificación de metadatos de citas: en la redacción original
+`api.crossref.org` no estaba accesible. **Actualización 2026-11-04:** los
+DOI de Bastiaanssen (2000) y Allen et al. (2007) fueron verificados con
+Crossref (ver `verification/reference-audit.md`); el contenido de esas
+fuentes sigue sin consultar.
 
 ---
 

@@ -18,7 +18,26 @@ Convención de estados usados en este documento:
 | `CANDIDATA` | Forma conocida en la literatura, pendiente de verificar contra la fuente primaria (ecuación, página, constantes). No implementar. |
 | `VERIFICADA` | Ecuación contrastada con la fuente primaria, con unidades, dominio y caso numérico. Puede implementarse. |
 
-En M0 **ninguna** ecuación está en estado `VERIFICADA`.
+Estado al 2026-11-04 (M1): las ecuaciones de FAO-56 usadas para la
+superficie de referencia y las conversiones de unidades están `VERIFICADA`
+contra la edición abierta de FAO-56; **ninguna ecuación propia de METRIC**
+está aún `VERIFICADA` (falta acceso a Allen et al., 2007).
+
+## 0. Índice de especificaciones (M1)
+
+| Área | Documento | Estado principal | Decisiones abiertas clave |
+|---|---|---|---|
+| Radiación neta | [`specs/ef_net_radiation.md`](specs/ef_net_radiation.md) | `CANDIDATA (corroborada)`; implementada (`ef_net_radiation()`) | D3: verificar en Allen et al. (2007) |
+| Componentes de radiación (Rs↓, RL↓, RL↑, geometría solar, presión) | [`specs/radiation-components.md`](specs/radiation-components.md) | `CANDIDATA`; `ef_air_pressure()` `VERIFICADA` (FAO-56 Ec. 7) | RC-12 (temperatura de RL↓), RC-09/RC-10 (difusa en pendientes; Rs medida vs. modelada) |
+| Flujo de calor del suelo | [`specs/soil-heat-flux.md`](specs/soil-heat-flux.md) | `CANDIDATA` | D1 (método por defecto), D4 (agua/nieve) |
+| Píxeles ancla | [`specs/anchor-pixels.md`](specs/anchor-pixels.md) | `CANDIDATA`; citas verificadas (Crossref) | D-AP-01/02 (criterios sin valores por defecto), D-AP-12 (estrategia a 1 km) |
+| Rugosidad, rah, estabilidad, dT y H | [`specs/sensible-heat.md`](specs/sensible-heat.md) | `CANDIDATA`; magnitudes FAO-56 compartidas `VERIFICADA` | **SH-11** (ψ_m a 200 m en caso estable), SH-15 (fase por píxel) |
+| LE, ET instantánea, ETrF, ETa | [`specs/evapotranspiration.md`](specs/evapotranspiration.md) | Balance, λ, ρ_w y conversión de unidades `VERIFICADA` (FAO-56); ETrF/ETa `CANDIDATA` | ET-D1 (λ por defecto), ET-D5 (rango de ETrF) |
+| Estaciones, QC, variables derivadas y ET de referencia | [`specs/weather-forcing.md`](specs/weather-forcing.md) | ETo FAO-56 diaria y horaria `VERIFICADA`; ETr ASCE (alfalfa) `CANDIDATA` | **Decisión 5.1**, WF-07 (ETr en la hora de paso) |
+| Forzamiento espacial (GWR) | [`decisions/gwr-backend.md`](decisions/gwr-backend.md) · `specs/gwr-forcing.md` (en curso) | Backend: `PROPUESTA` (núcleo interno) | Backend; convención de AICc y de k adaptativo |
+| Productos MODIS | [`specs/modis-products.md`](specs/modis-products.md) | Metadatos de producto `VERIFICADA` (guías oficiales) | MP-01/02 (producto y plataforma), MP-03/04 (banda ancha) |
+| Referencias | [`REFERENCES.md`](REFERENCES.md) · [`verification/reference-audit.md`](verification/reference-audit.md) | 43 citas verificadas | Fuentes primarias METRIC y ASCE-EWRI sin acceso |
+| Antecedente del autor | [`decisions/antecedente-metric-modis.md`](decisions/antecedente-metric-modis.md) | Registro | Circularidad Ta–LST; calibración a 1 km |
 
 ---
 
@@ -152,14 +171,16 @@ Dominio · Referencia · Función EarthFlux · Test.
 | Diferencia de temperatura cerca de la superficie | dT | K | Calibrada con anclas | `CANDIDATA`: dT = a + b·Ts,datum | Linealidad dT–Ts; Ts ajustada por elevación (datum) con gradiente `TODO` | Definido entre anclas; extrapolación → flag `TODO` | Allen et al. (2007) `TODO` | `metric-dt.R` (por definir) | `test-sensible-heat.R` |
 | Flujo de calor sensible | H | W m⁻² | Calculada | `CANDIDATA`: H = ρ_air·c_p·dT / rah | ρ_air según presión y temperatura `TODO`; c_p ≈ 1004 J kg⁻¹ K⁻¹ `TODO` | Real; valores negativos posibles (advección) | Allen et al. (2007) `TODO` | `metric-sensible-heat.R` (por definir) | `test-sensible-heat.R` |
 | Flujo de calor latente | LE | W m⁻² | Residuo | LE = Rn − G − H | Balance de energía 1D; sin almacenamiento en dosel ni advección explícita | Real; LE < 0 → flag | Allen et al. (2007) | `metric-latent-heat.R` (por definir) | `test-pipeline.R` |
-| ET instantánea | ET_inst | mm h⁻¹ | Calculada | `CANDIDATA`: ET_inst = 3600·LE / (λ·ρ_w) | λ dependiente de Ts `TODO`; ρ_w ≈ 1000 kg m⁻³ | Real; < 0 → `EF_ET_NEGATIVE` | Allen et al. (2007) `TODO` | `metric-et.R` (por definir) | `test-et.R` |
-| ET de referencia | ETr (inst, 24 h) | mm h⁻¹; mm d⁻¹ | Meteorología (estación o superficie GWR) | `TODO`: ecuación estandarizada ASCE-EWRI (alfalfa, `ETr`) vs. pasto (`ETo`) | METRIC usa típicamente referencia alfalfa; definición de cultivo de referencia **explícita** | ≥ 0 | ASCE-EWRI (2005) `TODO`; Allen et al. (1998) FAO-56 `TODO` | `metric-et.R` / `prep-weather.R` (por definir) | `test-et.R` |
+| ET instantánea | ET_inst | mm h⁻¹ | Calculada | `VERIFICADA` (conversión de unidades, FAO-56 Box 8 / Ec. 20): ET_inst = 1000·3600·LE / (λ·ρ_w) [mm h⁻¹], con λ en J kg⁻¹ y ρ_w en kg m⁻³. **Corrección 2026-11-04:** la forma 3600·LE/(λ·ρ_w), frecuente en la literatura con la etiqueta mm h⁻¹, da m h⁻¹ (falta el factor 1000 mm m⁻¹); ver [`specs/evapotranspiration.md`](specs/evapotranspiration.md) | λ dependiente de Ts `TODO`; ρ_w ≈ 1000 kg m⁻³ | Real; < 0 → `EF_ET_NEGATIVE` | Allen et al. (2007) `TODO` | `metric-et.R` (por definir) | `test-et.R` |
+| ET de referencia | ETr (inst, 24 h) | mm h⁻¹; mm d⁻¹ | Meteorología (estación o superficie GWR) | ETo (pasto) FAO-56 Ec. 6 (diaria) y Ec. 53 (horaria) `VERIFICADA`; ETr (alfalfa) ASCE-EWRI `CANDIDATA` (constantes Cn/Cd sin acceso a la fuente); ver [`specs/weather-forcing.md`](specs/weather-forcing.md) | METRIC usa típicamente referencia alfalfa; definición de cultivo de referencia **explícita** | ≥ 0 | ASCE-EWRI (2005) `TODO`; Allen et al. (1998) FAO-56 `TODO` | `metric-et.R` / `prep-weather.R` (por definir) | `test-et.R` |
 | Fracción de ET de referencia | ETrF | – | Calculada | ETrF = ET_inst / ETr_inst | ETrF constante durante el día `TODO: documentar limitaciones` | Rango plausible `TODO`; fuera de rango → flag (no truncar) | Allen et al. (2007) `TODO` | `metric-et.R` (por definir) | `test-et.R` |
 | Evapotranspiración real (diaria) | ETa | mm d⁻¹ | Calculada | ETa = ETrF · ETr24 | Conservación de ETrF; ETr24 espacialmente explícita (H1) | Real; < 0 → `EF_ET_NEGATIVE` | Allen et al. (2007) `TODO` | `metric-et.R` → `earthflux()` | `test-et.R`, `test-pipeline.R` |
 
 ---
 
 ## 4. Productos MODIS candidatos
+
+> Especificación detallada: [`specs/modis-products.md`](specs/modis-products.md). Esta sección conserva el resumen original de M0.
 
 `TODO (M1)`: confirmar colección vigente (6.1 / 7), resolución, frecuencia,
 factores de escala, valores de relleno y bits QA desde las guías de usuario
@@ -177,6 +198,8 @@ oficiales. **No ingresar valores de memoria.**
 ---
 
 ## 5. Variables meteorológicas
+
+> Especificación detallada: [`specs/weather-forcing.md`](specs/weather-forcing.md). Esta sección conserva el resumen original de M0.
 
 `TODO (M1)`: conjunto mínimo, alturas de medición, resolución temporal,
 ventana temporal alrededor de la hora de paso.
@@ -200,6 +223,8 @@ idealmente, evaluarse.
 
 ## 6. GWR
 
+> Especificación detallada: [`decisions/gwr-backend.md`](decisions/gwr-backend.md). Esta sección conserva el resumen original de M0.
+
 `TODO (M1)`: especificación completa antes de implementar.
 
 - Variable respuesta y covariables por variable meteorológica (tabla 5).
@@ -217,6 +242,8 @@ idealmente, evaluarse.
 
 ## 7. Píxeles ancla
 
+> Especificación detallada: [`specs/anchor-pixels.md`](specs/anchor-pixels.md). Esta sección conserva el resumen original de M0.
+
 `TODO (M1)`: reglas de selección referenciadas.
 
 - Condiciones de borde (ancla caliente y fría) y coeficientes asociados.
@@ -230,6 +257,8 @@ idealmente, evaluarse.
 ---
 
 ## 8. Criterios QA
+
+> Especificación detallada: [`specs/weather-forcing.md`](specs/weather-forcing.md). Esta sección conserva el resumen original de M0.
 
 `TODO (M1)`.
 

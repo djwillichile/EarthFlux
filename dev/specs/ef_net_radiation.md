@@ -65,10 +65,16 @@ auditable.
     convención de que `rl_out` es la onda larga emitida y de que la
     emisividad debe ser la misma en ambos términos. No se copió código
     (licencia GPL).
-- **Fuente secundaria 2:** estudio aplicado de METRIC publicado en arXiv
-  (2020), arXiv:2007.13922, que presenta la misma forma de la ecuación.
-  (No re-consultada al redactar esta especificación: arxiv.org no
-  accesible; `TODO: completar cita` con autores y título.)
+- **Fuente secundaria 2:** Wasti, S. (2020). Tesis de maestría
+  (University of Chinese Academy of Sciences), arXiv:2007.13922 v2,
+  Ec. (2.6), p. 24: misma forma de la ecuación, con RL↑ = ε₀·σ·Ts⁴
+  (Ec. 2.16) y la misma ε₀. La tesis atribuye la ecuación a Brunsell &
+  Gillies (2002) y Hipps (1989), no a Allen et al. (2007). Fuente
+  independiente de `water`; corrobora la forma pero no es fuente primaria
+  (revisada 2026-11-04; ver `verification/reference-audit.md`).
+- **Nota:** el artículo de `water` en The R Journal (Olmedo et al., 2016)
+  **no** imprime la ecuación de Rn; la "fuente secundaria 1" corresponde al
+  **código** de `water`, no al artículo.
 
 ### 2.3 Estado de verificación
 
@@ -312,8 +318,9 @@ clase del error, llamada reportada).
   orquestación; requiere criterio documentado.
 - **D3.** Número de ecuación y notación exacta en Allen et al. (2007):
   `TODO` (bloquea la fusión, sección 2.3).
-- **D4.** Confirmar DOI de Allen et al. (2007) y actualizar
-  `REFERENCES.md`.
+- **D4.** ~~Confirmar DOI de Allen et al. (2007).~~ **Cerrada
+  (2026-11-04):** DOI 10.1061/(ASCE)0733-9437(2007)133:4(380) verificado
+  con Crossref (`verification/reference-audit.md`).
 - **D5.** (Provisional, tomada al implementar) Rechazar argumentos de
   longitud 0 en lugar de devolver `numeric(0)`. Revisable si algún
   envoltorio necesita procesar bloques vacíos.
