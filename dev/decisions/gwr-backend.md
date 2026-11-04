@@ -1,6 +1,6 @@
 # Decisión: backend de GWR para el módulo `spatial`
 
-Estado: **PROPUESTA** (pendiente de decisión del autor) ·
+Estado: **PROPUESTA, parcialmente decidida** (ver "Decisiones del autor") ·
 Fecha de observación: **2026-11-04** ·
 Autor: Guillermo Servando Fuentes-Jaque ·
 Relacionado: `ARCHITECTURE.md` §6.1 y §6.3, `SCIENTIFIC_SPEC.md` §1.2, §5 y
@@ -11,6 +11,16 @@ Relacionado: `ARCHITECTURE.md` §6.1 y §6.3, `SCIENTIFIC_SPEC.md` §1.2, §5 y
 > realizadas el 2026-11-04 (CRAN y pruebas locales); lo no observado se marca
 > `TODO`. Las fórmulas se marcan `CANDIDATA` según la convención de
 > `SCIENTIFIC_SPEC.md`: ninguna está `VERIFICADA` contra la fuente primaria.
+
+## Decisiones del autor
+
+| Fecha | Decisión | Fundamento |
+|---|---|---|
+| 2026-11-04 | **`spgwr` se descarta** como backend y como referencia de verificación cruzada. Solo se menciona como antecedente histórico (prototipo previo del autor, `antecedente-metric-modis.md`) y como evidencia de esta evaluación. | Paquete en modo de mantenimiento (0.6-37, 2024), dependiente de `sp`, sin MGWR; en la evaluación empírica falló la selección de bandwidth por AIC con 15 estaciones y no expone residuos *leave-one-out* por estación (secciones 3-4). Existen alternativas más actuales (`GWmodel`, `mgwrsar`). |
+
+Pendiente de decisión explícita: núcleo interno como motor de cálculo y
+`GWmodel` en `Suggests` como referencia de tests (recomendación de la
+sección 8); `mgwrsar` como opción a evaluar si se requiere MGWR.
 
 ---
 
