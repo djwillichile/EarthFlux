@@ -24,15 +24,15 @@ reference:
   - subtitle: Net radiation
     contents:
       - ef_net_radiation
+  - subtitle: Soil heat flux
+    contents:
+      - ef_g
   - subtitle: Latent heat and evapotranspiration
     contents:
       - ef_latent_heat
       - ef_et_inst
       - ef_etrf
       - ef_et_daily
-  - subtitle: Soil heat flux
-    contents:
-      - ef_g
   - title: Shared physical quantities
     desc: >
       Atmospheric and thermodynamic quantities used by several modules
