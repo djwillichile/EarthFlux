@@ -14,7 +14,8 @@ Description: Tools for estimating spatially distributed actual
     analysis. It is under active development and its methods have not yet
     been scientifically validated.
 License: MIT + file LICENSE
-URL: https://github.com/djwillichile/EarthFlux
+URL: https://github.com/djwillichile/EarthFlux,
+    https://djwillichile.github.io/EarthFlux/
 BugReports: https://github.com/djwillichile/EarthFlux/issues
 Depends:
     R (>= 4.1.0)
