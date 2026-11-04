@@ -21,6 +21,10 @@ No scientific result has been validated yet.
   diagnostics, validation and API modules.
 * Internal infrastructure for classed conditions and diagnostic flags:
   results are flagged, never silently corrected.
+* Physical constants (Kelvin offset, Stefan-Boltzmann constant, solar
+  constant, von Karman constant, gravity, specific heat of air, density of
+  water and the FAO-56 latent heat of vaporization) are defined once, with
+  their unit, source and verification status.
 
 ## Documentation
 
