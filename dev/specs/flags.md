@@ -586,7 +586,7 @@ según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_ET_NEGATIVE` | `EF_ET_NEGATIVE`, `EF_LE_NEGATIVE` | fusión (C1) | I (registrado) | warning | cell | 1 | Se evalúa sobre cada capa (ET_inst, ETa_24, ET_per): con ETr_24 = 0 pueden diferir |
+| `EF_ET_NEGATIVE` | `EF_ET_NEGATIVE`, `EF_LE_NEGATIVE` | fusión (C1) | I (registrado; levantado por `ef_diagnose_et()` desde M2, test en `test-et.R`) | warning | cell | 1 | Se evalúa sobre cada capa (ET_inst, ETa_24, ET_per): con ETr_24 = 0 pueden diferir |
 | `EF_ET_PERIOD_EXTRAPOLATED` | `EF_ETRF_EXTRAPOLATED` | prefijo + renombre | I | warning | cell | 2 | Por defecto **error** si el período excede las fechas; flag solo con `extrapolation = "constant"` |
 | `EF_ET_PERIOD_SINGLE_DATE` | `EF_ETRF_SINGLE_DATE` | prefijo + renombre | I | warning | cell | 3 | Ídem |
 | `EF_ET_PERIOD_SPLINE_OVERSHOOT` | `EF_ETRF_SPLINE_OVERSHOOT` | prefijo + renombre | I | warning | cell | 4 | Solo con interpolación spline |
