@@ -160,6 +160,14 @@ Other spatial regionalization functions:
 \code{\link[=ef_gwr_diagnostics]{ef_gwr_diagnostics()}},
 \code{\link[=ef_gwr_fit]{ef_gwr_fit()}},
 \code{\link[=ef_gwr_predict]{ef_gwr_predict()}},
-\code{\link[=ef_gwr_search]{ef_gwr_search()}}
+\code{\link[=ef_gwr_search]{ef_gwr_search()}},
+\code{\link[=ef_method_gwr]{ef_method_gwr()}},
+\code{\link[=ef_method_idw]{ef_method_idw()}},
+\code{\link[=ef_method_ols]{ef_method_ols()}},
+\code{\link[=ef_method_station]{ef_method_station()}},
+\code{\link[=ef_predict_control]{ef_predict_control()}},
+\code{\link[=ef_regionalize]{ef_regionalize()}},
+\code{\link[=ef_regionalize_cv]{ef_regionalize_cv()}},
+\code{\link[=ef_spatial_folds]{ef_spatial_folds()}}
 }
 \concept{spatial regionalization functions}

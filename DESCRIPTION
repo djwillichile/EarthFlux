@@ -20,7 +20,10 @@ BugReports: https://github.com/djwillichile/EarthFlux/issues
 Depends:
     R (>= 4.1.0)
 Imports:
-    stats
+    future,
+    future.apply,
+    stats,
+    terra
 Suggests:
     GWmodel,
     knitr,
