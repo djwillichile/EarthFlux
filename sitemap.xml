@@ -37,7 +37,12 @@
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_homogeneity.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_lambda.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_method_gwr.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_method_idw.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_method_ols.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_method_station.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_predict_control.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_psychrometric.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_ra_daily.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_ra_period.html</loc></url>
@@ -45,6 +50,8 @@
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_regionalize.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_regionalize_cv.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_rl_in.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_rl_out.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.html</loc></url>
@@ -52,6 +59,7 @@
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_select_anchors.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_sensible_heat.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_solar_geometry.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_spatial_folds.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_station_qc.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_station_table.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.html</loc></url>

@@ -385,6 +385,60 @@ yet.
     `EF_GWR_GLOBAL_PREFERRED` (object) and `EF_GWR_STATION_EXCLUDED`
     (record).
 
+#### Spatial regionalization (orchestrator)
+
+- [`ef_regionalize()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize.md)
+  regionalizes one meteorological station variable over the working grid
+  for every target time and returns an `earthflux_surface`: the surface
+  (`SpatRaster`, one layer per target time, in memory or in a file), an
+  integer flag word per cell and target time with its bit table, the
+  fitted model of every target time, the station table (observed and
+  fitted values, residuals, leave-one-out residuals, exclusions with
+  their reason), flags and provenance. It projects the station
+  coordinates (WGS84) to the projected CRS of the grid, extracts the
+  covariates at the stations from the same rasters (or takes them from a
+  table), applies an explicit QC policy (`use_qc`, no default) and user
+  exclusions, and predicts exactly at every cell by blocks of raster
+  rows with `terra`; the block size never changes the result. It accepts
+  the regionalization input table or the result of
+  [`ef_station_qc()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_qc.md).
+- One interface for the configurations compared in the validation plan,
+  with no default for any scientific choice:
+  [`ef_method_gwr()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_gwr.md)
+  (C3: kernel, fixed or adaptive bandwidth, either given or selected by
+  AICc or CV for every fit),
+  [`ef_method_station()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_station.md)
+  (C1: representative station, optionally with an explicit lapse rate
+  for air temperature),
+  [`ef_method_ols()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_ols.md)
+  (C2: global regression on the same covariates) and
+  [`ef_method_idw()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_idw.md)
+  (C2: inverse distance weighting with a given power or one selected by
+  leave-one-out CV on a grid).
+  [`ef_predict_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_predict_control.md)
+  sets the block size, the output files and the write options.
+- Covariates derived from the surface state (LST, NDVI, …) must be
+  declared in `surface_covariates` (decision GW-07 is open, so there is
+  no default) and raise `EF_GWR_SURFACE_COVARIATE`.
+- [`ef_spatial_folds()`](https://djwillichile.github.io/EarthFlux/reference/ef_spatial_folds.md)
+  builds deterministic spatial block folds (square tiles of a given
+  side) and
+  [`ef_regionalize_cv()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize_cv.md)
+  returns the long table of out-of-fold predictions at the stations for
+  any method, re-selecting the GWR bandwidth (or the IDW power) inside
+  each fold by default; failed folds are reported, never dropped. The
+  same folds serve C1, C2 and C3.
+- Optional parallelism with `future.apply` over target times, raster
+  blocks and folds, only when the user has set a `future` plan;
+  EarthFlux never sets a plan or changes `terra` options. Results are
+  identical in sequential and parallel runs, and the execution plan is
+  recorded in the provenance.
+- Diagnostic flags registered for the orchestrator:
+  `EF_GWR_OUT_OF_DOMAIN` (cell, bit 6, critical: a prediction outside
+  the physical domain of the variable is kept and flagged, never
+  truncated), `EF_GWR_SURFACE_COVARIATE` and `EF_GWR_SINGLE_STATION`
+  (object).
+
 ### Changes
 
 - Modular source layout for the surface, forcing, spatial (GWR), METRIC,
@@ -410,6 +464,9 @@ yet.
 - `GWmodel` is suggested (not imported) as the cross-verification
   reference of the GWR core tests, which are skipped when it is not
   installed.
+- EarthFlux imports `terra` (raster input and output of the
+  regionalization) and `future` and `future.apply` (optional parallel
+  execution under the user’s plan, and its record in the provenance).
 
 ### Documentation
 

@@ -160,11 +160,41 @@ and standard.
 
 ## Spatial regionalization (GWR)
 
-Internal numeric core of geographically weighted regression used to
-regionalize meteorological station variables over the working grid:
-plain vectors and matrices in a projected CRS, with explicit kernel,
-bandwidth and criterion, auditable bandwidth profiles, prediction by
-blocks of rows and extrapolation flags.
+Regionalization of meteorological station variables over the working
+grid: an orchestrator that projects the stations, extracts the
+covariates and predicts by blocks with terra, the comparison
+configurations (representative station, global regression, inverse
+distance weighting) and geographically weighted regression with one
+common interface, the numeric GWR core (plain vectors and matrices in a
+projected CRS, explicit kernel, bandwidth and criterion, auditable
+bandwidth profiles, extrapolation flags) and spatial block
+cross-validation.
+
+### Regionalization
+
+One surface per variable and target time, with a flag word per cell, the
+fitted models, the station table and the provenance (including the
+execution plan).
+
+- [`ef_regionalize()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize.md)
+  : Regionalize a station variable over the working grid
+
+### Methods and control
+
+Configurations C1 (representative station), C2 (global regression,
+inverse distance weighting) and C3 (GWR), without defaults for the
+scientific choices, and the settings of the block prediction.
+
+- [`ef_method_gwr()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_gwr.md)
+  : Regionalization by geographically weighted regression (C3)
+- [`ef_method_station()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_station.md)
+  : Regionalization by a representative station (C1)
+- [`ef_method_ols()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_ols.md)
+  : Regionalization by global linear regression (C2)
+- [`ef_method_idw()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_idw.md)
+  : Regionalization by inverse distance weighting (C2)
+- [`ef_predict_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_predict_control.md)
+  : Control of the prediction of a regionalized surface
 
 ### Fit and bandwidth selection
 
@@ -181,6 +211,16 @@ blocks of rows and extrapolation flags.
   : Predict a geographically weighted regression at new locations
 - [`ef_gwr_diagnostics()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_diagnostics.md)
   : Diagnostics of a geographically weighted regression
+
+### Validation
+
+Deterministic spatial block folds and out-of-fold predictions at the
+stations, with the same folds for every method.
+
+- [`ef_spatial_folds()`](https://djwillichile.github.io/EarthFlux/reference/ef_spatial_folds.md)
+  : Spatial block folds of stations
+- [`ef_regionalize_cv()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize_cv.md)
+  : Cross-validate a regionalization at the stations
 
 ## Shared physical quantities
 

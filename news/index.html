@@ -102,6 +102,17 @@
 <li>Diagnostic flags registered for the GWR stage: <code>EF_GWR_EXTRAPOLATION_COVARIATE</code>, <code>EF_GWR_EXTRAPOLATION_LOCAL</code>, <code>EF_GWR_OUTSIDE_HULL</code>, <code>EF_GWR_FEW_NEIGHBOURS</code>, <code>EF_GWR_LOCAL_SINGULAR</code> (cell, bits 1-5), <code>EF_GWR_BW_AT_BOUND</code>, <code>EF_GWR_BW_MULTIMODAL</code>, <code>EF_GWR_AICC_UNDEFINED</code>, <code>EF_GWR_GLOBAL_PREFERRED</code> (object) and <code>EF_GWR_STATION_EXCLUDED</code> (record).</li>
 </ul></li>
 </ul></div>
+<div class="section level4">
+<h4 id="spatial-regionalization-orchestrator-0-0-0-9000">Spatial regionalization (orchestrator)<a class="anchor" aria-label="anchor" href="#spatial-regionalization-orchestrator-0-0-0-9000"></a></h4>
+<ul><li>
+<code><a href="../reference/ef_regionalize.html">ef_regionalize()</a></code> regionalizes one meteorological station variable over the working grid for every target time and returns an <code>earthflux_surface</code>: the surface (<code>SpatRaster</code>, one layer per target time, in memory or in a file), an integer flag word per cell and target time with its bit table, the fitted model of every target time, the station table (observed and fitted values, residuals, leave-one-out residuals, exclusions with their reason), flags and provenance. It projects the station coordinates (WGS84) to the projected CRS of the grid, extracts the covariates at the stations from the same rasters (or takes them from a table), applies an explicit QC policy (<code>use_qc</code>, no default) and user exclusions, and predicts exactly at every cell by blocks of raster rows with <code>terra</code>; the block size never changes the result. It accepts the regionalization input table or the result of <code><a href="../reference/ef_station_qc.html">ef_station_qc()</a></code>.</li>
+<li>One interface for the configurations compared in the validation plan, with no default for any scientific choice: <code><a href="../reference/ef_method_gwr.html">ef_method_gwr()</a></code> (C3: kernel, fixed or adaptive bandwidth, either given or selected by AICc or CV for every fit), <code><a href="../reference/ef_method_station.html">ef_method_station()</a></code> (C1: representative station, optionally with an explicit lapse rate for air temperature), <code><a href="../reference/ef_method_ols.html">ef_method_ols()</a></code> (C2: global regression on the same covariates) and <code><a href="../reference/ef_method_idw.html">ef_method_idw()</a></code> (C2: inverse distance weighting with a given power or one selected by leave-one-out CV on a grid). <code><a href="../reference/ef_predict_control.html">ef_predict_control()</a></code> sets the block size, the output files and the write options.</li>
+<li>Covariates derived from the surface state (LST, NDVI, …) must be declared in <code>surface_covariates</code> (decision GW-07 is open, so there is no default) and raise <code>EF_GWR_SURFACE_COVARIATE</code>.</li>
+<li>
+<code><a href="../reference/ef_spatial_folds.html">ef_spatial_folds()</a></code> builds deterministic spatial block folds (square tiles of a given side) and <code><a href="../reference/ef_regionalize_cv.html">ef_regionalize_cv()</a></code> returns the long table of out-of-fold predictions at the stations for any method, re-selecting the GWR bandwidth (or the IDW power) inside each fold by default; failed folds are reported, never dropped. The same folds serve C1, C2 and C3.</li>
+<li>Optional parallelism with <code>future.apply</code> over target times, raster blocks and folds, only when the user has set a <code>future</code> plan; EarthFlux never sets a plan or changes <code>terra</code> options. Results are identical in sequential and parallel runs, and the execution plan is recorded in the provenance.</li>
+<li>Diagnostic flags registered for the orchestrator: <code>EF_GWR_OUT_OF_DOMAIN</code> (cell, bit 6, critical: a prediction outside the physical domain of the variable is kept and flagged, never truncated), <code>EF_GWR_SURFACE_COVARIATE</code> and <code>EF_GWR_SINGLE_STATION</code> (object).</li>
+</ul></div>
 </div>
 <div class="section level3">
 <h3 id="changes-0-0-0-9000">Changes<a class="anchor" aria-label="anchor" href="#changes-0-0-0-9000"></a></h3>
@@ -114,6 +125,7 @@
 <li>An end-to-end test runs a synthetic scene through the whole METRIC core chain, from solar geometry to daily actual evapotranspiration.</li>
 <li>
 <code>GWmodel</code> is suggested (not imported) as the cross-verification reference of the GWR core tests, which are skipped when it is not installed.</li>
+<li>EarthFlux imports <code>terra</code> (raster input and output of the regionalization) and <code>future</code> and <code>future.apply</code> (optional parallel execution under the user’s plan, and its record in the provenance).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-0-0-0-9000">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-0-0-9000"></a></h3>
