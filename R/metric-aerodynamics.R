@@ -30,26 +30,7 @@
 
 # Internal helpers -----------------------------------------------------------------
 
-#' Check the numeric arguments of a core function
-#'
-#' Applies the common input contract of the numeric core: numeric type,
-#' length 1 or a common length (length 0 rejected) and identical `dim` for
-#' matrix or array arguments.
-#'
-#' TODO(shared): generic helper; candidate for `R/utils.R`.
-#'
-#' @param args Named list of arguments.
-#' @param call The call to report.
-#' @return The common length, invisibly.
-#' @noRd
-check_core_args <- function(args, call) {
-  for (nm in names(args)) {
-    check_numeric(args[[nm]], nm, call = call)
-  }
-  n <- check_common_length(args, call = call)
-  check_same_dim(args, n, call = call)
-  invisible(n)
-}
+# check_core_args() is defined in R/solar-geometry.R (shared core helper).
 
 #' Check a condition that involves several arguments
 #'

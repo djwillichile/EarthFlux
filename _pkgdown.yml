@@ -39,12 +39,6 @@ reference:
   - subtitle: Soil heat flux
     contents:
       - ef_g
-  - subtitle: Latent heat and evapotranspiration
-    contents:
-      - ef_latent_heat
-      - ef_et_inst
-      - ef_etrf
-      - ef_et_daily
   - subtitle: Aerodynamics and sensible heat
     desc: >
       Momentum roughness, wind at the blending height, friction velocity,
@@ -61,6 +55,12 @@ reference:
       - ef_sensible_heat
       - ef_h_control
       - ef_calibrate_h
+  - subtitle: Latent heat and evapotranspiration
+    contents:
+      - ef_latent_heat
+      - ef_et_inst
+      - ef_etrf
+      - ef_et_daily
   - title: Shared physical quantities
     desc: >
       Atmospheric and thermodynamic quantities used by several modules
