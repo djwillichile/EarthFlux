@@ -2,9 +2,9 @@
 #
 # What it does (dev/specs/modis-products.md section 12; decision MP-12):
 #   1. searches NASA CMR for the collection 6.1 granules of tile h12v12 that
-#      cover `scene_date`: MOD11A1 (LST, QC, view time) and MCD43A3 (albedo)
-#      of that day, and the MOD13A2 (NDVI, 16 days) and MCD15A2H (LAI,
-#      8 days) composites whose period contains it;
+#      cover `scene_date`: MOD11A1 (LST, QC, view time, band emissivities)
+#      and MCD43A3 (albedo) of that day, and the MOD13A2 (NDVI, 16 days)
+#      and MCD15A2H (LAI, 8 days) composites whose period contains it;
 #   2. downloads them from the LP DAAC cloud archive with a NASA Earthdata
 #      Login token read ONLY from the environment variable EARTHDATA_TOKEN;
 #   3. assembles the surface state with modis_surface_state() on the area of
@@ -12,14 +12,16 @@
 #      cauquenes-province.gpkg; data-raw/cauquenes-province.R), with the
 #      explicit options below;
 #   4. masks the cells outside the province and writes the physical layers
+#      (with the band 31/32 emissivities of MOD11A1, carried for option E1)
 #      and the flag words as compressed GeoTIFF (target: < 500 KB in all),
 #      plus the provenance (CSV and YAML) and the bit table of the flag
 #      words.
 #
-# What the author must provide:
-#   * `scene_date` below: a clear-sky summer day before 2020 (before the
-#     orbital drift of Terra), chosen with the data (MP-12). The script
-#     stops while it is NA.
+# Scene (decision MP-12, author's decision of 2026-11-04): 2019-02-15,
+#   Terra (MOD11A1), tile h12v12, tile cloud cover 3 %; a clear-sky summer
+#   day before the orbital drift of Terra (2020).
+#
+# What the person running it must provide:
 #   * EARTHDATA_TOKEN: a NASA Earthdata Login user token (generated at
 #     https://urs.earthdata.nasa.gov, "Generate Token"), in the environment:
 #       EARTHDATA_TOKEN=... Rscript data-raw/modis-example.R
@@ -37,10 +39,10 @@
 
 ## Parameters -------------------------------------------------------------------
 
-# UTC date of the scene (MP-12): clear-sky summer day before 2020, Terra.
-# To be chosen with the data, e.g. as.Date("2019-01-15") after checking the
-# MOD11A1 QC over the province.
-scene_date <- as.Date(NA)
+# UTC date of the scene (MP-12; author's decision of 2026-11-04): Terra
+# MOD11A1 of tile h12v12 with 3 % cloud cover, a clear-sky summer day
+# before 2020 (before the orbital drift of Terra).
+scene_date <- as.Date("2019-02-15")
 
 tile <- "h12v12"   # Cauquenes province lies inside this tile
 collection <- "061" # MP-13
@@ -60,7 +62,13 @@ surface_options <- list(
   resampling_method = "mean",              # MP-08
   min_valid_fraction = 1,                  # threshold TODO: only cells with
                                            #   every 500 m sub-cell valid
-  qa_policy = "flag"                       # MP-09 (provisional)
+  qa_policy = "flag",                      # MP-09 (provisional)
+  lai_nonveg = 0                           # MP-06, A-M4-6 (author, 2026-11-04;
+                                           #   CANDIDATA): LAI 0 in the
+                                           #   non-vegetated MCD15A2H classes
+                                           #   249-254, flagged
+                                           #   EF_SURF_LAI_ASSIGNED, so that
+                                           #   E3 gives 0.95 there instead of NA
 )
 
 size_limit <- 500 * 1024 # bytes, all files of the example together
@@ -73,10 +81,6 @@ if (!token_present) {
        "NASA Earthdata Login token and run:\n",
        "  EARTHDATA_TOKEN=<token> Rscript data-raw/modis-example.R",
        call. = FALSE)
-}
-if (is.na(scene_date)) {
-  stop("Set `scene_date` at the top of data-raw/modis-example.R: a ",
-       "clear-sky summer day before 2020 (decision MP-12).", call. = FALSE)
 }
 if (scene_date >= as.Date("2020-01-01") ||
     !as.integer(format(scene_date, "%m")) %in% c(12L, 1L, 2L, 3L)) {
@@ -251,6 +255,8 @@ written <- c(
   gtiff(st$ndvi, "ndvi.tif", "FLT4S", 3),
   gtiff(st$lai, "lai.tif", "FLT4S", 3),
   gtiff(st$emissivity, "emissivity.tif", "FLT4S", 3),
+  # band 31/32 emissivities of MOD11A1 (inputs of option E1, not used yet)
+  gtiff(st$band_emissivity, "band_emissivity.tif", "FLT4S", 3),
   gtiff(st$overpass_time$doy, "overpass_doy.tif", "INT2S", 2),
   gtiff(st$overpass_time$utc_hour, "overpass_utc_hour.tif", "FLT4S", 3),
   # flag words: NA outside the province = not evaluated (flags.md 6.3)
@@ -284,6 +290,7 @@ yml <- c(
   "dataset: EarthFlux MODIS example scene, Cauquenes province (Maule, Chile)",
   "synthetic: false",
   sprintf("scene_date_utc: %s", yaml_scalar(format(scene_date))),
+  "scene_selection: author's decision of 2026-11-04 (MP-12); Terra MOD11A1, tile h12v12 cloud cover 3 %, southern summer, before the orbital drift of Terra",
   sprintf("tile: %s", yaml_scalar(tile)),
   sprintf("collection: %s", yaml_scalar(collection)),
   sprintf("download_date: %s", yaml_scalar(format(download_date))),
@@ -317,6 +324,9 @@ yml <- c(
   sprintf("  resampling_method_%s: %s", names(methods$resampling_method),
           yaml_scalar(methods$resampling_method)),
   sprintf("  min_valid_fraction: %s", methods$min_valid_fraction),
+  if (is.null(methods$lai_nonveg)) "  lai_nonveg: null" else
+    sprintf("  lai_nonveg_%s: %s", names(methods$lai_nonveg),
+            methods$lai_nonveg),
   "status:",
   sprintf("  %s: %s", names(p$status), yaml_scalar(p$status)),
   "versions:",
@@ -326,10 +336,11 @@ yml <- c(
   "  albedo.tif: broadband shortwave albedo [-]",
   "  ndvi.tif: NDVI [-]",
   "  lai.tif: leaf area index [m2 m-2]",
-  "  emissivity.tif: broadband surface emissivity [-]",
+  "  emissivity.tif: broadband surface emissivity [-] (E3 from LAI; 0.95 where the LAI of a non-vegetated class was set to 0, flag EF_SURF_LAI_ASSIGNED)",
+  "  band_emissivity.tif: MOD11A1 band 31 and band 32 emissivities (layers emis_31, emis_32) [-]; carried for option E1, not used",
   "  overpass_doy.tif: day of year of the UTC date [-]",
   "  overpass_utc_hour.tif: UTC hour of the overpass [h]",
-  "  flags.tif: flag words (INT4S), one layer per output; bits in flag_bits.csv",
+  "  flags.tif: flag words (INT4S), one layer per output (flags_lst, flags_overpass_time, flags_albedo, flags_ndvi, flags_lai, flags_emissivity, flags_emis_31, flags_emis_32); bits in flag_bits.csv",
   "  valid_fraction.tif: fraction of valid 500 m sub-cells of each aggregated input [-]",
   "  ndvi_lag_days.tif: LST date minus composite day of the NDVI pixel [days]",
   "license: MODIS data are shared openly without restriction (EOSDIS Data Use and Citation Guidance); citation requirements for redistribution TODO (modis-products.md section 16, item 20)"
