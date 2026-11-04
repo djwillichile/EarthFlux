@@ -122,7 +122,11 @@ nombre se mantiene.
 | `ef_sensible_heat()` | 16 | = | 16 | Nombre de la cadena principal |
 | `ef_calibrate_sensible_heat()` | 26 | **`ef_calibrate_h()`** | 14 | Coherente con la clase `earthflux_h_calibration` |
 | `ef_sensible_heat_control()` | 24 | **`ef_h_control()`** | 12 | Objeto de control, como `glm.control()` |
-| `ef_roughness_length()` | 19 | **`ef_zom()`** | 6 | Símbolo z_om de METRIC |
+| `ef_roughness_length()` | 19 | **`ef_zom()`** | 6 | Símbolo z_om de METRIC; despachador (N6) |
+| — | — | **`ef_zom_lai()`** | 10 | Método de `ef_zom()`: 0.018·LAI (agregado al implementar, §6.4) |
+| — | — | **`ef_zom_ndvi()`** | 11 | Método de `ef_zom()`: exp(c₁·NDVI/α + c₂) ("custom" en `water`) |
+| — | — | **`ef_zom_perrier()`** | 14 | Método de `ef_zom()`: Perrier |
+| — | — | **`ef_zom_height()`** | 13 | Método de `ef_zom()`: 0.123·h (FAO-56, Recuadro 4) |
 | `ef_friction_velocity()` | 20 | **`ef_ustar()`** | 8 | Símbolo u* |
 | `ef_aerodynamic_resistance()` | 25 | **`ef_rah()`** | 6 | Símbolo r_ah |
 | `ef_blending_wind()` | 16 | = | 16 |  |

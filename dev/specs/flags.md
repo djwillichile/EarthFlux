@@ -571,14 +571,14 @@ según §7.
 | `EF_H_ZOM_FLOOR_APPLIED` | `EF_ZOM_FLOOR_APPLIED` | prefijo | I-m | info | cell | 1 | Mínimo 0.005 m no verificado (SH-02): no se registra antes de verificarlo |
 | `EF_H_ZOM_TERRAIN_ADJUSTED` | `EF_ZOM_TERRAIN_ADJUSTED` | prefijo | I | info | cell | 2 | Solo con el método de terreno |
 | `EF_H_WIND_FLOOR_APPLIED` | `EF_WIND_FLOOR_APPLIED` | prefijo + orden | I | warning | cell, object | 3 | Solo si SH-06 admite el piso; valor del usuario en la procedencia |
-| `EF_H_USTAR_INVALID` | `EF_USTAR_INVALID` | prefijo | I | warning | cell | 4 | En un ancla: `earthflux_calibration_error` |
-| `EF_H_PIXEL_NOT_CONVERGED` | ídem | — | I | warning | cell | 5 | – |
-| `EF_H_DT_EXTRAPOLATED_HOT` | `EF_DT_EXTRAPOLATED_HOT` | prefijo | I | info | cell | 6 | – |
-| `EF_H_DT_EXTRAPOLATED_COLD` | `EF_DT_EXTRAPOLATED_COLD` | prefijo | I | info | cell | 7 | – |
-| `EF_H_NEGATIVE` | `EF_DT_NEGATIVE`, `EF_LE_EXCEEDS_AVAILABLE` | fusión (C2) | I | info | cell | 8 | – |
-| `EF_H_GT_AVAILABLE` | `EF_H_EXCEEDS_AVAILABLE` | renombre (vocabulario) | I | warning | cell | 9 | Causa de `EF_ET_NEGATIVE` cuando Rn − G > 0 |
-| `EF_H_CALIBRATION_NOT_CONVERGED` | `EF_H_NOT_CONVERGED` | renombre (C11) | I | critical* | object | — | Además `earthflux_convergence_warning`; a, b o u* no finitos en un ancla: `earthflux_calibration_error` |
-| `EF_H_DT_SLOPE_NONPOSITIVE` | `EF_DT_SLOPE_NONPOSITIVE` | prefijo | I | critical* | object | — | Ts_hot ≤ Ts_cold: error (anclas invertidas / b indefinida) |
+| `EF_H_USTAR_INVALID` | `EF_USTAR_INVALID` | prefijo | I (registrado) | warning | cell | 4 | En un ancla: `earthflux_calibration_error` |
+| `EF_H_PIXEL_NOT_CONVERGED` | ídem | — | I (registrado) | warning | cell | 5 | – |
+| `EF_H_DT_EXTRAPOLATED_HOT` | `EF_DT_EXTRAPOLATED_HOT` | prefijo | I (registrado) | info | cell | 6 | – |
+| `EF_H_DT_EXTRAPOLATED_COLD` | `EF_DT_EXTRAPOLATED_COLD` | prefijo | I (registrado) | info | cell | 7 | – |
+| `EF_H_NEGATIVE` | `EF_DT_NEGATIVE`, `EF_LE_EXCEEDS_AVAILABLE` | fusión (C2) | I (registrado) | info | cell | 8 | – |
+| `EF_H_GT_AVAILABLE` | `EF_H_EXCEEDS_AVAILABLE` | renombre (vocabulario) | I (registrado) | warning | cell | 9 | Causa de `EF_ET_NEGATIVE` cuando Rn − G > 0 |
+| `EF_H_CALIBRATION_NOT_CONVERGED` | `EF_H_NOT_CONVERGED` | renombre (C11) | I (registrado) | critical* | object | — | Además `earthflux_convergence_warning`; a, b o u* no finitos en un ancla: `earthflux_calibration_error` |
+| `EF_H_DT_SLOPE_NONPOSITIVE` | `EF_DT_SLOPE_NONPOSITIVE` | prefijo | I (registrado) | critical* | object | — | Ts_hot ≤ Ts_cold: error (anclas invertidas / b indefinida) |
 | `EF_H_WIND_LOW` | `EF_LOW_WIND` | prefijo + orden | II | warning | cell, object | libre | u_b = 0 en un ancla: `earthflux_calibration_error` |
 | `EF_H_STABILITY_STRONG` | `EF_STRONGLY_STABLE` | prefijo + orden | II | warning | cell | libre | `TODO` |
 
