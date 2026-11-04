@@ -25,9 +25,9 @@ flag_of <- function(x, code) {
 }
 
 station_codes <- c("EF_WS_OUT_OF_DOMAIN", "EF_WS_TMIN_GT_TMAX",
-                   "EF_WS_RH_GT100", "EF_WS_TDEW_GT_TAIR", "EF_WS_TIME_GAP",
-                   "EF_WS_TIME_IRREGULAR", "EF_WS_HEIGHT_MISSING",
-                   "EF_WS_HEIGHT_NONSTANDARD")
+                   "EF_WS_RH_GT100", "EF_WS_TDEW_GT_TAIR", "EF_WS_RS_GT_RA",
+                   "EF_WS_TIME_GAP", "EF_WS_TIME_IRREGULAR",
+                   "EF_WS_HEIGHT_MISSING", "EF_WS_HEIGHT_NONSTANDARD")
 
 # Registry ---------------------------------------------------------------------
 
@@ -56,9 +56,13 @@ test_that("class II station codes and not-evaluated codes stay unregistered", {
   class_ii <- ne$code[grepl("^class II", ne$reason)]
   expect_length(class_ii, 13L)
   expect_identical(intersect(class_ii, reg$code), character(0))
-  # Class I codes not raised by this module are not registered here either.
-  expect_false(any(c("EF_WS_RS_GT_RA", "EF_WS_INCOMPLETE_DAY") %in%
-                     ef_flags_stations()$code))
+  # QC-10 belongs to the daily sums of ef_station_ref_et(): registered by
+  # the reference ET stage, listed here as not evaluated by the QC.
+  expect_false("EF_WS_INCOMPLETE_DAY" %in% ef_flags_stations()$code)
+  expect_true("EF_WS_INCOMPLETE_DAY" %in% ef_flags_reference_et()$code)
+  expect_match(ne$reason[ne$code == "EF_WS_INCOMPLETE_DAY"],
+               "ef_station_ref_et", fixed = TRUE)
+  expect_false("EF_WS_RS_GT_RA" %in% ne$code)
 })
 
 # Principle: mark, never modify ------------------------------------------------
@@ -87,7 +91,7 @@ test_that("clean data raise no flag but record the codes evaluated", {
   expect_identical(nrow(qc$qc), 0L)
   expect_identical(qc$provenance$flags_evaluated,
                    c("EF_WS_OUT_OF_DOMAIN", "EF_WS_RH_GT100",
-                     "EF_WS_TDEW_GT_TAIR", "EF_WS_TIME_GAP",
+                     "EF_WS_TDEW_GT_TAIR", "EF_WS_RS_GT_RA", "EF_WS_TIME_GAP",
                      "EF_WS_TIME_IRREGULAR", "EF_WS_HEIGHT_MISSING",
                      "EF_WS_HEIGHT_NONSTANDARD"))
   # No daily fields: EF_WS_TMIN_GT_TMAX is not evaluated.
@@ -193,6 +197,155 @@ test_that("EF_WS_TDEW_GT_TAIR flags Tdew > T without tolerance", {
   # Not evaluated without both variables.
   qc_t <- ef_station_qc(syn_single(air_temperature = 20))
   expect_false("EF_WS_TDEW_GT_TAIR" %in% qc_t$provenance$flags_evaluated)
+})
+
+test_that("EF_WS_TDEW_GT_TAIR flags vapour pressure above e0(T)", {
+  # Variant of QC-04 with the observed vapour pressure: ea > e0(T), FAO-56
+  # Eq. 11 through ef_es(); e0(20) = 2.3389 kPa.
+  es20 <- ef_es(20)
+  qc <- ef_station_qc(syn_single(air_temperature = c(20, 20, NA, 20),
+                                 vapour_pressure = c(es20, 2.4, 3, 1.2)))
+  expect_identical(qc_rows(qc, "EF_WS_TDEW_GT_TAIR", "vapour_pressure"), 2L)
+  expect_identical(qc_rows(qc, "EF_WS_TDEW_GT_TAIR", "air_temperature"), 2L)
+  rows <- qc$qc[qc$qc$flag_code == "EF_WS_TDEW_GT_TAIR", ]
+  expect_identical(rows$test_id, c("QC-04", "QC-04"))
+  # Threshold: e0(T) for the vapour pressure, the dew point of ea for T.
+  expect_equal(rows$threshold[rows$variable == "vapour_pressure"], es20,
+               tolerance = 1e-12)
+  expect_equal(rows$threshold[rows$variable == "air_temperature"],
+               ef_dewpoint(2.4), tolerance = 1e-12)
+  expect_gt(ef_dewpoint(2.4), 20)
+  expect_identical(as.character(qc$qc_status$vapour_pressure),
+                   c("ok", "warning", "ok", "ok"))
+  # Negative case: ea <= e0(T) everywhere; evaluated and absent.
+  qc_ok <- ef_station_qc(syn_single(air_temperature = c(20, 25),
+                                    vapour_pressure = c(es20, 1)))
+  expect_null(flag_of(qc_ok, "EF_WS_TDEW_GT_TAIR"))
+  expect_true("EF_WS_TDEW_GT_TAIR" %in% qc_ok$provenance$flags_evaluated)
+  # Not evaluated without the air temperature.
+  qc_e <- ef_station_qc(syn_single(vapour_pressure = c(1, 5)))
+  expect_false("EF_WS_TDEW_GT_TAIR" %in% qc_e$provenance$flags_evaluated)
+})
+
+test_that("both QC-04 variants flag the air temperature once per record", {
+  qc <- ef_station_qc(syn_single(air_temperature = c(20, 20),
+                                 dewpoint_temperature = c(21, 10),
+                                 vapour_pressure = c(2.6, 1)))
+  rows <- qc$qc[qc$qc$flag_code == "EF_WS_TDEW_GT_TAIR", ]
+  expect_identical(sort(rows$variable),
+                   c("air_temperature", "dewpoint_temperature",
+                     "vapour_pressure"))
+  expect_identical(rows$row, c(1L, 1L, 1L))
+  # The air temperature row is the one of the dew point variant.
+  expect_identical(rows$threshold[rows$variable == "air_temperature"], 21)
+  expect_identical(flag_of(qc, "EF_WS_TDEW_GT_TAIR")$index, 1L)
+})
+
+# QC-05b: solar radiation above the extraterrestrial radiation (class I) -------
+
+test_that("station_ra_window() is the sunlit integral of FAO-56 Eq. 28", {
+  lat <- -35.4 * pi / 180
+  lon <- -71.5 * pi / 180
+  mids <- as.POSIXct("2024-01-15 00:30", tz = "UTC") + 3600 * (0:23)
+  ra <- station_ra_window(lat, lon, mids, 3600)
+  ra_mid <- ef_ra_period(lat, lon, 15, 0.5 + 0:23, 1)
+  # Away from sunrise and sunset it is ef_ra_period(); at the sunrise hour
+  # (mid-point 09:30 UTC below the horizon) the window still has sun.
+  inner <- 11:23
+  expect_equal(ra[inner], ra_mid[inner], tolerance = 1e-12)
+  expect_identical(ra_mid[10], 0)
+  expect_gt(ra[10], 0)
+  expect_true(all(ra >= ra_mid - 1e-12))
+  expect_identical(ra[1:9], rep(0, 9))
+  # The 24 hourly windows of one day add up to the daily Ra (Eq. 21), and a
+  # 24 h window is Eq. 21 itself.
+  expect_equal(sum(ra), ef_ra_daily(lat, 15), tolerance = 1e-10)
+  expect_equal(station_ra_window(lat, lon, mids[13], 86400),
+               ef_ra_daily(lat, 15), tolerance = 1e-10)
+  # Polar day: a window around midnight crosses omega = +-pi.
+  polar <- station_ra_window(80 * pi / 180, 0,
+                             as.POSIXct("2024-06-21 00:00", tz = "UTC"),
+                             3600)
+  expect_gt(polar, 0)
+})
+
+test_that("EF_WS_RS_GT_RA flags Rs above Ra of the record window", {
+  # ST01 (35.4 S, 71.5 W), 15 January; hours ending 13:00-15:00 UTC.
+  lat <- -35.4 * pi / 180
+  lon <- -71.5 * pi / 180
+  ra_mean <- ef_ra_period(lat, lon, 15, c(12.5, 13.5, 14.5), 1) * 1e6 / 3600
+  rs <- c(floor(ra_mean[1]), ceiling(ra_mean[2]), NA)
+  qc <- ef_station_qc(syn_single(solar_radiation = rs))
+  expect_identical(qc_rows(qc, "EF_WS_RS_GT_RA", "solar_radiation"), 2L)
+  row <- qc$qc[qc$qc$flag_code == "EF_WS_RS_GT_RA", ]
+  expect_identical(row$test_id, "QC-05b")
+  expect_identical(row$value, rs[2])
+  expect_equal(row$threshold, ra_mean[2], tolerance = 1e-12)
+  f <- flag_of(qc, "EF_WS_RS_GT_RA")
+  expect_identical(f$severity, "warning")
+  expect_identical(f$index, 2L)
+  expect_identical(as.character(qc$qc_status$solar_radiation),
+                   c("ok", "warning", "ok"))
+  # Negative case: the synthetic clean data.
+  qc_ok <- ef_station_qc(syn_table())
+  expect_null(flag_of(qc_ok, "EF_WS_RS_GT_RA"))
+  expect_true("EF_WS_RS_GT_RA" %in% qc_ok$provenance$flags_evaluated)
+})
+
+test_that("EF_WS_RS_GT_RA uses the sunlit window and skips night windows", {
+  times <- as.POSIXct("2024-01-15 03:00", tz = "UTC") + 3600 * c(0, 7)
+  # 02:00-03:00 UTC: night (Ra = 0), a sensor offset is not tested here
+  # (QC-05d, class II). 09:00-10:00 UTC: sunrise inside the hour, mid-point
+  # below the horizon; Ra of the window is about 2.9 W m-2.
+  ra_sunrise <- station_ra_window(-35.4 * pi / 180, -71.5 * pi / 180,
+                                  times[2] - 1800, 3600) * 1e6 / 3600
+  expect_gt(ra_sunrise, 2)
+  expect_lt(ra_sunrise, 4)
+  qc <- ef_station_qc(syn_single(solar_radiation = c(3, 2),
+                                 timestamp = times))
+  expect_null(flag_of(qc, "EF_WS_RS_GT_RA"))
+  qc2 <- ef_station_qc(syn_single(solar_radiation = c(3, 5),
+                                  timestamp = times))
+  expect_identical(qc_rows(qc2, "EF_WS_RS_GT_RA"), 2L)
+})
+
+test_that("EF_WS_RS_GT_RA compares daily means with the daily Ra", {
+  ra_mean <- ef_ra_daily(-35.4 * pi / 180, 15:16) * 1e6 / 86400
+  qc <- ef_station_qc(syn_single(
+    solar_radiation = c(ra_mean[1] - 1, ra_mean[2] + 1),
+    timestamp = as.POSIXct("2024-01-15", tz = "UTC") + 86400 * 0:1,
+    provenance = syn_provenance(timestamp_convention = "start",
+                                interval = 86400)
+  ))
+  expect_identical(qc_rows(qc, "EF_WS_RS_GT_RA"), 2L)
+  # A 24 h window centred on the mid-point (12:00 UTC) covers one full turn
+  # of the hour angle: its integral is Eq. 21 for the day of the mid-point.
+  expect_equal(qc$qc$threshold, ra_mean[2], tolerance = 1e-10)
+})
+
+test_that("EF_WS_RS_GT_RA is not evaluated for instantaneous values", {
+  qc <- ef_station_qc(syn_single(
+    solar_radiation = c(2000, 2000, 2000),
+    provenance = syn_provenance(timestamp_convention = "instant")
+  ))
+  expect_false("EF_WS_RS_GT_RA" %in% qc$provenance$flags_evaluated)
+  ne <- qc$provenance$qc$not_evaluated
+  expect_true("EF_WS_RS_GT_RA" %in% ne$code)
+  expect_match(ne$reason[ne$code == "EF_WS_RS_GT_RA"], "period means")
+  # Without solar radiation it is simply not applicable.
+  qc_t <- ef_station_qc(syn_single(air_temperature = 20))
+  expect_false("EF_WS_RS_GT_RA" %in% qc_t$provenance$qc$not_evaluated$code)
+})
+
+test_that("negative solar radiation and precipitation are out of domain", {
+  qc <- ef_station_qc(syn_single(solar_radiation = c(-0.5, 0, 300),
+                                 precipitation = c(0, -1, 2)))
+  expect_identical(qc_rows(qc, "EF_WS_OUT_OF_DOMAIN", "solar_radiation"), 1L)
+  expect_identical(qc_rows(qc, "EF_WS_OUT_OF_DOMAIN", "precipitation"), 2L)
+  expect_identical(as.character(qc$qc_status$solar_radiation),
+                   c("excluded", "ok", "ok"))
+  # Excluded, never modified.
+  expect_identical(qc$observations$solar_radiation[1L], -0.5)
 })
 
 # QC-09: time integrity (class I) ----------------------------------------------
@@ -379,7 +532,9 @@ test_that("exclusions are counted in the provenance", {
   ne <- p$qc$not_evaluated
   expect_named(ne, c("code", "test_id", "reason"))
   expect_true(all(c("EF_WS_IMPLAUSIBLE", "EF_WS_PERSISTENCE",
-                    "EF_WS_RS_GT_RA") %in% ne$code))
+                    "EF_WS_INCOMPLETE_DAY") %in% ne$code))
+  # Evaluated here: no longer listed as not evaluated.
+  expect_false("EF_WS_RS_GT_RA" %in% ne$code)
 })
 
 test_that("ef_station_qc() can be rerun and checks its input", {
