@@ -39,6 +39,22 @@ reference:
   - subtitle: Soil heat flux
     contents:
       - ef_g
+  - subtitle: Aerodynamics and sensible heat
+    desc: >
+      Momentum roughness, wind at the blending height, friction velocity,
+      aerodynamic resistance, air density, dT calibration from the anchor
+      pixels and sensible heat flux.
+    contents:
+      - ef_zom
+      - ef_blending_wind
+      - ef_ustar
+      - ef_rah
+      - ef_air_density
+      - ef_ts_datum
+      - ef_dt_coef
+      - ef_sensible_heat
+      - ef_h_control
+      - ef_calibrate_h
   - subtitle: Latent heat and evapotranspiration
     contents:
       - ef_latent_heat
