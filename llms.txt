@@ -164,6 +164,37 @@ inputs of the net radiation.
   [`ef_g_tasumi()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)
   : Soil heat flux
 
+### Aerodynamics and sensible heat
+
+Momentum roughness, wind at the blending height, friction velocity,
+aerodynamic resistance, air density, dT calibration from the anchor
+pixels and sensible heat flux.
+
+- [`ef_zom()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md)
+  [`ef_zom_lai()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md)
+  [`ef_zom_ndvi()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md)
+  [`ef_zom_perrier()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md)
+  [`ef_zom_height()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md)
+  : Momentum roughness length
+- [`ef_blending_wind()`](https://djwillichile.github.io/EarthFlux/reference/ef_blending_wind.md)
+  : Wind speed at the blending height
+- [`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md)
+  : Friction velocity
+- [`ef_rah()`](https://djwillichile.github.io/EarthFlux/reference/ef_rah.md)
+  : Aerodynamic resistance to heat transport
+- [`ef_air_density()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_density.md)
+  : Air density
+- [`ef_ts_datum()`](https://djwillichile.github.io/EarthFlux/reference/ef_ts_datum.md)
+  : Surface temperature referred to an elevation datum
+- [`ef_dt_coef()`](https://djwillichile.github.io/EarthFlux/reference/ef_dt_coef.md)
+  : Coefficients of the near-surface temperature difference
+- [`ef_sensible_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_sensible_heat.md)
+  : Sensible heat flux
+- [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
+  : Control parameters of the sensible heat flux calibration
+- [`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md)
+  : Calibrate the sensible heat flux from the anchor pixels
+
 ### Latent heat and evapotranspiration
 
 - [`ef_latent_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat.md)

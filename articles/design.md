@@ -81,11 +81,11 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| `ef_zom()` | Momentum roughness length | Planned; candidate |
-| `ef_ustar()`, `ef_rah()` | Friction velocity and aerodynamic resistance with stability correction | Planned; candidate |
-| `ef_air_density()` | Air density | Planned; candidate |
-| `ef_dt_coef()` | Calibration of the near-surface temperature difference from the anchors | Planned; candidate |
-| `ef_sensible_heat()` | Sensible heat flux | Planned; candidate |
+| [`ef_zom()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md) | Momentum roughness length | Planned; candidate |
+| [`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md), [`ef_rah()`](https://djwillichile.github.io/EarthFlux/reference/ef_rah.md) | Friction velocity and aerodynamic resistance with stability correction | Planned; candidate |
+| [`ef_air_density()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_density.md) | Air density | Planned; candidate |
+| [`ef_dt_coef()`](https://djwillichile.github.io/EarthFlux/reference/ef_dt_coef.md) | Calibration of the near-surface temperature difference from the anchors | Planned; candidate |
+| [`ef_sensible_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_sensible_heat.md) | Sensible heat flux | Planned; candidate |
 
 Specification:
 [sensible-heat.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/sensible-heat.md).

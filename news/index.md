@@ -110,6 +110,59 @@ No scientific result has been validated yet.
   references is pending. Impossible inputs raise classed errors; values
   of G are never truncated.
 
+- Aerodynamics of the METRIC sensible heat flux:
+  [`ef_zom()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md)
+  dispatches, with an explicit `method` and no default, to the momentum
+  roughness length methods
+  [`ef_zom_lai()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md),
+  [`ef_zom_ndvi()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md),
+  [`ef_zom_perrier()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md)
+  and
+  [`ef_zom_height()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md);
+  [`ef_blending_wind()`](https://djwillichile.github.io/EarthFlux/reference/ef_blending_wind.md)
+  extrapolates the station wind to the blending height;
+  [`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md)
+  and
+  [`ef_rah()`](https://djwillichile.github.io/EarthFlux/reference/ef_rah.md)
+  compute the friction velocity and the aerodynamic resistance to heat
+  transport, with optional stability corrections. No minimum roughness,
+  terrain factor or wind floor is applied (not verified). All forms are
+  `CANDIDATA`; the heights (blending height, z1, z2) and the station
+  roughness have no defaults.
+
+- [`ef_air_density()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_density.md)
+  (FAO-56 form, temperature in K),
+  [`ef_ts_datum()`](https://djwillichile.github.io/EarthFlux/reference/ef_ts_datum.md)
+  (surface temperature referred to an elevation datum),
+  [`ef_dt_coef()`](https://djwillichile.github.io/EarthFlux/reference/ef_dt_coef.md)
+  (coefficients of dT = a + b Ts_datum from the hot and cold anchors)
+  and
+  [`ef_sensible_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_sensible_heat.md)
+  (H = rho cp dT / rah).
+
+- [`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md)
+  calibrates dT from one calibration point per anchor class, iterating
+  the aerodynamic resistance with the Monin-Obukhov stability correction
+  at the anchors (phase A, with a closure so that the anchors reproduce
+  their target H exactly) and, optionally, per pixel with the calibrated
+  coefficients (phase B). It returns an `earthflux_h_calibration` object
+  with the coefficients, the convergence trace, the anchor state, the
+  pixel results and diagnostic flags. Non-convergence returns the last
+  iterate with an `earthflux_convergence_warning` and the critical flag
+  `EF_H_CALIBRATION_NOT_CONVERGED`; invalid anchor states raise
+  `earthflux_calibration_error`.
+  [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
+  sets the convergence settings (`tol = 0.01`, `maxit = 20`,
+  `damping = 0`) and requires the height of the stable momentum
+  correction, `stable_psi_m_height`, because that choice is still open
+  (decision SH-11).
+
+- New diagnostic flags of the sensible heat stage: `EF_H_USTAR_INVALID`,
+  `EF_H_PIXEL_NOT_CONVERGED`, `EF_H_DT_EXTRAPOLATED_HOT`,
+  `EF_H_DT_EXTRAPOLATED_COLD`, `EF_H_NEGATIVE`, `EF_H_GT_AVAILABLE`
+  (cell) and `EF_H_CALIBRATION_NOT_CONVERGED`,
+  `EF_H_DT_SLOPE_NONPOSITIVE` (object, critical).
+
 ### Changes
 
 - Modular source layout for the surface, forcing, spatial (GWR), METRIC,
