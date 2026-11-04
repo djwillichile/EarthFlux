@@ -96,6 +96,28 @@ git config user.email "32119499+djwillichile@users.noreply.github.com"
 4. Fusión (preferir *squash* o *rebase* para historia limpia).
 5. La rama se elimina automáticamente (2.3).
 
+## 2.6 Documentación automática
+
+| Elemento | Fuente de verdad | Automatización |
+|---|---|---|
+| Referencia de funciones (`man/`, `NAMESPACE`) | Bloques roxygen2 en `R/` | Workflow `document.yaml`: regenera con roxygen2 **8.1.1** (versión fijada) y falla si hay diferencias. No hace commits: se regenera localmente con `devtools::document()` |
+| Sitio web | `README`, `man/`, vignettes, `NEWS.md`, `_pkgdown.yml` | Workflow `pkgdown.yaml`: construye y publica en `gh-pages` en cada push a `main` |
+| About de GitHub (descripción, website, topics) | `DESCRIPTION`: `Title`, `URL`, `Config/github/topics` | Workflow `about.yaml` en cada cambio de `DESCRIPTION` en `main`; también activa Pages y el borrado automático de ramas fusionadas |
+
+Configuración única de `about.yaml` (requisito de GitHub: el `GITHUB_TOKEN`
+por defecto no puede modificar ajustes del repositorio):
+
+1. Crear un *fine-grained personal access token* limitado al repositorio
+   `EarthFlux`, con permisos *Administration: Read and write* y
+   *Pages: Read and write*.
+2. Guardarlo como secret del repositorio con el nombre `ABOUT_TOKEN`
+   (*Settings → Secrets and variables → Actions*).
+3. Ejecutar el workflow una vez desde *Actions → about.yaml → Run workflow*.
+
+Sin el secret, el workflow se omite con un aviso y no falla. Para actualizar
+roxygen2, cambiar la versión fijada en `document.yaml` y regenerar
+localmente con la misma versión.
+
 ## 3. Definition of Done para funciones científicas
 
 Una función científica solo se implementa cuando existe, en
