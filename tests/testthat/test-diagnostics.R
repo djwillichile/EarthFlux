@@ -4,7 +4,10 @@
 # need a raster backend or a bit-word view (R12, R13, R16) and the list of
 # retired codes (R14) are added with the code that introduces them.
 
-reg <- ef_flag_registry()
+# The registry tests run on a fresh, uncached build, so that the cross-row
+# checks of ef_flag_registry_build() are exercised on the current stage
+# functions; ef_flag() reads the cached copy (ef_flag_registry()).
+reg <- ef_flag_registry_build()
 
 # Class II codes (dev/specs/flags.md section 4.2): they need a threshold
 # with a documented reference and must not be registered (section 7, point 7;
@@ -109,9 +112,43 @@ test_that("R17: descriptions are one sentence ending with a period", {
   expect_true(all(nzchar(reg$spec) & nzchar(reg$since)))
 })
 
+test_that("the cached registry is identical to a fresh build", {
+  expect_identical(ef_flag_registry(), reg)
+  expect_identical(ef_flag_registry(), ef_flag_registry())
+  cached <- get("registry", envir = ef_registry_cache)
+  expect_identical(cached, reg)
+})
+
+test_that("the registry build rejects duplicated codes and bit clashes", {
+  err <- "earthflux_registry_error"
+  et_rows <- ef_flags_et()
+  local({
+    testthat::local_mocked_bindings(ef_flags_et = function() {
+      rbind(et_rows, ef_flags_core())
+    })
+    expect_error(ef_flag_registry_build(), "duplicated: EF_INPUT_NA",
+                 class = err)
+  })
+  local({
+    clash <- ef_flag_rows(
+      code = "EF_ET_TEST_CLASH", stage = "ET", severity = "info",
+      scope = "cell", bit = et_rows$bit[1L], error_class = NA_character_,
+      description = "A test condition holds.",
+      spec = "dev/specs/flags.md 4.2", since = "0.0.0.9000"
+    )
+    testthat::local_mocked_bindings(ef_flags_et = function() {
+      rbind(et_rows, clash)
+    })
+    expect_error(ef_flag_registry_build(), "clash", class = err)
+  })
+  # the cache is not affected by a rebuild
+  expect_identical(ef_flag_registry(), reg)
+})
+
 test_that("every stage function returns registry rows", {
   stage_fns <- list(ef_flags_core, ef_flags_radiation, ef_flags_soil_heat,
-                    ef_flags_anchors, ef_flags_sensible_heat, ef_flags_et)
+                    ef_flags_anchors, ef_flags_sensible_heat, ef_flags_et,
+                    ef_flags_reference_et, ef_flags_stations, ef_flags_gwr)
   for (fn in stage_fns) {
     rows <- fn()
     expect_identical(names(rows), names(reg))

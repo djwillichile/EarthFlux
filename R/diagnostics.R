@@ -14,7 +14,8 @@
 # Registry mechanism (one owner per stage, to avoid merge conflicts when the
 # METRIC stages are developed in parallel):
 #
-#   ef_flag_registry()            rbinds the rows of every stage and checks
+#   ef_flag_registry()            cached registry (built once, see below)
+#   ef_flag_registry_build()      rbinds the rows of every stage and checks
 #                                 cross-row consistency (unique codes, bits)
 #     ef_flags_core()             here: transversal codes (EF_INPUT_*)
 #     ef_flags_radiation()        R/metric-radiation.R     (EF_RAD_*)
@@ -26,9 +27,17 @@
 #     ef_flags_stations()         R/prep-qc.R              (EF_WS_*, station QC)
 #     ef_flags_gwr()              R/gwr-diagnostics.R      (EF_GWR_*)
 #
-#   Stages of other modules (EF_SURF_*, EF_WS_*, EF_GWR_*) add their own
-#   ef_flags_<stage>() in their module file when their first code is
-#   registered, and list it in ef_flag_registry().
+#   Stages of other modules (EF_SURF_*) add their own ef_flags_<stage>() in
+#   their module file when their first code is registered, and list it in
+#   ef_flag_registry_build().
+#
+#   The registry is static (it is built from code, never from user input),
+#   so ef_flag_registry() assembles and validates it once per session, on
+#   first use, and then returns the cached table (ef_registry_cache). Every
+#   ef_flag() call reads it; rebuilding it each time cost about 9 ms per
+#   flag record. ef_flag_registry_build() always rebuilds it without the
+#   cache: the registry tests (tests/testthat/test-diagnostics.R) use it so
+#   that the cross-row checks keep running on the current stage functions.
 #
 #   Every stage function returns ef_flag_rows(...): a zero-row data frame
 #   until the stage registers its first code. A code is registered only in
@@ -104,7 +113,7 @@ ef_flag_scopes <- function(scope) {
 #' column explicitly). Called without arguments it returns the zero-row
 #' registry template. Each row is validated (dev/specs/flags.md section 8,
 #' tests R2-R6, R9 and R17); cross-row checks (unique codes, distinct bits
-#' within a stage) are done by `ef_flag_registry()`.
+#' within a stage) are done by `ef_flag_registry_build()`.
 #'
 #' @param code Character. Flag code, `EF_<STAGE>_<CONDITION>` in upper case,
 #'   at most 40 characters, with a prefix from the closed list of stages.
@@ -262,17 +271,43 @@ ef_flags_core <- function() {
   )
 }
 
+#' Cache of the flag registry
+#'
+#' Package-level environment holding the registry built on first use by
+#' `ef_flag_registry()` (element `registry`). The binding is locked with the
+#' namespace; its contents are not.
+#'
+#' @noRd
+ef_registry_cache <- new.env(parent = emptyenv())
+
 #' Registry of EarthFlux diagnostic flag codes
 #'
-#' Binds the rows owned by each stage (see the header of this file) and
-#' checks cross-row consistency: unique codes, and distinct bits within each
-#' stage with bit 0 used only by `EF_INPUT_NA`.
+#' Returns the registry built by `ef_flag_registry_build()`, cached in
+#' `ef_registry_cache` on first use: the registry is static, so it is
+#' assembled and validated once per session (and once per parallel worker).
 #'
 #' @return A data frame with columns `code`, `stage`, `severity` (`"info"`,
 #'   `"warning"`, `"critical"`), `scope`, `bit`, `error_class`,
 #'   `description`, `spec` and `since` (dev/specs/flags.md section 7).
 #' @noRd
 ef_flag_registry <- function() {
+  reg <- ef_registry_cache$registry
+  if (is.null(reg)) {
+    reg <- ef_flag_registry_build()
+    assign("registry", reg, envir = ef_registry_cache)
+  }
+  reg
+}
+
+#' Build the registry of diagnostic flag codes (uncached)
+#'
+#' Binds the rows owned by each stage (see the header of this file) and
+#' checks cross-row consistency: unique codes, and distinct bits within each
+#' stage with bit 0 used only by `EF_INPUT_NA`.
+#'
+#' @return A data frame as described in `ef_flag_registry()`.
+#' @noRd
+ef_flag_registry_build <- function() {
   reg <- rbind(
     ef_flags_core(),
     ef_flags_radiation(),
