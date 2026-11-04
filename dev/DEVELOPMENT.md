@@ -102,6 +102,13 @@ git config user.email "32119499+djwillichile@users.noreply.github.com"
    actualizado.
 2. `devtools::document()`, `devtools::test()`, `devtools::check()` locales.
 3. PR hacia `main`; toda la CI en verde (R-CMD-check, pkgdown, document).
+   En los PR, R-CMD-check corre en Ubuntu (devel, release, oldrel-1) y
+   Windows; macOS corre al llegar a `main`, cada lunes y a pedido
+   (*Run workflow*), porque los runners macOS arm64 de GitHub suelen no
+   estar disponibles y bloqueaban fusiones sin fallos del paquete
+   (2026-11-04: 5 de 30 ejecuciones canceladas sin asignar runner, ninguna
+   falla de EarthFlux). Un fallo de macOS en `main` se corrige con un PR
+   antes de seguir fusionando, y siempre antes de un release.
 4. Fusión con **commit de merge** (`Merge pull request #N from
    djwillichile/<rama>`), como en `thermify`: conserva en la historia de
    `main` qué commits entraron por cada PR.
