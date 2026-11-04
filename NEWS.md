@@ -25,6 +25,29 @@ No scientific result has been validated yet.
   (`"fao56"`). The same function is meant to be used throughout the METRIC
   chain.
 
+* `ef_latent_heat()` computes the instantaneous latent heat flux as the
+  residual of the surface energy balance, LE = Rn - G - H (FAO-56, chapter
+  1, Eq. 1). Negative values are returned unchanged, never set to zero.
+
+* `ef_et_inst()` converts the latent heat flux (W m-2) into instantaneous
+  evapotranspiration (mm h-1) with the latent heat of vaporization from
+  `ef_lambda()` and the density of water, writing the factor 1000 mm m-1
+  explicitly. A unit guard rejects `lambda` outside [1e6, 1e7] J kg-1 (for
+  example a value given in MJ kg-1).
+
+* `ef_etrf()` computes the reference evapotranspiration fraction
+  ET_inst / ETr_inst, and `ef_et_daily()` extrapolates it to daily actual
+  evapotranspiration with an explicit `method` and no default; the only
+  method is `"etrf"` (`ef_et_daily_etrf()`, ETa_24 = ETrF * ETr_24). Both
+  require the reference crop (`"alfalfa"` or `"grass"`) explicitly. A
+  non-positive instantaneous reference ET or a negative daily reference ET
+  is a classed domain error. These formulations are corroborated by
+  secondary sources; verification against Allen et al. (2007) is pending.
+
+* Negative evapotranspiration is reported with the diagnostic flag
+  `EF_ET_NEGATIVE`, evaluated separately on the instantaneous and daily
+  layers; values are never truncated.
+
 ## Changes
 
 * Modular source layout for the surface, forcing, spatial (GWR), METRIC,

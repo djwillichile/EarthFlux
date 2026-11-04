@@ -19,6 +19,16 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 fuente primaria durante la redacción de este documento**, con la ubicación
 exacta indicada (capítulo, recuadro, ecuación, tabla o página).
 
+> **Estado de implementación (M2, 2026-11-04).** Implementadas:
+> `ef_latent_heat()` (`R/metric-latent-heat.R`), `ef_et_inst()`,
+> `ef_etrf()`, el despachador `ef_et_daily(method = )` con su único método
+> `"etrf"` (`ef_et_daily_etrf()`), la inversa interna
+> `ef_et_inst_to_latent_heat()` y el diagnóstico interno `ef_diagnose_et()`
+> (`R/metric-et.R`); tests en `tests/testthat/test-latent-heat.R` y
+> `tests/testthat/test-et.R` (ET-D13). No implementadas (posteriores u
+> opcionales): `ef_et_daily_evapfrac()` (ET-D8) y `ef_et_period()` (§8).
+> Decisiones tomadas al implementar: ver §14.1.
+
 ---
 
 ## 0. Resumen
@@ -952,3 +962,43 @@ Para `REFERENCES.md` (al fusionar): DOIs verificados en api.crossref.org el
   referencia FAO-56), ET_inst (factor 1000 mm m⁻¹, §5.2; λ), ETrF y ETa
   (limitaciones §6.5) y en §1.2 la fila *Extrapolación diaria* (álgebra de
   cancelación, §6.5); y en `REFERENCES.md` los DOIs de §12.
+
+
+### 14.1 Implementación M2 (2026-11-04)
+
+- **`ef_etrf()` y `ef_et_daily_etrf()` se implementaron como definiciones
+  operativas** por instrucción del hito M2, rotuladas `CANDIDATA
+  (corroborada)` en roxygen (Olmedo et al., 2016, Ec. 4). La decisión
+  explícita que pide P0-1 / este §14 queda **pendiente de registro** en
+  `DECISIONS.md` (no se editó ese archivo).
+- **Tipo de referencia (§6.4):** `ef_etrf(et_inst, etr_inst, reference)` y
+  `ef_et_daily_etrf(etrf, etr_24, reference)` (y el despachador
+  `ef_et_daily(etrf, etr_24, reference, method)`) reciben `reference`
+  **obligatorio, sin defecto**, con valores `"alfalfa"` / `"grass"`
+  (nombres de `weather-forcing.md` §5). No cambia la aritmética: hace
+  explícita la elección. Ausente → `earthflux_missing_input`; otro valor →
+  `earthflux_input_error`. La comprobación de coherencia entre `etr_inst`,
+  `etr_24` y el ancla fría sigue en la orquestación (ET-D9,
+  `earthflux_reference_mismatch`). Desviación de la firma de §6.2–6.3.
+- **Despachador `ef_et_daily()`** (regla N6 de `NAMING.md`): `method` sin
+  defecto (`check_method()`), único valor `"etrf"`; solo valida la
+  presencia de los argumentos del método (`earthflux_missing_input`) y
+  reenvía; devuelve exactamente lo mismo que `ef_et_daily_etrf()` (test).
+  `"evapfrac"` → `earthflux_unknown_method` hasta que exista su
+  especificación.
+- **C_rad** (ET-D7): no se reservó el argumento `c_rad` (se agregará con su
+  función, tras V6); la ausencia de corrección por pendiente está
+  documentada.
+- **Constantes de unidades**: `EF_SECONDS_PER_HOUR` y `EF_MM_PER_M` se
+  definieron en `R/metric-et.R` con nota `TODO(shared)` para trasladarlas a
+  `R/constants.R`; ρ_w es `EF_WATER_DENSITY` y la guarda de λ es
+  `check_latent_heat_units()` (ET-D2).
+- **Flags:** `ef_diagnose_et(et_inst = NULL, eta_24 = NULL)` devuelve una
+  lista con nombre (posiblemente vacía) de registros `EF_ET_NEGATIVE`, uno
+  por capa con al menos un elemento marcado; el nombre del elemento es la
+  capa (`"et_inst"`, `"eta_24"`) a la que se refiere `index` (hasta que el
+  registro tenga el campo `target`, `flags.md` §6.2). LE < 0 no se evalúa
+  aparte (C1/FL-03). ETrF no se evalúa (ET-D5; `EF_ET_ETRF_IMPLAUSIBLE`
+  sigue en la guardia de clase II).
+- **Inversa interna:** `ef_et_inst_to_latent_heat(et_inst, lambda)`
+  (`@noRd`), disponible para la condición del ancla fría (§11.4).
