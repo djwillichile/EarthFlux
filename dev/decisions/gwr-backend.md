@@ -1,6 +1,6 @@
 # Decisión: backend de GWR para el módulo `spatial`
 
-Estado: **PROPUESTA, parcialmente decidida** (ver "Decisiones del autor") ·
+Estado: **DECIDIDA** (2026-11-04; ver "Decisiones del autor") ·
 Fecha de observación: **2026-11-04** ·
 Autor: Guillermo Servando Fuentes-Jaque ·
 Relacionado: `ARCHITECTURE.md` §6.1 y §6.3, `SCIENTIFIC_SPEC.md` §1.2, §5 y
@@ -18,9 +18,12 @@ Relacionado: `ARCHITECTURE.md` §6.1 y §6.3, `SCIENTIFIC_SPEC.md` §1.2, §5 y
 |---|---|---|
 | 2026-11-04 | **`spgwr` se descarta** como backend y como referencia de verificación cruzada. Solo se menciona como antecedente histórico (prototipo previo del autor, `antecedente-metric-modis.md`) y como evidencia de esta evaluación. | Paquete en modo de mantenimiento (0.6-37, 2024), dependiente de `sp`, sin MGWR; en la evaluación empírica falló la selección de bandwidth por AIC con 15 estaciones y no expone residuos *leave-one-out* por estación (secciones 3-4). Existen alternativas más actuales (`GWmodel`, `mgwrsar`). |
 
-Pendiente de decisión explícita: núcleo interno como motor de cálculo y
-`GWmodel` en `Suggests` como referencia de tests (recomendación de la
-sección 8); `mgwrsar` como opción a evaluar si se requiere MGWR.
+| 2026-11-04 | **Núcleo GWR interno** (R base, matrices) como motor de cálculo: WLS local, tr(S), AICc y CV, residuos LOO, convenciones documentadas y flags. | Los tres paquetes y el prototipo dan el mismo estimador (coeficientes ~1e-12); las diferencias son convenciones y límites ocultos que conviene controlar; evita dependencias pesadas en `Imports` (sección 8). |
+| 2026-11-04 | **`GWmodel` solo en `Suggests`**, como referencia de verificación cruzada en tests (omitidos si no está instalado). | Paquete más completo y mantenido de los evaluados; coincidencia numérica demostrada con el prototipo (sección 4). |
+| 2026-11-04 | **`mgwrsar`** queda como opción a evaluar si en el futuro se requiere MGWR. | MGWR disponible y desarrollo activo, pero dependencias muy pesadas y comportamiento de CV no explicado (sección 4). |
+
+Las secciones siguientes conservan la evaluación original que sustentó estas
+decisiones.
 
 ---
 

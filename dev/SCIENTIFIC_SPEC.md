@@ -34,7 +34,7 @@ está aún `VERIFICADA` (falta acceso a Allen et al., 2007).
 | Rugosidad, rah, estabilidad, dT y H | [`specs/sensible-heat.md`](specs/sensible-heat.md) | `CANDIDATA`; magnitudes FAO-56 compartidas `VERIFICADA` | **SH-11** (ψ_m a 200 m en caso estable), SH-15 (fase por píxel) |
 | LE, ET instantánea, ETrF, ETa | [`specs/evapotranspiration.md`](specs/evapotranspiration.md) | Balance, λ, ρ_w y conversión de unidades `VERIFICADA` (FAO-56); ETrF/ETa `CANDIDATA` | ET-D1 (λ por defecto), ET-D5 (rango de ETrF) |
 | Estaciones, QC, variables derivadas y ET de referencia | [`specs/weather-forcing.md`](specs/weather-forcing.md) | ETo FAO-56 diaria y horaria `VERIFICADA`; ETr ASCE (alfalfa) `CANDIDATA` | **Decisión 5.1**, WF-07 (ETr en la hora de paso) |
-| Forzamiento espacial (GWR) | [`decisions/gwr-backend.md`](decisions/gwr-backend.md) · `specs/gwr-forcing.md` (en curso) | Backend: `PROPUESTA` (núcleo interno) | Backend; convención de AICc y de k adaptativo |
+| Forzamiento espacial (GWR) | [`decisions/gwr-backend.md`](decisions/gwr-backend.md) · `specs/gwr-forcing.md` (en curso) | Backend `DECIDIDO`: núcleo interno; `GWmodel` como referencia de tests | Convención de AICc y de k adaptativo |
 | Productos MODIS | [`specs/modis-products.md`](specs/modis-products.md) | Metadatos de producto `VERIFICADA` (guías oficiales) | MP-01/02 (producto y plataforma), MP-03/04 (banda ancha) |
 | Referencias | [`REFERENCES.md`](REFERENCES.md) · [`verification/reference-audit.md`](verification/reference-audit.md) | 43 citas verificadas | Fuentes primarias METRIC y ASCE-EWRI sin acceso |
 | Antecedente del autor | [`decisions/antecedente-metric-modis.md`](decisions/antecedente-metric-modis.md) | Registro | Circularidad Ta–LST; calibración a 1 km |

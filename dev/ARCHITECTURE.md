@@ -121,9 +121,15 @@ procedencia (versiones, productos, escenas, estaciones, parámetros, semilla).
 
 ## 6. Decisiones abiertas
 
-### 6.1 Backend de GWR (no decidido)
+### 6.1 Backend de GWR — **DECIDIDO** (2026-11-04)
 
-Observado en CRAN el 2026-11-04 (verificar mantenimiento antes de decidir):
+Núcleo GWR **interno** (R base) como motor de cálculo; `GWmodel` solo en
+`Suggests` como referencia de tests; `mgwrsar` como opción futura para MGWR;
+`spgwr` descartado. Evaluación y fundamentos en
+[`decisions/gwr-backend.md`](decisions/gwr-backend.md); especificación del
+módulo en `specs/gwr-forcing.md`.
+
+Tabla original de candidatos (observada en CRAN el 2026-11-04):
 
 | Opción | Versión CRAN | Licencia | Comentario |
 |---|---|---|---|
