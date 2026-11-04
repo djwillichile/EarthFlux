@@ -1664,21 +1664,6 @@ anchor_user_cells <- function(x, arg, grid, call) {
 
 # Stage [B]: boundary conditions -----------------------------------------------
 
-#' Latent heat flux of an evapotranspiration rate
-#'
-#' LE = ET * lambda * rho_w / (3600 * 1000): ET in mm h-1, lambda in
-#' J kg-1, rho_w in kg m-3; 3600 s h-1 and 1000 mm m-1 are exact unit
-#' conversions (inverse of ET_inst = 1000 * 3600 * LE / (lambda * rho_w),
-#' dev/specs/evapotranspiration.md section 6.1, VERIFICADA as a unit
-#' conversion).
-#' TODO(shared): replace by the internal inverse of ef_et_inst() of the
-#' evapotranspiration module (et_inst_to_latent_heat(), name to be decided)
-#' and its named constants for 3600 and 1000.
-#' @noRd
-anchor_le_from_et <- function(et, lambda) {
-  et * lambda * EF_WATER_DENSITY / (3600 * 1000)
-}
-
 #' Boundary conditions at the anchor pixels
 #'
 #' @description
@@ -1862,8 +1847,8 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
   } else {
     check_scalar(le_hot, "le_hot", lower = 0, call = call)
   }
-  check_method(reference, c("alfalfa", "grass"), arg = "reference",
-               call = call)
+  check_reference_type(if (missing(reference)) NULL else reference,
+                       call = call)
   check_string(source, "source")
   check_method(status, anchor_statuses(), arg = "status", call = call)
   if (!is.null(etr_source)) check_string(etr_source, "etr_source")
@@ -1910,11 +1895,11 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
   cold <- px$type == "cold"
   hot_mode <- if (is.null(etrf_hot)) "le" else "etrf"
   etrf <- ifelse(cold, etrf_cold, if (hot_mode == "etrf") etrf_hot else NA)
-  le <- anchor_le_from_et(etrf * vals$etr_inst, vals$lambda)
+  le <- ef_et_inst_to_latent_heat(etrf * vals$etr_inst, vals$lambda)
   if (hot_mode == "le") {
     le[!cold] <- le_hot
-    etrf[!cold] <- le_hot / anchor_le_from_et(vals$etr_inst[!cold],
-                                              vals$lambda[!cold])
+    etrf[!cold] <- le_hot /
+      ef_et_inst_to_latent_heat(vals$etr_inst[!cold], vals$lambda[!cold])
   }
   h <- vals$rn - vals$g - le
   cond_px <- data.frame(
@@ -1940,7 +1925,8 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
   points$etrf <- ifelse(
     points$type == "cold", etrf_cold,
     if (hot_mode == "etrf") etrf_hot else
-      points$le_target / anchor_le_from_et(points$etr_inst, points$lambda)
+      points$le_target /
+        ef_et_inst_to_latent_heat(points$etr_inst, points$lambda)
   )
   points$h_target <- points$rn - points$g - points$le_target
   points <- points[, c("anchor_id", "type", "n_pixels", "aggregate", "lst",

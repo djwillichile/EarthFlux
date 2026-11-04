@@ -47,39 +47,21 @@ ef_et_reference_types <- function() {
 #' Check the reference crop type of a reference ET argument
 #'
 #' The reference type must be given explicitly (no default;
-#' dev/specs/evapotranspiration.md section 6.4).
+#' dev/specs/evapotranspiration.md section 6.4). Shared by the ET functions
+#' and the anchor boundary conditions (`ef_anchor_conditions()`), so that
+#' both report a missing or unknown reference with the same classes as a
+#' `method` (`check_method()`).
 #'
 #' @param reference The value to check, or `NULL` when it was not supplied.
 #' @param call The call to report in the error.
-#' @return `reference`, invisibly, if the check passes.
+#' @return `reference`, invisibly, if the check passes. Errors of class
+#'   `earthflux_missing_input` (missing or `NULL`), `earthflux_input_error`
+#'   (not a single string) or `earthflux_unknown_method` (not one of
+#'   `ef_et_reference_types()`), all also `earthflux_input_error`.
 #' @noRd
 check_reference_type <- function(reference, call = sys.call(-1)) {
-  choices <- ef_et_reference_types()
-  choices_txt <- paste0("\"", choices, "\"", collapse = ", ")
-  if (is.null(reference)) {
-    ef_abort(
-      sprintf(
-        paste0(
-          "`reference` (reference crop of the reference ET) must be supplied ",
-          "explicitly; one of %s."
-        ),
-        choices_txt
-      ),
-      class = c("earthflux_missing_input", "earthflux_input_error"),
-      call = call
-    )
-  }
-  if (!is.character(reference) || length(reference) != 1L ||
-      is.na(reference) || !reference %in% choices) {
-    ef_abort(
-      sprintf("`reference` must be a single string, one of %s.", choices_txt),
-      class = "earthflux_input_error",
-      reference = reference,
-      choices = choices,
-      call = call
-    )
-  }
-  invisible(reference)
+  check_method(reference, ef_et_reference_types(), arg = "reference",
+               call = call)
 }
 
 #' Instantaneous evapotranspiration from the latent heat flux
@@ -190,9 +172,10 @@ ef_et_inst <- function(le, lambda) {
 #'
 #' Exact inverse of `ef_et_inst()` (dev/specs/evapotranspiration.md section
 #' 9.1): \eqn{LE = ET_{inst} \lambda \rho_w / (1000 \cdot 3600)}. Used by
-#' the round-trip tests and, for the cold anchor boundary condition, to turn
-#' a target evapotranspiration into a target latent heat flux with the same
-#' `lambda` as the conversion (section 11.4).
+#' the round-trip tests and by `ef_anchor_conditions()`, which turns the
+#' target evapotranspiration of the anchors into a target latent heat flux
+#' with the same `lambda` as the conversion (section 11.4): the package has
+#' a single LE <-> ET conversion.
 #'
 #' @param et_inst Numeric. Instantaneous evapotranspiration \[mm h-1\]. Any
 #'   finite value.
