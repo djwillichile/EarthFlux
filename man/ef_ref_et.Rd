@@ -152,9 +152,10 @@ Missing values propagate (and are flagged \code{EF_INPUT_NA}). Negative
 results (for example at night, when \eqn{R_n - G < 0}{Rn - G < 0} with a
 small deficit) are kept and flagged \code{EF_WS_ETR_NEGATIVE} (principle 6),
 never truncated; ASCE-EWRI (2005, p. 45) states that it "may be
-appropriate to retain the negative values" in the 24-hour sums. Missing or unknown choices raise
-\code{earthflux_missing_input} or \code{earthflux_unknown_method}; values outside
-the domains above raise \code{earthflux_domain_error}.
+appropriate to retain the negative values" in the 24-hour sums. Missing
+or unknown choices raise \code{earthflux_missing_input} or
+\code{earthflux_unknown_method}; values outside the domains above raise
+\code{earthflux_domain_error}.
 }
 \section{Verification status}{
 

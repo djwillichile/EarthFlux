@@ -48,8 +48,9 @@
 #   and soil heat flux in MJ m-2 per period (d-1 or h-1) as in FAO-56;
 #   normative literals of each standard (0.23; sigma 4.903e-9 of FAO-56 or
 #   4.901e-9 and 2.042e-10 of ASCE-EWRI; 273.16 in Rnl, 273 in the
-#   aerodynamic term, 0.408) kept inside these functions (decision WF-14). Vectorised; NA propagated; classed errors; nothing truncated
-#   (negative reference ET is kept and flagged, principle 6).
+#   aerodynamic term, 0.408) kept inside these functions (decision WF-14).
+#   Vectorised; NA propagated; classed errors; nothing truncated (negative
+#   reference ET is kept and flagged, principle 6).
 
 # Constants table --------------------------------------------------------------
 
@@ -237,9 +238,10 @@ check_daytime <- function(daytime, needed, timestep, args,
 #'   \eqn{f = 1.35 R_s/R_{so} - 0.35}{f = 1.35 * Rs / Rso - 0.35} \[-\] to
 #'   use instead of computing it from `solar_radiation` and
 #'   `clear_sky_radiation`, in \[-0.35, 1\] for `"fao56"` and in
-#'   \[0.05, 1\] for `"asce"` (the ranges of each standard). It serves night-time (and, for ASCE-EWRI, low sun angle)
-#'   periods, where the ratio is undefined or unreliable and is carried from
-#'   an earlier period (see Details). When supplied it is used at every
+#'   \[0.05, 1\] for `"asce"` (the ranges of each standard). It serves
+#'   night-time (and, for ASCE-EWRI, low sun angle) periods, where the
+#'   ratio is undefined or unreliable and is carried from an earlier period
+#'   (see Details). When supplied it is used at every
 #'   position. Default `NULL`: computed from the radiation.
 #'
 #' @return An object of class `earthflux_reference_net_radiation`: a list
@@ -293,9 +295,9 @@ check_daytime <- function(daytime, needed, timestep, args,
 #' give \eqn{0.05 \le f \le 1}{0.05 <= f <= 1} (pp. 20 and 35), but
 #' \eqn{1.35 \times 0.3 - 0.35 = 0.055}{1.35 * 0.3 - 0.35 = 0.055}. The ratio
 #' limit is applied (so a computed term is at least 0.055), and a supplied
-#' `cloudiness` is accepted in the stated range \[0.05, 1\]. The two Stefan-Boltzmann values differ by 0.04 %
-#' (daily); the ASCE-EWRI hourly value is the published one (4.901e-9 / 24
-#' = 2.04208e-10).
+#' `cloudiness` is accepted in the stated range \[0.05, 1\]. The two
+#' Stefan-Boltzmann values differ by 0.04 % (daily); the ASCE-EWRI hourly
+#' value is the published one (4.901e-9 / 24 = 2.04208e-10).
 #'
 #' **Night-time and low sun angle.** With \eqn{R_{so} = 0}{Rso = 0} the
 #' ratio is undefined. FAO-56 sets it to the value of a period 2-3 hours
@@ -795,9 +797,10 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #' results (for example at night, when \eqn{R_n - G < 0}{Rn - G < 0} with a
 #' small deficit) are kept and flagged `EF_WS_ETR_NEGATIVE` (principle 6),
 #' never truncated; ASCE-EWRI (2005, p. 45) states that it "may be
-#' appropriate to retain the negative values" in the 24-hour sums. Missing or unknown choices raise
-#' `earthflux_missing_input` or `earthflux_unknown_method`; values outside
-#' the domains above raise `earthflux_domain_error`.
+#' appropriate to retain the negative values" in the 24-hour sums. Missing
+#' or unknown choices raise `earthflux_missing_input` or
+#' `earthflux_unknown_method`; values outside the domains above raise
+#' `earthflux_domain_error`.
 #'
 #' @section Verification status:
 #' `standard = "fao56"`, `reference = "grass"`: `VERIFICADA` (FAO-56,
