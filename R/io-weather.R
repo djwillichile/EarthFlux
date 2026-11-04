@@ -148,17 +148,14 @@ station_unit_conversions <- function() {
 #'
 #' Domain of FAO-56 Eq. 47 (wind speed at 2 m), u2 = uz * 4.87 /
 #' ln(67.8 z - 5.42), which needs 67.8 z - 5.42 > 1, i.e. z > 0.0947 m
-#' (dev/specs/weather-forcing.md sections 2.2 and 4.5; VERIFICADA). The
-#' literals belong to that equation.
-#'
-#' TODO(shared): the function implementing FAO-56 Eq. 47 (`ef_wind_2m()`,
-#' reference ET module) owns these coefficients; reuse its bound once it is
-#' merged.
+#' (dev/specs/weather-forcing.md sections 2.2 and 4.5; VERIFICADA). The bound
+#' is the one of [ef_wind_2m()] (`ef_wind_2m_min_height()`,
+#' `R/forcing-derived.R`), the single source of the coefficients of Eq. 47.
 #'
 #' @return A numeric scalar \[m\].
 #' @noRd
 station_min_wind_height <- function() {
-  (1 + 5.42) / 67.8
+  ef_wind_2m_min_height()
 }
 
 #' Period semantics of the timestamps

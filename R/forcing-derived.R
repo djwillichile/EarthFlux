@@ -558,6 +558,21 @@ ef_dewpoint <- function(vapour_pressure) {
 
 # Wind ------------------------------------------------------------------------
 
+#' Lower bound of the measurement height of FAO-56 Eq. 47
+#'
+#' Domain of the logarithmic wind profile of FAO-56 Eq. 47:
+#' \eqn{\ln(67.8 z - 5.42) > 0}, i.e. \eqn{z > 6.42 / 67.8 = 0.0947} m. The
+#' single source of the bound, used by [ef_wind_2m()] and by the validation
+#' of the anemometer height of the station table (`R/io-weather.R`).
+#'
+#' @return A numeric scalar \[m\] (exclusive lower bound).
+#' @section Verification status: `VERIFICADA` (FAO-56, chapter 3, Eq. 47).
+#' @noRd
+ef_wind_2m_min_height <- function() {
+  # ln(67.8 z - 5.42) > 0  <=>  z > (1 + 5.42) / 67.8.
+  6.42 / 67.8
+}
+
 #' Wind speed at 2 m above short grass
 #'
 #' @description
@@ -609,8 +624,7 @@ ef_wind_2m <- function(wind_speed, height) {
   args <- list(wind_speed = wind_speed, height = height)
   n <- check_core_args(args, call)
   check_in_range(wind_speed, "wind_speed", lower = 0, call = call)
-  # ln(67.8 z - 5.42) > 0  <=>  z > 6.42 / 67.8.
-  check_in_range(height, "height", lower = 6.42 / 67.8,
+  check_in_range(height, "height", lower = ef_wind_2m_min_height(),
                  lower_inclusive = FALSE, call = call)
   # FAO-56, chapter 3, Eq. 47.
   ef_reshape(wind_speed * 4.87 / log(67.8 * height - 5.42), n,
