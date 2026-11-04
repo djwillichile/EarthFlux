@@ -7,6 +7,8 @@ library(EarthFlux)
 
 ## Purpose
 
+*Land-Surface Energy and Water Fluxes from Earth Observation Data*
+
 EarthFlux aims to provide a reproducible workflow to estimate spatially
 distributed actual evapotranspiration (ETa) following the conceptual
 chain

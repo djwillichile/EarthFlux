@@ -51,8 +51,11 @@
 </h1></div>
 <!-- badges: start -->
 
+<div class="section level3">
+<h3 id="land-surface-energy-and-water-fluxes-from-earth-observation-data">Land-Surface Energy and Water Fluxes from Earth Observation Data<a class="anchor" aria-label="anchor" href="#land-surface-energy-and-water-fluxes-from-earth-observation-data"></a>
+</h3>
 <p><strong>MODIS + METRIC + GWR → ETa</strong></p>
-<p>EarthFlux is an R package for estimating spatially distributed actual evapotranspiration (ETa) from Earth observation data with the METRIC (Mapping EvapoTranspiration at high Resolution with Internalized Calibration) surface energy balance framework.</p>
+<p>EarthFlux is an R package for modelling land-surface energy and water fluxes from Earth observation data. Its first target is spatially distributed actual evapotranspiration (ETa) estimated with the METRIC (Mapping EvapoTranspiration at high Resolution with Internalized Calibration) surface energy balance framework.</p>
 <p>Its methodological focus is the <strong>meteorological forcing</strong> of METRIC. Instead of relying only on a single weather station assumed to be representative of the whole scene, EarthFlux will make it possible to represent weather variables as spatial surfaces, for example with geographically weighted regression (GWR), and to compare that choice against simpler alternatives.</p>
 <pre class="text"><code>MODIS surface state  +  weather stations
                               │
@@ -62,6 +65,7 @@
                               │
                   ETinst → ETrF → ETa  (+ diagnostics)</code></pre>
 <p>Whether spatial forcing improves ETa estimates is a <strong>research question</strong> that EarthFlux is designed to test. It is not a claim made by this package.</p>
+</div>
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>

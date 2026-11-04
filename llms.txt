@@ -1,9 +1,12 @@
 # EarthFlux
 
+### Land-Surface Energy and Water Fluxes from Earth Observation Data
+
 **MODIS + METRIC + GWR → ETa**
 
-EarthFlux is an R package for estimating spatially distributed actual
-evapotranspiration (ETa) from Earth observation data with the METRIC
+EarthFlux is an R package for modelling land-surface energy and water
+fluxes from Earth observation data. Its first target is spatially
+distributed actual evapotranspiration (ETa) estimated with the METRIC
 (Mapping EvapoTranspiration at high Resolution with Internalized
 Calibration) surface energy balance framework.
 
