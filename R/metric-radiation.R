@@ -12,16 +12,23 @@
 #     R/solar-geometry.R):
 #       ef_tau_sw() dispatcher with ef_tau_sw_allen() and
 #         ef_tau_sw_elevation() (clear-sky shortwave transmissivity);
+#         returns an earthflux_sw_transmissivity object;
 #       ef_atm_emissivity() (effective atmospheric emissivity);
 #       ef_rs_in() dispatcher with ef_rs_in_modelled() and
 #         ef_rs_in_measured() (incoming shortwave on the pixel plane), both
-#         projected to the plane by the internal ef_rs_to_slope();
+#         projected to the plane by the internal ef_rs_to_slope(); returns
+#         an earthflux_incoming_shortwave object;
 #       ef_rl_in() (incoming longwave; temperature input agnostic, decision
 #         RC-12 open) and ef_rl_out() (longwave emitted by the surface).
 #     Every form is CANDIDATA except where its roxygen says otherwise.
 #   - ef_diagnose_radiation() (internal): cell-scope flags EF_RAD_* of this
 #     stage, built from the numeric inputs and outputs (never by the numeric
-#     functions themselves).
+#     functions themselves) and called by the dispatchers.
+#
+# Dispatchers (dev/ARCHITECTURE.md section 3.2, point 4): they check
+#   `method`, call the method function, build the flags (EF_INPUT_NA and the
+#   EF_RAD_ codes that apply) and return a classed object; the method
+#   functions return plain numeric values or plain lists.
 #
 # Design: sensor-independent, purely arithmetic and vectorised. Emissivity is
 #   an explicit input and the reflected incoming longwave term is kept
@@ -169,8 +176,9 @@ ef_net_radiation <- function(rs_in, albedo, rl_in, rl_out, emissivity) {
 #' Computes the broadband transmissivity of a clear-sky atmosphere to
 #' shortwave radiation on a horizontal surface, \eqn{\tau_{sw}}{tau_sw}: the
 #' fraction of the extraterrestrial irradiance that reaches the surface.
-#' `ef_tau_sw()` is the dispatcher of the family; it only forwards its
-#' arguments to the method chosen with `method`, which has no default:
+#' `ef_tau_sw()` is the dispatcher of the family: it checks `method`
+#' (no default), forwards the other arguments to the method function, builds
+#' the diagnostic flags and records the provenance. The methods are:
 #'
 #' * `ef_tau_sw_allen()` (`method = "allen"`): partitioned form, function of
 #'   the solar zenith angle, the air pressure, the vapour pressure and the
@@ -206,8 +214,20 @@ ef_net_radiation <- function(rs_in, albedo, rl_in, rl_out, emissivity) {
 #'   all dimensionless, with the common length and `dim` of the inputs.
 #' * `ef_tau_sw_elevation()`: a numeric vector of \eqn{\tau_{sw}}{tau_sw}
 #'   \[-\] with the length and `dim` of `elevation`.
-#' * `ef_tau_sw()`: exactly the value of the selected method (the two
-#'   methods return different types).
+#' * `ef_tau_sw()`: a list of class `earthflux_sw_transmissivity` with the
+#'   same elements for both methods (type-stable):
+#'   * `total`: \eqn{\tau_{sw}}{tau_sw} \[-\], identical to `$total` of
+#'     `ef_tau_sw_allen()` or to the value of `ef_tau_sw_elevation()`;
+#'   * `beam`, `diffuse`: \eqn{\tau_b}{tau_b} and \eqn{\tau_d}{tau_d}
+#'     \[-\] when the method partitions the transmissivity (`"allen"`), and
+#'     `NULL` otherwise (`"elevation"`); the names are always present;
+#'   * `method`: the method name;
+#'   * `flags`: list of diagnostic flag records, one per code that holds
+#'     somewhere: `EF_INPUT_NA` (a required input is missing; no `EF_RAD_`
+#'     code applies to the transmissivity);
+#'   * `provenance`: list with the method, the method function, its
+#'     verification status, the inputs used, the flag codes evaluated
+#'     (`flags_evaluated`) and the EarthFlux version.
 #'
 #' @details
 #' **Partitioned form** (`ef_tau_sw_allen()`), with \eqn{P}{P} = `pressure`
@@ -246,8 +266,11 @@ ef_net_radiation <- function(rs_in, albedo, rl_in, rl_out, emissivity) {
 #' partitioned form is undefined: the sun is below the horizon) or infinite
 #' values raise `earthflux_domain_error` (also `earthflux_input_error`);
 #' they are never corrected. A missing or unknown `method` raises
-#' `earthflux_missing_input` or `earthflux_unknown_method`. Missing values
-#' propagate to every output.
+#' `earthflux_missing_input` or `earthflux_unknown_method`; an argument
+#' required by the chosen method but not supplied to the dispatcher raises
+#' `earthflux_missing_input`, and one the method does not accept raises
+#' `earthflux_input_error`. Missing values propagate to every output; the
+#' dispatcher reports them with the flag `EF_INPUT_NA`.
 #'
 #' @section Verification status:
 #' `ef_tau_sw_allen()` is `CANDIDATA`: form and coefficients observed in the
@@ -285,17 +308,49 @@ ef_net_radiation <- function(rs_in, albedo, rl_in, rl_out, emissivity) {
 #'   vapour_pressure = 1.5, turbidity = 1, method = "allen"
 #' )
 #' tau$total
+#' tau$beam
 #'
-#' # Same call through the method function
+#' # Same values through the method function
 #' ef_tau_sw_allen(cos(35 * pi / 180), ef_air_pressure(0), 1.5, 1)$beam
 #'
-#' # Elevation form (total only)
-#' ef_tau_sw(elevation = c(0, 1000, 3000), method = "elevation")
+#' # Elevation form (total only; `beam` and `diffuse` are NULL)
+#' tau_z <- ef_tau_sw(elevation = c(0, 1000, 3000), method = "elevation")
+#' tau_z$total
+#' is.null(tau_z$beam)
 ef_tau_sw <- function(..., method) {
-  check_method(method, c("allen", "elevation"))
-  switch(method,
-    allen = ef_tau_sw_allen(...),
-    elevation = ef_tau_sw_elevation(...)
+  call <- sys.call()
+  check_method(method, c("allen", "elevation"), call = call)
+  fun_name <- switch(method,
+                     allen = "ef_tau_sw_allen",
+                     elevation = "ef_tau_sw_elevation")
+  fun <- get(fun_name, mode = "function")
+  inputs <- ef_dispatch_args(fun, fun_name, list(...), method, call = call)
+
+  if (method == "allen") {
+    value <- ef_tau_sw_allen(...)
+  } else {
+    value <- list(total = ef_tau_sw_elevation(...), beam = NULL,
+                  diffuse = NULL)
+  }
+  n <- length(value$total)
+  flags <- ef_flags_combine(
+    ef_input_na_flags(inputs, n),
+    ef_diagnose_radiation(
+      cos_zenith = ef_rad_layer(inputs$cos_zenith, n)
+    )
+  )
+
+  new_ef_object(
+    list(
+      total = value$total,
+      beam = value$beam,
+      diffuse = value$diffuse,
+      method = method,
+      flags = flags$flags,
+      provenance = ef_rad_provenance(method, fun_name, inputs,
+                                     flags$evaluated)
+    ),
+    "earthflux_sw_transmissivity"
   )
 }
 
@@ -486,8 +541,9 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #' radiation and the radiation reflected by the surrounding ground. The
 #' `total` element is the `rs_in` argument of `ef_net_radiation()`.
 #'
-#' `ef_rs_in()` is the dispatcher of the family; it only forwards its
-#' arguments to the method chosen with `method`, which has no default:
+#' `ef_rs_in()` is the dispatcher of the family: it checks `method` (no
+#' default), forwards the other arguments to the method function, builds the
+#' diagnostic flags and records the provenance. The methods are:
 #'
 #' * `ef_rs_in_modelled()` (`method = "modelled"`): clear-sky radiation from
 #'   the extraterrestrial irradiance and the partitioned transmissivity of
@@ -537,7 +593,14 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #'     the clear-sky radiation on the horizontal,
 #'     \eqn{\tau_d / (\tau_b + \tau_d)}{tau_d / (tau_b + tau_d)} \[-\].
 #'
-#'   `ef_rs_in()` returns exactly the value of the selected method.
+#'   `ef_rs_in()` returns a list of class `earthflux_incoming_shortwave`
+#'   with the same elements for both methods (type-stable): `total`, `beam`,
+#'   `diffuse` and `reflected` (identical to those of the method function),
+#'   `diffuse_fraction` (`NULL` for `"measured"`, where it is an input),
+#'   `method`, `flags` (one record per code that holds somewhere:
+#'   `EF_INPUT_NA` and `EF_RAD_SELF_SHADED`; see Details) and `provenance`
+#'   (method, method function, verification status, inputs used, flag codes
+#'   evaluated in `flags_evaluated`, EarthFlux version).
 #'
 #' @details
 #' Components on the horizontal:
@@ -568,8 +631,15 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #' A plane facing away from the sun (\eqn{\cos\theta_{rel} \le 0}{cos(theta_rel)
 #' <= 0}) receives no direct beam: \eqn{\max(\cos\theta_{rel}, 0)}{max(.,
 #' 0)} is the physical definition of the beam irradiance on that plane, not
-#' a correction, and is reported by the diagnostics of the stage
-#' (`EF_RAD_SELF_SHADED`). The resulting radiation is never truncated.
+#' a correction, and is reported by `ef_rs_in()` with the flag
+#' `EF_RAD_SELF_SHADED`. The resulting radiation is never truncated.
+#'
+#' **Diagnostics** (`ef_rs_in()` only; the method functions return values
+#' without flags). `EF_INPUT_NA`: a required input is missing at the
+#' position; `EF_RAD_SELF_SHADED`: the sun is above the horizon but the
+#' pixel plane faces away from it. A record is present only for a code that
+#' holds somewhere; the codes evaluated are in
+#' `provenance$flags_evaluated`.
 #'
 #' Unlike a common simplified form, \eqn{G_{sc} d_r \cos\theta_{rel}
 #' \tau_{sw}}{Gsc * dr * cos(theta_rel) * tau_sw}, the diffuse component is
@@ -588,9 +658,11 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #' the horizon) or infinite values raise `earthflux_domain_error` (also
 #' `earthflux_input_error`). `ground_albedo = NULL` with a positive slope
 #' raises `earthflux_missing_input`. A missing or unknown `method` raises
-#' `earthflux_missing_input` or `earthflux_unknown_method`. Missing values
-#' propagate arithmetically to the outputs that depend on them, and always to
-#' `total`.
+#' `earthflux_missing_input` or `earthflux_unknown_method`; an argument
+#' required by the chosen method but not supplied to the dispatcher raises
+#' `earthflux_missing_input`, and one the method does not accept raises
+#' `earthflux_input_error`. Missing values propagate arithmetically to the
+#' outputs that depend on them, and always to `total`.
 #'
 #' @section Verification status:
 #' `CANDIDATA`. The flat-terrain modelled form is the one observed in the
@@ -632,6 +704,7 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #'   ground_albedo = 0.2, method = "modelled"
 #' )
 #' rs$total
+#' rs$provenance$flags_evaluated
 #'
 #' # Measured global radiation on the horizontal, projected to the slopes
 #' ef_rs_in_measured(
@@ -640,10 +713,40 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #'   slope = c(0, 20) * deg, ground_albedo = 0.2
 #' )$total
 ef_rs_in <- function(..., method) {
-  check_method(method, c("modelled", "measured"))
-  switch(method,
+  call <- sys.call()
+  check_method(method, c("modelled", "measured"), call = call)
+  fun_name <- switch(method,
+                     modelled = "ef_rs_in_modelled",
+                     measured = "ef_rs_in_measured")
+  fun <- get(fun_name, mode = "function")
+  inputs <- ef_dispatch_args(fun, fun_name, list(...), method, call = call)
+
+  value <- switch(method,
     modelled = ef_rs_in_modelled(...),
     measured = ef_rs_in_measured(...)
+  )
+  n <- length(value$total)
+  flags <- ef_flags_combine(
+    ef_input_na_flags(inputs, n),
+    ef_diagnose_radiation(
+      cos_zenith = ef_rad_layer(inputs$cos_zenith, n),
+      cos_incidence = ef_rad_layer(inputs$cos_incidence, n)
+    )
+  )
+
+  new_ef_object(
+    list(
+      total = value$total,
+      beam = value$beam,
+      diffuse = value$diffuse,
+      reflected = value$reflected,
+      diffuse_fraction = value$diffuse_fraction,
+      method = method,
+      flags = flags$flags,
+      provenance = ef_rad_provenance(method, fun_name, inputs,
+                                     flags$evaluated)
+    ),
+    "earthflux_incoming_shortwave"
   )
 }
 
@@ -882,6 +985,38 @@ ef_rl_out <- function(lst, emissivity) {
                  lower_inclusive = FALSE, call = call)
 
   emissivity * EF_STEFAN_BOLTZMANN * lst^4
+}
+
+# Helpers of the radiation dispatchers -------------------------------------------
+
+#' A dispatcher input recycled to the length of the output
+#'
+#' @param x Numeric input of length 1 or `n`, or `NULL`.
+#' @param n Integer. Length of the output.
+#' @return `NULL`, or `x` as a plain vector of length `n`.
+#' @noRd
+ef_rad_layer <- function(x, n) {
+  if (is.null(x)) NULL else rep_len(as.vector(x), n)
+}
+
+#' Provenance of a radiation dispatcher
+#'
+#' @param method,fun_name Method and name of the method function.
+#' @param inputs Named list of the matched inputs (`NULL` elements are
+#'   ignored).
+#' @param flags_evaluated Character. Flag codes evaluated.
+#' @return A list with `method`, `fun`, `status`, `inputs`,
+#'   `flags_evaluated` and `earthflux_version`.
+#' @noRd
+ef_rad_provenance <- function(method, fun_name, inputs, flags_evaluated) {
+  list(
+    method = method,
+    fun = fun_name,
+    status = "CANDIDATA",
+    inputs = names(inputs)[!vapply(inputs, is.null, logical(1))],
+    flags_evaluated = flags_evaluated,
+    earthflux_version = as.character(getNamespaceVersion("EarthFlux"))
+  )
 }
 
 # Diagnostic flags of this stage -------------------------------------------------

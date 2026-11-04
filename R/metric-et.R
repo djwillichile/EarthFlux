@@ -18,7 +18,9 @@
 #   - ef_etrf(): reference ET fraction. CANDIDATA (corroborated; items V4,
 #     V5).
 #   - ef_et_daily(): dispatcher of the daily ET family (rule N6 of
-#     dev/NAMING.md); only method "etrf" is implemented.
+#     dev/NAMING.md); only method "etrf" is implemented. Returns an
+#     earthflux_daily_et object with the flags EF_INPUT_NA and
+#     EF_ET_NEGATIVE and the provenance.
 #   - ef_et_daily_etrf(): ETa_24 = ETrF * ETr_24. CANDIDATA (corroborated;
 #     item V6). No slope correction C_rad (decision ET-D7, open).
 #   - ef_diagnose_et() (internal): cell-scope flags of the stage
@@ -311,9 +313,10 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #' the daily actual evapotranspiration \eqn{ETa_{24}}{ETa_24} of the image
 #' day.
 #'
-#' `ef_et_daily()` is the dispatcher of the family: it checks `method` and
-#' forwards the arguments to the function of that method, without any
-#' computation of its own. The methods are:
+#' `ef_et_daily()` is the dispatcher of the family: it checks `method` (no
+#' default), forwards the arguments to the function of that method, builds
+#' the diagnostic flags and records the provenance, without any computation
+#' of its own. The methods are:
 #'
 #' * `"etrf"`: `ef_et_daily_etrf()`, the reference evapotranspiration
 #'   fraction (ETrF) of the overpass time multiplied by the daily reference
@@ -339,8 +342,16 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #' @return A numeric vector of daily actual evapotranspiration
 #'   \eqn{ETa_{24}}{ETa_24} \[mm d-1\] with the common length of the inputs.
 #'   If the inputs include matrices or arrays (all with the same `dim`), the
-#'   result keeps that `dim`. Negative values are returned unchanged.
-#'   `ef_et_daily()` returns exactly the value of the method function.
+#'   result keeps that `dim`. Negative values are returned unchanged
+#'   (`ef_et_daily_etrf()`).
+#'
+#'   `ef_et_daily()` returns a list of class `earthflux_daily_et` with
+#'   elements `eta_24` (identical to the value of the method function),
+#'   `method`, `reference`, `flags` (one record per code that holds
+#'   somewhere: `EF_INPUT_NA`, a required input is missing, and
+#'   `EF_ET_NEGATIVE`, negative daily ET) and `provenance` (method, method
+#'   function, verification status, reference, inputs used, flag codes
+#'   evaluated in `flags_evaluated`, EarthFlux version).
 #'
 #' @details
 #' Method `"etrf"` computes
@@ -371,8 +382,8 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #' Negative values of `etrf` give a negative daily evapotranspiration,
 #' returned unchanged and without a warning (never set to zero). With
 #' `etr_24 = 0` the result is zero whatever the sign of `etrf`. The
-#' diagnostic flag `EF_ET_NEGATIVE` is assembled by the orchestration layer
-#' on this layer.
+#' diagnostic flag `EF_ET_NEGATIVE` is set by `ef_et_daily()` on this
+#' layer.
 #'
 #' Missing values (`NA`, `NaN`) in any input propagate to the corresponding
 #' output element, without errors or warnings. Arguments must be numeric
@@ -406,18 +417,20 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #'
 #' @examples
 #' # ETrF 0.9 and 8 mm d-1 of alfalfa reference ET: 7.2 mm d-1
-#' ef_et_daily(etrf = 0.9, etr_24 = 8, reference = "alfalfa",
-#'             method = "etrf")
+#' eta <- ef_et_daily(etrf = c(0.9, -0.05), etr_24 = 8,
+#'                    reference = "alfalfa", method = "etrf")
+#' eta$eta_24
+#' vapply(eta$flags, `[[`, character(1), "code")
 #'
-#' # Same result calling the method directly
-#' ef_et_daily_etrf(etrf = 0.9, etr_24 = 8, reference = "alfalfa")
+#' # Same values calling the method directly
+#' ef_et_daily_etrf(etrf = c(0.9, -0.05), etr_24 = 8, reference = "alfalfa")
 #'
 #' # Full chain from the energy balance (one pixel)
 #' lambda <- ef_lambda(method = "constant")
 #' le <- ef_latent_heat(rn = 600, g = 60, h = 50)
 #' et_inst <- ef_et_inst(le, lambda)
 #' etrf <- ef_etrf(et_inst, etr_inst = 0.80, reference = "alfalfa")
-#' ef_et_daily(etrf, etr_24 = 8, reference = "alfalfa", method = "etrf")
+#' ef_et_daily(etrf, etr_24 = 8, reference = "alfalfa", method = "etrf")$eta_24
 ef_et_daily <- function(etrf, etr_24, reference, method) {
   call <- sys.call()
   check_method(if (missing(method)) NULL else method, "etrf", call = call)
@@ -439,10 +452,34 @@ ef_et_daily <- function(etrf, etr_24, reference, method) {
     )
   }
 
-  switch(
+  eta_24 <- switch(
     method,
     etrf = ef_et_daily_etrf(etrf = etrf, etr_24 = etr_24,
                             reference = reference)
+  )
+  inputs <- list(etrf = etrf, etr_24 = etr_24)
+  flags <- ef_flags_combine(
+    ef_input_na_flags(inputs, length(eta_24)),
+    ef_diagnose_et(eta_24 = eta_24)
+  )
+
+  new_ef_object(
+    list(
+      eta_24 = eta_24,
+      method = method,
+      reference = reference,
+      flags = flags$flags,
+      provenance = list(
+        method = method,
+        fun = "ef_et_daily_etrf",
+        status = "CANDIDATA",
+        reference = reference,
+        inputs = names(inputs),
+        flags_evaluated = flags$evaluated,
+        earthflux_version = as.character(getNamespaceVersion("EarthFlux"))
+      )
+    ),
+    "earthflux_daily_et"
   )
 }
 

@@ -57,27 +57,50 @@ test_that("momentum roughness methods give their equations", {
 
 test_that("ef_zom() dispatches identically to the method functions", {
   lai <- c(0.5, 2, 4)
-  expect_identical(ef_zom("lai", lai = lai), ef_zom_lai(lai))
+  expect_identical(ef_zom(lai = lai, method = "lai")$zom, ef_zom_lai(lai))
   expect_identical(
-    ef_zom("ndvi", ndvi = c(0.2, 0.7), albedo = 0.18, coef_1 = 0.4,
-           coef_2 = -4.5),
+    ef_zom(ndvi = c(0.2, 0.7), albedo = 0.18, coef_1 = 0.4, coef_2 = -4.5,
+           method = "ndvi")$zom,
     ef_zom_ndvi(c(0.2, 0.7), 0.18, 0.4, -4.5)
   )
-  expect_identical(ef_zom("perrier", lai = lai, f_lai = 0.6, height = 3),
-                   ef_zom_perrier(lai, 0.6, 3))
-  expect_identical(ef_zom("height", height = 0.12), ef_zom_height(0.12))
+  expect_identical(
+    ef_zom(lai = lai, f_lai = 0.6, height = 3, method = "perrier")$zom,
+    ef_zom_perrier(lai, 0.6, 3)
+  )
+  expect_identical(ef_zom(height = 0.12, method = "height")$zom,
+                   ef_zom_height(0.12))
   # Arguments not used by the method are ignored
-  expect_identical(ef_zom("lai", lai = lai, height = 3), ef_zom_lai(lai))
+  expect_identical(ef_zom(lai = lai, height = 3, method = "lai")$zom,
+                   ef_zom_lai(lai))
+  # `method` is the last argument
+  expect_identical(utils::tail(names(formals(ef_zom)), 1L), "method")
+})
+
+test_that("ef_zom() returns a classed object with flags and provenance", {
+  z <- ef_zom(lai = matrix(c(1, NA, 3, 4), 2, 2), method = "lai")
+  expect_s3_class(z, "earthflux_roughness_length")
+  expect_named(z, c("zom", "method", "flags", "provenance"))
+  expect_identical(dim(z$zom), c(2L, 2L))
+  expect_identical(vapply(z$flags, `[[`, "", "code"), "EF_INPUT_NA")
+  expect_identical(z$flags[[1]]$index, 2L)
+  expect_identical(z$provenance$fun, "ef_zom_lai")
+  expect_identical(z$provenance$status, "CANDIDATA")
+  expect_identical(z$provenance$flags_evaluated, "EF_INPUT_NA")
+  h <- ef_zom(height = 0.12, method = "height")
+  expect_length(h$flags, 0L)
+  expect_match(h$provenance$status, "VERIFICADA (FAO-56)", fixed = TRUE)
 })
 
 test_that("ef_zom() requires an explicit, known method and its arguments", {
   expect_error(ef_zom(lai = 2), class = "earthflux_missing_input")
-  expect_error(ef_zom("LAI", lai = 2), class = "earthflux_unknown_method")
-  expect_error(ef_zom("short.crops", lai = 2),
+  expect_error(ef_zom(lai = 2, method = "LAI"),
                class = "earthflux_unknown_method")
-  expect_error(ef_zom("perrier", lai = 2, height = 3),
+  expect_error(ef_zom(lai = 2, method = "short.crops"),
+               class = "earthflux_unknown_method")
+  expect_error(ef_zom(lai = 2, height = 3, method = "perrier"),
                class = "earthflux_missing_input")
-  expect_error(ef_zom("ndvi", ndvi = 0.5), class = "earthflux_missing_input")
+  expect_error(ef_zom(ndvi = 0.5, method = "ndvi"),
+               class = "earthflux_missing_input")
 })
 
 test_that("roughness inputs are validated", {

@@ -9,14 +9,14 @@
 \title{Momentum roughness length}
 \usage{
 ef_zom(
-  method,
   lai = NULL,
   ndvi = NULL,
   albedo = NULL,
   coef_1 = NULL,
   coef_2 = NULL,
   f_lai = NULL,
-  height = NULL
+  height = NULL,
+  method
 )
 
 ef_zom_lai(lai)
@@ -28,10 +28,6 @@ ef_zom_perrier(lai, f_lai, height)
 ef_zom_height(height)
 }
 \arguments{
-\item{method}{Character. The formulation, with no default (the choice is
-a scientific decision; decision SH-01 is open). One of \code{"lai"},
-\code{"ndvi"}, \code{"perrier"} or \code{"height"}. Matched exactly.}
-
 \item{lai}{Numeric. Leaf area index [m2 m-2]. Must be finite and \verb{>= 0}.
 Used by \code{"lai"} and \code{"perrier"}.}
 
@@ -50,21 +46,35 @@ the canopy height [-], in [0, 1]. Used by \code{"perrier"}.}
 
 \item{height}{Numeric. Canopy (vegetation) height [m]. Must be finite
 and \verb{>= 0}. Used by \code{"perrier"} and \code{"height"}.}
+
+\item{method}{Character. The formulation, with no default (the choice is
+a scientific decision; decision SH-01 is open). One of \code{"lai"},
+\code{"ndvi"}, \code{"perrier"} or \code{"height"}. Matched exactly.}
 }
 \value{
-A numeric vector of momentum roughness length
-\eqn{z_{om}}{z_om} [m] with the common length of the inputs, keeping
-their \code{dim} if they are matrices or arrays. Zero values (e.g. \code{lai = 0}
-or \code{height = 0}) are returned unchanged: no minimum roughness is applied
-(see Details) and such values are rejected by \code{\link[=ef_ustar]{ef_ustar()}}.
+The method functions return a numeric vector of momentum
+roughness length \eqn{z_{om}}{z_om} [m] with the common length of
+the inputs, keeping their \code{dim} if they are matrices or arrays. Zero
+values (e.g. \code{lai = 0} or \code{height = 0}) are returned unchanged: no
+minimum roughness is applied (see Details) and such values are rejected
+by \code{\link[=ef_ustar]{ef_ustar()}}.
+
+\code{ef_zom()} returns a list of class \code{earthflux_roughness_length} with
+elements \code{zom} (identical to the method function), \code{method}, \code{flags}
+(one record per code that holds somewhere: \code{EF_INPUT_NA}, a required
+input is missing; no \code{EF_H_} code applies to \eqn{z_{om}}{z_om} while
+no minimum roughness or terrain factor is implemented) and \code{provenance}
+(method, method function, verification status, inputs used, flag codes
+evaluated in \code{flags_evaluated}, EarthFlux version).
 }
 \description{
 Computes the surface roughness length for momentum transport
 \eqn{z_{om}}{z_om} [m], which controls the friction velocity and the
 aerodynamic resistance to heat transport of the METRIC energy balance.
-\code{ef_zom()} is a thin dispatcher: it checks \code{method} and forwards the
-arguments to one of the method functions, which can also be called
-directly.
+\code{ef_zom()} is the dispatcher of the family: it checks \code{method} (no
+default), forwards the arguments to one of the method functions (which can
+also be called directly), builds the diagnostic flags and records the
+provenance.
 \itemize{
 \item \code{ef_zom_lai()}: linear function of the leaf area index, for short
 (agricultural) crops.
@@ -126,7 +136,7 @@ content; its use in METRIC is not verified.
 }
 \examples{
 # Short crops: z_om = 0.018 * LAI (m)
-ef_zom(lai = c(0.5, 2, 4), method = "lai")
+ef_zom(lai = c(0.5, 2, 4), method = "lai")$zom
 ef_zom_lai(c(0.5, 2, 4))
 
 # Exponential NDVI / albedo relation with user coefficients

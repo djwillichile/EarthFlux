@@ -534,3 +534,57 @@ ef_reshape <- function(x, n, d) {
   dim(out) <- d
   out
 }
+
+# Dispatchers ------------------------------------------------------------------
+
+#' Match the arguments a dispatcher forwards to a method function
+#'
+#' Used by dispatchers whose method functions take different arguments
+#' through `...` (e.g. `ef_tau_sw()`, `ef_rs_in()`): the arguments are matched
+#' against the formals of the method function, as R would do in the call,
+#' so that an argument required by the method but not supplied, or one it
+#' does not accept, raises a classed condition before the method is called
+#' (dev/NAMING.md section 2.1; dev/ARCHITECTURE.md section 3.2).
+#'
+#' @param fun The method function.
+#' @param fun_name Character. Its name, used in messages.
+#' @param args The list of arguments of the dispatcher (`list(...)`).
+#' @param method Character. The method, used in messages.
+#' @param call The call to report.
+#' @return A named list of the matched arguments (`NULL` values kept).
+#'   Errors: `earthflux_missing_input` when an argument without default of
+#'   `fun` is not supplied; `earthflux_input_error` when an argument does
+#'   not match a formal of `fun`.
+#' @noRd
+ef_dispatch_args <- function(fun, fun_name, args, method,
+                             call = sys.call(-1)) {
+  matched <- tryCatch(
+    as.list(match.call(fun, as.call(c(list(as.name(fun_name)), args))))[-1L],
+    error = function(e) {
+      ef_abort(
+        sprintf("Invalid arguments for `method = \"%s\"` (%s): %s",
+                method, fun_name, conditionMessage(e)),
+        class = "earthflux_input_error",
+        call = call
+      )
+    }
+  )
+  fmls <- formals(fun)
+  no_default <- vapply(fmls, function(x) {
+    is.symbol(x) && identical(as.character(x), "")
+  }, logical(1))
+  absent <- setdiff(names(fmls)[no_default], names(matched))
+  if (length(absent) > 0L) {
+    ef_abort(
+      sprintf(
+        "`method = \"%s\"` requires %s; missing: %s.",
+        method,
+        paste0("`", names(fmls)[no_default], "`", collapse = ", "),
+        paste0("`", absent, "`", collapse = ", ")
+      ),
+      class = c("earthflux_missing_input", "earthflux_input_error"),
+      call = call
+    )
+  }
+  matched
+}
