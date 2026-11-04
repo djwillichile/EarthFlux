@@ -8,7 +8,8 @@ Fuentes-Jaque.
 > Este documento unifica los flags propuestos en `dev/specs/*.md`
 > (lectura del 2026-11-04). **No registra ningún código**: `R/diagnostics.R`
 > sigue siendo la fuente de verdad de los códigos registrados (hoy solo
-> `EF_INPUT_NA` y `EF_ET_NEGATIVE`). Los cambios que aquí se proponen a
+> `EF_INPUT_NA` y `EF_ET_NEGATIVE`; mecanismo del registro por etapa en
+> §4.2 y §7). Los cambios que aquí se proponen a
 > otras especificaciones se listan en §10 y no se editan aquí. Nada de este
 > documento se implementa fuera de la Definition of Done
 > (`DEVELOPMENT.md` §3).
@@ -420,6 +421,22 @@ la fuente o la fuente no la indicaba (justificación en §5.4).
 
 ### 4.2 Catálogo (112 códigos)
 
+**Estado de implementación (2026-11-04).** El registro se ensambla por
+etapa: `ef_flag_registry()` (`R/diagnostics.R`) une las filas que cada
+etapa declara en su propio archivo con el constructor `ef_flag_rows()`,
+que valida cada fila (R2–R6, R9, R17); la unión comprueba unicidad de
+códigos y de bits por etapa (R1, R7). Dueños: `ef_flags_core()`
+(`diagnostics.R`, `EF_INPUT_`), `ef_flags_radiation()`
+(`metric-radiation.R`, `EF_RAD_`), `ef_flags_soil_heat()`
+(`metric-soil-heat.R`, `EF_G_`), `ef_flags_anchors()`
+(`metric-anchors.R`, `EF_ANCHOR_`), `ef_flags_sensible_heat()`
+(`metric-sensible-heat.R`, `EF_H_`) y `ef_flags_et()` (`metric-et.R`,
+`EF_ET_`); `surface`, `forcing` y `spatial` agregan la suya con su primer
+código. Registrados: `EF_INPUT_NA` (`INPUT`, info, `cell,record`, bit 0) y
+`EF_ET_NEGATIVE` (`ET`, warning, `cell`, bit 1), ambos con las columnas de
+§7. Las demás filas de este catálogo siguen sin registrar y se registran
+según §7.
+
 #### `EF_INPUT_` (1)
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
@@ -655,7 +672,10 @@ la procedencia (§6.6). `"keep_all"` permite auditar, pero el núcleo sigue
 rechazando valores fuera de dominio con error.
 
 La tercera severidad entra a `R/diagnostics.R` **junto con el primer
-código que la use** (§7), no antes.
+código que la use** (§7), no antes. *Enmienda (2026-11-04):* con la
+adopción provisional de FL-05 y FL-06 (`DECISIONS.md` §1.0), `critical` ya
+es un nivel válido del registro (`ef_flag_severity_levels()`), aunque
+todavía ningún código registrado lo usa.
 
 ### 5.4 Cambios de severidad respecto de las fuentes
 
@@ -852,8 +872,11 @@ Cada resultado (`earthflux_result`, `earthflux_surface`,
    lo levanta, (b) sus tests positivos y negativos (casos numéricos de su
    especificación), (c) la fila del registro con todas sus columnas, y
    (d) la entrada en `NEWS.md` (Definition of Done, `DEVELOPMENT.md` §3).
-   Lo mismo vale para la severidad `critical` y para las columnas nuevas
-   del registro: entran con el primer código que las necesite.
+   Lo mismo valía para la severidad `critical` y para las columnas nuevas
+   del registro; *enmienda (2026-11-04):* ambas se introdujeron como
+   infraestructura antes del primer código nuevo, para que las cinco
+   etapas de M2 registren sus códigos de forma uniforme (`DECISIONS.md`
+   §1.0). La regla sigue vigente para los **códigos**.
 2. **Clase II**: además, el umbral debe estar documentado con referencia
    en `SCIENTIFIC_SPEC.md` (y `REFERENCES.md`) con estado `VERIFICADA`. El
    umbral se expone como parámetro registrado en la procedencia; sin
@@ -876,10 +899,24 @@ Cada resultado (`earthflux_result`, `earthflux_surface`,
 8. **Estado de este documento**: la columna "Clase" de §4.2 se actualiza a
    "registrado" en el mismo cambio que registra el código.
 
-Registro propuesto (columnas a introducir con el primer código nuevo):
+Columnas del registro (implementadas el 2026-11-04):
 `code`, `stage`, `severity`, `scope`, `bit` (`NA` si no hay ámbito
 `cell`), `error_class` (`NA` salvo contraparte de error), `description`
 (una oración en inglés), `spec` (documento y sección), `since` (versión).
+`stage` es el prefijo sin `EF_` (p. ej., `"RAD"`); `scope` admite varios
+ámbitos separados por comas sin espacios (`"cell,record"`); `bit` es
+entero.
+
+**Mecanismo (2026-11-04).** Cada etapa declara sus filas en su propio
+archivo, en una función interna `ef_flags_<etapa>()` que devuelve
+`ef_flag_rows(code, stage, severity, scope, bit, error_class, description,
+spec, since)` (vectores de igual longitud, sin reciclaje; sin argumentos,
+la tabla de cero filas), y `ef_flag_registry()` las une (ver §4.2). El
+registro `earthflux_flag` incorpora `stage` y `scope` (§6.2);
+`ef_flag(mask, code, scope = NULL)` exige `scope` explícito cuando el
+código tiene más de un ámbito y una máscara de longitud 1 en el ámbito
+`object` (R18). Los campos `target`, `time` y `parameters` de §6.2 entran
+con la primera función espacial o con parámetro.
 
 ---
 
@@ -909,12 +946,15 @@ Registro propuesto (columnas a introducir con el primer código nuevo):
 
 Notas:
 
-- El test actual verifica `expect_named(reg, c("code", "severity",
-  "description"))` y `severity %in% c("info", "warning")`; ambos se
-  actualizan en el mismo cambio que introduce las columnas nuevas o la
-  severidad `critical` (§7.1).
-- La expresión regular actual `^EF_[A-Z0-9_]+$` se sustituye por la de R2
-  (cerrada), que excluye por construcción las constantes `EF_*` de C9.
+- Implementados (2026-11-04) en `test-diagnostics.R`: R1–R11, R15, R17
+  (con el vector de guardia de clase II, 35 códigos, y la excepción
+  temporal de R11), más tests de `ef_flag_rows()` y de
+  `ef_flag()`. R18 se garantiza en `ef_flag()`. R12–R14, R16 y R19 entran
+  con la palabra de bits, la lista de retirados, `terra` y los flags de
+  procedencia.
+- La expresión regular `^EF_[A-Z0-9_]+$` se sustituyó por la de R2
+  (cerrada), que excluye por construcción las constantes `EF_*` de C9
+  (`R/constants.R`).
 
 ---
 
@@ -926,8 +966,8 @@ Notas:
 | FL-02 | Prefijo del módulo `spatial` | `EF_GWR_` / `EF_SPATIAL_` | `EF_GWR_` (menos renombres; nombre de los archivos) |
 | FL-03 | ET-D4: LE < 0 | Código nuevo / reutilizar `EF_ET_NEGATIVE` | Reutilizar (equivalencia exacta, C1); la causa la dan `EF_G_AVAILABLE_NONPOSITIVE` y `EF_H_GT_AVAILABLE` |
 | FL-04 | Herencia en anclas | Códigos `EF_ANCHOR_*` duplicados / herencia | Herencia (R-HER, §3.4) |
-| FL-05 | Tercera severidad | Ninguna / `error` / `critical` | `critical` con el criterio cerrado de §5.3 |
-| FL-06 | Severidad de `EF_H_CALIBRATION_NOT_CONVERGED` y `EF_H_DT_SLOPE_NONPOSITIVE` | warning (`sensible-heat.md`) / critical | `critical` (§5.4) |
+| FL-05 | Tercera severidad | Ninguna / `error` / `critical` | `critical` con el criterio cerrado de §5.3 → **DECIDIDA (provisional, 2026-11-04)** (`DECISIONS.md` §1.0) |
+| FL-06 | Severidad de `EF_H_CALIBRATION_NOT_CONVERGED` y `EF_H_DT_SLOPE_NONPOSITIVE` | warning (`sensible-heat.md`) / critical | `critical` (§5.4) → **DECIDIDA (provisional, 2026-11-04)** (`DECISIONS.md` §1.0) |
 | FL-07 | Representación ráster | Bits por capa / una capa lógica por flag / un código por píxel | Bits por capa de salida, 31 bits, `INT4S` (§6.3) |
 | FL-08 | Constantes `EF_KELVIN_OFFSET`, `EF_WATER_DENSITY`, `EF_SECONDS_PER_HOUR`, `EF_MM_PER_M` | Mantener / renombrar a minúsculas internas | Decisión del autor; R2 y R15 evitan la colisión en cualquier caso |
 | FL-09 | ETr por píxel (opción C de `weather-forcing.md` §6) | — | Si se adopta: `EF_WS_ETR_NEGATIVE` con ámbito `cell` y palabra `WS` para capas de ETr |
@@ -942,8 +982,8 @@ Notas:
 
 | Documento | Sección | Cambio propuesto |
 |---|---|---|
-| `R/diagnostics.R` | registro | Ninguno ahora. Columnas nuevas, `critical` y regex cerrada entran con el primer código nuevo (§7) |
-| `tests/testthat/test-diagnostics.R` | – | Tests R1–R19 con el primer código nuevo; actualizar `expect_named()` y la lista de severidades |
+| `R/diagnostics.R` | registro | Hecho (2026-11-04): columnas de §7, `critical`, regex cerrada y registro por etapa (`ef_flags_<etapa>()`, `ef_flag_rows()`) |
+| `tests/testthat/test-diagnostics.R` | – | Hecho (2026-11-04) para R1–R11, R15, R17; R12–R14, R16, R19 pendientes (§8) |
 | `weather-forcing.md` | §3.2, §3.1, §2.6, WF-07 | Severidad `error` → `critical`; `qc_policy = "exclude_error"` → `"exclude_critical"`; `EF_WS_IMPOSSIBLE` → `EF_WS_OUT_OF_DOMAIN`; `EF_STATION_CLOUDY` → `EF_WS_CLOUDY_OVERPASS`; QC-05b → `EF_WS_RS_GT_RA`; `EF_ETREF_NEGATIVE` → `EF_WS_ETR_NEGATIVE`; WF-07 resuelta por §3.1; §7.2 "SpatRaster de códigos" → palabra de bits (A1) |
 | `gwr-forcing.md` | §2.3, §2.4, §5.3, §6.3, §9.2, §12 | `EF_GWR_PHYSICAL_RANGE` → `EF_GWR_OUT_OF_DOMAIN` (`critical`); `EF_FORCING_SINGLE_STATION` → `EF_GWR_SINGLE_STATION`; `gwr_flag_bits()` como vista del registro; definición de §6.3 para anclas pasa a regla de herencia |
 | `anchor-pixels.md` | §6, §5.5 | Retirar `EF_ANCHOR_QA_DEGRADED`, `_HIGH_VIEW_ANGLE`, `_COMPOSITE_LAG`, `_FORCING_EXTRAPOLATED` (herencia; columna `inherited_flags` en `pixels`); `EF_ANCHOR_SMALL_CONTRAST` → `EF_ANCHOR_CONTRAST_LOW` |
