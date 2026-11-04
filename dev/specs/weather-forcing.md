@@ -224,6 +224,54 @@ valor imposible detendría todo; alternativa: marcarlo con flag de severidad
 `error` y excluirlo por política. Recomendación provisional: flag (no
 error) en `observations`; error solo en `stations` (metadatos).
 
+### 2.7 Estado de implementación (M3, 2026-11-04)
+
+Implementado en `R/io-weather.R` (`ef_station_table()`, exportada;
+`ef_validate_stations()`, interna) con tests en
+`tests/testthat/test-weather.R` y datos sintéticos en
+`tests/testthat/helper-stations.R`. Decisiones tomadas al implementar
+(provisionales, para que el integrador las registre en `DECISIONS.md`):
+
+- **WF-03** adoptada: dos `data.frame` base + clase S3
+  `earthflux_station_table` (`new_ef_object()`), con elementos `stations`,
+  `observations`, `provenance`, `qc` (tabla vacía hasta el QC) y `flags`
+  (lista vacía). Entradas que heredan de `data.frame` (p. ej., tibble) se
+  convierten a `data.frame` base.
+- **WF-04** adoptada según `flags.md` (clase III): imposibles en
+  `stations` → `earthflux_domain_error`; imposibles en `observations` → se
+  conservan y `ef_station_qc()` los marca con severidad `critical`. Valores
+  infinitos en `observations` → `earthflux_domain_error` (no son medidas).
+- **Altura del anemómetro:** dominio > (1 + 5,42)/67,8 = 0,0947 m (Ec. 47),
+  con nota `TODO(shared)` para reutilizar la cota de `ef_wind_2m()` al
+  fusionar el módulo de ET de referencia. Alturas `NA` permitidas (flag
+  QC-11); la columna es obligatoria si se observa la variable.
+- **CRS:** campo obligatorio `provenance$crs`, que debe ser exactamente
+  `"EPSG:4326"` (la proyección la hace `spatial`).
+- **Tiempo:** `POSIXct` con `tzone` explícito no vacío (si no →
+  `earthflux_station_time_error`); carácter solo con `timestamp_format` y
+  `tz` (zona IANA de `OlsonNames()`), ambos sin defecto; cadenas no
+  interpretables (incluidas horas locales inexistentes por cambio de
+  horario) → error. `timestamp_convention` e `interval` (s, entero positivo)
+  son campos obligatorios de `provenance`.
+- **Unidades:** conversiones solo declaradas (`units =`), con factores
+  exactos (K → °C con `EF_KELVIN_OFFSET`; km/h; hPa, Pa; fracción → %;
+  MJ m⁻² h⁻¹ y MJ m⁻² d⁻¹ → W m⁻², Tabla 3 de FAO-56), registradas en
+  `provenance$units`. Energía acumulada por período no se acepta (declarar
+  la tasa).
+- **Columnas fuera del contrato** → error (evita que un nombre mal escrito
+  quede sin validar). Columnas numéricas se guardan como `double`; una
+  columna lógica completamente `NA` se acepta como `NA_real_`.
+- **Procedencia** añadida por el paquete (campos reservados): `source_tz`,
+  `units`, `duplicates_removed`, `package_version` y `operations`
+  (registro `step`/`detail`); `ef_station_qc()` añade `qc`, `flags` y
+  `flags_evaluated`.
+- **Errores** (todas subclases de `earthflux_input_error`):
+  `earthflux_station_field_error`, `earthflux_station_time_error`,
+  `earthflux_station_unknown_id`, `earthflux_station_duplicate`,
+  `earthflux_station_provenance_error`, más `earthflux_domain_error`.
+- **Pendiente:** lectores por red (§9), datum vertical, `ef_validate_stations()`
+  sigue interna (§2.1).
+
 ---
 
 ## 3. Control de calidad (QC) de estaciones
@@ -294,6 +342,51 @@ Notas:
 - `water` v1.0 advierte cuando Rs/Rso a la hora de paso es < 0,8 o > 1,1 y
   no lo evalúa con Rso < 200 W m⁻²; son umbrales propios sin cita. No se
   adoptan; quedan como referencia para la discusión de QC-13.
+
+### 3.3 Estado de implementación (M3, 2026-11-04)
+
+Implementado en `R/prep-qc.R` (`ef_station_qc(x, qc_policy =
+"exclude_critical")`, exportada) con tests en
+`tests/testthat/test-station-qc.R`; registro en `ef_flags_stations()`
+(etapa `WS`, unido a `ef_flag_registry()`).
+
+- **Códigos registrados** (nombres de `flags.md` §4.2, ámbito `record`,
+  sin bit): `EF_WS_OUT_OF_DOMAIN` (QC-01a; clase III, `critical`,
+  contraparte `earthflux_domain_error`; HR, `rh_max`, `rh_min` < 0;
+  viento < 0; T, Tdew, `tmax`, `tmin` ≤ −273,15 °C; P ≤ 0; eₐ < 0),
+  `EF_WS_TMIN_GT_TMAX` (QC-03; clase III, `critical`), `EF_WS_RH_GT100`
+  (QC-02, info), `EF_WS_TDEW_GT_TAIR` (QC-04, sin tolerancia),
+  `EF_WS_TIME_GAP` y `EF_WS_TIME_IRREGULAR` (QC-09: paso múltiplo entero
+  ≥ 2 de `interval` / no múltiplo; comparación exacta),
+  `EF_WS_HEIGHT_MISSING` y `EF_WS_HEIGHT_NONSTANDARD` (QC-11; T/HR ≠ 2 m;
+  el viento a otra altura no se marca: se convierte con la Ec. 47).
+- **Tabla `$qc`:** una fila por registro × variable × código, con columnas
+  `row` (fila de `observations`), `station_id`, `timestamp`, `variable`
+  (`"timestamp"` para QC-09), `flag_code`, `severity`, `test_id`, `value`,
+  `threshold` (cota, 100 %, la otra variable, 2 m o `interval`) y
+  `parameters` (`NA`). Las pruebas de coherencia (QC-03, QC-04) marcan las
+  dos variables. Equivalencia R16 verificada en el validador y en los
+  tests: filas distintas por código = `index` del registro `earthflux_flag`.
+- **Política:** `qc_policy ∈ {"exclude_critical", "exclude_warning",
+  "keep_all"}`, coincidencia exacta, defecto `"exclude_critical"`
+  (`flags.md` §5.3). El resultado es un estado por valor (`$qc_status`:
+  `ok`/`warning`/`excluded`, el máximo de severidad de los flags del
+  registro que afectan a la variable o al `timestamp`); `observations` no
+  cambia; conteos en `provenance$qc` y `provenance$flags`.
+- **Clase de resultado:** `c("earthflux_station_qc",
+  "earthflux_station_table")`.
+- **No evaluados** (listados en `provenance$qc$not_evaluated`): todos los
+  de clase II de §3.2 (ningún umbral tiene valor elegido con referencia;
+  no se exponen argumentos de umbral porque su código no puede
+  registrarse), `EF_WS_RS_GT_RA` (requiere Ra de la ventana del registro,
+  módulo de ET de referencia) y `EF_WS_INCOMPLETE_DAY` (ETr24, WF-11).
+  Tampoco se evalúa eₐ > e°(T) (variante de QC-04 con `vapour_pressure`):
+  requiere `ef_es()` del módulo de ET de referencia.
+- **Interfaz con `spatial`** (`R/prep-weather.R`, internas):
+  `station_values()` (copia con `NA` en lo excluido) y
+  `station_regionalization_input()` (tabla de §7.2 para `air_temperature`,
+  `vapour_pressure` y `solar_radiation` observadas; `target_time` en el
+  punto medio del período).
 
 ---
 

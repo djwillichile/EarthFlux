@@ -143,6 +143,32 @@ yet.
 
 ### Meteorological forcing
 
+* `ef_station_table()` builds the standard table of weather station data:
+  station metadata and observations as two plain data frames joined by
+  `station_id`, with timestamps stored in UTC (character timestamps need
+  an explicit format and time zone), air temperature in degrees Celsius,
+  the other variables in the units of the contract, coordinates in WGS84
+  (`"EPSG:4326"`) and mandatory period semantics (`timestamp_convention`,
+  `interval`) in the provenance. Unit conversions are applied only when
+  declared and are recorded; exact duplicated records are kept once and
+  conflicting ones are an error. Invalid metadata raise classed errors
+  (`earthflux_station_field_error`, `earthflux_station_time_error`,
+  `earthflux_station_unknown_id`, `earthflux_station_duplicate`,
+  `earthflux_station_provenance_error`, all subclasses of
+  `earthflux_input_error`, and `earthflux_domain_error`).
+
+* `ef_station_qc()` runs the quality control of the station table and
+  never modifies the observations: it returns the long audit table `$qc`,
+  equivalent record-scope flag records, the status of each value
+  (`ok`, `warning`, `excluded`) under an explicit `qc_policy` (default
+  `"exclude_critical"`) and the counts in the provenance. Registered codes:
+  `EF_WS_OUT_OF_DOMAIN` and `EF_WS_TMIN_GT_TMAX` (physical or logical
+  impossibilities, severity `critical`), `EF_WS_RH_GT100`,
+  `EF_WS_TDEW_GT_TAIR`, `EF_WS_TIME_GAP`, `EF_WS_TIME_IRREGULAR`,
+  `EF_WS_HEIGHT_MISSING` and `EF_WS_HEIGHT_NONSTANDARD`. Tests that need a
+  threshold without a documented reference (plausible ranges, persistence,
+  steps, ...) are not evaluated and are listed as such in the provenance.
+
 * Derived meteorological variables, verified against the FAO-56 equations
   and worked examples (air temperature in degrees Celsius, angles in
   radians, radiation in MJ m-2 per day or per period):

@@ -72,10 +72,18 @@ reference:
       - ef_et_daily
   - title: Meteorological forcing
     desc: >
-      Meteorological forcing of the METRIC chain from weather stations:
-      variables derived from the station observations and the reference
-      evapotranspiration (grass ETo of FAO-56, alfalfa ETr of the ASCE-EWRI
-      standardized equation).
+      Meteorological forcing of the METRIC chain from weather stations: the
+      standard station table and its quality control, the variables derived
+      from the observations and the reference evapotranspiration (grass ETo
+      of FAO-56, alfalfa ETr of the ASCE-EWRI standardized equation).
+  - subtitle: Station data and quality control
+    desc: >
+      Standard table of station metadata and observations (UTC timestamps,
+      contract units, provenance) and its quality control, which flags
+      records without modifying them.
+    contents:
+      - ef_station_table
+      - ef_station_qc
   - subtitle: Derived variables
     desc: >
       Psychrometric constant, saturation and actual vapour pressure, dew
