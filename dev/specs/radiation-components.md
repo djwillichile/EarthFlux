@@ -1013,6 +1013,25 @@ que el reciclado explícito.
 
 **Decisiones abiertas.** RC-07, RC-12, RC-13.
 
+**Evidencia previa del autor para RC-13 (2026-11-04; nivel: resumen).**
+Morales-Salinas et al. (2023, *Scientific Reports* 13:14465,
+doi:10.1038/s41598-023-40499-6) evaluaron ocho modelos globales de
+emisividad atmosférica de cielo despejado con datos de reanálisis
+NCEP/NCAR: la ecuación de Brutsaert tuvo el mejor desempeño; su coeficiente
+calibrado varió estacionalmente entre 1,2 y 1,4, con cinco zonas homogéneas
+(K-means), y redujo el error de Rn en un 64 % a escala global (18–77 % por
+zona). Conclusión de los autores: el coeficiente de Brutsaert no debe
+tratarse como constante en el tiempo ni en el espacio. Implicancias para
+EarthFlux:
+
+- `ef_atmospheric_emissivity()` debería admitir, además de la forma en τ_sw,
+  la formulación de Brutsaert en función de eₐ y Ta, con coeficiente
+  explícito y registrado (no fijo en el código);
+- la formulación en eₐ y Ta conecta directamente RL↓ con el forzamiento
+  meteorológico espacial (GWR), lo que es relevante para H1 y RC-12;
+- verificación pendiente: leer el texto completo (ecuación, coeficientes por
+  zona y datos) y la fuente original de Brutsaert (1975/1982).
+
 ---
 
 ### 6.6 `ef_longwave_out()`
@@ -1168,7 +1187,7 @@ está instalado). Diferencias que deben esperarse y documentarse, no forzarse:
 | RC-10 | Fuente de Rs↓ | Modelada de cielo despejado / medida (estación o GWR) + descomposición / híbrido con K_t calibrado | Modelada por defecto; híbrido como entrada espacial para H1; registrar coherencia con Rs de ETr | 6.4, H1 |
 | RC-11 | Escala de la corrección topográfica | MDE remuestreado a 1 km / cálculo a resolución del MDE y agregación de Rs↓ a 1 km | Evaluar; la pendiente media a 1 km subestima pendientes y Rs↓ no es lineal en s | 6.4 |
 | RC-12 | Temperatura para RL↓ | Ta (estación/GWR) / Ts píxel frío / Ts por píxel | Función agnóstica; (a) y (b) como configuraciones; verificar Allen et al. (2007) | 6.5, H1 |
-| RC-13 | Formulación de ε_a y τ de entrada | Empírica en τ_sw / alternativas en eₐ y Ta; τ modelada vs efectiva medida | τ_sw modelada de cielo despejado | 6.5 |
+| RC-13 | Formulación de ε_a y τ de entrada | Empírica en τ_sw / alternativas en eₐ y Ta (p. ej., Brutsaert); τ modelada vs efectiva medida | τ_sw modelada de cielo despejado; evaluar Brutsaert calibrado como alternativa (Morales-Salinas et al., 2023) | 6.5 |
 | RC-14 | ε₀ de banda ancha y coherencia con LST | Empírica desde LAI / desde emisividades del producto LST / MOD21 | Preferir derivada del producto; registrar procedencia | 6.6 |
 | RC-15 | Tipo de retorno | Vector (solo total) / lista de componentes | Lista para `ef_shortwave_in()` y `ef_solar_geometry()`; vector para onda larga | 6.1, 6.4 |
 | RC-16 | Orientación `NA` en celdas planas | Propagar `NA` siempre / aceptar `NA` si s = 0 | Propagar; el envoltorio del MDE asigna un valor definido a celdas planas y lo documenta | 6.1 |

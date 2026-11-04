@@ -319,6 +319,33 @@ Convención:
   *Ecography*, 40(8), 913–929. https://doi.org/10.1111/ecog.02881
   `VERIFIED (2026-11-04, Crossref)`
 
+## Author's prior work (antecedentes del autor)
+
+Trabajos con participación del autor que aportan evidencia a decisiones de
+EarthFlux. Metadatos `VERIFIED (2026-11-04, Crossref)`; contenido leído
+**solo a nivel de resumen** (Crossref) hasta habilitar el acceso a los
+textos completos (`polipapers.upv.es`, `www.mdpi.com`, `www.nature.com`).
+
+- Galdón-Ruíz, A., Fuentes-Jaque, G., Soto, J., & Morales-Salinas, L.
+  (2023). A simple method for the estimation of minimum and maximum air
+  temperature monthly mean maps using MODIS images in the region of Murcia,
+  Spain. *Revista de Teledetección*, (61), 59–71.
+  https://doi.org/10.4995/raet.2023.18909 — GWR de Tmin/Tmax con LST MODIS
+  como covariable (GW-07).
+- Montaner-Fernández, D., Morales-Salinas, L., Rodriguez, J. S.,
+  Cárdenas-Jirón, L., Huete, A., Fuentes-Jaque, G., Pérez-Martínez, W., &
+  Cabezas, J. (2020). Spatio-temporal variation of the urban heat island in
+  Santiago, Chile during summers 2005–2017. *Remote Sensing*, 12(20), 3345.
+  https://doi.org/10.3390/rs12203345 — MODIS + estaciones + GWR en Santiago
+  (GW-07).
+- Morales-Salinas, L., Ortega-Farías, S., Riveros-Burgos, C., Chávez, J. L.,
+  Wang, S., Tian, F., Carrasco-Benavides, M., Neira-Román, J.,
+  López-Olivari, R., & Fuentes-Jaque, G. (2023). Assessment of atmospheric
+  emissivity models for clear-sky conditions with reanalysis data.
+  *Scientific Reports*, 13, 14465.
+  https://doi.org/10.1038/s41598-023-40499-6 — modelos de emisividad
+  atmosférica para RL↓ (RC-13).
+
 ## Related software
 
 - Olmedo, G. F., Ortega-Farías, S., de la Fuente-Sáiz, D., Fonseca-Luengo,

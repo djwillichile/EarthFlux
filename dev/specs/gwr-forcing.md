@@ -326,10 +326,33 @@ Detección (obligatoria cuando una covariable proviene de `surface`):
   de superficies Ta(con LST) − Ta(sin LST) y LST, y entre la diferencia de
   ETrF de ambas corridas y LST.
 
+**Evidencia previa del autor (2026-11-04; nivel: resumen, texto completo
+pendiente de acceso).**
+
+- Galdón-Ruíz et al. (2023, *Revista de Teledetección* 61:59–71,
+  doi:10.4995/raet.2023.18909): en Murcia (47 estaciones), regresiones
+  geográficamente ponderadas entre temperatura del aire y LST MODIS dan
+  R² = 0,69–0,82 (Tmin vs. LST nocturna) y 0,70–0,87 (Tmax vs. LST diurna),
+  con RMSE de 1,0 °C y 0,8 °C; los coeficientes locales se interpolan luego
+  con altitud y NDVI para obtener mapas de **medias mensuales**.
+- Montaner-Fernández et al. (2020, *Remote Sensing* 12:3345,
+  doi:10.3390/rs12203345): isla de calor de Santiago con MODIS, nueve
+  estaciones, regresiones simples, GWR y geoestadística.
+
+Lectura para EarthFlux: la evidencia respalda que **LST es un predictor
+fuerte de la temperatura del aire**, incluso en Chile, lo que justifica
+mantener LST como opción y no excluirla de forma rígida. No resuelve, sin
+embargo, el problema de esta sección, que no es de capacidad predictiva sino
+de **acoplamiento** dentro de METRIC (puntos 1–3). Además, la evidencia es
+para **medias mensuales** de Tmin/Tmax, mientras METRIC necesita Ta
+**instantánea** en la hora de paso; la transferencia de escala temporal
+debe evaluarse.
+
 Opciones (decisión GW-07, del autor): (a) solo covariables independientes
 de la superficie (`elevation`, `distance_to_coast`, `slope`/`aspect`) —
-recomendación provisional por defecto; (b) LST permitida solo como opción
-explícita, con flag y con la sensibilidad anterior como requisito de
+recomendación provisional por defecto hasta contar con el experimento;
+(b) LST permitida como opción explícita, respaldada por la evidencia previa
+del autor, con flag y con la sensibilidad anterior como requisito de
 reporte; (c) LST de otro instante (p. ej., nocturna o compuesto) para
 reducir el acoplamiento — sin evidencia de que lo elimine (a evaluar).
 
@@ -1319,7 +1342,7 @@ si dependen de un umbral, cuando el umbral tenga referencia
 | GW-04 | Kernel por defecto en `api` | Sin defecto en el núcleo / bicuadrado / gaussiano | Sin defecto en el núcleo; el de `api` se fija con evidencia de CV | §5.5 |
 | GW-05 | Criterio y búsqueda por defecto | AICc / CV; `n_grid`, `tol`, `upper_factor`, `lower_offset` | AICc; valores de búsqueda documentados como convenciones | §4.4 |
 | GW-06 | `min_neighbours`, `n_min`, `kappa_max` | Mínimo matemático / umbrales con referencia | Mínimo matemático; umbrales sin defecto hasta tener referencia (pregunta 4 de `gwr-backend.md`) | §4.5 |
-| GW-07 | Covariables de superficie (LST, NDVI/EVI) | Excluir / permitir con flag y sensibilidad / LST de otro instante | Excluir por defecto; permitir con flag y sensibilidad obligatoria | §2.7 |
+| GW-07 | Covariables de superficie (LST, NDVI/EVI) | Excluir / permitir con flag y sensibilidad / LST de otro instante | Opción (b) disponible (evidencia: Galdón-Ruíz et al., 2023); valor por defecto (a) hasta que el experimento de sensibilidad (C3 con y sin LST) muestre su efecto en ETa | §2.7 |
 | GW-08 | Modo grueso | No ofrecer / coeficientes interpolados / predicción remuestreada (antecedente) | Coeficientes interpolados, opcional, con control de submuestra (pregunta 3 de `gwr-backend.md`) | §6.2 |
 | GW-09 | Métrica de distancia | Euclidiana proyectada / gran círculo | Euclidiana proyectada; gran círculo cuando se especifique con referencia | §3.3 |
 | GW-10 | Elevación en estaciones | Metadatos / MDE extraído | MDE en ajuste y predicción; diferencia como diagnóstico | §2.2 |
