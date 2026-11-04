@@ -14,6 +14,63 @@ Estado: **borrador M1** · Componente: `surface` · Archivos de destino:
 Revisión documental: **2026-11-04**. Todas las fuentes de §2 se leyeron en
 esa fecha.
 
+> **Estado de implementación (M4, 2026-11-04): tabla de productos, I/O,
+> escalado y QA.** Implementado como funciones internas (`@noRd`, prefijo
+> `modis_`) en `R/io-modis.R` (tabla, nombres de archivo, lectores,
+> mosaico, escalado), `R/modis-qa.R` (decodificación QA, flags
+> `EF_SURF_*`, política QA y conversores) y `R/io-aoi.R` (AOI). Tests:
+> `tests/testthat/test-modis.R` (S1–S10, Q1–Q5, MODLAND 00/01/10/11, LAI
+> 253, política) y `tests/testthat/test-modis-io.R` (GeoTIFF y HDF4
+> sintéticos; los de HDF4 se omiten sin el driver). Decisiones: M4-01 …
+> M4-10 de `DECISIONS.md` §1.4; abiertas A-M4-1 … A-M4-3.
+>
+> 1. **Tabla única** (§13.1): `modis_product_spec(product, collection =
+>    "061")` y `modis_layer_spec(product, layer, collection = "061")`
+>    devuelven filas de `modis_product_table()` con columnas `product`,
+>    `collection`, `layer`, `sds_alternatives`, `grid`, `resolution`,
+>    `cells_per_tile`, `data_type`, `kind`, `conversion`, `scale`,
+>    `offset`, `valid_min`, `valid_max`, `fill`, `special_min`,
+>    `special_max`, `special_flag`, `unit`, `qa_table`, `status`, `source`,
+>    `note`, `physical_min`, `physical_max`. Solo filas `VERIFICADA` con su
+>    cita; colección 061 (MP-13). Capas con hechos `TODO` → error
+>    `earthflux_modis_unsupported` (M4-01).
+> 2. **Escalado** (§11.3, MP-11): `modis_apply_scale(dn, spec_row)` con las
+>    convenciones `scale_offset` (D10), `offset_scale` (D8/D9) y
+>    `scale_only` (fichas sin offset); relleno, fuera de rango y códigos
+>    especiales → `NA` con máscaras lógicas. Los lectores usan `raw = TRUE`,
+>    verifican DN enteros dentro del tipo y contrastan la escala del archivo
+>    con la tabla (M4-02).
+> 3. **QA** (§10.4): `modis_qa_field(qa, start, n)` (bit 0 = LSB, exacto
+>    hasta uint32), `modis_qa_decode(qa, product, layer)`,
+>    `modis_qa_masks(decoded)`, `modis_qa_flags(decoded, qa_policy,
+>    mask_codes)`. Correspondencia campo → código según §10.2 (M4-03);
+>    campos sin fila en §10.2 se decodifican sin flag (M4-04); bits 3–2 de
+>    `QC_Day` sin decodificar (d2).
+> 4. **Política** (§10.3, MP-09 abierta): `qa_policy` = `"flag"` o
+>    `"mask"` sin defecto; `NA` obligatorio solo por relleno, rango,
+>    MODLAND 10/11 y LAI 249–254; `"mask"` con `mask_codes` explícitos y
+>    conteo (M4-05).
+> 5. **Conversores** (§13.2): `modis_variable()` (motor común),
+>    `modis_lst()`, `modis_view_zenith()`, `modis_band_emissivity()`,
+>    `modis_lai()`, `modis_land_cover()`; interfaz común en M4-09.
+> 6. **I/O** (§11): `modis_parse_filename()`, `modis_list_layers()`,
+>    `modis_read_raw(path, layers, aoi)`, `modis_read_converted(path,
+>    product, layer, scaled, aoi)` (MP-10), `modis_mosaic_tiles()`;
+>    geometría sinusoidal contrastada en cada lectura HDF4 (M4-06, M4-07).
+>    Sin descargas ni credenciales (§11.5).
+> 7. **Flags** (`flags.md` §4.2, §6.4): `ef_flags_surface()` registra 12
+>    códigos de clase I (bits 1–12): `FILL`, `CLOUD`, `NOT_PRODUCED`,
+>    `DN_OUT_OF_RANGE`, `LAI_NONVEG`, `QA_OTHER`, `CLOUD_ADJACENT`, `SNOW`,
+>    `WATER`, `SALT_PAN`, `LAI_BACKUP`, `ALBEDO_MAGNITUDE`;
+>    `modis_flag_word()` arma la palabra por capa (M4-08).
+>    `R/modis-qa.R` se suma a los archivos que conocen convenciones MODIS
+>    (regla arquitectónica de §1).
+> 8. **Pendiente en este bloque**: hora de paso → UTC (§6), conversiones
+>    a banda ancha (§8), desfase y remuestreo (§9), ensamblaje del estado
+>    de superficie y procedencia (§13.2: `modis_surface_state()`,
+>    `modis_provenance()`), datos de ejemplo (§12) y el contraste con
+>    granulos reales (§16; A-M4-3).
+
 ---
 
 ## 0. Convenciones de este documento
@@ -68,8 +125,8 @@ cómo se obtienen desde MODIS:
 Fuera de alcance: MDE (`elevation`, `slope`, `aspect`), forzamiento
 meteorológico, descarga automática de datos (ver §11.5).
 
-Regla arquitectónica (`ARCHITECTURE.md` principio 2): **solo** `io-modis.R`
-y `prep-modis.R` conocen escalas, rellenos, bits QA, nombres de SDS y hora
+Regla arquitectónica (`ARCHITECTURE.md` principio 2): **solo** `io-modis.R`,
+`modis-qa.R` (desde M4) y `prep-modis.R` conocen escalas, rellenos, bits QA, nombres de SDS y hora
 de paso de MODIS. Las funciones `metric-*.R` reciben las variables del
 contrato.
 
