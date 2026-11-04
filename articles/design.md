@@ -94,9 +94,9 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| `ef_latent_heat()` | Latent heat flux as the energy balance residual | Planned; balance verified (FAO-56) |
-| `ef_et_inst()` | Instantaneous ET from latent heat flux | Planned; unit conversion verified (FAO-56) |
-| `ef_etrf()`, `ef_et_daily()` | Reference ET fraction and daily actual ET | Planned; candidate |
+| [`ef_latent_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat.md) | Latent heat flux as the energy balance residual | Planned; balance verified (FAO-56) |
+| [`ef_et_inst()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_inst.md) | Instantaneous ET from latent heat flux | Planned; unit conversion verified (FAO-56) |
+| [`ef_etrf()`](https://djwillichile.github.io/EarthFlux/reference/ef_etrf.md), [`ef_et_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md) | Reference ET fraction and daily actual ET | Planned; candidate |
 | `ef_et_period()` | ET between image dates | Planned (later) |
 
 Specification:
