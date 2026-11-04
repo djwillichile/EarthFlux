@@ -153,23 +153,23 @@ against the primary source.</td>
 <td>Planned; equation verified (FAO-56, Eq. 7)</td>
 </tr>
 <tr class="even">
-<td><code>ef_sw_transmissivity()</code></td>
+<td><code>ef_tau_sw()</code></td>
 <td>Broadband shortwave transmissivity with beam/diffuse partition</td>
 <td>Planned; candidate</td>
 </tr>
 <tr class="odd">
-<td><code>ef_shortwave_in()</code></td>
+<td><code>ef_rs_in()</code></td>
 <td>Incoming shortwave radiation, including slope and aspect</td>
 <td>Planned; candidate</td>
 </tr>
 <tr class="even">
-<td><code>ef_atmospheric_emissivity()</code></td>
+<td><code>ef_atm_emissivity()</code></td>
 <td>Clear-sky atmospheric emissivity</td>
 <td>Planned; candidate</td>
 </tr>
 <tr class="odd">
 <td>
-<code>ef_longwave_in()</code>, <code>ef_longwave_out()</code>
+<code>ef_rl_in()</code>, <code>ef_rl_out()</code>
 </td>
 <td>Incoming and emitted longwave radiation</td>
 <td>Planned; candidate</td>
@@ -194,7 +194,7 @@ against the primary source.</td>
 <th>Status</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td><code>ef_soil_heat_flux()</code></td>
+<td><code>ef_g()</code></td>
 <td>Soil heat flux with an explicit method</td>
 <td>Planned; candidate</td>
 </tr></tbody>
@@ -252,14 +252,13 @@ pixels</td>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>ef_roughness_length()</code></td>
+<td><code>ef_zom()</code></td>
 <td>Momentum roughness length</td>
 <td>Planned; candidate</td>
 </tr>
 <tr class="even">
 <td>
-<code>ef_friction_velocity()</code>,
-<code>ef_aerodynamic_resistance()</code>
+<code>ef_ustar()</code>, <code>ef_rah()</code>
 </td>
 <td>Friction velocity and aerodynamic resistance with stability
 correction</td>
@@ -271,7 +270,7 @@ correction</td>
 <td>Planned; candidate</td>
 </tr>
 <tr class="even">
-<td><code>ef_dt_coefficients()</code></td>
+<td><code>ef_dt_coef()</code></td>
 <td>Calibration of the near-surface temperature difference from the
 anchors</td>
 <td>Planned; candidate</td>
@@ -306,7 +305,7 @@ anchors</td>
 <td>Planned; balance verified (FAO-56)</td>
 </tr>
 <tr class="even">
-<td><code>ef_et_instantaneous()</code></td>
+<td><code>ef_et_inst()</code></td>
 <td>Instantaneous ET from latent heat flux</td>
 <td>Planned; unit conversion verified (FAO-56)</td>
 </tr>
@@ -353,7 +352,7 @@ measurement heights)</td>
 <td>Planned</td>
 </tr>
 <tr class="odd">
-<td><code>ef_reference_et()</code></td>
+<td><code>ef_ref_et()</code></td>
 <td>Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and
 daily</td>
 <td>Planned; FAO-56 grass reference verified, alfalfa constants

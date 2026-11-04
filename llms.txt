@@ -141,7 +141,7 @@ Atmospheric and thermodynamic quantities used by several modules
 
 - [`ef_air_pressure()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.md)
   : Atmospheric pressure from elevation
-- [`ef_latent_heat_vaporization()`](https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat_vaporization.md)
+- [`ef_lambda()`](https://djwillichile.github.io/EarthFlux/reference/ef_lambda.md)
   : Latent heat of vaporization
 
 # Articles

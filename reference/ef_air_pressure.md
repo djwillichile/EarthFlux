@@ -61,7 +61,7 @@ evapotranspiration: Guidelines for computing crop water requirements*
 ## See also
 
 Other shared physical quantities:
-[`ef_latent_heat_vaporization()`](https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat_vaporization.md)
+[`ef_lambda()`](https://djwillichile.github.io/EarthFlux/reference/ef_lambda.md)
 
 ## Examples
 

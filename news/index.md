@@ -23,7 +23,7 @@ No scientific result has been validated yet.
   shared by the radiation, sensible heat and reference
   evapotranspiration modules.
 
-- [`ef_latent_heat_vaporization()`](https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat_vaporization.md)
+- [`ef_lambda()`](https://djwillichile.github.io/EarthFlux/reference/ef_lambda.md)
   returns the latent heat of vaporization in J kg-1 with an explicit
   `method` and no default: the FAO-56 constant (`"constant"`) or the
   FAO-56 function of the air temperature in K (`"fao56"`). The same

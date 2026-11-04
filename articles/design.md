@@ -48,10 +48,10 @@ designed to test, not an established result.
 | [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md) | Surface net radiation | **Available**; equation candidate (corroborated) |
 | `ef_solar_geometry()` | Solar angles and incidence on sloping terrain | Planned; candidate |
 | [`ef_air_pressure()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.md) | Atmospheric pressure from elevation | Planned; equation verified (FAO-56, Eq. 7) |
-| `ef_sw_transmissivity()` | Broadband shortwave transmissivity with beam/diffuse partition | Planned; candidate |
-| `ef_shortwave_in()` | Incoming shortwave radiation, including slope and aspect | Planned; candidate |
-| `ef_atmospheric_emissivity()` | Clear-sky atmospheric emissivity | Planned; candidate |
-| `ef_longwave_in()`, `ef_longwave_out()` | Incoming and emitted longwave radiation | Planned; candidate |
+| `ef_tau_sw()` | Broadband shortwave transmissivity with beam/diffuse partition | Planned; candidate |
+| `ef_rs_in()` | Incoming shortwave radiation, including slope and aspect | Planned; candidate |
+| `ef_atm_emissivity()` | Clear-sky atmospheric emissivity | Planned; candidate |
+| `ef_rl_in()`, `ef_rl_out()` | Incoming and emitted longwave radiation | Planned; candidate |
 
 Specifications:
 [ef_net_radiation.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/ef_net_radiation.md),
@@ -59,9 +59,9 @@ Specifications:
 
 ### Soil heat flux (M2)
 
-| Function | Purpose | Status |
-|----|----|----|
-| `ef_soil_heat_flux()` | Soil heat flux with an explicit method | Planned; candidate |
+| Function | Purpose                                | Status             |
+|----------|----------------------------------------|--------------------|
+| `ef_g()` | Soil heat flux with an explicit method | Planned; candidate |
 
 Specification:
 [soil-heat-flux.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/soil-heat-flux.md).
@@ -81,10 +81,10 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| `ef_roughness_length()` | Momentum roughness length | Planned; candidate |
-| `ef_friction_velocity()`, `ef_aerodynamic_resistance()` | Friction velocity and aerodynamic resistance with stability correction | Planned; candidate |
+| `ef_zom()` | Momentum roughness length | Planned; candidate |
+| `ef_ustar()`, `ef_rah()` | Friction velocity and aerodynamic resistance with stability correction | Planned; candidate |
 | `ef_air_density()` | Air density | Planned; candidate |
-| `ef_dt_coefficients()` | Calibration of the near-surface temperature difference from the anchors | Planned; candidate |
+| `ef_dt_coef()` | Calibration of the near-surface temperature difference from the anchors | Planned; candidate |
 | `ef_sensible_heat()` | Sensible heat flux | Planned; candidate |
 
 Specification:
@@ -95,7 +95,7 @@ Specification:
 | Function | Purpose | Status |
 |----|----|----|
 | `ef_latent_heat()` | Latent heat flux as the energy balance residual | Planned; balance verified (FAO-56) |
-| `ef_et_instantaneous()` | Instantaneous ET from latent heat flux | Planned; unit conversion verified (FAO-56) |
+| `ef_et_inst()` | Instantaneous ET from latent heat flux | Planned; unit conversion verified (FAO-56) |
 | `ef_etrf()`, `ef_et_daily()` | Reference ET fraction and daily actual ET | Planned; candidate |
 | `ef_et_period()` | ET between image dates | Planned (later) |
 
@@ -108,7 +108,7 @@ Specification:
 |----|----|----|
 | `ef_station_table()` | Standard station and observation tables (explicit time zone, measurement heights) | Planned |
 | `ef_station_qc()` | Station quality control (values are flagged, never deleted) | Planned |
-| `ef_reference_et()` | Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and daily | Planned; FAO-56 grass reference verified, alfalfa constants candidate |
+| `ef_ref_et()` | Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and daily | Planned; FAO-56 grass reference verified, alfalfa constants candidate |
 
 Specification:
 [weather-forcing.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/weather-forcing.md).
