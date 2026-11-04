@@ -25,6 +25,9 @@ No scientific result has been validated yet.
   constant, von Karman constant, gravity, specific heat of air, density of
   water and the FAO-56 latent heat of vaporization) are defined once, with
   their unit, source and verification status.
+* Classed conditions can carry optional data fields (for example the
+  diagnostics of a failed calibration); new condition classes for
+  calibration errors and convergence warnings.
 
 ## Documentation
 

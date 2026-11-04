@@ -20,6 +20,87 @@ test_that("ef_warn() signals classed warnings", {
   )
 })
 
+test_that("ef_abort() attaches optional data fields to the condition", {
+  funnel <- c(valid = 100L, domain = 40L, selected = 0L)
+  cnd <- tryCatch(
+    ef_abort("no candidates", class = "earthflux_calibration_error",
+             funnel = funnel, type = "hot"),
+    error = identity
+  )
+  expect_s3_class(cnd, "earthflux_calibration_error")
+  expect_s3_class(cnd, "earthflux_error")
+  expect_identical(cnd$funnel, funnel)
+  expect_identical(cnd$type, "hot")
+  expect_identical(conditionMessage(cnd), "no candidates")
+  expect_named(cnd, c("message", "call", "funnel", "type"))
+})
+
+test_that("ef_abort() keeps the class order and reports the caller", {
+  f <- function() ef_abort("boom", class = "x_error", value = 1)
+  cnd <- tryCatch(f(), error = identity)
+  expect_identical(cnd$call, quote(f()))
+  expect_identical(class(cnd), c("x_error", "earthflux_error", "error",
+                                 "condition"))
+  # Positional `class` still works.
+  cnd2 <- tryCatch(ef_abort("boom", "y_error"), error = identity)
+  expect_s3_class(cnd2, "y_error")
+})
+
+test_that("condition data fields must be uniquely named and not reserved", {
+  expect_error(ef_abort("boom", NULL, 1), class = "earthflux_input_error")
+  expect_error(ef_abort("boom", a = 1, a = 2), class = "earthflux_input_error")
+  expect_error(ef_warn("careful", NULL, b = 1, b = 2),
+               class = "earthflux_input_error")
+  # `message` and `call` cannot reach `...` through ef_abort() (they match
+  # its formals); the reserved names are checked by the condition builder.
+  expect_error(
+    ef_condition("boom", "error", call = NULL, fields = list(call = 1)),
+    class = "earthflux_input_error"
+  )
+  expect_error(
+    ef_condition("boom", "error", call = NULL, fields = list(message = "x")),
+    class = "earthflux_input_error"
+  )
+})
+
+test_that("ef_warn() attaches optional data fields to the warning", {
+  cnd <- tryCatch(
+    ef_warn("not converged", class = "earthflux_convergence_warning",
+            iterations = 20L, delta = c(a = 0.03, b = 1e-4)),
+    warning = identity
+  )
+  expect_s3_class(cnd, "earthflux_convergence_warning")
+  expect_s3_class(cnd, "earthflux_warning")
+  expect_identical(cnd$iterations, 20L)
+  expect_identical(cnd$delta, c(a = 0.03, b = 1e-4))
+  # The warning does not stop execution: the caller returns its result.
+  g <- function() {
+    ef_warn("not converged", class = "earthflux_convergence_warning")
+    "result"
+  }
+  expect_warning(res <- g(), class = "earthflux_convergence_warning")
+  expect_identical(res, "result")
+})
+
+test_that("check_method() requires an explicit, exact method", {
+  f <- function(method) check_method(method, c("tasumi", "bastiaanssen"))
+  expect_invisible(f("tasumi"))
+  expect_error(f(), class = "earthflux_missing_input")
+  expect_error(f(), class = "earthflux_input_error")
+  expect_error(f(NULL), class = "earthflux_missing_input")
+  expect_error(f("Tasumi"), class = "earthflux_unknown_method")
+  expect_error(f("tas"), class = "earthflux_unknown_method")
+  expect_error(f(c("tasumi", "tasumi")), class = "earthflux_input_error")
+  expect_error(f(NA_character_), class = "earthflux_input_error")
+  expect_error(f(1), class = "earthflux_input_error")
+  cnd <- tryCatch(f("x"), error = identity)
+  expect_s3_class(cnd, "earthflux_input_error")
+  expect_identical(cnd$call, quote(f("x")))
+  expect_identical(cnd$method, "x")
+  expect_identical(cnd$choices, c("tasumi", "bastiaanssen"))
+  expect_match(conditionMessage(cnd), "\"tasumi\", \"bastiaanssen\"")
+})
+
 test_that("check_string() accepts one non-empty string only", {
   expect_invisible(check_string("EF_ET_NEGATIVE"))
   expect_error(check_string(NA_character_), class = "earthflux_input_error")
