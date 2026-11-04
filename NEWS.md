@@ -257,9 +257,6 @@ primary references; no scientific result has been validated yet.
   cloudiness term, at most 1 for FAO-56 and between 0.3 and 1 for
   ASCE-EWRI; Rs is not modified) and `EF_WS_ETR_NEGATIVE` (negative
   reference ET, kept).
-  reference ET is kept and flagged (`EF_WS_ETR_NEGATIVE`); where the ratio
-  Rs/Rso is limited to 1 inside the FAO-56 cloudiness term, Rs is not
-  modified and the record is flagged (`EF_WS_RS_RSO_LIMITED`).
 
 * `ef_station_ref_et()` computes the reference ET series of every station
   of a quality-controlled station table (hourly or daily records), using
