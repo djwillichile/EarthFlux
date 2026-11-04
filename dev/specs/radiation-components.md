@@ -1258,9 +1258,9 @@ explícitos sin defecto (`DECISIONS.md` §1.0).
 |---|---|---|---|
 | `ef_solar_geometry(doy, utc_hour, lat, lon, slope = 0, aspect = 0)` | Sí | δ, dr, Sc, ω `VERIFICADA` (FAO-56 Ec. 23, 24, 31–33; `weather-forcing.md` §4.6); cos θ_h identidad trigonométrica; cos θ_rel `CANDIDATA` | Devuelve lista simple `cos_zenith`, `cos_incidence`, `declination`, `hour_angle`, `inv_distance`, todas con la forma común (RC-15) |
 | `ef_declination()`, `ef_inv_distance()`, `ef_equation_of_time()`, `ef_hour_angle()`, `ef_cos_incidence()` | No (RC-05) | Como arriba | Reutilizables por `ef_ra_daily()`/`ef_ra_period()` (`weather-forcing.md` §4.6) sin duplicar ecuaciones |
-| `ef_tau_sw(..., method)` → `ef_tau_sw_allen(cos_zenith, pressure, vapour_pressure, turbidity)`, `ef_tau_sw_elevation(elevation)` | Sí | `allen` `CANDIDATA`; `elevation` con la forma de FAO-56 Ec. 37, uso instantáneo `CANDIDATA` | `turbidity` **sin defecto** (el valor 1 no está verificado). `allen` devuelve lista (`beam`, `diffuse`, `total`); `elevation`, numérico; el despachador devuelve el tipo del método |
+| `ef_tau_sw(..., method)` → `ef_tau_sw_allen(cos_zenith, pressure, vapour_pressure, turbidity)`, `ef_tau_sw_elevation(elevation)` | Sí | `allen` `CANDIDATA`; `elevation` con la forma de FAO-56 Ec. 37, uso instantáneo `CANDIDATA` | `turbidity` **sin defecto** (el valor 1 no está verificado). `allen` devuelve lista (`beam`, `diffuse`, `total`); `elevation`, numérico. Desde la armonización M2, el despachador devuelve un objeto `earthflux_sw_transmissivity` de tipo estable: `total` siempre; `beam` y `diffuse` presentes con nombre, `NULL` con `elevation`; más `method`, `flags` y `provenance` |
 | `ef_atm_emissivity(tau_sw)` | Sí | `CANDIDATA` | Dominio (0, 1) abierto; ε_a > 1 se conserva y se marca |
-| `ef_rs_in(..., method)` → `ef_rs_in_modelled(cos_zenith, cos_incidence, inv_distance, tau_beam, tau_diffuse, slope, ground_albedo = NULL)`, `ef_rs_in_measured(rs_horizontal, diffuse_fraction, cos_zenith, cos_incidence, slope, ground_albedo = NULL)` | Sí | `CANDIDATA` (proyección isotrópica; RC-09 abierta); en el camino medido la fuente de k_d sigue `TODO` (RC-10) | `slope` **sin defecto** (evita combinar un cos θ_rel de ladera con difusa de plano); `ground_albedo = NULL` solo si ninguna pendiente es > 0; τ_b + τ_d ∈ (0, 1) (suma 0 excluida: k_d indefinida); proyección común interna `ef_rs_to_slope()` |
+| `ef_rs_in(..., method)` → `ef_rs_in_modelled(cos_zenith, cos_incidence, inv_distance, tau_beam, tau_diffuse, slope, ground_albedo = NULL)`, `ef_rs_in_measured(rs_horizontal, diffuse_fraction, cos_zenith, cos_incidence, slope, ground_albedo = NULL)` | Sí | `CANDIDATA` (proyección isotrópica; RC-09 abierta); en el camino medido la fuente de k_d sigue `TODO` (RC-10) | `slope` **sin defecto** (evita combinar un cos θ_rel de ladera con difusa de plano); `ground_albedo = NULL` solo si ninguna pendiente es > 0; τ_b + τ_d ∈ (0, 1) (suma 0 excluida: k_d indefinida); proyección común interna `ef_rs_to_slope()`. Desde la armonización M2, el despachador devuelve un objeto `earthflux_incoming_shortwave` (`total`, `beam`, `diffuse`, `reflected`, `diffuse_fraction` —`NULL` con `measured`—, `method`, `flags` con `EF_INPUT_NA` y `EF_RAD_SELF_SHADED`, `provenance`) |
 | `ef_rl_in(temperature, atm_emissivity)` | Sí | `CANDIDATA`; T sin defecto (RC-12 / P0-3 abiertas) | Agnóstica respecto de la temperatura |
 | `ef_rl_out(lst, emissivity)` | Sí | `CANDIDATA` (corroborada, como `ef_net_radiation()`) | Onda larga **emitida** (C1) |
 | `ef_diagnose_radiation(...)` | No | — | Flags de celda de la etapa (ver abajo) |
@@ -1292,8 +1292,17 @@ Decisiones tomadas al implementar:
    `EF_RAD_RS_GT_RA` (bit 3; ámbitos `cell,record`, evaluado en `cell` con
    R_a,h = Gsc·dr·max(cos θ_h, 0)) y `EF_RAD_RN_NEGATIVE` (bit 4). Los
    construye `ef_diagnose_radiation()`, que evalúa cada código solo si
-   recibe todas sus entradas y devuelve un registro por código evaluado
-   (aunque no marque celdas). `EF_RAD_SUN_LOW` (clase II) no se registra.
+   recibe todas sus entradas. `EF_RAD_SUN_LOW` (clase II) no se registra.
+   *Armonización M2 (2026-11-04, `DECISIONS.md` §1.2, M2-05):* como en
+   todas las etapas, devuelve un registro solo por código marcado en al
+   menos una posición; los códigos evaluados viajan en el atributo
+   `evaluated` y los despachadores los registran en
+   `provenance$flags_evaluated` (antes devolvía un registro por código
+   evaluado, aunque no marcara celdas).
+8. **Armonización M2** (`DECISIONS.md` §1.2): los auxiliares de
+   validación (`check_core_args()`, `check_doy()`, `check_angle()`,
+   `check_whole()`, `common_dim()`, `ef_reshape()`) pasaron a
+   `R/utils.R`, compartidos por todo el núcleo.
 
 Fuera de esta implementación: emisividad superficial ε₀ (módulo `surface`,
 RC-14), formulación de Brutsaert para ε_a (RC-13), modelos de

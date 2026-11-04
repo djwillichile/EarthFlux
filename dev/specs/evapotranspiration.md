@@ -969,28 +969,33 @@ Para `REFERENCES.md` (al fusionar): DOIs verificados en api.crossref.org el
 - **`ef_etrf()` y `ef_et_daily_etrf()` se implementaron como definiciones
   operativas** por instrucción del hito M2, rotuladas `CANDIDATA
   (corroborada)` en roxygen (Olmedo et al., 2016, Ec. 4). La decisión
-  explícita que pide P0-1 / este §14 queda **pendiente de registro** en
-  `DECISIONS.md` (no se editó ese archivo).
+  explícita que pide P0-1 / este §14 quedó registrada en la armonización
+  M2 (`DECISIONS.md` §1.2, M2-01).
 - **Tipo de referencia (§6.4):** `ef_etrf(et_inst, etr_inst, reference)` y
   `ef_et_daily_etrf(etrf, etr_24, reference)` (y el despachador
   `ef_et_daily(etrf, etr_24, reference, method)`) reciben `reference`
   **obligatorio, sin defecto**, con valores `"alfalfa"` / `"grass"`
   (nombres de `weather-forcing.md` §5). No cambia la aritmética: hace
   explícita la elección. Ausente → `earthflux_missing_input`; otro valor →
-  `earthflux_input_error`. La comprobación de coherencia entre `etr_inst`,
+  `earthflux_unknown_method` (subclase de `earthflux_input_error`; desde la
+  armonización M2 la comprobación es `check_method()` y la comparte
+  `ef_anchor_conditions()`; `DECISIONS.md` §1.2, M2-02). La comprobación de coherencia entre `etr_inst`,
   `etr_24` y el ancla fría sigue en la orquestación (ET-D9,
   `earthflux_reference_mismatch`). Desviación de la firma de §6.2–6.3.
 - **Despachador `ef_et_daily()`** (regla N6 de `NAMING.md`): `method` sin
   defecto (`check_method()`), único valor `"etrf"`; solo valida la
   presencia de los argumentos del método (`earthflux_missing_input`) y
-  reenvía; devuelve exactamente lo mismo que `ef_et_daily_etrf()` (test).
+  reenvía. *Armonización M2 (`DECISIONS.md` §1.2, M2-04):* devuelve un
+  objeto `earthflux_daily_et` (`eta_24`, idéntico a `ef_et_daily_etrf()`
+  —test—, `method`, `reference`, `flags` con `EF_INPUT_NA` y
+  `EF_ET_NEGATIVE`, `provenance`).
   `"evapfrac"` → `earthflux_unknown_method` hasta que exista su
   especificación.
 - **C_rad** (ET-D7): no se reservó el argumento `c_rad` (se agregará con su
   función, tras V6); la ausencia de corrección por pendiente está
   documentada.
 - **Constantes de unidades**: `EF_SECONDS_PER_HOUR` y `EF_MM_PER_M` se
-  definieron en `R/metric-et.R` con nota `TODO(shared)` para trasladarlas a
+  definieron primero en `R/metric-et.R` y la armonización M2 las trasladó a
   `R/constants.R`; ρ_w es `EF_WATER_DENSITY` y la guarda de λ es
   `check_latent_heat_units()` (ET-D2).
 - **Flags:** `ef_diagnose_et(et_inst = NULL, eta_24 = NULL)` devuelve una
@@ -1001,4 +1006,6 @@ Para `REFERENCES.md` (al fusionar): DOIs verificados en api.crossref.org el
   aparte (C1/FL-03). ETrF no se evalúa (ET-D5; `EF_ET_ETRF_IMPLAUSIBLE`
   sigue en la guardia de clase II).
 - **Inversa interna:** `ef_et_inst_to_latent_heat(et_inst, lambda)`
-  (`@noRd`), disponible para la condición del ancla fría (§11.4).
+  (`@noRd`); desde la armonización M2 es la única conversión LE ↔ ET del
+  paquete y la usa `ef_anchor_conditions()` para la condición de las
+  anclas (§11.4; `DECISIONS.md` §1.2, M2-06).

@@ -74,8 +74,8 @@
 ef_ts_datum <- function(lst, elevation, datum_elevation, lapse_rate) {
   call <- sys.call()
   check_core_args(list(lst = lst, elevation = elevation), call)
-  check_scalar(datum_elevation, "datum_elevation", call)
-  check_scalar(lapse_rate, "lapse_rate", call)
+  check_scalar(datum_elevation, "datum_elevation", call = call)
+  check_scalar(lapse_rate, "lapse_rate", call = call)
   check_in_range(lst, "lst", lower = 0, lower_inclusive = FALSE, call = call)
   check_in_range(elevation, "elevation", call = call)
   check_in_range(lapse_rate, "lapse_rate", lower = 0, call = call)

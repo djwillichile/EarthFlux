@@ -110,25 +110,19 @@ s1_cell <- function(rows, cols) {
 
 flag_codes <- function(x) vapply(x$flags, `[[`, "", "code")
 
-# Internal statistics ---------------------------------------------------------------
+# Statistics ------------------------------------------------------------------------
 
-test_that("anchor_quantile() reproduces stats::quantile() for types 1-9", {
-  samples <- list(c(0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80,
-                    0.90),
-                  c(5, 1, 3), 42, c(2, 2, 2, 7, 1, 9, 9, 3))
-  probs <- c(0, 0.01, 0.1, 0.2, 0.25, 0.5, 0.75, 0.9, 0.95, 1)
-  for (x in samples) {
-    for (type in 1:9) {
-      expect_equal(anchor_quantile(x, probs, type),
-                   quantile(x, probs, type = type, names = FALSE),
-                   tolerance = 1e-14)
-    }
+test_that("percentile thresholds are stats::quantile() of the domain", {
+  s <- p1_scene()
+  domain <- !is.na(s$ndvi) & s$ndvi > 0
+  for (type in 1:9) {
+    a <- p1_select(criteria = p1_criteria(quantile_type = type, cold_lai = 0))
+    th <- a$thresholds
+    expect_identical(
+      th$value_lower[th$type == "cold" & th$variable == "ndvi"],
+      stats::quantile(s$ndvi[domain], 0.75, type = type, names = FALSE)
+    )
   }
-  expect_identical(anchor_median(c(4, 1, 3, 2)), median(c(4, 1, 3, 2)))
-  expect_identical(anchor_median(c(4, 1, 3)), 3)
-  expect_identical(anchor_median(c(1, NA)), NA_real_)
-  expect_equal(anchor_sd(c(1, 2, 4, 8)), sd(c(1, 2, 4, 8)), tolerance = 1e-14)
-  expect_identical(anchor_sd(5), NA_real_)
 })
 
 # Criteria constructors -------------------------------------------------------------
@@ -427,6 +421,7 @@ test_that("flags derived from the origin match the provenance (R19)", {
   expect_identical(f$n_total, 1L)
   expect_true("EF_ANCHOR_SINGLE_PIXEL" %in% flag_codes(m))
   expect_true("EF_ANCHOR_USER_SUPPLIED" %in% m$provenance$flags$evaluated)
+  expect_identical(m$provenance$flags_evaluated, m$provenance$flags$evaluated)
 })
 
 test_that("cell numbers follow the terra (row-major) order", {

@@ -43,6 +43,12 @@ flag_of <- function(cal, code) {
   hit <- Filter(function(f) f$code == code, cal$flags)
   if (length(hit) == 1L) hit[[1L]] else NULL
 }
+# Evaluated but absent: no record, and the code is listed in the provenance
+# (convention of every ef_diagnose_<stage>(), R/diagnostics.R).
+expect_absent <- function(cal, code) {
+  expect_null(flag_of(cal, code))
+  expect_true(code %in% cal$provenance$flags_evaluated)
+}
 
 # Air density, Ts_datum and H ----------------------------------------------------------
 
@@ -279,8 +285,7 @@ test_that("SH-14.5: non-convergence is reported, never silent (property 5)", {
   expect_identical(w$iterations, 1L)
   expect_s3_class(w$trace, "data.frame")
   # Negative case
-  expect_identical(flag_of(calibrate(), "EF_H_CALIBRATION_NOT_CONVERGED")$
-                     n_flagged, 0L)
+  expect_absent(calibrate(), "EF_H_CALIBRATION_NOT_CONVERGED")
 })
 
 test_that("SH-14.5: swapped or equal anchors are calibration errors (property 6)", {
@@ -413,15 +418,16 @@ test_that("ef_calibrate_h() validates pixels, propagates NA and keeps dim", {
   cal <- calibrate(pixels = pix)
   expect_identical(is.na(cal$pixels$h), c(FALSE, TRUE))
   expect_identical(cal$pixels$converged, c(TRUE, NA))
-  expect_identical(flag_of(cal, "EF_H_USTAR_INVALID")$n_flagged, 0L)
+  expect_absent(cal, "EF_H_USTAR_INVALID")
 
   pix <- interior
-  pix$lst <- matrix(c(300, 305, 310, 315), 2, 2)
+  pix$lst <- matrix(c(290, 305, 310, 315), 2, 2)
   cal <- calibrate(pixels = pix)
   for (nm in names(cal$pixels)) {
     expect_identical(dim(cal$pixels[[nm]]), c(2L, 2L))
   }
-  expect_identical(flag_of(cal, "EF_H_NEGATIVE")$n_total, 4L)
+  expect_identical(flag_of(cal, "EF_H_DT_EXTRAPOLATED_COLD")$n_total, 4L)
+  expect_identical(flag_of(cal, "EF_H_DT_EXTRAPOLATED_COLD")$index, 1L)
 })
 
 # Flags --------------------------------------------------------------------------------
@@ -456,8 +462,7 @@ test_that("EF_H_DT_SLOPE_NONPOSITIVE is a critical object flag", {
   flag <- flag_of(cal, "EF_H_DT_SLOPE_NONPOSITIVE")
   expect_identical(flag$severity, "critical")
   expect_identical(flag$n_flagged, 1L)
-  expect_identical(flag_of(calibrate(), "EF_H_DT_SLOPE_NONPOSITIVE")$n_flagged,
-                   0L)
+  expect_absent(calibrate(), "EF_H_DT_SLOPE_NONPOSITIVE")
 })
 
 test_that("cell flags of phase B: extrapolation, negative H, H > Rn - G", {
@@ -479,8 +484,9 @@ test_that("cell flags of phase B: extrapolation, negative H, H > Rn - G", {
   # Without rn and g the condition is not evaluated
   cal_no <- calibrate(pixels = pixels[1:5])
   expect_null(flag_of(cal_no, "EF_H_GT_AVAILABLE"))
-  expect_identical(flag_of(cal_no, "EF_H_PIXEL_NOT_CONVERGED")$n_flagged, 0L)
-  expect_identical(flag_of(cal_no, "EF_H_USTAR_INVALID")$n_flagged, 0L)
+  expect_false("EF_H_GT_AVAILABLE" %in% cal_no$provenance$flags_evaluated)
+  expect_absent(cal_no, "EF_H_PIXEL_NOT_CONVERGED")
+  expect_absent(cal_no, "EF_H_USTAR_INVALID")
 })
 
 test_that("EF_H_USTAR_INVALID and EF_H_PIXEL_NOT_CONVERGED in phase B", {
@@ -491,7 +497,7 @@ test_that("EF_H_USTAR_INVALID and EF_H_PIXEL_NOT_CONVERGED in phase B", {
   expect_true(is.na(cal$pixels$h[2]))
   expect_true(is.na(cal$pixels$converged[2]))
   expect_identical(flag_of(cal, "EF_H_USTAR_INVALID")$index, 2L)
-  expect_identical(flag_of(cal, "EF_H_PIXEL_NOT_CONVERGED")$n_flagged, 0L)
+  expect_absent(cal, "EF_H_PIXEL_NOT_CONVERGED")
 
   ctrl <- ctrl_for(tol = 1e-12, maxit = 2L)
   expect_warning(cal <- calibrate(control = ctrl, pixels = pixels),
@@ -526,9 +532,14 @@ test_that("ef_diagnose_sensible_heat() builds cell flags from outputs", {
   expect_identical(idx$EF_H_NEGATIVE, 1L)
   expect_identical(idx$EF_H_GT_AVAILABLE, 2L)
   expect_true(all(vapply(flags, `[[`, character(1), "scope") == "cell"))
-  # Minimal call: only the conditions computable from H and Ts_datum
+  expect_identical(ef_flags_evaluated(flags), codes)
+  # Minimal call: only the conditions computable from H and Ts_datum are
+  # evaluated, and none holds, so no record is returned
   min_flags <- ef_diagnose_sensible_heat(c(1, 2), c(305, 306), 317, 300)
-  expect_length(min_flags, 3L)
+  expect_length(min_flags, 0L)
+  expect_identical(ef_flags_evaluated(min_flags),
+                   c("EF_H_DT_EXTRAPOLATED_HOT", "EF_H_DT_EXTRAPOLATED_COLD",
+                     "EF_H_NEGATIVE"))
 })
 
 test_that("the calibration object records control, constants and provenance", {
@@ -544,7 +555,10 @@ test_that("the calibration object records control, constants and provenance", {
   expect_identical(cal$constants$von_karman, EF_VON_KARMAN)
   expect_identical(cal$constants$gravity, EF_GRAVITY)
   expect_identical(cal$provenance$status, "CANDIDATA")
-  expect_length(cal$flags, 2L)
+  expect_length(cal$flags, 0L)
+  expect_identical(cal$provenance$flags_evaluated,
+                   c("EF_H_CALIBRATION_NOT_CONVERGED",
+                     "EF_H_DT_SLOPE_NONPOSITIVE"))
   # Datum invariance of the driver: z_datum changes a, not H of the pixels
   pix <- list(lst = c(298, 308, 318), elevation = c(450, 500, 900),
               zom = 0.02, u_blend = u_b,

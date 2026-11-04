@@ -372,3 +372,219 @@ check_in_range <- function(x, arg = deparse(substitute(x)),
   }
   invisible(x)
 }
+
+# Shared checks and reshaping of the numeric core ------------------------------
+#
+# Used by every METRIC module (dev/ARCHITECTURE.md section 3.1). They were
+# written with the first modules that needed them (solar geometry,
+# aerodynamics, anchor pixels) and gathered here in the M2 harmonisation.
+
+#' Validate type, length and dim of a set of core arguments
+#'
+#' Applies `check_numeric()` to every argument, then
+#' `check_common_length()` and `check_same_dim()`.
+#'
+#' @param args Named list of arguments.
+#' @param call The call to report. Defaults to the caller.
+#' @return The common length `n`, invisibly.
+#' @noRd
+check_core_args <- function(args, call = sys.call(-1)) {
+  for (nm in names(args)) {
+    check_numeric(args[[nm]], nm, call = call)
+  }
+  n <- check_common_length(args, call = call)
+  check_same_dim(args, n, call = call)
+  invisible(n)
+}
+
+#' Check that the finite values of a numeric argument are whole numbers
+#'
+#' Missing and non-finite values are ignored here (they propagate or are
+#' rejected by `check_in_range()`).
+#'
+#' @inheritParams check_numeric
+#' @return `x`, invisibly, if the check passes; otherwise an error of class
+#'   `earthflux_input_error`.
+#' @noRd
+check_whole <- function(x, arg = deparse(substitute(x)), call = sys.call(-1)) {
+  vals <- x[is.finite(x)]
+  n_bad <- sum(vals != round(vals))
+  if (n_bad > 0L) {
+    ef_abort(
+      sprintf(
+        "`%s` must contain whole numbers; found %d non-integer value(s).",
+        arg, n_bad
+      ),
+      class = "earthflux_input_error",
+      call = call
+    )
+  }
+  invisible(x)
+}
+
+#' Validate the day of year
+#'
+#' @param doy Day of year of the UTC date, whole number in 1-366.
+#' @param call The call to report.
+#' @return `doy`, invisibly.
+#' @noRd
+check_doy <- function(doy, call = sys.call(-1)) {
+  check_whole(doy, "doy", call = call)
+  check_in_range(doy, "doy", lower = 1, upper = 366, call = call)
+  invisible(doy)
+}
+
+#' Validate an angle argument against its domain in radians
+#'
+#' @param x Numeric angle \[rad\].
+#' @param arg Argument name.
+#' @param kind One of `"lat"` (\[-pi/2, pi/2\]), `"lon"` (\[-pi, pi\]),
+#'   `"slope"` (\[0, pi/2\]), `"aspect"` (\[0, 2 pi)), `"hour_angle"`
+#'   (\[-pi, pi\]).
+#' @param call The call to report.
+#' @return `x`, invisibly.
+#' @noRd
+check_angle <- function(x, arg, kind, call = sys.call(-1)) {
+  switch(kind,
+    lat = check_in_range(x, arg, lower = -pi / 2, upper = pi / 2,
+                         call = call),
+    lon = check_in_range(x, arg, lower = -pi, upper = pi, call = call),
+    slope = check_in_range(x, arg, lower = 0, upper = pi / 2, call = call),
+    aspect = check_in_range(x, arg, lower = 0, upper = 2 * pi,
+                            upper_inclusive = FALSE, call = call),
+    hour_angle = check_in_range(x, arg, lower = -pi, upper = pi, call = call)
+  )
+  invisible(x)
+}
+
+#' Check a condition that involves several arguments
+#'
+#' Raises a classed domain error when `ok` is `FALSE` for some element;
+#' missing values in `ok` are ignored (they propagate).
+#'
+#' @param ok Logical vector, `TRUE` where the condition holds.
+#' @param what Character. Description of the condition for the message.
+#' @param call The call to report.
+#' @return `TRUE`, invisibly.
+#' @noRd
+check_condition <- function(ok, what, call = sys.call(-1)) {
+  n_bad <- sum(!ok, na.rm = TRUE)
+  if (n_bad > 0L) {
+    ef_abort(
+      sprintf("%s; found %d value(s) violating it.", what, n_bad),
+      class = c("earthflux_domain_error", "earthflux_input_error"),
+      call = call
+    )
+  }
+  invisible(TRUE)
+}
+
+#' Check that an argument is a single finite number, optionally bounded
+#'
+#' @param x Object to check.
+#' @param arg Name of the argument.
+#' @inheritParams check_in_range
+#' @param whole Logical. Whether `x` must be a whole number.
+#' @param call The call to report.
+#' @return `x`, invisibly. Errors of class `earthflux_input_error` (not a
+#'   single non-missing number, or not whole) or `earthflux_domain_error`
+#'   (infinite or outside the bounds).
+#' @noRd
+check_scalar <- function(x, arg, lower = -Inf, upper = Inf,
+                         lower_inclusive = TRUE, upper_inclusive = TRUE,
+                         whole = FALSE, call = sys.call(-1)) {
+  if (!is.numeric(x) || length(x) != 1L || is.na(x)) {
+    ef_abort(
+      sprintf("`%s` must be a single non-missing number.", arg),
+      class = "earthflux_input_error",
+      call = call
+    )
+  }
+  check_in_range(x, arg, lower = lower, upper = upper,
+                 lower_inclusive = lower_inclusive,
+                 upper_inclusive = upper_inclusive, call = call)
+  if (whole && x != round(x)) {
+    ef_abort(sprintf("`%s` must be a whole number.", arg),
+             class = "earthflux_input_error", call = call)
+  }
+  invisible(x)
+}
+
+#' Common dim of a list of arguments
+#'
+#' @param args Named list of arguments already checked with
+#'   `check_same_dim()`.
+#' @return The `dim` shared by the arguments that have one, or `NULL`.
+#' @noRd
+common_dim <- function(args) {
+  dims <- lapply(args, dim)
+  dims <- dims[!vapply(dims, is.null, logical(1))]
+  if (length(dims) == 0L) NULL else dims[[1L]]
+}
+
+#' Expand a result to the common length and dim of a call
+#'
+#' @param x Numeric vector of length 1 or `n`.
+#' @param n Common length.
+#' @param d The common `dim` (or `NULL`).
+#' @return `x` recycled to length `n`, with `dim` `d`.
+#' @noRd
+ef_reshape <- function(x, n, d) {
+  out <- rep_len(as.vector(x), n)
+  dim(out) <- d
+  out
+}
+
+# Dispatchers ------------------------------------------------------------------
+
+#' Match the arguments a dispatcher forwards to a method function
+#'
+#' Used by dispatchers whose method functions take different arguments
+#' through `...` (e.g. `ef_tau_sw()`, `ef_rs_in()`): the arguments are matched
+#' against the formals of the method function, as R would do in the call,
+#' so that an argument required by the method but not supplied, or one it
+#' does not accept, raises a classed condition before the method is called
+#' (dev/NAMING.md section 2.1; dev/ARCHITECTURE.md section 3.2).
+#'
+#' @param fun The method function.
+#' @param fun_name Character. Its name, used in messages.
+#' @param args The list of arguments of the dispatcher (`list(...)`).
+#' @param method Character. The method, used in messages.
+#' @param call The call to report.
+#' @return A named list of the matched arguments (`NULL` values kept).
+#'   Errors: `earthflux_missing_input` when an argument without default of
+#'   `fun` is not supplied; `earthflux_input_error` when an argument does
+#'   not match a formal of `fun`.
+#' @noRd
+ef_dispatch_args <- function(fun, fun_name, args, method,
+                             call = sys.call(-1)) {
+  matched <- tryCatch(
+    as.list(match.call(fun, as.call(c(list(as.name(fun_name)), args))))[-1L],
+    error = function(e) {
+      ef_abort(
+        sprintf("Invalid arguments for `method = \"%s\"` (%s): %s",
+                method, fun_name, conditionMessage(e)),
+        class = "earthflux_input_error",
+        call = call
+      )
+    }
+  )
+  fmls <- formals(fun)
+  no_default <- vapply(fmls, function(x) {
+    is.symbol(x) && identical(as.character(x), "")
+  }, logical(1))
+  absent <- setdiff(names(fmls)[no_default], names(matched))
+  if (length(absent) > 0L) {
+    ef_abort(
+      sprintf(
+        "`method = \"%s\"` requires %s; missing: %s.",
+        method,
+        paste0("`", names(fmls)[no_default], "`", collapse = ", "),
+        paste0("`", absent, "`", collapse = ", ")
+      ),
+      class = c("earthflux_missing_input", "earthflux_input_error"),
+      call = call
+    )
+  }
+  matched
+}

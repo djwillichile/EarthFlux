@@ -705,7 +705,7 @@ Decisiones tomadas al implementar:
 | G/R_n | La calcula el despachador como `g / rn` (`NA` donde R_n = 0) con una auxiliar interna; no hay función pública de la razón (T-16) |
 | Objeto del despachador (G-D3) | Clase `c("earthflux_soil_heat_flux", "list")` con `g`, `g_rn_ratio`, `method`, `branch`, `flags`, `provenance` |
 | `branch` | Tasumi: vector de caracteres `"lai_ge_0.5"` / `"lai_lt_0.5"` con la forma de `g` (`NA` donde G es `NA`); Bastiaanssen: `NULL` |
-| `provenance` | `method`, `fun`, `status` (`"CANDIDATA"`), `references`, `kelvin_offset` (273.15), `coefficients` (incluido el umbral de LAI 0.5), `inputs`, `earthflux_version` |
+| `provenance` | `method`, `fun`, `status` (`"CANDIDATA"`), `references`, `kelvin_offset` (273.15), `coefficients` (incluido el umbral de LAI 0.5), `inputs`, `flags_evaluated` (agregado en la armonización M2), `earthflux_version` |
 | Rama de Tasumi | Combinación por máscara (`low * g_bare + (!low) * g_veg`), sin `ifelse()`; LAI = 0.5 pertenece a la rama vegetada; `lst` `NA` da G `NA` en ambas ramas (D5, provisional) |
 | Flags | `ef_diagnose_soil_heat()` construye `EF_G_RN_NONPOSITIVE`, `EF_G_RATIO_NEGATIVE`, `EF_G_AVAILABLE_NONPOSITIVE` (condición R_n − G ≤ 0, que reemplaza a `EF_G_EXCEEDS_RN`, `flags.md` C3) y `EF_G_LOW_LAI_BRANCH`; solo se incluye un registro si la condición se cumple en alguna posición. El despachador agrega `EF_INPUT_NA` (ámbito `cell`) sobre las entradas requeridas por el método |
 | Clase II | `EF_G_NDVI_NONPOSITIVE` y `EF_G_RATIO_IMPLAUSIBLE` no se registran ni se evalúan (D4, D7); el caso B6 no levanta flag |
@@ -717,4 +717,11 @@ verificación cruzada con `water` (§9.6, fuera del tarball); todos los ítems
 de §10. `EF_G_LOW_LAI_BRANCH` es I-m y se registró junto con
 `ef_g_tasumi()` `CANDIDATA` (regla de M2), aunque `flags.md` §7.3 pide
 método `VERIFICADA`: revisar al verificar Tasumi (2003) / Allen et al.
-(2007).
+(2007). La excepción quedó registrada en `DECISIONS.md` §1.2 (M2-03).
+
+*Armonización M2 (2026-11-04, `DECISIONS.md` §1.2):* la auxiliar
+`ef_input_na_flags()` pasó a `R/diagnostics.R` (la usan todos los
+despachadores); la convención de este módulo (registros solo para los
+códigos marcados) es ahora la de todas las etapas, con los códigos
+evaluados en `provenance$flags_evaluated`; el objeto de `ef_g()` sirvió de
+modelo para los demás despachadores (`ARCHITECTURE.md` §3.2).

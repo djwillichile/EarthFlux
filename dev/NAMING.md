@@ -58,8 +58,12 @@ Comportamiento común de los despachadores:
 - `method` sin valor por defecto (P0-12, T-15); se valida con
   `check_method()`.
 - Solo reenvía los argumentos al método elegido; no contiene ecuaciones.
-- Un test verifica que el despachador y la llamada directa al método dan
-  resultados idénticos.
+  `method` es su **último** argumento.
+- Devuelve un objeto con clase (`ARCHITECTURE.md` §3.2, punto 4): los
+  valores del método, `method`, `flags` (de su etapa más `EF_INPUT_NA`) y
+  `provenance` (armonización M2, `DECISIONS.md` §1.2, M2-04).
+- Un test verifica que el elemento de valor del despachador y la llamada
+  directa al método son idénticos.
 - Cuando el método que hoy lleva el nombre de la raíz pasa a ser uno de
   varios, recibe su propio sufijo (`ef_tau_sw_allen()`,
   `ef_rs_in_modelled()`, `ef_et_daily_etrf()`). Los sufijos `_allen` y

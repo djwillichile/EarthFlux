@@ -45,16 +45,31 @@ extraterrestrial radiation), also often written \eqn{K_t}{Kt}.}
 all dimensionless, with the common length and \code{dim} of the inputs.
 \item \code{ef_tau_sw_elevation()}: a numeric vector of \eqn{\tau_{sw}}{tau_sw}
 [-] with the length and \code{dim} of \code{elevation}.
-\item \code{ef_tau_sw()}: exactly the value of the selected method (the two
-methods return different types).
+\item \code{ef_tau_sw()}: a list of class \code{earthflux_sw_transmissivity} with the
+same elements for both methods (type-stable):
+\itemize{
+\item \code{total}: \eqn{\tau_{sw}}{tau_sw} [-], identical to \verb{$total} of
+\code{ef_tau_sw_allen()} or to the value of \code{ef_tau_sw_elevation()};
+\item \code{beam}, \code{diffuse}: \eqn{\tau_b}{tau_b} and \eqn{\tau_d}{tau_d}
+[-] when the method partitions the transmissivity (\code{"allen"}), and
+\code{NULL} otherwise (\code{"elevation"}); the names are always present;
+\item \code{method}: the method name;
+\item \code{flags}: list of diagnostic flag records, one per code that holds
+somewhere: \code{EF_INPUT_NA} (a required input is missing; no \code{EF_RAD_}
+code applies to the transmissivity);
+\item \code{provenance}: list with the method, the method function, its
+verification status, the inputs used, the flag codes evaluated
+(\code{flags_evaluated}) and the EarthFlux version.
+}
 }
 }
 \description{
 Computes the broadband transmissivity of a clear-sky atmosphere to
 shortwave radiation on a horizontal surface, \eqn{\tau_{sw}}{tau_sw}: the
 fraction of the extraterrestrial irradiance that reaches the surface.
-\code{ef_tau_sw()} is the dispatcher of the family; it only forwards its
-arguments to the method chosen with \code{method}, which has no default:
+\code{ef_tau_sw()} is the dispatcher of the family: it checks \code{method}
+(no default), forwards the other arguments to the method function, builds
+the diagnostic flags and records the provenance. The methods are:
 \itemize{
 \item \code{ef_tau_sw_allen()} (\code{method = "allen"}): partitioned form, function of
 the solar zenith angle, the air pressure, the vapour pressure and the
@@ -103,8 +118,11 @@ Values outside the domains above (including \code{cos_zenith <= 0}, where the
 partitioned form is undefined: the sun is below the horizon) or infinite
 values raise \code{earthflux_domain_error} (also \code{earthflux_input_error});
 they are never corrected. A missing or unknown \code{method} raises
-\code{earthflux_missing_input} or \code{earthflux_unknown_method}. Missing values
-propagate to every output.
+\code{earthflux_missing_input} or \code{earthflux_unknown_method}; an argument
+required by the chosen method but not supplied to the dispatcher raises
+\code{earthflux_missing_input}, and one the method does not accept raises
+\code{earthflux_input_error}. Missing values propagate to every output; the
+dispatcher reports them with the flag \code{EF_INPUT_NA}.
 }
 \section{Verification status}{
 
@@ -131,12 +149,15 @@ tau <- ef_tau_sw(
   vapour_pressure = 1.5, turbidity = 1, method = "allen"
 )
 tau$total
+tau$beam
 
-# Same call through the method function
+# Same values through the method function
 ef_tau_sw_allen(cos(35 * pi / 180), ef_air_pressure(0), 1.5, 1)$beam
 
-# Elevation form (total only)
-ef_tau_sw(elevation = c(0, 1000, 3000), method = "elevation")
+# Elevation form (total only; `beam` and `diffuse` are NULL)
+tau_z <- ef_tau_sw(elevation = c(0, 1000, 3000), method = "elevation")
+tau_z$total
+is.null(tau_z$beam)
 }
 \references{
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). \emph{Crop

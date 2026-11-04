@@ -238,7 +238,7 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
     )
   }
   for (nm in c(required, "tol", "maxit", "damping")) {
-    check_scalar(get(nm), nm, call)
+    check_scalar(get(nm), nm, call = call)
   }
   check_in_range(z1, "z1", lower = 0, lower_inclusive = FALSE, call = call)
   check_condition(z2 > z1, "`z2` must be greater than `z1`", call)
@@ -330,13 +330,14 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'     `iterations` (integer), each with the shape of the pixel inputs;
 #'   * `control`, `datum` (`lapse_rate`, `datum_elevation`), `constants`
 #'     (`von_karman`, `gravity`, `cp` and their status) and `provenance`;
-#'   * `flags`: list of `earthflux_flag` records: the object flags
-#'     `EF_H_CALIBRATION_NOT_CONVERGED` and `EF_H_DT_SLOPE_NONPOSITIVE`
-#'     (both `critical`), and, with `pixels`, the cell flags
-#'     `EF_H_USTAR_INVALID`, `EF_H_PIXEL_NOT_CONVERGED`,
+#'   * `flags`: list of `earthflux_flag` records, one per code that holds
+#'     somewhere: the object flags `EF_H_CALIBRATION_NOT_CONVERGED` and
+#'     `EF_H_DT_SLOPE_NONPOSITIVE` (both `critical`), and, with `pixels`,
+#'     the cell flags `EF_H_USTAR_INVALID`, `EF_H_PIXEL_NOT_CONVERGED`,
 #'     `EF_H_DT_EXTRAPOLATED_HOT`, `EF_H_DT_EXTRAPOLATED_COLD`,
-#'     `EF_H_NEGATIVE` and (with `rn` and `g`) `EF_H_GT_AVAILABLE`. Every
-#'     evaluated code is present, with `n_flagged = 0` when absent.
+#'     `EF_H_NEGATIVE` and (with `rn` and `g`) `EF_H_GT_AVAILABLE`. A code
+#'     evaluated but absent has no record; the codes evaluated are listed
+#'     in `provenance$flags_evaluated`.
 #'
 #' @details
 #' **Phase A** (anchors). Start (k = 0): neutral \eqn{u_*}{u*} and
@@ -468,9 +469,9 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
              class = "earthflux_input_error", call = call)
   }
   control <- do.call(ef_h_control, control)
-  check_scalar(lapse_rate, "lapse_rate", call)
+  check_scalar(lapse_rate, "lapse_rate", call = call)
   check_in_range(lapse_rate, "lapse_rate", lower = 0, call = call)
-  check_scalar(datum_elevation, "datum_elevation", call)
+  check_scalar(datum_elevation, "datum_elevation", call = call)
   cp <- EF_SPECIFIC_HEAT_AIR
 
   anc <- h_anchor_inputs(anchors, control, call)
@@ -490,10 +491,12 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
 
   fit <- h_phase_a(anc, ts_datum, h_target, control, cp, call)
 
-  flags <- list(
-    ef_flag(!fit$converged, "EF_H_CALIBRATION_NOT_CONVERGED"),
-    ef_flag(fit$b <= 0, "EF_H_DT_SLOPE_NONPOSITIVE")
+  object_flags <- ef_flag_set(
+    list(EF_H_CALIBRATION_NOT_CONVERGED = !fit$converged,
+         EF_H_DT_SLOPE_NONPOSITIVE = fit$b <= 0),
+    scope = "object"
   )
+  cell_flags <- ef_flag_set(list())
   if (!fit$converged) {
     ef_warn(
       sprintf(
@@ -529,7 +532,7 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
     inp <- h_pixel_inputs(pixels, control, call)
     pts <- inp$lst + lapse_rate * (inp$elevation - datum_elevation)
     pix <- h_phase_b(inp, pts, fit$a, fit$b, control, cp)
-    flags <- c(flags, ef_diagnose_sensible_heat(
+    cell_flags <- ef_diagnose_sensible_heat(
       h = pix$h,
       ts_datum = pix$ts_datum,
       ts_datum_hot = ts_datum[["hot"]],
@@ -539,7 +542,7 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
       input_ok = inp$input_ok,
       rn = inp$rn,
       g = inp$g
-    ))
+    )
     if (!is.null(inp$dim)) {
       pix <- lapply(pix, function(x) {
         dim(x) <- inp$dim
@@ -547,6 +550,8 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
       })
     }
   }
+
+  flags <- ef_flags_combine(object_flags, cell_flags)
 
   anchor_state <- data.frame(
     anchor_id = anc$anchor_id,
@@ -595,9 +600,10 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
         } else {
           "data.frame"
         },
+        flags_evaluated = flags$evaluated,
         package_version = as.character(getNamespaceVersion("EarthFlux"))
       ),
-      flags = flags
+      flags = flags$flags
     ),
     "earthflux_h_calibration"
   )
@@ -1056,11 +1062,12 @@ ef_flags_sensible_heat <- function() {
 #'
 #' Builds the cell-scope flags of the stage from the inputs and outputs of
 #' phase B (dev/ARCHITECTURE.md section 3.2): the numeric functions never
-#' build flags. Every evaluated code is returned, with `n_flagged = 0` when
-#' the condition is absent; `EF_H_USTAR_INVALID` and
-#' `EF_H_PIXEL_NOT_CONVERGED` are evaluated only when `u_star`/`input_ok`
-#' and `converged` are given, and `EF_H_GT_AVAILABLE` only when `rn` and `g`
-#' are given.
+#' build flags. As for every stage (R/diagnostics.R), a record is returned
+#' only for the codes flagged in at least one position, and the codes
+#' evaluated are attached as the attribute `evaluated`.
+#' `EF_H_USTAR_INVALID` and `EF_H_PIXEL_NOT_CONVERGED` are evaluated only
+#' when `u_star`/`input_ok` and `converged` are given, and
+#' `EF_H_GT_AVAILABLE` only when `rn` and `g` are given.
 #'
 #' @param h Sensible heat flux \[W m-2\].
 #' @param ts_datum Datum surface temperature of the pixels \[K\].
@@ -1072,7 +1079,8 @@ ef_flags_sensible_heat <- function() {
 #' @param input_ok Logical, `TRUE` where no required input is missing, or
 #'   `NULL` (then `EF_H_USTAR_INVALID` is not evaluated).
 #' @param rn,g Net radiation and soil heat flux \[W m-2\], or `NULL`.
-#' @return A list of `earthflux_flag` records (scope `"cell"`).
+#' @return A (possibly empty) list of `earthflux_flag` records (scope
+#'   `"cell"`) with the attribute `evaluated`.
 #' @noRd
 ef_diagnose_sensible_heat <- function(h, ts_datum, ts_datum_hot,
                                       ts_datum_cold, u_star = NULL,
@@ -1080,29 +1088,23 @@ ef_diagnose_sensible_heat <- function(h, ts_datum, ts_datum_hot,
                                       rn = NULL, g = NULL) {
   h <- as.vector(h)
   ts_datum <- as.vector(ts_datum)
-  flags <- list()
+  masks <- list()
   if (!is.null(u_star) && !is.null(input_ok)) {
-    flags <- c(flags, list(ef_flag(
-      as.vector(input_ok) & is.na(as.vector(u_star)), "EF_H_USTAR_INVALID"
-    )))
+    masks$EF_H_USTAR_INVALID <- as.vector(input_ok) &
+      is.na(as.vector(u_star))
   }
   if (!is.null(converged)) {
     conv <- as.vector(converged)
-    flags <- c(flags, list(ef_flag(!is.na(conv) & !conv,
-                                   "EF_H_PIXEL_NOT_CONVERGED")))
+    masks$EF_H_PIXEL_NOT_CONVERGED <- !is.na(conv) & !conv
   }
   known <- !is.na(ts_datum)
-  flags <- c(flags, list(
-    ef_flag(known & ts_datum > ts_datum_hot, "EF_H_DT_EXTRAPOLATED_HOT"),
-    ef_flag(known & ts_datum < ts_datum_cold, "EF_H_DT_EXTRAPOLATED_COLD"),
-    ef_flag(!is.na(h) & h < 0, "EF_H_NEGATIVE")
-  ))
+  masks$EF_H_DT_EXTRAPOLATED_HOT <- known & ts_datum > ts_datum_hot
+  masks$EF_H_DT_EXTRAPOLATED_COLD <- known & ts_datum < ts_datum_cold
+  masks$EF_H_NEGATIVE <- !is.na(h) & h < 0
   if (!is.null(rn) && !is.null(g)) {
     available <- as.vector(rn) - as.vector(g)
-    flags <- c(flags, list(ef_flag(
-      !is.na(h) & !is.na(available) & available > 0 & h > available,
-      "EF_H_GT_AVAILABLE"
-    )))
+    masks$EF_H_GT_AVAILABLE <- !is.na(h) & !is.na(available) &
+      available > 0 & h > available
   }
-  flags
+  ef_flag_set(masks, scope = "cell")
 }

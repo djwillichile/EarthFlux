@@ -1043,13 +1043,13 @@ decisiones provisionales P0-6, P0-9 y P0-10. Todo sigue `CANDIDATA`
 
 | Elemento | Implementación |
 |---|---|
-| z_om | `ef_zom(method)` (despachador, N6) con `ef_zom_lai()`, `ef_zom_ndvi()` (§5.2, "custom"), `ef_zom_perrier()`, `ef_zom_height()` (§5.4). Sin mínimo de 0.005 m (SH-02) ni factor de terreno (SH-03): z_om = 0 se devuelve tal cual y `ef_ustar()` lo rechaza |
+| z_om | `ef_zom(..., method)` (despachador, N6; `method` último argumento y objeto `earthflux_roughness_length` desde la armonización M2) con `ef_zom_lai()`, `ef_zom_ndvi()` (§5.2, "custom"), `ef_zom_perrier()`, `ef_zom_height()` (§5.4). Sin mínimo de 0.005 m (SH-02) ni factor de terreno (SH-03): z_om = 0 se devuelve tal cual y `ef_ustar()` lo rechaza |
 | Viento, u*, rah | `ef_blending_wind()`, `ef_ustar()`, `ef_rah()`. z_b, z₁, z₂, z_om,w y d_w son argumentos **sin valor por defecto** (valores `CANDIDATA`, SH-04). Sin piso de viento (SH-06) ni ajuste por elevación (SH-07). u* con denominador ≤ 0 → `NA` |
 | Estabilidad | Internas (`ef_monin_obukhov_length()`, `ef_psi_m()`, `ef_psi_h()`); H = 0 → L = +∞ y ψ = 0. ψ_m(z_b) estable evaluada a `stable_psi_m_height` de `ef_h_control()`, **sin defecto** (SH-11) |
 | ρ_air, Ts_datum, dT, H | `ef_air_density()` (§8.1 con T en K), `ef_ts_datum()` (exportada; Γ en K m⁻¹, sin defecto), `ef_dt_coef()` (Ts_datum,hot ≤ Ts_datum,cold → `earthflux_calibration_error`), `ef_sensible_heat()` (`cp` sin defecto; el driver usa `EF_SPECIFIC_HEAT_AIR`) |
 | Driver | `ef_calibrate_h(anchors, control, lapse_rate, datum_elevation, pixels = NULL)` → `earthflux_h_calibration`. Fase A de §11.2 con cierre; Fase B estrategia P2 por píxel (píxeles convergidos se congelan: invariante al tamaño de bloque) |
 | Contrato de anclas (§2.2–2.3, P0-9) | `data.frame` con exactamente una fila `type = "hot"` y una `"cold"` y columnas `lst`, `elevation`, `zom`, `rn`, `g`, `le_target`, `u_blend`, `pressure` (opcional `anchor_id`), o un objeto `earthflux_anchors` cuyo elemento `calibration_points` sea ese `data.frame`. H_target = rn − g − le_target |
-| Flags registrados | `EF_H_USTAR_INVALID`, `EF_H_PIXEL_NOT_CONVERGED`, `EF_H_DT_EXTRAPOLATED_HOT`, `EF_H_DT_EXTRAPOLATED_COLD`, `EF_H_NEGATIVE`, `EF_H_GT_AVAILABLE` (celda, `ef_diagnose_sensible_heat()`), `EF_H_CALIBRATION_NOT_CONVERGED`, `EF_H_DT_SLOPE_NONPOSITIVE` (objeto, `critical`) |
+| Flags registrados | `EF_H_USTAR_INVALID`, `EF_H_PIXEL_NOT_CONVERGED`, `EF_H_DT_EXTRAPOLATED_HOT`, `EF_H_DT_EXTRAPOLATED_COLD`, `EF_H_NEGATIVE`, `EF_H_GT_AVAILABLE` (celda, `ef_diagnose_sensible_heat()`), `EF_H_CALIBRATION_NOT_CONVERGED`, `EF_H_DT_SLOPE_NONPOSITIVE` (objeto, `critical`). Desde la armonización M2, `flags` contiene solo los códigos que se cumplen y `provenance$flags_evaluated` los evaluados (antes, todo código evaluado con `n_flagged = 0`) |
 
 Observaciones al implementar:
 
@@ -1067,6 +1067,14 @@ Observaciones al implementar:
   converge con `stable_psi_m_height` = 2 m y **diverge** con 200 m (rah del
   ancla fría crece sin cota → `earthflux_calibration_error`). Es un
   comportamiento de las formas `CANDIDATA`, no una validación; refuerza que
-  SH-11 es bloqueante.
+  SH-11 es bloqueante. Registrado como hallazgo M2-07 en `DECISIONS.md`
+  §1.2 (P0-2 sigue abierta y se sabe decisiva) y reproducido en el test de
+  extremo a extremo `tests/testthat/test-metric-chain.R` (variante con el
+  ancla fría estable).
 - **Fase B en paralelo.** Probada la invariancia por bloques (propiedad 7);
   la comparación secuencial = paralelo queda para el envoltorio ráster.
+- **Armonización M2 (2026-11-04).** `check_condition()` y `check_scalar()`
+  pasaron a `R/utils.R` (este último con cotas y `whole` opcionales, y lo
+  comparten las anclas); `ef_zom()` tiene `method` como último argumento y
+  devuelve un objeto con `zom`, `method`, `flags` (`EF_INPUT_NA`) y
+  `provenance` (`DECISIONS.md` §1.2, M2-04).

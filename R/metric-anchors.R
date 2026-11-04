@@ -29,12 +29,10 @@
 #   left corner (row-major), whatever the storage order of R matrices.
 #   Neighbourhood operations (homogeneity windows) need matrix layers.
 #
-# Base R only: stats is not in Imports, so the quantile (Hyndman and Fan
-#   types 1-9, identical to stats::quantile()), the median and the sample
-#   standard deviation are implemented here.
-#   TODO(shared): if stats is added to Imports, replace anchor_quantile(),
-#   anchor_median() and anchor_sd() by stats::quantile(), stats::median() and
-#   stats::sd().
+# Statistics: percentile thresholds use stats::quantile() with the explicit
+#   `quantile_type` of the criteria (Hyndman and Fan types 1-9); medians and
+#   sample standard deviations use stats::median() and stats::sd() (stats is
+#   in Imports since the M2 harmonisation).
 
 # Vocabulary -------------------------------------------------------------------
 
@@ -63,97 +61,6 @@ anchor_require <- function(is_missing, arg, call) {
     )
   }
   invisible(TRUE)
-}
-
-#' Check a single finite number, optionally bounded
-#' @noRd
-anchor_check_scalar <- function(x, arg, lower = -Inf, upper = Inf,
-                                lower_inclusive = TRUE, upper_inclusive = TRUE,
-                                whole = FALSE, call) {
-  if (!is.numeric(x) || length(x) != 1L || is.na(x)) {
-    ef_abort(sprintf("`%s` must be a single non-missing number.", arg),
-             class = "earthflux_input_error", call = call)
-  }
-  check_in_range(x, arg, lower = lower, upper = upper,
-                 lower_inclusive = lower_inclusive,
-                 upper_inclusive = upper_inclusive, call = call)
-  if (whole && x != round(x)) {
-    ef_abort(sprintf("`%s` must be a whole number.", arg),
-             class = "earthflux_input_error", call = call)
-  }
-  invisible(x)
-}
-
-# Base R statistics ------------------------------------------------------------
-
-#' Sample quantiles (Hyndman and Fan types 1-9)
-#'
-#' Same algorithm and results as `stats::quantile(x, probs, type = type,
-#' names = FALSE)` for non-missing `x` (length >= 1) and `probs` in \[0, 1\].
-#'
-#' @noRd
-anchor_quantile <- function(x, probs, type) {
-  x <- sort(x)
-  n <- length(x)
-  if (type == 7L) {
-    index <- 1 + max(n - 1, 0) * probs
-    lo <- floor(index)
-    hi <- ceiling(index)
-    qs <- x[lo]
-    i <- which(index > lo & x[hi] != qs)
-    h <- (index - lo)[i]
-    qs[i] <- (1 - h) * qs[i] + h * x[hi[i]]
-    return(qs)
-  }
-  if (type <= 3L) {
-    nppm <- if (type == 3L) n * probs - 0.5 else n * probs
-    j <- floor(nppm)
-    h <- switch(type,
-                as.numeric(nppm > j),
-                ((nppm > j) + 1) / 2,
-                as.numeric((nppm != j) | ((j %% 2L) == 1L)))
-  } else {
-    ab <- switch(type - 3L, c(0, 1), c(0.5, 0.5), c(0, 0), c(1, 1),
-                 c(1 / 3, 1 / 3), c(3 / 8, 3 / 8))
-    fuzz <- 4 * .Machine$double.eps
-    nppm <- ab[1L] + probs * (n + 1 - ab[1L] - ab[2L])
-    j <- floor(nppm + fuzz)
-    h <- nppm - j
-    h[abs(h) < fuzz] <- 0
-  }
-  xx <- c(x[1L], x[1L], x, x[n], x[n])
-  lo <- xx[j + 2L]
-  hi <- xx[j + 3L]
-  qs <- lo
-  qs[h == 1] <- hi[h == 1]
-  other <- (0 < h) & (h < 1) & (lo != hi)
-  qs[other] <- ((1 - h) * lo + h * hi)[other]
-  qs
-}
-
-#' Median with NA propagation (as `stats::median()`)
-#' @noRd
-anchor_median <- function(x) {
-  if (anyNA(x)) {
-    return(NA_real_)
-  }
-  n <- length(x)
-  half <- (n + 1L) %/% 2L
-  if (n %% 2L == 1L) {
-    sort(x)[half]
-  } else {
-    mean(sort(x)[half + 0L:1L])
-  }
-}
-
-#' Sample standard deviation (denominator n - 1) with NA propagation
-#' @noRd
-anchor_sd <- function(x) {
-  n <- length(x)
-  if (n < 2L || anyNA(x)) {
-    return(NA_real_)
-  }
-  sqrt(sum((x - mean(x))^2) / (n - 1L))
 }
 
 # Criteria constructors --------------------------------------------------------
@@ -304,14 +211,14 @@ ef_homogeneity <- function(variable, window, stat, max, window_na) {
   check_method(variable, anchor_layer_variables(), arg = "variable",
                call = call)
   anchor_require(missing(window), "window", call)
-  anchor_check_scalar(window, "window", lower = 3, whole = TRUE, call = call)
+  check_scalar(window, "window", lower = 3, whole = TRUE, call = call)
   if (window %% 2 != 1) {
     ef_abort("`window` must be an odd number of cells.",
              class = "earthflux_input_error", call = call)
   }
   check_method(stat, "sd", arg = "stat", call = call)
   anchor_require(missing(max), "max", call)
-  anchor_check_scalar(max, "max", lower = 0, call = call)
+  check_scalar(max, "max", lower = 0, call = call)
   check_method(window_na, c("exclude", "available"), arg = "window_na",
                call = call)
   structure(
@@ -369,10 +276,10 @@ ef_anchor_pick <- function(variable, method, value) {
                          "highest"), call = call)
   anchor_require(missing(value), "value", call)
   if (method %in% c("lowest_fraction", "highest_fraction")) {
-    anchor_check_scalar(value, "value", lower = 0, upper = 1,
+    check_scalar(value, "value", lower = 0, upper = 1,
                         lower_inclusive = FALSE, call = call)
   } else {
-    anchor_check_scalar(value, "value", lower = 1, whole = TRUE, call = call)
+    check_scalar(value, "value", lower = 1, whole = TRUE, call = call)
   }
   structure(
     list(variable = variable, method = method, value = as.numeric(value)),
@@ -505,7 +412,7 @@ ef_anchor_criteria <- function(cold, hot, homogeneity, select,
   }
   check_method(percentile_domain, c("usable", "land"),
                arg = "percentile_domain", call = call)
-  anchor_check_scalar(quantile_type, "quantile_type", lower = 1, upper = 9,
+  check_scalar(quantile_type, "quantile_type", lower = 1, upper = 9,
                       whole = TRUE, call = call)
   check_string(source, "source")
   check_method(status, anchor_statuses(), arg = "status", call = call)
@@ -569,7 +476,7 @@ anchor_grid <- function(lst, cell_size, origin, crs, call) {
              class = "earthflux_input_error", call = call)
   }
   if (!is.null(cell_size)) {
-    anchor_check_scalar(cell_size, "cell_size", lower = 0,
+    check_scalar(cell_size, "cell_size", lower = 0,
                         lower_inclusive = FALSE, call = call)
   }
   if (!is.null(origin)) {
@@ -717,7 +624,7 @@ anchor_window_stats <- function(v, cells, homogeneity, grid) {
     vals <- v[as.vector(outer((rr - 1L) * grid$ncol, cc, "+"))]
     vals <- vals[!is.na(vals)]
     n_valid[i] <- length(vals)
-    stat[i] <- anchor_sd(vals)
+    stat[i] <- stats::sd(vals)
   }
   n_window <- homogeneity$window^2
   data.frame(
@@ -792,13 +699,13 @@ anchor_pick_cells <- function(v, idx, pick, quantile_type) {
   prob <- NULL
   if (pick$method == "lowest_fraction") {
     prob <- pick$value
-    thr <- anchor_quantile(v, prob, quantile_type)
+    thr <- stats::quantile(v, prob, type = quantile_type, names = FALSE)
     sel <- idx[v <= thr]
     operator <- "<="
     scale <- "percentile"
   } else if (pick$method == "highest_fraction") {
     prob <- 1 - pick$value
-    thr <- anchor_quantile(v, prob, quantile_type)
+    thr <- stats::quantile(v, prob, type = quantile_type, names = FALSE)
     sel <- idx[v >= thr]
     operator <- ">="
     scale <- "percentile"
@@ -848,7 +755,7 @@ anchor_run <- function(type, criteria, layers, usable, grid, stage, step) {
     r <- rules[[i]]
     x <- layers[[r$variable]]
     if (r$scale == "percentile") {
-      thr <- anchor_quantile(x[domain], r$value, qt)
+      thr <- stats::quantile(x[domain], r$value, type = qt, names = FALSE)
       thresholds[[length(thresholds) + 1L]] <- anchor_threshold_row(
         type, stage, step, "rule", i, r$variable, r$operator, r$scale,
         r$value, thr, criteria$percentile_domain, sum(domain), qt
@@ -988,7 +895,7 @@ anchor_pixel_table <- function(cells, types, layers, usable, grid,
 anchor_aggregate <- function(x, aggregate) {
   switch(aggregate,
          mean = mean(x),
-         median = anchor_median(x),
+         median = stats::median(x),
          none = x[1L])
 }
 
@@ -1031,7 +938,7 @@ anchor_dispersion <- function(table, vars) {
       x <- sub[[v]]
       rows[[length(rows) + 1L]] <- data.frame(
         type = t, variable = v, n = length(x), mean = mean(x),
-        median = anchor_median(x), sd = anchor_sd(x),
+        median = stats::median(x), sd = stats::sd(x),
         min = if (anyNA(x)) NA_real_ else min(x),
         max = if (anyNA(x)) NA_real_ else max(x)
       )
@@ -1159,7 +1066,8 @@ anchor_object <- function(pixels, aggregate, criteria, thresholds, search,
         ),
         seed = seed_note,
         rng_kind = NULL,
-        flags = anchor_flag_provenance(flags, evaluated, pixels)
+        flags = anchor_flag_provenance(flags, evaluated, pixels),
+        flags_evaluated = evaluated
       )
     ),
     "earthflux_anchors"
@@ -1249,9 +1157,11 @@ anchor_object <- function(pixels, aggregate, criteria, thresholds, search,
 #'     `search` (domains and where each class was found), `funnel` (cells
 #'     left after each filter, per class, search stage and criteria step),
 #'     `relaxation` (relaxation steps used), `flags` (list of
-#'     `earthflux_flag`), `method` (`"criteria"`), `origin`
-#'     (`"automatic"`), `grid`, `conditions` (`NULL` until
-#'     [ef_anchor_conditions()]), `note` and `provenance`.
+#'     `earthflux_flag`, one per code that holds), `method`
+#'     (`"criteria"`), `origin` (`"automatic"`), `grid`, `conditions`
+#'     (`NULL` until [ef_anchor_conditions()]), `note` and `provenance`
+#'     (including `flags`, the flag provenance of dev/specs/flags.md
+#'     section 6.7, and `flags_evaluated`, the codes evaluated).
 #'
 #' @details
 #' Order of operations (dev/specs/anchor-pixels.md section 5.3): (1)
@@ -1757,21 +1667,6 @@ anchor_user_cells <- function(x, arg, grid, call) {
 
 # Stage [B]: boundary conditions -----------------------------------------------
 
-#' Latent heat flux of an evapotranspiration rate
-#'
-#' LE = ET * lambda * rho_w / (3600 * 1000): ET in mm h-1, lambda in
-#' J kg-1, rho_w in kg m-3; 3600 s h-1 and 1000 mm m-1 are exact unit
-#' conversions (inverse of ET_inst = 1000 * 3600 * LE / (lambda * rho_w),
-#' dev/specs/evapotranspiration.md section 6.1, VERIFICADA as a unit
-#' conversion).
-#' TODO(shared): replace by the internal inverse of ef_et_inst() of the
-#' evapotranspiration module (et_inst_to_latent_heat(), name to be decided)
-#' and its named constants for 3600 and 1000.
-#' @noRd
-anchor_le_from_et <- function(et, lambda) {
-  et * lambda * EF_WATER_DENSITY / (3600 * 1000)
-}
-
 #' Boundary conditions at the anchor pixels
 #'
 #' @description
@@ -1941,7 +1836,7 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
   check_in_range(etr_inst, "etr_inst", lower = 0, lower_inclusive = FALSE,
                  call = call)
   check_latent_heat_units(lambda, "lambda", call = call)
-  anchor_check_scalar(etrf_cold, "etrf_cold", lower = 0,
+  check_scalar(etrf_cold, "etrf_cold", lower = 0,
                       lower_inclusive = FALSE, call = call)
   if (is.null(etrf_hot) == is.null(le_hot)) {
     ef_abort(
@@ -1951,12 +1846,12 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
     )
   }
   if (!is.null(etrf_hot)) {
-    anchor_check_scalar(etrf_hot, "etrf_hot", lower = 0, call = call)
+    check_scalar(etrf_hot, "etrf_hot", lower = 0, call = call)
   } else {
-    anchor_check_scalar(le_hot, "le_hot", lower = 0, call = call)
+    check_scalar(le_hot, "le_hot", lower = 0, call = call)
   }
-  check_method(reference, c("alfalfa", "grass"), arg = "reference",
-               call = call)
+  check_reference_type(if (missing(reference)) NULL else reference,
+                       call = call)
   check_string(source, "source")
   check_method(status, anchor_statuses(), arg = "status", call = call)
   if (!is.null(etr_source)) check_string(etr_source, "etr_source")
@@ -2003,11 +1898,11 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
   cold <- px$type == "cold"
   hot_mode <- if (is.null(etrf_hot)) "le" else "etrf"
   etrf <- ifelse(cold, etrf_cold, if (hot_mode == "etrf") etrf_hot else NA)
-  le <- anchor_le_from_et(etrf * vals$etr_inst, vals$lambda)
+  le <- ef_et_inst_to_latent_heat(etrf * vals$etr_inst, vals$lambda)
   if (hot_mode == "le") {
     le[!cold] <- le_hot
-    etrf[!cold] <- le_hot / anchor_le_from_et(vals$etr_inst[!cold],
-                                              vals$lambda[!cold])
+    etrf[!cold] <- le_hot /
+      ef_et_inst_to_latent_heat(vals$etr_inst[!cold], vals$lambda[!cold])
   }
   h <- vals$rn - vals$g - le
   cond_px <- data.frame(
@@ -2033,7 +1928,8 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
   points$etrf <- ifelse(
     points$type == "cold", etrf_cold,
     if (hot_mode == "etrf") etrf_hot else
-      points$le_target / anchor_le_from_et(points$etr_inst, points$lambda)
+      points$le_target /
+        ef_et_inst_to_latent_heat(points$etr_inst, points$lambda)
   )
   points$h_target <- points$rn - points$g - points$le_target
   points <- points[, c("anchor_id", "type", "n_pixels", "aggregate", "lst",
@@ -2089,9 +1985,9 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
       h = "h_target = rn - g - le_target"
     )
   )
-  out$provenance$flags <- anchor_flag_provenance(
-    flags, c(anchor_selection_codes(), anchor_condition_codes()), px
-  )
+  evaluated <- c(anchor_selection_codes(), anchor_condition_codes())
+  out$provenance$flags <- anchor_flag_provenance(flags, evaluated, px)
+  out$provenance$flags_evaluated <- evaluated
   out$provenance$conditions_call <- call
   new_ef_object(out, "earthflux_anchors")
 }

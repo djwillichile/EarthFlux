@@ -29,17 +29,26 @@ choice is a scientific decision that must be explicit). Currently only
 A numeric vector of daily actual evapotranspiration
 \eqn{ETa_{24}}{ETa_24} [mm d-1] with the common length of the inputs.
 If the inputs include matrices or arrays (all with the same \code{dim}), the
-result keeps that \code{dim}. Negative values are returned unchanged.
-\code{ef_et_daily()} returns exactly the value of the method function.
+result keeps that \code{dim}. Negative values are returned unchanged
+(\code{ef_et_daily_etrf()}).
+
+\code{ef_et_daily()} returns a list of class \code{earthflux_daily_et} with
+elements \code{eta_24} (identical to the value of the method function),
+\code{method}, \code{reference}, \code{flags} (one record per code that holds
+somewhere: \code{EF_INPUT_NA}, a required input is missing, and
+\code{EF_ET_NEGATIVE}, negative daily ET) and \code{provenance} (method, method
+function, verification status, reference, inputs used, flag codes
+evaluated in \code{flags_evaluated}, EarthFlux version).
 }
 \description{
 Extrapolates the instantaneous estimate at the satellite overpass time to
 the daily actual evapotranspiration \eqn{ETa_{24}}{ETa_24} of the image
 day.
 
-\code{ef_et_daily()} is the dispatcher of the family: it checks \code{method} and
-forwards the arguments to the function of that method, without any
-computation of its own. The methods are:
+\code{ef_et_daily()} is the dispatcher of the family: it checks \code{method} (no
+default), forwards the arguments to the function of that method, builds
+the diagnostic flags and records the provenance, without any computation
+of its own. The methods are:
 \itemize{
 \item \code{"etrf"}: \code{ef_et_daily_etrf()}, the reference evapotranspiration
 fraction (ETrF) of the overpass time multiplied by the daily reference
@@ -80,8 +89,8 @@ form and source are pending verification.
 Negative values of \code{etrf} give a negative daily evapotranspiration,
 returned unchanged and without a warning (never set to zero). With
 \code{etr_24 = 0} the result is zero whatever the sign of \code{etrf}. The
-diagnostic flag \code{EF_ET_NEGATIVE} is assembled by the orchestration layer
-on this layer.
+diagnostic flag \code{EF_ET_NEGATIVE} is set by \code{ef_et_daily()} on this
+layer.
 
 Missing values (\code{NA}, \code{NaN}) in any input propagate to the corresponding
 output element, without errors or warnings. Arguments must be numeric
@@ -100,18 +109,20 @@ operational definition; its form and equation number in Allen et al.
 }
 \examples{
 # ETrF 0.9 and 8 mm d-1 of alfalfa reference ET: 7.2 mm d-1
-ef_et_daily(etrf = 0.9, etr_24 = 8, reference = "alfalfa",
-            method = "etrf")
+eta <- ef_et_daily(etrf = c(0.9, -0.05), etr_24 = 8,
+                   reference = "alfalfa", method = "etrf")
+eta$eta_24
+vapply(eta$flags, `[[`, character(1), "code")
 
-# Same result calling the method directly
-ef_et_daily_etrf(etrf = 0.9, etr_24 = 8, reference = "alfalfa")
+# Same values calling the method directly
+ef_et_daily_etrf(etrf = c(0.9, -0.05), etr_24 = 8, reference = "alfalfa")
 
 # Full chain from the energy balance (one pixel)
 lambda <- ef_lambda(method = "constant")
 le <- ef_latent_heat(rn = 600, g = 60, h = 50)
 et_inst <- ef_et_inst(le, lambda)
 etrf <- ef_etrf(et_inst, etr_inst = 0.80, reference = "alfalfa")
-ef_et_daily(etrf, etr_24 = 8, reference = "alfalfa", method = "etrf")
+ef_et_daily(etrf, etr_24 = 8, reference = "alfalfa", method = "etrf")$eta_24
 }
 \references{
 Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy

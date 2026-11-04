@@ -11,8 +11,10 @@
 #   logarithmic profile) are VERIFICADA as FAO-56 content.
 #
 # Implemented (exported):
-#   - ef_zom() dispatcher and its methods ef_zom_lai(), ef_zom_ndvi(),
-#     ef_zom_perrier(), ef_zom_height() (one Rd, rule N6 of dev/NAMING.md);
+#   - ef_zom() dispatcher (an earthflux_roughness_length object with the
+#     EF_INPUT_NA flag and provenance) and its methods ef_zom_lai(),
+#     ef_zom_ndvi(), ef_zom_perrier(), ef_zom_height() (plain numeric; one
+#     Rd, rule N6 of dev/NAMING.md);
 #   - ef_blending_wind(), ef_ustar(), ef_rah().
 # Implemented (internal): ef_monin_obukhov_length(), ef_psi_m(), ef_psi_h()
 #   (decision SH-17: stability helpers stay internal).
@@ -28,52 +30,8 @@
 #   displacement) are explicit arguments without defaults (DECISIONS.md
 #   section 1.0).
 
-# Internal helpers -----------------------------------------------------------------
-
-# check_core_args() is defined in R/solar-geometry.R (shared core helper).
-
-#' Check a condition that involves several arguments
-#'
-#' Raises a classed domain error when `ok` is `FALSE` for some element;
-#' missing values in `ok` are ignored (they propagate).
-#'
-#' TODO(shared): generic helper; candidate for `R/utils.R`.
-#'
-#' @param ok Logical vector, `TRUE` where the condition holds.
-#' @param what Character. Description of the condition for the message.
-#' @param call The call to report.
-#' @return `TRUE`, invisibly.
-#' @noRd
-check_condition <- function(ok, what, call) {
-  n_bad <- sum(!ok, na.rm = TRUE)
-  if (n_bad > 0L) {
-    ef_abort(
-      sprintf("%s; found %d value(s) violating it.", what, n_bad),
-      class = c("earthflux_domain_error", "earthflux_input_error"),
-      call = call
-    )
-  }
-  invisible(TRUE)
-}
-
-#' Check that a scalar argument is a single finite number
-#'
-#' @param x Object to check.
-#' @param arg Name of the argument.
-#' @param call The call to report.
-#' @return `x`, invisibly.
-#' @noRd
-check_scalar <- function(x, arg, call) {
-  if (!is.numeric(x) || length(x) != 1L || is.na(x)) {
-    ef_abort(
-      sprintf("`%s` must be a single non-missing number.", arg),
-      class = "earthflux_input_error",
-      call = call
-    )
-  }
-  check_in_range(x, arg, call = call)
-  invisible(x)
-}
+# Shared input checks (check_core_args(), check_condition(), check_scalar())
+# are in R/utils.R.
 
 # Momentum roughness length ----------------------------------------------------------
 
@@ -83,9 +41,10 @@ check_scalar <- function(x, arg, call) {
 #' Computes the surface roughness length for momentum transport
 #' \eqn{z_{om}}{z_om} \[m\], which controls the friction velocity and the
 #' aerodynamic resistance to heat transport of the METRIC energy balance.
-#' `ef_zom()` is a thin dispatcher: it checks `method` and forwards the
-#' arguments to one of the method functions, which can also be called
-#' directly.
+#' `ef_zom()` is the dispatcher of the family: it checks `method` (no
+#' default), forwards the arguments to one of the method functions (which can
+#' also be called directly), builds the diagnostic flags and records the
+#' provenance.
 #'
 #' * `ef_zom_lai()`: linear function of the leaf area index, for short
 #'   (agricultural) crops.
@@ -96,9 +55,6 @@ check_scalar <- function(x, arg, call) {
 #' * `ef_zom_height()`: FAO-56 function of the vegetation height, mainly for
 #'   the surface around a weather station.
 #'
-#' @param method Character. The formulation, with no default (the choice is
-#'   a scientific decision; decision SH-01 is open). One of `"lai"`,
-#'   `"ndvi"`, `"perrier"` or `"height"`. Matched exactly.
 #' @param lai Numeric. Leaf area index \[m2 m-2\]. Must be finite and `>= 0`.
 #'   Used by `"lai"` and `"perrier"`.
 #' @param ndvi Numeric. Normalised difference vegetation index \[-\], in
@@ -112,12 +68,24 @@ check_scalar <- function(x, arg, call) {
 #'   the canopy height \[-\], in \[0, 1\]. Used by `"perrier"`.
 #' @param height Numeric. Canopy (vegetation) height \[m\]. Must be finite
 #'   and `>= 0`. Used by `"perrier"` and `"height"`.
+#' @param method Character. The formulation, with no default (the choice is
+#'   a scientific decision; decision SH-01 is open). One of `"lai"`,
+#'   `"ndvi"`, `"perrier"` or `"height"`. Matched exactly.
 #'
-#' @return A numeric vector of momentum roughness length
-#'   \eqn{z_{om}}{z_om} \[m\] with the common length of the inputs, keeping
-#'   their `dim` if they are matrices or arrays. Zero values (e.g. `lai = 0`
-#'   or `height = 0`) are returned unchanged: no minimum roughness is applied
-#'   (see Details) and such values are rejected by [ef_ustar()].
+#' @return The method functions return a numeric vector of momentum
+#'   roughness length \eqn{z_{om}}{z_om} \[m\] with the common length of
+#'   the inputs, keeping their `dim` if they are matrices or arrays. Zero
+#'   values (e.g. `lai = 0` or `height = 0`) are returned unchanged: no
+#'   minimum roughness is applied (see Details) and such values are rejected
+#'   by [ef_ustar()].
+#'
+#'   `ef_zom()` returns a list of class `earthflux_roughness_length` with
+#'   elements `zom` (identical to the method function), `method`, `flags`
+#'   (one record per code that holds somewhere: `EF_INPUT_NA`, a required
+#'   input is missing; no `EF_H_` code applies to \eqn{z_{om}}{z_om} while
+#'   no minimum roughness or terrain factor is implemented) and `provenance`
+#'   (method, method function, verification status, inputs used, flag codes
+#'   evaluated in `flags_evaluated`, EarthFlux version).
 #'
 #' @details
 #' `ef_zom_lai()` (`method = "lai"`):
@@ -194,7 +162,7 @@ check_scalar <- function(x, arg, call) {
 #'
 #' @examples
 #' # Short crops: z_om = 0.018 * LAI (m)
-#' ef_zom(lai = c(0.5, 2, 4), method = "lai")
+#' ef_zom(lai = c(0.5, 2, 4), method = "lai")$zom
 #' ef_zom_lai(c(0.5, 2, 4))
 #'
 #' # Exponential NDVI / albedo relation with user coefficients
@@ -205,9 +173,8 @@ check_scalar <- function(x, arg, call) {
 #'
 #' # FAO-56: clipped grass 0.12 m tall around a weather station
 #' ef_zom_height(0.12)
-ef_zom <- function(method, lai = NULL, ndvi = NULL, albedo = NULL,
-                   coef_1 = NULL, coef_2 = NULL, f_lai = NULL,
-                   height = NULL) {
+ef_zom <- function(lai = NULL, ndvi = NULL, albedo = NULL, coef_1 = NULL,
+                   coef_2 = NULL, f_lai = NULL, height = NULL, method) {
   call <- sys.call()
   check_method(method, c("lai", "ndvi", "perrier", "height"), call = call)
   args <- switch(
@@ -229,12 +196,34 @@ ef_zom <- function(method, lai = NULL, ndvi = NULL, albedo = NULL,
       call = call
     )
   }
-  switch(
+  zom <- switch(
     method,
     lai = ef_zom_lai(lai),
     ndvi = ef_zom_ndvi(ndvi, albedo, coef_1, coef_2),
     perrier = ef_zom_perrier(lai, f_lai, height),
     height = ef_zom_height(height)
+  )
+  flags <- ef_flags_combine(ef_input_na_flags(args, length(zom)))
+
+  new_ef_object(
+    list(
+      zom = zom,
+      method = method,
+      flags = flags$flags,
+      provenance = list(
+        method = method,
+        fun = paste0("ef_zom_", method),
+        status = if (method == "height") {
+          "VERIFICADA (FAO-56); CANDIDATA in METRIC"
+        } else {
+          "CANDIDATA"
+        },
+        inputs = names(args),
+        flags_evaluated = flags$evaluated,
+        earthflux_version = as.character(getNamespaceVersion("EarthFlux"))
+      )
+    ),
+    "earthflux_roughness_length"
   )
 }
 

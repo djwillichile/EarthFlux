@@ -9,12 +9,36 @@
 # lightweight classed list built with new_ef_object(). Such lists always
 # carry a `flags` element (a list of `earthflux_flag`, possibly empty).
 #
+# Every dispatcher of the METRIC core returns one of these objects with its
+# value element(s), `method`, `flags` (records only for codes flagged
+# somewhere) and `provenance` (including `flags_evaluated`, the codes
+# checked); the method functions return plain numeric values or plain lists.
+#
 # Classes created so far:
-#   - earthflux_flag (R/diagnostics.R).
-#   - earthflux_soil_heat_flux (R/metric-soil-heat.R): output of ef_g().
+#   - earthflux_flag (R/diagnostics.R): one diagnostic flag record (a list,
+#     not built with new_ef_object()).
+#   - earthflux_sw_transmissivity (R/metric-radiation.R): output of
+#     ef_tau_sw() (`total`, `beam`, `diffuse`).
+#   - earthflux_incoming_shortwave (R/metric-radiation.R): output of
+#     ef_rs_in() (`total`, `beam`, `diffuse`, `reflected`,
+#     `diffuse_fraction`).
+#   - earthflux_soil_heat_flux (R/metric-soil-heat.R): output of ef_g()
+#     (`g`, `g_rn_ratio`, `branch`).
+#   - earthflux_anchor_rule, earthflux_homogeneity, earthflux_anchor_pick
+#     and earthflux_anchor_criteria (R/metric-anchors.R): specification
+#     objects built by ef_anchor_rule(), ef_homogeneity(), ef_anchor_pick()
+#     and ef_anchor_criteria() (classed lists without `flags`; they describe
+#     a choice of the user, not a result).
+#   - earthflux_anchors (R/metric-anchors.R): anchor pixel selection and its
+#     audit trail (ef_select_anchors(), ef_anchors()), completed by
+#     ef_anchor_conditions().
+#   - earthflux_roughness_length (R/metric-aerodynamics.R): output of
+#     ef_zom() (`zom`).
+#   - earthflux_h_calibration (R/metric-sensible-heat.R): dT calibration of
+#     the sensible heat flux (ef_calibrate_h()).
+#   - earthflux_daily_et (R/metric-et.R): output of ef_et_daily()
+#     (`eta_24`).
 # Planned classes (created with their first constructor, not before):
-#   - earthflux_anchors        : anchor pixel selection and its audit trail;
-#   - earthflux_h_calibration  : dT calibration of the sensible heat flux;
 #   - earthflux_result         : all intermediate layers + diagnostics +
 #                                provenance (M5);
 #   - earthflux_gwr            : fitted GWR model (M3).

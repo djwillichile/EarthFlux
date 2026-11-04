@@ -94,7 +94,7 @@ Modelo de referencia: `ef_net_radiation()` (`specs/ef_net_radiation.md`
 | Tipo | `double` o `integer`; sin coerción silenciosa (`check_numeric()`) |
 | Longitud | 1 o longitud común n (reciclaje de longitud 1); **longitud 0 rechazada** (`check_common_length()`, NR-D5) |
 | `dim` | Los argumentos con `dim` no se reciclan y deben compartir `dim`; el resultado lo conserva (`check_same_dim()`, NR-D6; revisar con `SpatRaster`) |
-| NA | `NA`/`NaN` se propagan sin error ni warning; la comprobación de dominio los ignora; `EF_INPUT_NA` lo construye la orquestación |
+| NA | `NA`/`NaN` se propagan sin error ni warning; la comprobación de dominio los ignora; `EF_INPUT_NA` lo construyen los despachadores y procedimientos (`ef_input_na_flags()`, `R/diagnostics.R`) y, más arriba, la orquestación |
 | Dominio | Valor imposible o infinito → `earthflux_domain_error` (subclase de `earthflux_input_error`) con nombre del argumento y conteo (`check_in_range()`). Nunca se corrige, trunca ni recorta. Política única (P0-11, T-13): error por defecto en el núcleo; la orquestación convierte en `NA` + flag lo marcado aguas arriba (QA, QC, superficies GWR) **antes** de llamar al núcleo; no hay opción `on_invalid` |
 | `method` | Sin valor por defecto y con coincidencia exacta (`check_method()`): faltante → `earthflux_missing_input`; desconocido → `earthflux_unknown_method` (ambas subclases de `earthflux_input_error`). `earthflux()` podrá fijar un defecto documentado solo para formulaciones `VERIFICADA` (T-15) |
 | Formulaciones no verificadas | Mientras P0-1 … P0-3 sigan abiertas: `CANDIDATA`, expuestas mediante argumentos explícitos **sin defecto** (p. ej., `stable_psi_m_height` en el control de H, SH-11; `ef_rl_in(temperature, …)` agnóstica, RC-12) y rotuladas como `CANDIDATA` en roxygen |
@@ -115,6 +115,12 @@ Modelo de referencia: `ef_net_radiation()` (`specs/ef_net_radiation.md`
    devuelve una lista (posiblemente vacía) de registros `earthflux_flag`
    creados con `ef_flag(mask, code, scope)` y máscaras
    `!is.na(x) & condición`. **La función numérica nunca construye flags.**
+   Convención única (armonización M2, `DECISIONS.md` §1.2, M2-05): la
+   lista contiene un registro **solo por código marcado en alguna posición**
+   (`n_flagged > 0`); los códigos evaluados viajan en el atributo
+   `evaluated` (`ef_flag_set()`), y el despachador o procedimiento que la
+   llama los registra en `provenance$flags_evaluated` (`ef_flags_combine()`),
+   de modo que "evaluado y ausente" se distingue de "no evaluado".
 3. **Procedimientos de ámbito objeto** (selección de anclas, calibración de
    H) y **despachadores**: listas livianas con clase, creadas con
    `new_ef_object(x, class)` (`R/classes.R`): clase
@@ -123,14 +129,39 @@ Modelo de referencia: `ef_net_radiation()` (`specs/ef_net_radiation.md`
    elemento `flags` (lista de `earthflux_flag`, posiblemente vacía); según
    el caso, además `method`, `provenance` y los valores numéricos. Cada tipo
    añade su validador junto a su constructor. Los flags de objeto usan una
-   máscara de longitud 1 (`ef_flag(TRUE, code)`).
+   máscara de longitud 1 (`ef_flag(TRUE, code)`) y siguen la convención del
+   punto 2 (solo los que se cumplen). `provenance` incluye siempre
+   `flags_evaluated` (en `earthflux_anchors`, además, la procedencia
+   completa de `specs/flags.md` §6.7 en `provenance$flags`). Las clases
+   creadas se listan en la cabecera de `R/classes.R`.
 4. **Una función exportada por método** (aritmética pura, p. ej.,
-   `ef_g_tasumi()`) más un **despachador delgado**
-   (`ef_g(…, method)`) con `method` sin defecto, que valida,
-   despacha, llama a `ef_diagnose_<etapa>()` y registra procedencia
-   (`specs/soil-heat-flux.md` §5.2, opción C; G-5.2, G-D3). Test obligatorio:
-   despachador ≡ llamada directa. Las auxiliares quedan internas; el tamaño
-   de la API se revisa en conjunto antes de `0.1.0` (T-16).
+   `ef_g_tasumi()`; devuelve `numeric` o, si produce varias magnitudes, una
+   lista simple) más un **despachador delgado** (`ef_g(…, method)`) con
+   `method` sin defecto y como **último argumento**, que valida `method`
+   (`check_method()`), llama a la función del método, construye los flags
+   de su etapa con `ef_diagnose_<etapa>()` más `EF_INPUT_NA`
+   (`ef_input_na_flags()`) y devuelve
+   `new_ef_object(list(<valores>, method = , flags = , provenance = ),
+   "earthflux_<magnitud>")` (`specs/soil-heat-flux.md` §5.2, opción C;
+   G-5.2, G-D3). Despachadores de M2 (armonización, `DECISIONS.md` §1.2,
+   M2-04):
+
+   | Despachador | Clase | Elementos de valor |
+   |---|---|---|
+   | `ef_tau_sw(..., method)` | `earthflux_sw_transmissivity` | `total`; `beam`, `diffuse` (con nombre siempre; `NULL` si el método no particiona) |
+   | `ef_rs_in(..., method)` | `earthflux_incoming_shortwave` | `total`, `beam`, `diffuse`, `reflected`, `diffuse_fraction` (`NULL` en `"measured"`) |
+   | `ef_g(rn, lst, albedo, ndvi, lai, method)` | `earthflux_soil_heat_flux` | `g`, `g_rn_ratio`, `branch` |
+   | `ef_zom(lai, ndvi, albedo, coef_1, coef_2, f_lai, height, method)` | `earthflux_roughness_length` | `zom` |
+   | `ef_et_daily(etrf, etr_24, reference, method)` | `earthflux_daily_et` | `eta_24` (y `reference`) |
+
+   Los despachadores con `...` comparan los argumentos con los formales del
+   método (`ef_dispatch_args()`): uno requerido ausente da
+   `earthflux_missing_input`; uno desconocido, `earthflux_input_error`.
+   Test obligatorio: despachador ≡ llamada directa, comparando el elemento
+   de valor. `ef_lambda(temperature, method)` es una función única con
+   `method` (regla N6b de `NAMING.md`), no un despachador, y devuelve
+   `numeric`. Las auxiliares quedan internas; el tamaño de la API se revisa
+   en conjunto antes de `0.1.0` (T-16).
 5. **No convergencia**: el procedimiento devuelve el último iterado, emite
    `earthflux_convergence_warning` y agrega el flag de objeto
    correspondiente; nunca en silencio (`specs/sensible-heat.md` §11.6).

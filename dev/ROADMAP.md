@@ -36,11 +36,15 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 - [x] Convenciones comunes del núcleo (`ARCHITECTURE.md` §3), constantes
       físicas, registro de flags por etapa, condiciones con datos,
       `ef_air_pressure()` y `ef_lambda()`.
-- [ ] Componentes de radiación (RL↑, RL↓, Rs↓, geometría solar).
-- [ ] Flujo de calor del suelo.
-- [ ] Píxeles ancla (selección automática y explícita, auditable).
-- [ ] Rugosidad, rah, estabilidad, dT y H con calibración iterativa.
-- [ ] LE, ET instantánea, ETrF y ETa diaria.
+- [x] Componentes de radiación (RL↑, RL↓, Rs↓, geometría solar).
+- [x] Flujo de calor del suelo.
+- [x] Píxeles ancla (selección automática y explícita, auditable).
+- [x] Rugosidad, rah, estabilidad, dT y H con calibración iterativa.
+- [x] LE, ET instantánea, ETrF y ETa diaria.
+- [x] Armonización de los cinco módulos (despachadores con clase, flags y
+      procedencia; una convención de diagnósticos; auxiliares compartidos;
+      `DECISIONS.md` §1.2) y test de extremo a extremo de la cadena
+      (`tests/testthat/test-metric-chain.R`).
 - [ ] Primer release experimental `0.1.0` con pipeline parcial testeado.
 
 ## M3 — Spatial meteorological forcing / GWR

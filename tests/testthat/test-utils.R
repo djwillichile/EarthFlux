@@ -215,3 +215,44 @@ test_that("check_in_range() errors are classed, counted and named", {
   )
   expect_match(conditionMessage(cnd_inf), "(0, Inf)", fixed = TRUE)
 })
+
+# Shared checks of the numeric core ----------------------------------------------
+
+test_that("check_scalar() checks a single bounded, optionally whole number", {
+  expect_invisible(check_scalar(2, "x"))
+  expect_error(check_scalar(c(1, 2), "x"), class = "earthflux_input_error")
+  expect_error(check_scalar(NA_real_, "x"), class = "earthflux_input_error")
+  expect_error(check_scalar("1", "x"), class = "earthflux_input_error")
+  expect_error(check_scalar(Inf, "x"), class = "earthflux_domain_error")
+  expect_error(check_scalar(0, "x", lower = 0, lower_inclusive = FALSE),
+               class = "earthflux_domain_error")
+  expect_error(check_scalar(2.5, "x", whole = TRUE),
+               class = "earthflux_input_error")
+  expect_invisible(check_scalar(3, "x", lower = 1, upper = 9, whole = TRUE))
+})
+
+test_that("check_condition() and check_whole() raise classed errors", {
+  expect_invisible(check_condition(c(TRUE, NA), "ok"))
+  expect_error(check_condition(c(TRUE, FALSE), "`a` must exceed `b`"),
+               class = "earthflux_domain_error")
+  expect_invisible(check_whole(c(1, NA, Inf), "x"))
+  expect_error(check_whole(1.5, "x"), class = "earthflux_input_error")
+})
+
+test_that("ef_dispatch_args() matches arguments against the method", {
+  f <- function(a, b, c = NULL) NULL
+  m <- ef_dispatch_args(f, "f", list(a = 1, 2), "m")
+  expect_identical(m, list(a = 1, b = 2))
+  expect_error(ef_dispatch_args(f, "f", list(a = 1), "m"),
+               class = "earthflux_missing_input")
+  expect_error(ef_dispatch_args(f, "f", list(a = 1, b = 2, d = 3), "m"),
+               class = "earthflux_input_error")
+})
+
+test_that("common_dim() and ef_reshape() keep the common shape", {
+  m <- matrix(1, 2, 3)
+  expect_identical(common_dim(list(a = 1, b = m)), c(2L, 3L))
+  expect_null(common_dim(list(a = 1, b = 1:2)))
+  expect_identical(dim(ef_reshape(5, 6L, c(2L, 3L))), c(2L, 3L))
+  expect_identical(ef_reshape(5, 2L, NULL), c(5, 5))
+})

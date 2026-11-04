@@ -18,7 +18,9 @@
 #   - ef_etrf(): reference ET fraction. CANDIDATA (corroborated; items V4,
 #     V5).
 #   - ef_et_daily(): dispatcher of the daily ET family (rule N6 of
-#     dev/NAMING.md); only method "etrf" is implemented.
+#     dev/NAMING.md); only method "etrf" is implemented. Returns an
+#     earthflux_daily_et object with the flags EF_INPUT_NA and
+#     EF_ET_NEGATIVE and the provenance.
 #   - ef_et_daily_etrf(): ETa_24 = ETrF * ETr_24. CANDIDATA (corroborated;
 #     item V6). No slope correction C_rad (decision ET-D7, open).
 #   - ef_diagnose_et() (internal): cell-scope flags of the stage
@@ -35,15 +37,8 @@
 #
 # Conventions: those of ef_net_radiation() (dev/ARCHITECTURE.md section 3.1).
 
-# Unit conversion factors ------------------------------------------------------------
-
-# TODO(shared): move to R/constants.R (named in
-#   dev/specs/evapotranspiration.md section 6.1). Exact by definition of the
-#   units; they are not physical constants.
-# Seconds per hour [s h-1].
-EF_SECONDS_PER_HOUR <- 3600
-# Millimetres per metre [mm m-1].
-EF_MM_PER_M <- 1000
+# Unit conversion factors (EF_SECONDS_PER_HOUR, EF_MM_PER_M) are defined in
+# R/constants.R.
 
 # Reference crop types accepted by ef_etrf() and ef_et_daily_etrf(); names as
 # in dev/specs/weather-forcing.md section 5 (`reference`).
@@ -54,39 +49,21 @@ ef_et_reference_types <- function() {
 #' Check the reference crop type of a reference ET argument
 #'
 #' The reference type must be given explicitly (no default;
-#' dev/specs/evapotranspiration.md section 6.4).
+#' dev/specs/evapotranspiration.md section 6.4). Shared by the ET functions
+#' and the anchor boundary conditions (`ef_anchor_conditions()`), so that
+#' both report a missing or unknown reference with the same classes as a
+#' `method` (`check_method()`).
 #'
 #' @param reference The value to check, or `NULL` when it was not supplied.
 #' @param call The call to report in the error.
-#' @return `reference`, invisibly, if the check passes.
+#' @return `reference`, invisibly, if the check passes. Errors of class
+#'   `earthflux_missing_input` (missing or `NULL`), `earthflux_input_error`
+#'   (not a single string) or `earthflux_unknown_method` (not one of
+#'   `ef_et_reference_types()`), all also `earthflux_input_error`.
 #' @noRd
 check_reference_type <- function(reference, call = sys.call(-1)) {
-  choices <- ef_et_reference_types()
-  choices_txt <- paste0("\"", choices, "\"", collapse = ", ")
-  if (is.null(reference)) {
-    ef_abort(
-      sprintf(
-        paste0(
-          "`reference` (reference crop of the reference ET) must be supplied ",
-          "explicitly; one of %s."
-        ),
-        choices_txt
-      ),
-      class = c("earthflux_missing_input", "earthflux_input_error"),
-      call = call
-    )
-  }
-  if (!is.character(reference) || length(reference) != 1L ||
-      is.na(reference) || !reference %in% choices) {
-    ef_abort(
-      sprintf("`reference` must be a single string, one of %s.", choices_txt),
-      class = "earthflux_input_error",
-      reference = reference,
-      choices = choices,
-      call = call
-    )
-  }
-  invisible(reference)
+  check_method(reference, ef_et_reference_types(), arg = "reference",
+               call = call)
 }
 
 #' Instantaneous evapotranspiration from the latent heat flux
@@ -197,9 +174,10 @@ ef_et_inst <- function(le, lambda) {
 #'
 #' Exact inverse of `ef_et_inst()` (dev/specs/evapotranspiration.md section
 #' 9.1): \eqn{LE = ET_{inst} \lambda \rho_w / (1000 \cdot 3600)}. Used by
-#' the round-trip tests and, for the cold anchor boundary condition, to turn
-#' a target evapotranspiration into a target latent heat flux with the same
-#' `lambda` as the conversion (section 11.4).
+#' the round-trip tests and by `ef_anchor_conditions()`, which turns the
+#' target evapotranspiration of the anchors into a target latent heat flux
+#' with the same `lambda` as the conversion (section 11.4): the package has
+#' a single LE <-> ET conversion.
 #'
 #' @param et_inst Numeric. Instantaneous evapotranspiration \[mm h-1\]. Any
 #'   finite value.
@@ -335,9 +313,10 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #' the daily actual evapotranspiration \eqn{ETa_{24}}{ETa_24} of the image
 #' day.
 #'
-#' `ef_et_daily()` is the dispatcher of the family: it checks `method` and
-#' forwards the arguments to the function of that method, without any
-#' computation of its own. The methods are:
+#' `ef_et_daily()` is the dispatcher of the family: it checks `method` (no
+#' default), forwards the arguments to the function of that method, builds
+#' the diagnostic flags and records the provenance, without any computation
+#' of its own. The methods are:
 #'
 #' * `"etrf"`: `ef_et_daily_etrf()`, the reference evapotranspiration
 #'   fraction (ETrF) of the overpass time multiplied by the daily reference
@@ -363,8 +342,16 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #' @return A numeric vector of daily actual evapotranspiration
 #'   \eqn{ETa_{24}}{ETa_24} \[mm d-1\] with the common length of the inputs.
 #'   If the inputs include matrices or arrays (all with the same `dim`), the
-#'   result keeps that `dim`. Negative values are returned unchanged.
-#'   `ef_et_daily()` returns exactly the value of the method function.
+#'   result keeps that `dim`. Negative values are returned unchanged
+#'   (`ef_et_daily_etrf()`).
+#'
+#'   `ef_et_daily()` returns a list of class `earthflux_daily_et` with
+#'   elements `eta_24` (identical to the value of the method function),
+#'   `method`, `reference`, `flags` (one record per code that holds
+#'   somewhere: `EF_INPUT_NA`, a required input is missing, and
+#'   `EF_ET_NEGATIVE`, negative daily ET) and `provenance` (method, method
+#'   function, verification status, reference, inputs used, flag codes
+#'   evaluated in `flags_evaluated`, EarthFlux version).
 #'
 #' @details
 #' Method `"etrf"` computes
@@ -395,8 +382,8 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #' Negative values of `etrf` give a negative daily evapotranspiration,
 #' returned unchanged and without a warning (never set to zero). With
 #' `etr_24 = 0` the result is zero whatever the sign of `etrf`. The
-#' diagnostic flag `EF_ET_NEGATIVE` is assembled by the orchestration layer
-#' on this layer.
+#' diagnostic flag `EF_ET_NEGATIVE` is set by `ef_et_daily()` on this
+#' layer.
 #'
 #' Missing values (`NA`, `NaN`) in any input propagate to the corresponding
 #' output element, without errors or warnings. Arguments must be numeric
@@ -430,18 +417,20 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #'
 #' @examples
 #' # ETrF 0.9 and 8 mm d-1 of alfalfa reference ET: 7.2 mm d-1
-#' ef_et_daily(etrf = 0.9, etr_24 = 8, reference = "alfalfa",
-#'             method = "etrf")
+#' eta <- ef_et_daily(etrf = c(0.9, -0.05), etr_24 = 8,
+#'                    reference = "alfalfa", method = "etrf")
+#' eta$eta_24
+#' vapply(eta$flags, `[[`, character(1), "code")
 #'
-#' # Same result calling the method directly
-#' ef_et_daily_etrf(etrf = 0.9, etr_24 = 8, reference = "alfalfa")
+#' # Same values calling the method directly
+#' ef_et_daily_etrf(etrf = c(0.9, -0.05), etr_24 = 8, reference = "alfalfa")
 #'
 #' # Full chain from the energy balance (one pixel)
 #' lambda <- ef_lambda(method = "constant")
 #' le <- ef_latent_heat(rn = 600, g = 60, h = 50)
 #' et_inst <- ef_et_inst(le, lambda)
 #' etrf <- ef_etrf(et_inst, etr_inst = 0.80, reference = "alfalfa")
-#' ef_et_daily(etrf, etr_24 = 8, reference = "alfalfa", method = "etrf")
+#' ef_et_daily(etrf, etr_24 = 8, reference = "alfalfa", method = "etrf")$eta_24
 ef_et_daily <- function(etrf, etr_24, reference, method) {
   call <- sys.call()
   check_method(if (missing(method)) NULL else method, "etrf", call = call)
@@ -463,10 +452,34 @@ ef_et_daily <- function(etrf, etr_24, reference, method) {
     )
   }
 
-  switch(
+  eta_24 <- switch(
     method,
     etrf = ef_et_daily_etrf(etrf = etrf, etr_24 = etr_24,
                             reference = reference)
+  )
+  inputs <- list(etrf = etrf, etr_24 = etr_24)
+  flags <- ef_flags_combine(
+    ef_input_na_flags(inputs, length(eta_24)),
+    ef_diagnose_et(eta_24 = eta_24)
+  )
+
+  new_ef_object(
+    list(
+      eta_24 = eta_24,
+      method = method,
+      reference = reference,
+      flags = flags$flags,
+      provenance = list(
+        method = method,
+        fun = "ef_et_daily_etrf",
+        status = "CANDIDATA",
+        reference = reference,
+        inputs = names(inputs),
+        flags_evaluated = flags$evaluated,
+        earthflux_version = as.character(getNamespaceVersion("EarthFlux"))
+      )
+    ),
+    "earthflux_daily_et"
   )
 }
 
@@ -509,8 +522,10 @@ ef_et_daily_etrf <- function(etrf, etr_24, reference) {
 #' @param eta_24 Numeric or `NULL`. Daily actual ET \[mm d-1\], output of
 #'   `ef_et_daily()`. `NULL` if not evaluated.
 #' @return A named list (possibly empty) of `earthflux_flag` records, one
-#'   per layer with at least one flagged element; the name of each element
-#'   is the layer (`"et_inst"`, `"eta_24"`) to which its `index` refers.
+#'   per layer with at least one flagged element (the convention of every
+#'   stage, R/diagnostics.R); the name of each element is the layer
+#'   (`"et_inst"`, `"eta_24"`) to which its `index` refers. The attribute
+#'   `evaluated` is `"EF_ET_NEGATIVE"` when at least one layer is given.
 #' @noRd
 ef_diagnose_et <- function(et_inst = NULL, eta_24 = NULL) {
   call <- sys.call()
@@ -521,10 +536,15 @@ ef_diagnose_et <- function(et_inst = NULL, eta_24 = NULL) {
   for (nm in names(layers)) {
     x <- layers[[nm]]
     check_numeric(x, nm, call = call)
-    flag <- ef_flag(!is.na(x) & x < 0, "EF_ET_NEGATIVE")
-    if (flag$n_flagged > 0L) {
-      flags[[nm]] <- flag
+    flag <- ef_flag_set(list(EF_ET_NEGATIVE = !is.na(x) & x < 0))
+    if (length(flag) > 0L) {
+      flags[[nm]] <- flag[[1L]]
     }
+  }
+  attr(flags, "evaluated") <- if (length(layers) > 0L) {
+    "EF_ET_NEGATIVE"
+  } else {
+    character(0)
   }
   flags
 }

@@ -78,7 +78,14 @@ the clear-sky radiation on the horizontal,
 \eqn{\tau_d / (\tau_b + \tau_d)}{tau_d / (tau_b + tau_d)} [-].
 }
 
-\code{ef_rs_in()} returns exactly the value of the selected method.
+\code{ef_rs_in()} returns a list of class \code{earthflux_incoming_shortwave}
+with the same elements for both methods (type-stable): \code{total}, \code{beam},
+\code{diffuse} and \code{reflected} (identical to those of the method function),
+\code{diffuse_fraction} (\code{NULL} for \code{"measured"}, where it is an input),
+\code{method}, \code{flags} (one record per code that holds somewhere:
+\code{EF_INPUT_NA} and \code{EF_RAD_SELF_SHADED}; see Details) and \code{provenance}
+(method, method function, verification status, inputs used, flag codes
+evaluated in \code{flags_evaluated}, EarthFlux version).
 }
 \description{
 Computes the instantaneous incoming (downwelling) shortwave radiation
@@ -87,8 +94,9 @@ tilted) at the overpass time, separating the direct beam, the diffuse sky
 radiation and the radiation reflected by the surrounding ground. The
 \code{total} element is the \code{rs_in} argument of \code{ef_net_radiation()}.
 
-\code{ef_rs_in()} is the dispatcher of the family; it only forwards its
-arguments to the method chosen with \code{method}, which has no default:
+\code{ef_rs_in()} is the dispatcher of the family: it checks \code{method} (no
+default), forwards the other arguments to the method function, builds the
+diagnostic flags and records the provenance. The methods are:
 \itemize{
 \item \code{ef_rs_in_modelled()} (\code{method = "modelled"}): clear-sky radiation from
 the extraterrestrial irradiance and the partitioned transmissivity of
@@ -132,8 +140,15 @@ cos(theta_h) * tau_sw}.
 A plane facing away from the sun (\eqn{\cos\theta_{rel} \le 0}{cos(theta_rel)
 <= 0}) receives no direct beam: \eqn{\max(\cos\theta_{rel}, 0)}{max(.,
 0)} is the physical definition of the beam irradiance on that plane, not
-a correction, and is reported by the diagnostics of the stage
-(\code{EF_RAD_SELF_SHADED}). The resulting radiation is never truncated.
+a correction, and is reported by \code{ef_rs_in()} with the flag
+\code{EF_RAD_SELF_SHADED}. The resulting radiation is never truncated.
+
+\strong{Diagnostics} (\code{ef_rs_in()} only; the method functions return values
+without flags). \code{EF_INPUT_NA}: a required input is missing at the
+position; \code{EF_RAD_SELF_SHADED}: the sun is above the horizon but the
+pixel plane faces away from it. A record is present only for a code that
+holds somewhere; the codes evaluated are in
+\code{provenance$flags_evaluated}.
 
 Unlike a common simplified form, \eqn{G_{sc} d_r \cos\theta_{rel}
 \tau_{sw}}{Gsc * dr * cos(theta_rel) * tau_sw}, the diffuse component is
@@ -152,9 +167,11 @@ Values outside the domains above (including \code{cos_zenith <= 0}, sun below
 the horizon) or infinite values raise \code{earthflux_domain_error} (also
 \code{earthflux_input_error}). \code{ground_albedo = NULL} with a positive slope
 raises \code{earthflux_missing_input}. A missing or unknown \code{method} raises
-\code{earthflux_missing_input} or \code{earthflux_unknown_method}. Missing values
-propagate arithmetically to the outputs that depend on them, and always to
-\code{total}.
+\code{earthflux_missing_input} or \code{earthflux_unknown_method}; an argument
+required by the chosen method but not supplied to the dispatcher raises
+\code{earthflux_missing_input}, and one the method does not accept raises
+\code{earthflux_input_error}. Missing values propagate arithmetically to the
+outputs that depend on them, and always to \code{total}.
 }
 \section{Verification status}{
 
@@ -185,6 +202,7 @@ rs <- ef_rs_in(
   ground_albedo = 0.2, method = "modelled"
 )
 rs$total
+rs$provenance$flags_evaluated
 
 # Measured global radiation on the horizontal, projected to the slopes
 ef_rs_in_measured(

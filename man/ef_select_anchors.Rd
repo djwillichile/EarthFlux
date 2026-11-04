@@ -110,9 +110,11 @@ criteria step used per class), \code{thresholds} (computed thresholds),
 \code{search} (domains and where each class was found), \code{funnel} (cells
 left after each filter, per class, search stage and criteria step),
 \code{relaxation} (relaxation steps used), \code{flags} (list of
-\code{earthflux_flag}), \code{method} (\code{"criteria"}), \code{origin}
-(\code{"automatic"}), \code{grid}, \code{conditions} (\code{NULL} until
-\code{\link[=ef_anchor_conditions]{ef_anchor_conditions()}}), \code{note} and \code{provenance}.
+\code{earthflux_flag}, one per code that holds), \code{method}
+(\code{"criteria"}), \code{origin} (\code{"automatic"}), \code{grid}, \code{conditions}
+(\code{NULL} until \code{\link[=ef_anchor_conditions]{ef_anchor_conditions()}}), \code{note} and \code{provenance}
+(including \code{flags}, the flag provenance of dev/specs/flags.md
+section 6.7, and \code{flags_evaluated}, the codes evaluated).
 }
 }
 \description{

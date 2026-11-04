@@ -307,19 +307,50 @@ test_that("elevation transmissivity: values, linearity, domain and NA", {
 })
 
 test_that("ef_tau_sw() dispatches to its methods without changing results", {
-  expect_identical(
-    ef_tau_sw(cos_zenith = c(0.5, 0.9), pressure = 90,
-              vapour_pressure = 1.2, turbidity = 0.9, method = "allen"),
-    ef_tau_sw_allen(c(0.5, 0.9), 90, 1.2, 0.9)
-  )
-  expect_identical(
-    ef_tau_sw(elevation = c(0, 2500), method = "elevation"),
-    ef_tau_sw_elevation(c(0, 2500))
-  )
+  tau <- ef_tau_sw(cos_zenith = c(0.5, 0.9), pressure = 90,
+                   vapour_pressure = 1.2, turbidity = 0.9, method = "allen")
+  direct <- ef_tau_sw_allen(c(0.5, 0.9), 90, 1.2, 0.9)
+  expect_s3_class(tau, "earthflux_sw_transmissivity")
+  expect_identical(tau$total, direct$total)
+  expect_identical(tau$beam, direct$beam)
+  expect_identical(tau$diffuse, direct$diffuse)
+  tau_z <- ef_tau_sw(elevation = c(0, 2500), method = "elevation")
+  expect_identical(tau_z$total, ef_tau_sw_elevation(c(0, 2500)))
   expect_error(ef_tau_sw(elevation = 0), class = "earthflux_missing_input")
   expect_error(ef_tau_sw(elevation = 0, method = "simple"),
                class = "earthflux_unknown_method")
   expect_error(ef_tau_sw(elevation = 0, method = c("allen", "elevation")),
+               class = "earthflux_input_error")
+})
+
+test_that("ef_tau_sw() returns a type-stable object with flags", {
+  nms <- c("total", "beam", "diffuse", "method", "flags", "provenance")
+  tau <- ef_tau_sw(cos_zenith = c(0.5, NA), pressure = 90,
+                   vapour_pressure = 1.2, turbidity = 0.9, method = "allen")
+  tau_z <- ef_tau_sw(elevation = matrix(c(0, 2500, NA, 100), 2, 2),
+                     method = "elevation")
+  expect_named(tau, nms)
+  expect_named(tau_z, nms)
+  expect_null(tau_z$beam)
+  expect_null(tau_z$diffuse)
+  expect_identical(dim(tau_z$total), c(2L, 2L))
+  expect_identical(tau$method, "allen")
+  expect_identical(tau_z$method, "elevation")
+  # EF_INPUT_NA where an input is missing (positive and negative cases)
+  expect_identical(vapply(tau$flags, `[[`, "", "code"), "EF_INPUT_NA")
+  expect_identical(tau$flags[[1]]$index, 2L)
+  expect_identical(tau_z$flags[[1]]$index, 3L)
+  ok <- ef_tau_sw(elevation = 100, method = "elevation")
+  expect_length(ok$flags, 0L)
+  expect_identical(ok$provenance$flags_evaluated, "EF_INPUT_NA")
+  expect_identical(tau$provenance$fun, "ef_tau_sw_allen")
+  expect_identical(tau$provenance$status, "CANDIDATA")
+  expect_identical(tau$provenance$inputs,
+                   c("cos_zenith", "pressure", "vapour_pressure", "turbidity"))
+  # Arguments are matched against the method function
+  expect_error(ef_tau_sw(cos_zenith = 0.5, pressure = 90, method = "allen"),
+               class = "earthflux_missing_input")
+  expect_error(ef_tau_sw(elevation = 0, height = 2, method = "elevation"),
                class = "earthflux_input_error")
 })
 
@@ -494,21 +525,49 @@ test_that("measured shortwave: components, domain errors and NA", {
 })
 
 test_that("ef_rs_in() dispatches to its methods without changing results", {
-  expect_identical(
-    ef_rs_in(cos_zenith = cz35, cos_incidence = 0.7, inv_distance = 1.01,
-             tau_beam = t2$beam, tau_diffuse = t2$diffuse, slope = 0.3,
-             ground_albedo = 0.15, method = "modelled"),
-    ef_rs_in_modelled(cz35, 0.7, 1.01, t2$beam, t2$diffuse, 0.3, 0.15)
-  )
-  expect_identical(
-    ef_rs_in(rs_horizontal = 850, diffuse_fraction = 0.2, cos_zenith = cz35,
-             cos_incidence = 0.7, slope = 0.3, ground_albedo = 0.15,
-             method = "measured"),
-    ef_rs_in_measured(850, 0.2, cz35, 0.7, 0.3, 0.15)
-  )
+  rs <- ef_rs_in(cos_zenith = cz35, cos_incidence = 0.7, inv_distance = 1.01,
+                 tau_beam = t2$beam, tau_diffuse = t2$diffuse, slope = 0.3,
+                 ground_albedo = 0.15, method = "modelled")
+  direct <- ef_rs_in_modelled(cz35, 0.7, 1.01, t2$beam, t2$diffuse, 0.3, 0.15)
+  expect_s3_class(rs, "earthflux_incoming_shortwave")
+  for (nm in names(direct)) {
+    expect_identical(rs[[nm]], direct[[nm]])
+  }
+  rs_m <- ef_rs_in(rs_horizontal = 850, diffuse_fraction = 0.2,
+                   cos_zenith = cz35, cos_incidence = 0.7, slope = 0.3,
+                   ground_albedo = 0.15, method = "measured")
+  direct <- ef_rs_in_measured(850, 0.2, cz35, 0.7, 0.3, 0.15)
+  for (nm in names(direct)) {
+    expect_identical(rs_m[[nm]], direct[[nm]])
+  }
+  nms <- c("total", "beam", "diffuse", "reflected", "diffuse_fraction",
+           "method", "flags", "provenance")
+  expect_named(rs, nms)
+  expect_named(rs_m, nms)
+  expect_null(rs_m$diffuse_fraction)
   expect_error(ef_rs_in(rs_horizontal = 850), class = "earthflux_missing_input")
   expect_error(ef_rs_in(rs_horizontal = 850, method = "clear_sky"),
                class = "earthflux_unknown_method")
+  expect_error(ef_rs_in(rs_horizontal = 850, method = "measured"),
+               class = "earthflux_missing_input")
+})
+
+test_that("ef_rs_in() flags missing inputs and self-shaded planes", {
+  rs <- ef_rs_in(rs_horizontal = c(850, 850, NA), diffuse_fraction = 0.2,
+                 cos_zenith = 0.8, cos_incidence = c(0.7, -0.1, 0.7),
+                 slope = 0.6, ground_albedo = 0.2, method = "measured")
+  codes <- vapply(rs$flags, `[[`, "", "code")
+  expect_identical(codes, c("EF_INPUT_NA", "EF_RAD_SELF_SHADED"))
+  expect_identical(rs$flags[[1]]$index, 3L)
+  expect_identical(rs$flags[[2]]$index, 2L)
+  expect_identical(rs$flags[[2]]$n_total, 3L)
+  expect_identical(rs$provenance$flags_evaluated,
+                   c("EF_INPUT_NA", "EF_RAD_SELF_SHADED"))
+  # Negative case: lit planes, complete inputs
+  lit <- ef_rs_in(rs_horizontal = 850, diffuse_fraction = 0.2,
+                  cos_zenith = 0.8, cos_incidence = c(0.7, 0.75), slope = 0.1,
+                  ground_albedo = 0.2, method = "measured")
+  expect_length(lit$flags, 0L)
 })
 
 # Longwave radiation -----------------------------------------------------------
@@ -647,10 +706,10 @@ test_that("EF_RAD_SELF_SHADED marks planes facing away from the sun", {
   expect_identical(f$index, c(1L, 2L))
   expect_identical(f$n_total, 5L)
   # Negative case: all planes lit.
-  none <- flag_of(ef_diagnose_radiation(cos_zenith = 0.8,
-                                        cos_incidence = c(0.2, 0.9)),
-                  "EF_RAD_SELF_SHADED")
-  expect_identical(none$n_flagged, 0L)
+  none <- ef_diagnose_radiation(cos_zenith = 0.8,
+                                cos_incidence = c(0.2, 0.9))
+  expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_RAD_SELF_SHADED")
   # Consistency with the beam component of the S4 case.
   s4 <- rs_model(cos(95 * deg), 60 * deg)
   expect_identical(s4$beam, 0)
@@ -662,9 +721,9 @@ test_that("EF_RAD_ATM_EMISSIVITY_GT1 marks emissivities above 1", {
                "EF_RAD_ATM_EMISSIVITY_GT1")
   expect_identical(f$index, 1L)
   expect_identical(f$severity, "warning")
-  none <- flag_of(ef_diagnose_radiation(atm_emissivity = c(0.7, 1)),
-                  "EF_RAD_ATM_EMISSIVITY_GT1")
-  expect_identical(none$n_flagged, 0L)
+  none <- ef_diagnose_radiation(atm_emissivity = c(0.7, 1))
+  expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_RAD_ATM_EMISSIVITY_GT1")
 })
 
 test_that("EF_RAD_RS_GT_RA compares measured Rs with the extraterrestrial", {
@@ -678,10 +737,9 @@ test_that("EF_RAD_RS_GT_RA compares measured Rs with the extraterrestrial", {
   expect_identical(f$index, c(2L, 5L))
   expect_identical(f$scope, "cell")
   # Not evaluated without inv_distance.
-  expect_null(flag_of(
-    ef_diagnose_radiation(rs_horizontal = 900, cos_zenith = 0.6),
-    "EF_RAD_RS_GT_RA"
-  ))
+  not_eval <- ef_diagnose_radiation(rs_horizontal = 900, cos_zenith = 0.6)
+  expect_null(flag_of(not_eval, "EF_RAD_RS_GT_RA"))
+  expect_identical(ef_flags_evaluated(not_eval), character(0))
 })
 
 test_that("EF_RAD_RN_NEGATIVE marks negative net radiation", {
@@ -691,19 +749,37 @@ test_that("EF_RAD_RN_NEGATIVE marks negative net radiation", {
                "EF_RAD_RN_NEGATIVE")
   expect_identical(f$index, 1L)
   expect_identical(f$severity, "info")
-  none <- flag_of(ef_diagnose_radiation(rn = c(10, 0)), "EF_RAD_RN_NEGATIVE")
-  expect_identical(none$n_flagged, 0L)
+  none <- ef_diagnose_radiation(rn = c(10, 0))
+  expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_RAD_RN_NEGATIVE")
 })
 
 test_that("diagnostics evaluate only the codes whose inputs are given", {
-  expect_identical(ef_diagnose_radiation(), list())
-  only_rn <- ef_diagnose_radiation(rn = 1)
+  # Convention of every stage: records only for flagged codes; the codes
+  # evaluated travel in the attribute `evaluated`.
+  nothing <- ef_diagnose_radiation()
+  expect_length(nothing, 0L)
+  expect_identical(ef_flags_evaluated(nothing), character(0))
+  only_rn <- ef_diagnose_radiation(rn = -1)
   expect_identical(vapply(only_rn, `[[`, "", "code"), "EF_RAD_RN_NEGATIVE")
+  expect_identical(ef_flags_evaluated(ef_diagnose_radiation(rn = 1)),
+                   "EF_RAD_RN_NEGATIVE")
   all_codes <- ef_diagnose_radiation(
     cos_zenith = 0.8, cos_incidence = 0.5, inv_distance = 1,
     atm_emissivity = 0.75, rs_horizontal = 800, rn = 400
   )
-  expect_length(all_codes, 4L)
+  expect_length(all_codes, 0L)
+  expect_identical(
+    ef_flags_evaluated(all_codes),
+    c("EF_RAD_SELF_SHADED", "EF_RAD_ATM_EMISSIVITY_GT1", "EF_RAD_RS_GT_RA",
+      "EF_RAD_RN_NEGATIVE")
+  )
+  all_flagged <- ef_diagnose_radiation(
+    cos_zenith = 0.8, cos_incidence = -0.5, inv_distance = 1,
+    atm_emissivity = 1.01, rs_horizontal = 1300, rn = -10
+  )
+  expect_identical(vapply(all_flagged, `[[`, "", "code"),
+                   ef_flags_evaluated(all_codes))
   expect_error(ef_diagnose_radiation(rn = c(1, 2), atm_emissivity = c(1, 2, 3)),
                class = "earthflux_input_error")
   expect_error(ef_diagnose_radiation(rn = "1"),

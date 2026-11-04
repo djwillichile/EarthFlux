@@ -58,8 +58,8 @@ where \code{g} is \code{NA}), with the shape of \code{g}; \code{NULL} for
 \item{\code{flags}}{A list of diagnostic flag records (see Diagnostics).}
 \item{\code{provenance}}{A list with the method, the method function, the
 verification status, the references, the Kelvin offset, the
-coefficients of the equation, the inputs used and the EarthFlux
-version.}
+coefficients of the equation, the inputs used, the flag codes
+evaluated (\code{flags_evaluated}) and the EarthFlux version.}
 }
 }
 \description{

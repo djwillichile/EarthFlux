@@ -244,14 +244,35 @@ test_that("dispatcher ef_et_daily() is identical to the direct call", {
   etrf <- c(0.9, -0.09, NA, 1.2)
   etr_24 <- c(8, 8, 8, 0)
   expect_identical(
-    ef_et_daily(etrf, etr_24, reference = "alfalfa", method = "etrf"),
+    ef_et_daily(etrf, etr_24, reference = "alfalfa", method = "etrf")$eta_24,
     ef_et_daily_etrf(etrf, etr_24, reference = "alfalfa")
   )
   m <- matrix(etrf, nrow = 2)
   expect_identical(
-    ef_et_daily(m, 8, reference = "grass", method = "etrf"),
+    ef_et_daily(m, 8, reference = "grass", method = "etrf")$eta_24,
     ef_et_daily_etrf(m, 8, reference = "grass")
   )
+})
+
+test_that("dispatcher ef_et_daily() returns a classed object with flags", {
+  out <- ef_et_daily(c(0.9, -0.09, NA, 1.2), c(8, 8, 8, 0),
+                     reference = "alfalfa", method = "etrf")
+  expect_s3_class(out, "earthflux_daily_et")
+  expect_named(out, c("eta_24", "method", "reference", "flags",
+                      "provenance"))
+  expect_identical(out$method, "etrf")
+  expect_identical(out$reference, "alfalfa")
+  codes <- vapply(out$flags, `[[`, "", "code")
+  expect_identical(codes, c("EF_INPUT_NA", "EF_ET_NEGATIVE"))
+  expect_identical(out$flags[[1]]$index, 3L)
+  expect_identical(out$flags[[2]]$index, 2L)
+  expect_identical(out$provenance$flags_evaluated,
+                   c("EF_INPUT_NA", "EF_ET_NEGATIVE"))
+  expect_identical(out$provenance$fun, "ef_et_daily_etrf")
+  expect_identical(out$provenance$status, "CANDIDATA")
+  # Negative case: no record when nothing is flagged
+  ok <- ef_et_daily(0.9, 8, reference = "grass", method = "etrf")
+  expect_length(ok$flags, 0L)
 })
 
 test_that("dispatcher: method has no default and is matched exactly", {
@@ -288,7 +309,7 @@ test_that("case A: full chain Rn, G, H -> LE -> ET_inst -> ETrF -> ETa_24", {
   et_inst <- ef_et_inst(le, lambda)
   etrf <- ef_etrf(et_inst, etr_inst = 0.80, reference = "alfalfa")
   eta_24 <- ef_et_daily(etrf, etr_24 = 8.0, reference = "alfalfa",
-                        method = "etrf")
+                        method = "etrf")$eta_24
   expect_lt(abs(le - 490), tol)
   expect_lt(abs(et_inst - 0.72), tol)
   expect_lt(abs(etrf - 0.9), tol)
@@ -337,8 +358,10 @@ test_that("EF_ET_NEGATIVE is not raised without negative values", {
   none <- ef_diagnose_et(et_inst = et_inst)
   expect_type(none, "list")
   expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_ET_NEGATIVE")
   expect_length(ef_diagnose_et(et_inst = et_inst, eta_24 = c(7.2, 0, NA)), 0L)
   expect_length(ef_diagnose_et(), 0L)
+  expect_identical(ef_flags_evaluated(ef_diagnose_et()), character(0))
   # One layer flagged, the other not.
   flags <- ef_diagnose_et(et_inst = c(0.72, NA), eta_24 = c(-0.72, NA))
   expect_named(flags, "eta_24")
