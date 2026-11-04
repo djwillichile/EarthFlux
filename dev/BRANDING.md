@@ -43,6 +43,25 @@ Atributos que la identidad busca transmitir:
 La combinación de bosques y cultivos comunica que EarthFlux no se limita a un
 solo uso del suelo.
 
+### 2.1 Diseño vectorial adoptado (v7, 2026-11-04)
+
+El hexágono oficial se construyó como SVG a partir de esta guía y de las
+indicaciones del autor:
+
+| Elemento | Diseño | Significado |
+|---|---|---|
+| Franja de terreno | Cruza todo el hexágono; base arqueada hacia arriba con borde verde claro | Curvatura de la Tierra; superficie terrestre |
+| Loma de cultivos (izquierda) | Verde claro con hileras diagonales | Agroecosistemas de Chile central |
+| Montículo de bosque (centro) | Verde oscuro, con un árbol latifoliado y una conífera | Bosque mixto (nativo y conífera) |
+| Loma de suelo desnudo (derecha) | Ocre, separada de las demás por un filete del color de fondo | Suelo seco; píxel caliente de METRIC |
+| Flujo de agua | Flecha ondulada celeste que nace de los cultivos | Evapotranspiración (calor latente, LE) |
+| Flujo de calor | Flecha ondulada naranja que nace del suelo seco | Calor sensible (H) |
+| Sol | Grande, asomando desde la esquina superior derecha | Radiación solar que impulsa el balance de energía |
+
+El logo resume así el balance de energía superficial que modela el paquete:
+radiación entrante, flujo de calor latente desde la vegetación y flujo de
+calor sensible desde el suelo seco.
+
 ## 3. Paleta cromática
 
 | Color | Código de referencia | Significado |
@@ -54,6 +73,10 @@ solo uso del suelo.
 | Amarillo solar | `#FFBE35` | Radiación y energía |
 | Blanco cálido | `#F5F5F0` | Claridad y legibilidad |
 | Tierra ocre | `#BA894E` | Suelo y superficie agrícola |
+| Naranja calor | `#F5793B` | Flujo de calor sensible (H) |
+| Naranja "Flux" | `#FC9C38` | Nombre del paquete (sílaba "Flux") |
+| Verde bosque | `#1E6B40` | Montículo forestal y suelo |
+| Fondo del hexágono / borde | `#01515E` / `#01303A` | Fondo y borde del hexágono |
 
 Los códigos son referencias aproximadas para normalizar las propuestas
 visuales y deben ajustarse al elaborar los archivos vectoriales definitivos.
@@ -129,14 +152,16 @@ La coherencia no exige logotipos idénticos, sino un lenguaje gráfico común.
 
 | Archivo | Estado | Uso |
 |---|---|---|
-| `branding/earthflux-hex.png` | ✅ PNG 1086 × 1238, exterior del hexágono transparente | Maestro raster del hexágono |
-| `branding/earthflux-horizontal.png` | ✅ PNG 2172 × 724, fondo azul petróleo | README, web, presentaciones |
-| `branding/earthflux-icon.png` | ✅ PNG 555 × 555, recortado del símbolo del logotipo horizontal | Base de los favicons |
-| `man/figures/logo.png` | ✅ 240 × 274 (mismo tamaño máximo que `usethis::use_logo()`) | Logo del paquete; README y pkgdown |
-| `pkgdown/favicon/` | ✅ favicon.ico, 16, 32, 96, 180, 120, 76, 60, 192 y 512 px y `site.webmanifest` | Sitio web |
-| `branding/earthflux-hex.svg` | ⏳ Pendiente | Maestro vectorial |
-| `branding/earthflux-horizontal.svg` | ⏳ Pendiente | Maestro vectorial |
-| `branding/earthflux-icon.svg` | ⏳ Pendiente (versión simplificada para 32 px) | Maestro vectorial |
+| `branding/earthflux-hex.svg` | ✅ Maestro vectorial (v7), 7,5 KB, texto convertido a trazos (Inter Bold) | Hexágono oficial |
+| `branding/earthflux-icon.svg` | ✅ Variante sin texto, para tamaños pequeños | Ícono y favicons |
+| `branding/src/make-hex.py`, `branding/src/render-svg.js` | ✅ Generador reproducible (`python3 make-hex.py salida.svg [--icon]`) y renderizado a PNG | Regenerar el logo |
+| `branding/earthflux-hex.png` | ✅ Renderizado del SVG (1040 × 1200, fondo transparente) | Usos raster |
+| `branding/earthflux-icon.png` | ✅ Renderizado cuadrado del ícono (600 × 600) | Base de favicons |
+| `branding/earthflux-hex-original.png` | Referencia histórica | Propuesta raster original del autor |
+| `branding/earthflux-horizontal.png` | ✅ PNG 2172 × 724 (raster) | README, web, presentaciones |
+| `man/figures/logo.png` | ✅ 240 × 277 desde el SVG | Logo del paquete; README y pkgdown |
+| `pkgdown/favicon/` | ✅ favicon.svg, favicon.ico y PNG de 16 a 512 px desde el ícono SVG | Sitio web |
+| `branding/earthflux-horizontal.svg` | ⏳ Pendiente (mismo estilo que el hexágono v7) | Maestro vectorial |
 | `branding/earthflux-monochrome.svg` | ⏳ Pendiente | Impresión y fondos especiales |
 | Versiones sobre fondo claro | ⏳ Pendiente | Documentos y pósteres |
 
