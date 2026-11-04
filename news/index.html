@@ -109,6 +109,10 @@
 </ul></li>
 <li><p>Diagnostic flags registered for the GWR stage, in the flag word of every surface (cell) or in the flag records (object, record): <code>EF_GWR_EXTRAPOLATION_COVARIATE</code>, <code>EF_GWR_EXTRAPOLATION_LOCAL</code>, <code>EF_GWR_OUTSIDE_HULL</code>, <code>EF_GWR_FEW_NEIGHBOURS</code>, <code>EF_GWR_LOCAL_SINGULAR</code> (cell, bits 1-5), <code>EF_GWR_OUT_OF_DOMAIN</code> (cell, bit 6, critical: a prediction outside the physical domain of the variable is kept and flagged, never truncated, and must be masked before the METRIC core), <code>EF_GWR_BW_AT_BOUND</code>, <code>EF_GWR_BW_MULTIMODAL</code>, <code>EF_GWR_AICC_UNDEFINED</code>, <code>EF_GWR_GLOBAL_PREFERRED</code>, <code>EF_GWR_SURFACE_COVARIATE</code>, <code>EF_GWR_SINGLE_STATION</code> (object) and <code>EF_GWR_STATION_EXCLUDED</code> (record).</p></li>
 </ul></div>
+<div class="section level4">
+<h4 id="surface-state-modis-in-progress-0-0-0-9000">Surface state (MODIS, in progress)<a class="anchor" aria-label="anchor" href="#surface-state-modis-in-progress-0-0-0-9000"></a></h4>
+<ul><li>Internal MODIS preparation steps (not exported yet): conversion of the MOD11A1/MYD11A1 day view time (local solar time) to UTC day of year and hour per pixel, with the equation of time left to the solar geometry so that it is applied exactly once; blue-, white- and black-sky albedo from MCD43A3 with an explicit diffuse fraction; broadband emissivity from LAI; NDVI from surface reflectance; matching of 8- and 16-day composites to the LST date with the lag in days; and integer-factor aggregation to the working grid with an explicit minimum valid fraction. Options whose formulas are not verified in the specification raise <code>earthflux_method_not_implemented</code>.</li>
+</ul></div>
 </div>
 <div class="section level3">
 <h3 id="changes-0-0-0-9000">Changes<a class="anchor" aria-label="anchor" href="#changes-0-0-0-9000"></a></h3>

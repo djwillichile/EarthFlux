@@ -479,6 +479,19 @@ yet.
   `EF_GWR_SURFACE_COVARIATE`, `EF_GWR_SINGLE_STATION` (object) and
   `EF_GWR_STATION_EXCLUDED` (record).
 
+#### Surface state (MODIS, in progress)
+
+- Internal MODIS preparation steps (not exported yet): conversion of the
+  MOD11A1/MYD11A1 day view time (local solar time) to UTC day of year
+  and hour per pixel, with the equation of time left to the solar
+  geometry so that it is applied exactly once; blue-, white- and
+  black-sky albedo from MCD43A3 with an explicit diffuse fraction;
+  broadband emissivity from LAI; NDVI from surface reflectance; matching
+  of 8- and 16-day composites to the LST date with the lag in days; and
+  integer-factor aggregation to the working grid with an explicit
+  minimum valid fraction. Options whose formulas are not verified in the
+  specification raise `earthflux_method_not_implemented`.
+
 ### Changes
 
 - Modular source layout for the surface, forcing, spatial (GWR), METRIC,
