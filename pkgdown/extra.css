@@ -1,0 +1,11 @@
+/* Home page: the horizontal logo in README.md replaces the hex logo that
+   pkgdown adds next to the title. The hex is still used for the favicon and
+   for social cards (og:image). */
+.template-home .page-header img.logo {
+  display: none;
+}
+
+.template-home .page-header h1 img {
+  max-width: 100%;
+  height: auto;
+}

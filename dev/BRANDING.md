@@ -162,14 +162,18 @@ La coherencia no exige logotipos idénticos, sino un lenguaje gráfico común.
 | `branding/earthflux-horizontal-light.svg` | ✅ Versión para fondo claro, fondo transparente; "Earth" `#01303A` (14,1:1), "Flux" `#087E9C` (contraste AA) | Documentos, pósteres, fondos claros |
 | `branding/earthflux-horizontal.png`, `branding/earthflux-horizontal-light.png` | ✅ Renderizados 1720 × 540 | Usos raster |
 | `branding/earthflux-horizontal-original.png` | Referencia histórica | Propuesta raster original del autor |
-| `branding/src/earthflux_scene.py`, `make-wordmark.py` | ✅ Geometría compartida por todos los logos y generador del logo horizontal (`python3 make-wordmark.py salida.svg [--light]`) | Regenerar los logos |
-| `man/figures/logo.png` | ✅ 240 × 277 desde el SVG | Logo del paquete; README y pkgdown |
+| `branding/src/earthflux_scene.py`, `make-wordmark.py` | ✅ Geometría compartida por todos los logos y generador del logo horizontal (`python3 make-wordmark.py salida.svg [--light | --transparent]`) | Regenerar los logos |
+| `man/figures/logo.png` | ✅ 240 × 277 desde el SVG | Logo hexagonal del paquete; tarjetas sociales del sitio (`og:image`) |
+| `man/figures/logo-horizontal.svg` | ✅ Igual a `earthflux-horizontal-light.svg` | Encabezado del README (modo claro) y portada de pkgdown |
+| `man/figures/logo-horizontal-dark.svg` | ✅ Colores de fondo oscuro sin rectángulo de fondo (`--transparent`) | Encabezado del README en GitHub con modo oscuro |
+| `pkgdown/extra.css`, `pkgdown/extra.js` | ✅ Ocultan el hexágono que pkgdown añade junto al título y fuerzan la versión clara (el sitio solo tiene tema claro) | Portada de pkgdown |
 | `pkgdown/favicon/` | ✅ favicon.svg, favicon.ico y PNG de 16 a 512 px desde el ícono SVG | Sitio web |
 | `branding/earthflux-monochrome.svg` | ⏳ Pendiente | Impresión y fondos especiales |
 
 El tema del sitio pkgdown usa `#003B46` como color primario y `#00606F` para
 enlaces (contraste 7,2:1 sobre blanco). La carpeta `branding/` está excluida
-del paquete (`.Rbuildignore`); solo `man/figures/logo.png` forma parte de él.
+del paquete (`.Rbuildignore`); de los logos, solo los archivos de `man/figures/`
+forman parte de él.
 
 ## 9. Síntesis
 
