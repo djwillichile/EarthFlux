@@ -647,10 +647,10 @@ test_that("EF_RAD_SELF_SHADED marks planes facing away from the sun", {
   expect_identical(f$index, c(1L, 2L))
   expect_identical(f$n_total, 5L)
   # Negative case: all planes lit.
-  none <- flag_of(ef_diagnose_radiation(cos_zenith = 0.8,
-                                        cos_incidence = c(0.2, 0.9)),
-                  "EF_RAD_SELF_SHADED")
-  expect_identical(none$n_flagged, 0L)
+  none <- ef_diagnose_radiation(cos_zenith = 0.8,
+                                cos_incidence = c(0.2, 0.9))
+  expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_RAD_SELF_SHADED")
   # Consistency with the beam component of the S4 case.
   s4 <- rs_model(cos(95 * deg), 60 * deg)
   expect_identical(s4$beam, 0)
@@ -662,9 +662,9 @@ test_that("EF_RAD_ATM_EMISSIVITY_GT1 marks emissivities above 1", {
                "EF_RAD_ATM_EMISSIVITY_GT1")
   expect_identical(f$index, 1L)
   expect_identical(f$severity, "warning")
-  none <- flag_of(ef_diagnose_radiation(atm_emissivity = c(0.7, 1)),
-                  "EF_RAD_ATM_EMISSIVITY_GT1")
-  expect_identical(none$n_flagged, 0L)
+  none <- ef_diagnose_radiation(atm_emissivity = c(0.7, 1))
+  expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_RAD_ATM_EMISSIVITY_GT1")
 })
 
 test_that("EF_RAD_RS_GT_RA compares measured Rs with the extraterrestrial", {
@@ -678,10 +678,9 @@ test_that("EF_RAD_RS_GT_RA compares measured Rs with the extraterrestrial", {
   expect_identical(f$index, c(2L, 5L))
   expect_identical(f$scope, "cell")
   # Not evaluated without inv_distance.
-  expect_null(flag_of(
-    ef_diagnose_radiation(rs_horizontal = 900, cos_zenith = 0.6),
-    "EF_RAD_RS_GT_RA"
-  ))
+  not_eval <- ef_diagnose_radiation(rs_horizontal = 900, cos_zenith = 0.6)
+  expect_null(flag_of(not_eval, "EF_RAD_RS_GT_RA"))
+  expect_identical(ef_flags_evaluated(not_eval), character(0))
 })
 
 test_that("EF_RAD_RN_NEGATIVE marks negative net radiation", {
@@ -691,19 +690,37 @@ test_that("EF_RAD_RN_NEGATIVE marks negative net radiation", {
                "EF_RAD_RN_NEGATIVE")
   expect_identical(f$index, 1L)
   expect_identical(f$severity, "info")
-  none <- flag_of(ef_diagnose_radiation(rn = c(10, 0)), "EF_RAD_RN_NEGATIVE")
-  expect_identical(none$n_flagged, 0L)
+  none <- ef_diagnose_radiation(rn = c(10, 0))
+  expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_RAD_RN_NEGATIVE")
 })
 
 test_that("diagnostics evaluate only the codes whose inputs are given", {
-  expect_identical(ef_diagnose_radiation(), list())
-  only_rn <- ef_diagnose_radiation(rn = 1)
+  # Convention of every stage: records only for flagged codes; the codes
+  # evaluated travel in the attribute `evaluated`.
+  nothing <- ef_diagnose_radiation()
+  expect_length(nothing, 0L)
+  expect_identical(ef_flags_evaluated(nothing), character(0))
+  only_rn <- ef_diagnose_radiation(rn = -1)
   expect_identical(vapply(only_rn, `[[`, "", "code"), "EF_RAD_RN_NEGATIVE")
+  expect_identical(ef_flags_evaluated(ef_diagnose_radiation(rn = 1)),
+                   "EF_RAD_RN_NEGATIVE")
   all_codes <- ef_diagnose_radiation(
     cos_zenith = 0.8, cos_incidence = 0.5, inv_distance = 1,
     atm_emissivity = 0.75, rs_horizontal = 800, rn = 400
   )
-  expect_length(all_codes, 4L)
+  expect_length(all_codes, 0L)
+  expect_identical(
+    ef_flags_evaluated(all_codes),
+    c("EF_RAD_SELF_SHADED", "EF_RAD_ATM_EMISSIVITY_GT1", "EF_RAD_RS_GT_RA",
+      "EF_RAD_RN_NEGATIVE")
+  )
+  all_flagged <- ef_diagnose_radiation(
+    cos_zenith = 0.8, cos_incidence = -0.5, inv_distance = 1,
+    atm_emissivity = 1.01, rs_horizontal = 1300, rn = -10
+  )
+  expect_identical(vapply(all_flagged, `[[`, "", "code"),
+                   ef_flags_evaluated(all_codes))
   expect_error(ef_diagnose_radiation(rn = c(1, 2), atm_emissivity = c(1, 2, 3)),
                class = "earthflux_input_error")
   expect_error(ef_diagnose_radiation(rn = "1"),

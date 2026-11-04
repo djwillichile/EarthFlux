@@ -485,8 +485,10 @@ ef_et_daily_etrf <- function(etrf, etr_24, reference) {
 #' @param eta_24 Numeric or `NULL`. Daily actual ET \[mm d-1\], output of
 #'   `ef_et_daily()`. `NULL` if not evaluated.
 #' @return A named list (possibly empty) of `earthflux_flag` records, one
-#'   per layer with at least one flagged element; the name of each element
-#'   is the layer (`"et_inst"`, `"eta_24"`) to which its `index` refers.
+#'   per layer with at least one flagged element (the convention of every
+#'   stage, R/diagnostics.R); the name of each element is the layer
+#'   (`"et_inst"`, `"eta_24"`) to which its `index` refers. The attribute
+#'   `evaluated` is `"EF_ET_NEGATIVE"` when at least one layer is given.
 #' @noRd
 ef_diagnose_et <- function(et_inst = NULL, eta_24 = NULL) {
   call <- sys.call()
@@ -497,10 +499,15 @@ ef_diagnose_et <- function(et_inst = NULL, eta_24 = NULL) {
   for (nm in names(layers)) {
     x <- layers[[nm]]
     check_numeric(x, nm, call = call)
-    flag <- ef_flag(!is.na(x) & x < 0, "EF_ET_NEGATIVE")
-    if (flag$n_flagged > 0L) {
-      flags[[nm]] <- flag
+    flag <- ef_flag_set(list(EF_ET_NEGATIVE = !is.na(x) & x < 0))
+    if (length(flag) > 0L) {
+      flags[[nm]] <- flag[[1L]]
     }
+  }
+  attr(flags, "evaluated") <- if (length(layers) > 0L) {
+    "EF_ET_NEGATIVE"
+  } else {
+    character(0)
   }
   flags
 }

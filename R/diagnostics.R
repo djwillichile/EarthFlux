@@ -37,6 +37,16 @@
 # Ownership of flag construction: cell-scope flags of a stage are built by an
 # internal ef_diagnose_<stage>() function (dev/ARCHITECTURE.md section 3.2),
 # never by the numeric function that computes the quantity.
+#
+# Convention of every ef_diagnose_<stage>() (M2 harmonisation, decision
+# recorded in dev/DECISIONS.md): it returns a (possibly empty) list with one
+# `earthflux_flag` record per code flagged in at least one position
+# (n_flagged > 0); conditions that were evaluated but hold nowhere produce no
+# record. The codes evaluated are attached to the list as the attribute
+# `evaluated` (ef_flag_set(), ef_flags_evaluated()), and the dispatcher or
+# procedure that calls it records them in `provenance$flags_evaluated`
+# (ef_flags_combine()), so that "evaluated and absent" stays distinguishable
+# from "not evaluated" (dev/specs/flags.md section 6.7).
 
 #' Severity levels of diagnostic flags
 #'
@@ -392,16 +402,79 @@ ef_flag <- function(mask, code, scope = NULL) {
 #' @param inputs Named list of the required inputs (each of length 1 or
 #'   `n`); `NULL` elements are ignored.
 #' @param n Integer. Common length of the call.
-#' @return A list with one `earthflux_flag` record, or an empty list.
+#' @return A list with one `earthflux_flag` record, or an empty list, with
+#'   the attribute `evaluated` (`"EF_INPUT_NA"`, or empty when there are no
+#'   inputs); see `ef_flag_set()`.
 #' @noRd
 ef_input_na_flags <- function(inputs, n) {
   inputs <- inputs[!vapply(inputs, is.null, logical(1))]
   if (length(inputs) == 0L) {
-    return(list())
+    return(ef_flag_set(list()))
   }
   mask <- Reduce(`|`, lapply(inputs, function(x) rep_len(is.na(x), n)))
-  if (!any(mask)) {
-    return(list())
+  ef_flag_set(list(EF_INPUT_NA = as.vector(mask)), scope = "cell")
+}
+
+#' Flag records of the evaluated conditions that hold somewhere
+#'
+#' Common constructor of the `ef_diagnose_<stage>()` functions: one record
+#' per code whose mask is `TRUE` in at least one position, in the order of
+#' `masks`; the names of `masks` (the codes evaluated) are attached as the
+#' attribute `evaluated`.
+#'
+#' @param masks A named list of logical masks without `NA`, one per code
+#'   evaluated (names are registered codes). Build each mask as
+#'   `!is.na(x) & condition`.
+#' @param scope Character or `NULL`. Scope of the records (see `ef_flag()`).
+#' @return A (possibly empty) unnamed list of `earthflux_flag` records with
+#'   the attribute `evaluated` (character vector of codes).
+#' @noRd
+ef_flag_set <- function(masks, scope = NULL) {
+  codes <- names(masks)
+  if (is.null(codes)) {
+    codes <- character(0)
   }
-  list(ef_flag(as.vector(mask), "EF_INPUT_NA", scope = "cell"))
+  hit <- vapply(masks, function(m) any(m), logical(1))
+  flags <- unname(Map(
+    function(mask, code) ef_flag(as.vector(mask), code, scope = scope),
+    masks[hit], codes[hit]
+  ))
+  attr(flags, "evaluated") <- codes
+  flags
+}
+
+#' Codes evaluated by a diagnostic function
+#'
+#' @param flags A list returned by `ef_flag_set()` or by an
+#'   `ef_diagnose_<stage>()` function.
+#' @return Character vector of the codes evaluated (possibly empty).
+#' @noRd
+ef_flags_evaluated <- function(flags) {
+  evaluated <- attr(flags, "evaluated", exact = TRUE)
+  if (is.null(evaluated)) character(0) else evaluated
+}
+
+#' Combine the flag records of several diagnostic functions
+#'
+#' @param ... Lists returned by `ef_flag_set()`, `ef_input_na_flags()` or
+#'   `ef_diagnose_<stage>()`.
+#' @return A list with `flags` (a plain unnamed list of `earthflux_flag`
+#'   records, for the `flags` element of an object) and `evaluated` (the
+#'   codes evaluated, without duplicates, for
+#'   `provenance$flags_evaluated`).
+#' @noRd
+ef_flags_combine <- function(...) {
+  parts <- list(...)
+  flags <- unname(do.call(c, lapply(parts, function(p) {
+    attr(p, "evaluated") <- NULL
+    unname(p)
+  })))
+  if (is.null(flags)) {
+    flags <- list()
+  }
+  list(
+    flags = flags,
+    evaluated = as.character(unique(unlist(lapply(parts, ef_flags_evaluated),
+                                           use.names = FALSE)))
+  )
 }

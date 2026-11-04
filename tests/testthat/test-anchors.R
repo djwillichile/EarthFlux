@@ -421,6 +421,7 @@ test_that("flags derived from the origin match the provenance (R19)", {
   expect_identical(f$n_total, 1L)
   expect_true("EF_ANCHOR_SINGLE_PIXEL" %in% flag_codes(m))
   expect_true("EF_ANCHOR_USER_SUPPLIED" %in% m$provenance$flags$evaluated)
+  expect_identical(m$provenance$flags_evaluated, m$provenance$flags$evaluated)
 })
 
 test_that("cell numbers follow the terra (row-major) order", {

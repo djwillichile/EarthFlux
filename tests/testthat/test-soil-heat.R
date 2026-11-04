@@ -394,6 +394,13 @@ test_that("the dispatcher returns the documented object", {
   expect_identical(p$kelvin_offset, 273.15)
   expect_identical(p$coefficients$lai_threshold, 0.5)
   expect_identical(p$inputs, c("rn", "lst", "lai"))
+  expect_identical(p$flags_evaluated,
+                   c("EF_INPUT_NA", "EF_G_RN_NONPOSITIVE",
+                     "EF_G_RATIO_NEGATIVE", "EF_G_AVAILABLE_NONPOSITIVE",
+                     "EF_G_LOW_LAI_BRANCH"))
+  expect_true(all(vapply(out$flags, `[[`, "", "code") %in%
+                    p$flags_evaluated))
+  expect_true(all(vapply(out$flags, `[[`, 0L, "n_flagged") > 0L))
   expect_true(any(grepl("Tasumi (2003)", p$references, fixed = TRUE)))
   expect_identical(p$earthflux_version,
                    as.character(utils::packageVersion("EarthFlux")))
@@ -405,6 +412,10 @@ test_that("the dispatcher returns the documented object", {
   expect_null(out$branch)
   expect_identical(out$provenance$fun, "ef_g_bastiaanssen")
   expect_identical(out$provenance$inputs, c("rn", "lst", "albedo", "ndvi"))
+  expect_identical(out$provenance$flags_evaluated,
+                   c("EF_INPUT_NA", "EF_G_RN_NONPOSITIVE",
+                     "EF_G_RATIO_NEGATIVE", "EF_G_AVAILABLE_NONPOSITIVE"))
+  expect_length(out$flags, 0L)
   expect_identical(out$provenance$coefficients$c_ndvi, 0.98)
   expect_true(any(grepl("10.1016/S0022-1694(99)00202-4",
                         out$provenance$references, fixed = TRUE)))
@@ -520,10 +531,15 @@ test_that("cell diagnostics ignore missing values", {
   )
   expect_identical(flags[[1]]$index, 2L)
   expect_identical(flags[[2]]$index, 3L)
+  none <- ef_diagnose_soil_heat(rn = 400, g = 50, g_rn_ratio = 0.125)
+  expect_length(none, 0L)
   expect_identical(
-    ef_diagnose_soil_heat(rn = 400, g = 50, g_rn_ratio = 0.125),
-    list()
+    ef_flags_evaluated(none),
+    c("EF_G_RN_NONPOSITIVE", "EF_G_RATIO_NEGATIVE",
+      "EF_G_AVAILABLE_NONPOSITIVE")
   )
+  expect_identical(ef_flags_evaluated(flags),
+                   c(ef_flags_evaluated(none), "EF_G_LOW_LAI_BRANCH"))
 })
 
 # Chaining with the net radiation ---------------------------------------------------

@@ -337,8 +337,10 @@ test_that("EF_ET_NEGATIVE is not raised without negative values", {
   none <- ef_diagnose_et(et_inst = et_inst)
   expect_type(none, "list")
   expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_ET_NEGATIVE")
   expect_length(ef_diagnose_et(et_inst = et_inst, eta_24 = c(7.2, 0, NA)), 0L)
   expect_length(ef_diagnose_et(), 0L)
+  expect_identical(ef_flags_evaluated(ef_diagnose_et()), character(0))
   # One layer flagged, the other not.
   flags <- ef_diagnose_et(et_inst = c(0.72, NA), eta_24 = c(-0.72, NA))
   expect_named(flags, "eta_24")

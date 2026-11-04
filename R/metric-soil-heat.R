@@ -118,8 +118,8 @@ ef_g_tasumi_coefficients <- function() {
 #'   \item{`flags`}{A list of diagnostic flag records (see Diagnostics).}
 #'   \item{`provenance`}{A list with the method, the method function, the
 #'     verification status, the references, the Kelvin offset, the
-#'     coefficients of the equation, the inputs used and the EarthFlux
-#'     version.}
+#'     coefficients of the equation, the inputs used, the flag codes
+#'     evaluated (`flags_evaluated`) and the EarthFlux version.}
 #' }
 #'
 #' @details
@@ -276,7 +276,7 @@ ef_g <- function(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
 
   g_rn_ratio <- ef_g_rn_ratio(g, rn)
 
-  flags <- c(
+  flags <- ef_flags_combine(
     ef_input_na_flags(inputs, length(g)),
     ef_diagnose_soil_heat(rn = rn, g = g, g_rn_ratio = g_rn_ratio,
                           low_lai = low_lai)
@@ -288,7 +288,7 @@ ef_g <- function(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
       g_rn_ratio = g_rn_ratio,
       method = method,
       branch = branch,
-      flags = flags,
+      flags = flags$flags,
       provenance = list(
         method = method,
         fun = fun,
@@ -297,6 +297,7 @@ ef_g <- function(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
         kelvin_offset = EF_KELVIN_OFFSET,
         coefficients = coefficients,
         inputs = required,
+        flags_evaluated = flags$evaluated,
         earthflux_version = as.character(getNamespaceVersion("EarthFlux"))
       )
     ),
@@ -384,7 +385,9 @@ ef_g_rn_ratio <- function(g, rn) {
 #'   without branches.
 #' @return A list (possibly empty) of `earthflux_flag` records with codes
 #'   `EF_G_RN_NONPOSITIVE`, `EF_G_RATIO_NEGATIVE`,
-#'   `EF_G_AVAILABLE_NONPOSITIVE` and `EF_G_LOW_LAI_BRANCH`.
+#'   `EF_G_AVAILABLE_NONPOSITIVE` and `EF_G_LOW_LAI_BRANCH`, one per code
+#'   flagged somewhere; the codes evaluated are in the attribute `evaluated`
+#'   (`ef_flag_set()`).
 #' @noRd
 ef_diagnose_soil_heat <- function(rn, g, g_rn_ratio, low_lai = NULL) {
   n <- length(g)
@@ -400,8 +403,7 @@ ef_diagnose_soil_heat <- function(rn, g, g_rn_ratio, low_lai = NULL) {
   if (!is.null(low_lai)) {
     masks$EF_G_LOW_LAI_BRANCH <- as.vector(low_lai)
   }
-  masks <- masks[vapply(masks, any, logical(1))]
-  unname(Map(function(mask, code) ef_flag(mask, code), masks, names(masks)))
+  ef_flag_set(masks, scope = "cell")
 }
 
 # Diagnostic flags of this stage -------------------------------------------------

@@ -68,13 +68,14 @@ and \code{rah};
 \code{iterations} (integer), each with the shape of the pixel inputs;
 \item \code{control}, \code{datum} (\code{lapse_rate}, \code{datum_elevation}), \code{constants}
 (\code{von_karman}, \code{gravity}, \code{cp} and their status) and \code{provenance};
-\item \code{flags}: list of \code{earthflux_flag} records: the object flags
-\code{EF_H_CALIBRATION_NOT_CONVERGED} and \code{EF_H_DT_SLOPE_NONPOSITIVE}
-(both \code{critical}), and, with \code{pixels}, the cell flags
-\code{EF_H_USTAR_INVALID}, \code{EF_H_PIXEL_NOT_CONVERGED},
+\item \code{flags}: list of \code{earthflux_flag} records, one per code that holds
+somewhere: the object flags \code{EF_H_CALIBRATION_NOT_CONVERGED} and
+\code{EF_H_DT_SLOPE_NONPOSITIVE} (both \code{critical}), and, with \code{pixels},
+the cell flags \code{EF_H_USTAR_INVALID}, \code{EF_H_PIXEL_NOT_CONVERGED},
 \code{EF_H_DT_EXTRAPOLATED_HOT}, \code{EF_H_DT_EXTRAPOLATED_COLD},
-\code{EF_H_NEGATIVE} and (with \code{rn} and \code{g}) \code{EF_H_GT_AVAILABLE}. Every
-evaluated code is present, with \code{n_flagged = 0} when absent.
+\code{EF_H_NEGATIVE} and (with \code{rn} and \code{g}) \code{EF_H_GT_AVAILABLE}. A code
+evaluated but absent has no record; the codes evaluated are listed
+in \code{provenance$flags_evaluated}.
 }
 }
 \description{

@@ -943,11 +943,13 @@ ef_flags_radiation <- function() {
 #' Builds the `EF_RAD_*` flag records from the numeric inputs and outputs of
 #' the radiation functions (dev/ARCHITECTURE.md section 3.2; the numeric
 #' functions never build flags). Every argument is optional: a code is
-#' evaluated only when all the arguments it needs are supplied, and then a
-#' record is returned for it even if no element is flagged (so that
-#' "evaluated and absent" differs from "not evaluated"). Masks are built as
-#' `!is.na(x) & condition`, so missing values are never flagged here
-#' (`EF_INPUT_NA` belongs to the orchestration layer).
+#' evaluated only when all the arguments it needs are supplied. As for every
+#' stage (R/diagnostics.R), a record is returned only for the codes flagged
+#' in at least one position; the codes evaluated are attached as the
+#' attribute `evaluated`, so that "evaluated and absent" differs from "not
+#' evaluated". Masks are built as `!is.na(x) & condition`, so missing values
+#' are never flagged here (`EF_INPUT_NA` is built by the dispatchers with
+#' `ef_input_na_flags()`).
 #'
 #' Codes and conditions:
 #' * `EF_RAD_SELF_SHADED`: `cos_incidence <= 0` and `cos_zenith > 0`
@@ -966,8 +968,9 @@ ef_flags_radiation <- function() {
 #'   \[W m-2\] (input of `ef_rs_in_measured()`).
 #' @param rn Net radiation \[W m-2\] (output of `ef_net_radiation()`).
 #' @return A list (possibly empty) of `earthflux_flag` records, in the order
-#'   of the codes above. Inputs must be numeric with length 1 or a common
-#'   length (classed input errors otherwise).
+#'   of the codes above, with the attribute `evaluated`. Inputs must be
+#'   numeric with length 1 or a common length (classed input errors
+#'   otherwise).
 #' @noRd
 ef_diagnose_radiation <- function(cos_zenith = NULL, cos_incidence = NULL,
                                   inv_distance = NULL, atm_emissivity = NULL,
@@ -978,33 +981,34 @@ ef_diagnose_radiation <- function(cos_zenith = NULL, cos_incidence = NULL,
                rs_horizontal = rs_horizontal, rn = rn)
   args <- args[!vapply(args, is.null, logical(1))]
   if (length(args) == 0L) {
-    return(list())
+    return(ef_flag_set(list()))
   }
   n <- check_core_args(args, call)
   has <- function(...) all(c(...) %in% names(args))
   mask <- function(x) rep_len(as.vector(x), n)
 
-  flags <- list()
+  masks <- list()
   if (has("cos_zenith", "cos_incidence")) {
-    m <- !is.na(cos_incidence) & !is.na(cos_zenith) &
-      cos_incidence <= 0 & cos_zenith > 0
-    flags <- c(flags, list(ef_flag(mask(m), "EF_RAD_SELF_SHADED")))
+    masks$EF_RAD_SELF_SHADED <- mask(
+      !is.na(cos_incidence) & !is.na(cos_zenith) &
+        cos_incidence <= 0 & cos_zenith > 0
+    )
   }
   if (has("atm_emissivity")) {
-    m <- !is.na(atm_emissivity) & atm_emissivity > 1
-    flags <- c(flags, list(ef_flag(mask(m), "EF_RAD_ATM_EMISSIVITY_GT1")))
+    masks$EF_RAD_ATM_EMISSIVITY_GT1 <- mask(
+      !is.na(atm_emissivity) & atm_emissivity > 1
+    )
   }
   if (has("rs_horizontal", "inv_distance", "cos_zenith")) {
     extraterrestrial_h <- EF_SOLAR_CONSTANT * inv_distance *
       pmax(cos_zenith, 0)
-    m <- !is.na(rs_horizontal) & !is.na(extraterrestrial_h) &
-      rs_horizontal > extraterrestrial_h
-    flags <- c(flags,
-               list(ef_flag(mask(m), "EF_RAD_RS_GT_RA", scope = "cell")))
+    masks$EF_RAD_RS_GT_RA <- mask(
+      !is.na(rs_horizontal) & !is.na(extraterrestrial_h) &
+        rs_horizontal > extraterrestrial_h
+    )
   }
   if (has("rn")) {
-    m <- !is.na(rn) & rn < 0
-    flags <- c(flags, list(ef_flag(mask(m), "EF_RAD_RN_NEGATIVE")))
+    masks$EF_RAD_RN_NEGATIVE <- mask(!is.na(rn) & rn < 0)
   }
-  flags
+  ef_flag_set(masks, scope = "cell")
 }

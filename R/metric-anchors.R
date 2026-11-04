@@ -1066,7 +1066,8 @@ anchor_object <- function(pixels, aggregate, criteria, thresholds, search,
         ),
         seed = seed_note,
         rng_kind = NULL,
-        flags = anchor_flag_provenance(flags, evaluated, pixels)
+        flags = anchor_flag_provenance(flags, evaluated, pixels),
+        flags_evaluated = evaluated
       )
     ),
     "earthflux_anchors"
@@ -1156,9 +1157,11 @@ anchor_object <- function(pixels, aggregate, criteria, thresholds, search,
 #'     `search` (domains and where each class was found), `funnel` (cells
 #'     left after each filter, per class, search stage and criteria step),
 #'     `relaxation` (relaxation steps used), `flags` (list of
-#'     `earthflux_flag`), `method` (`"criteria"`), `origin`
-#'     (`"automatic"`), `grid`, `conditions` (`NULL` until
-#'     [ef_anchor_conditions()]), `note` and `provenance`.
+#'     `earthflux_flag`, one per code that holds), `method`
+#'     (`"criteria"`), `origin` (`"automatic"`), `grid`, `conditions`
+#'     (`NULL` until [ef_anchor_conditions()]), `note` and `provenance`
+#'     (including `flags`, the flag provenance of dev/specs/flags.md
+#'     section 6.7, and `flags_evaluated`, the codes evaluated).
 #'
 #' @details
 #' Order of operations (dev/specs/anchor-pixels.md section 5.3): (1)
@@ -1982,9 +1985,9 @@ ef_anchor_conditions <- function(anchors, rn, g, etr_inst, lambda, etrf_cold,
       h = "h_target = rn - g - le_target"
     )
   )
-  out$provenance$flags <- anchor_flag_provenance(
-    flags, c(anchor_selection_codes(), anchor_condition_codes()), px
-  )
+  evaluated <- c(anchor_selection_codes(), anchor_condition_codes())
+  out$provenance$flags <- anchor_flag_provenance(flags, evaluated, px)
+  out$provenance$flags_evaluated <- evaluated
   out$provenance$conditions_call <- call
   new_ef_object(out, "earthflux_anchors")
 }
