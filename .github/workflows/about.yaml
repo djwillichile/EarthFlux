@@ -1,5 +1,6 @@
 # Keeps the repository settings in sync with the package metadata:
-#   - About description  <- DESCRIPTION "Title"
+#   - About description  <- DESCRIPTION "Config/github/description"
+#                           (falls back to "Title"; max 350 characters)
 #   - About website      <- DESCRIPTION "URL" (the github.io entry, if any)
 #   - About topics       <- DESCRIPTION "Config/github/topics"
 #   - GitHub Pages enabled from the gh-pages branch (pkgdown site)
@@ -56,7 +57,9 @@ jobs:
                   elif ":" in line:
                       key, value = line.split(":", 1)
                       fields[key] = value.strip()
-          title = re.sub(r"\s+", " ", fields["Title"]).strip()
+          title = re.sub(r"\s+", " ", fields.get("Config/github/description") or fields["Title"]).strip()
+          if len(title) > 350:
+              raise SystemExit(f"About description has {len(title)} characters; GitHub allows 350.")
           urls = [u.strip() for u in fields.get("URL", "").split(",") if u.strip()]
           site = next((u for u in urls if "github.io" in u), urls[0] if urls else "")
           topics = [t.strip() for t in fields.get("Config/github/topics", "").split(",") if t.strip()]
