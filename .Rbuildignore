@@ -9,3 +9,4 @@
 ^CITATION\.cff$
 ^cran-comments\.md$
 ^\.github$
+^\.git$

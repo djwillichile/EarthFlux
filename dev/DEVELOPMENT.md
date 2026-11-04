@@ -67,19 +67,26 @@ semánticos si describen el trabajo con claridad.
 
 ### 2.4 Commits
 
-Pequeños, descriptivos, en inglés, en modo imperativo:
+Pequeños, descriptivos, en inglés, en minúsculas tras un **prefijo de
+tipo** (mismo estilo que `thermify`):
 
-```text
-Initialize EarthFlux package structure
-Add scientific specification
-Add METRIC architecture
-Implement net radiation calculation
-Add net radiation unit tests
-Add GWR diagnostics
-```
+| Prefijo | Uso | Ejemplo |
+|---|---|---|
+| `feat:` | Nueva capacidad del paquete | `feat: compute soil heat flux with the Tasumi method` |
+| `fix:` | Corrección de un error | `fix: propagate NA in ef_net_radiation()` |
+| `docs:` | Documentación (README, vignettes, roxygen, `dev/`) | `docs: specify anchor pixel selection` |
+| `test:` | Tests | `test: add FAO-56 example 18 as reference case` |
+| `refactor:` | Reestructuración sin cambio de comportamiento | `refactor: share input checks across METRIC functions` |
+| `ci:` | Workflows de integración continua | `ci: add release workflow` |
+| `data:` | Datos de ejemplo y su preparación | `data: add a small MODIS example scene` |
+| `chore:` | Mantenimiento (metadatos, configuración) | `chore: pin roxygen2 8.1.1` |
+| `dev:` | Cambio de versión de desarrollo | `dev: start 0.1.0.9000` |
+| `release:` | Preparación de una versión | `release: EarthFlux 0.1.0` |
 
 No usar mensajes genéricos (`update`, `changes`, `fix stuff`, `test`) ni
-trailers de coautoría o referencias a herramientas.
+trailers de coautoría o referencias a herramientas. Los commits anteriores
+a esta convención (M0-M1) usan modo imperativo sin prefijo y no se
+reescriben.
 
 Identidad Git del repositorio (configuración local, no global):
 
@@ -90,11 +97,18 @@ git config user.email "32119499+djwillichile@users.noreply.github.com"
 
 ### 2.5 Integración
 
-1. Rama de trabajo desde `main` actualizado.
+1. Rama de trabajo `code/<tema>` (u otro prefijo semántico) desde `main`
+   actualizado.
 2. `devtools::document()`, `devtools::test()`, `devtools::check()` locales.
-3. PR hacia `main`; R-CMD-check en verde.
-4. Fusión (preferir *squash* o *rebase* para historia limpia).
+3. PR hacia `main`; toda la CI en verde (R-CMD-check, pkgdown, document).
+4. Fusión con **commit de merge** (`Merge pull request #N from
+   djwillichile/<rama>`), como en `thermify`: conserva en la historia de
+   `main` qué commits entraron por cada PR.
 5. La rama se elimina automáticamente (2.3).
+
+Ramas especiales: `code/release-vX.Y.Z` (preparar una versión) y
+`code/dev-X.Y.Z.9000` (abrir la siguiente versión de desarrollo); ver
+[`RELEASING.md`](RELEASING.md).
 
 ## 2.6 Documentación automática
 
@@ -203,6 +217,9 @@ objeto de resultado futuro (`earthflux_result`) incluirá esta procedencia.
   preparación CRAN.
 
 ## 9. Roadmap
+
+Seguimiento detallado con casillas por versión en
+[`ROADMAP.md`](ROADMAP.md). Resumen por hitos:
 
 | Hito | Contenido | Estado |
 |---|---|---|

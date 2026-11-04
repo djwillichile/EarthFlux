@@ -1,22 +1,35 @@
 # EarthFlux 0.0.0.9000 (development version)
 
-* README, introductory vignette and package documentation describe the
-  current development status and include an executable `ef_net_radiation()`
-  example.
+First development version. It sets up the package infrastructure and
+provides the first component of the METRIC surface energy balance chain.
+No scientific result has been validated yet.
 
-* New `ef_net_radiation()`: instantaneous net radiation at the land surface
-  from incoming shortwave, albedo, incoming longwave, emitted longwave and
-  surface emissivity (METRIC surface radiation balance), with the reflected
-  incoming longwave term kept explicit. Inputs are validated (type,
-  recycling and physical domain, with classed errors) and missing values
-  propagate. The form of the equation has been cross-checked against
-  secondary sources; verification against the primary reference (Allen et
-  al., 2007) is still pending.
-* Initial package infrastructure: package skeleton, MIT license, testthat
-  (3rd edition), roxygen2 with Markdown, pkgdown, README, citation and an
-  introductory vignette.
-* Modular source layout for the planned surface, forcing, spatial (GWR),
-  METRIC, diagnostics, validation and API modules. No scientific function is
-  implemented yet.
-* Internal infrastructure for classed conditions and diagnostic flags
-  (results are flagged, never silently corrected).
+## New features
+
+* `ef_net_radiation()` computes the instantaneous net radiation at the land
+  surface from incoming shortwave radiation, albedo, incoming longwave
+  radiation, emitted longwave radiation and surface emissivity (METRIC
+  surface radiation balance), keeping the reflected incoming longwave term
+  explicit. Inputs are validated (type, recycling and physical domain, with
+  classed errors) and missing values propagate. The form of the equation is
+  corroborated by secondary sources; verification against the primary
+  reference (Allen et al., 2007) is pending.
+
+## Changes
+
+* Modular source layout for the surface, forcing, spatial (GWR), METRIC,
+  diagnostics, validation and API modules.
+* Internal infrastructure for classed conditions and diagnostic flags:
+  results are flagged, never silently corrected.
+
+## Documentation
+
+* README and introductory vignette describe the development status, show
+  the package title from `DESCRIPTION` and include an executable
+  `ef_net_radiation()` example.
+* pkgdown site at <https://djwillichile.github.io/EarthFlux/>, rebuilt on
+  every change to `main`.
+* Continuous integration: `R CMD check` on Linux (release, devel, oldrel),
+  Windows and macOS; a check that the roxygen2 documentation and
+  `README.md` are up to date; repository settings synchronised from
+  `DESCRIPTION`.
