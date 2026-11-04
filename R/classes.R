@@ -11,6 +11,7 @@
 #
 # Classes created so far:
 #   - earthflux_flag (R/diagnostics.R).
+#   - earthflux_soil_heat_flux (R/metric-soil-heat.R): output of ef_g().
 # Planned classes (created with their first constructor, not before):
 #   - earthflux_anchors        : anchor pixel selection and its audit trail;
 #   - earthflux_h_calibration  : dT calibration of the sensible heat flux;

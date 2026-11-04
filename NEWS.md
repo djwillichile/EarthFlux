@@ -47,6 +47,14 @@ No scientific result has been validated yet.
 * Negative evapotranspiration is reported with the diagnostic flag
   `EF_ET_NEGATIVE`, evaluated separately on the instantaneous and daily
   layers; values are never truncated.
+* `ef_g()` estimates the instantaneous soil heat flux with an explicit
+  `method` and no default, returning G, the ratio G/Rn, the branch applied,
+  diagnostic flags and provenance. The methods are also available as
+  `ef_g_bastiaanssen()` (SEBAL, function of surface temperature, albedo and
+  NDVI) and `ef_g_tasumi()` (METRIC, function of LAI, with a bare-soil
+  branch for LAI < 0.5). Both formulations are candidates: verification
+  against the primary references is pending. Impossible inputs raise
+  classed errors; values of G are never truncated.
 
 ## Changes
 
@@ -62,6 +70,9 @@ No scientific result has been validated yet.
   stage and records, for each code, its stage, severity (now including
   `critical`), scope, bit, error counterpart, specification and version.
   Flag records also carry their stage and scope.
+* New diagnostic flags of the soil heat flux stage: `EF_G_RN_NONPOSITIVE`,
+  `EF_G_RATIO_NEGATIVE`, `EF_G_AVAILABLE_NONPOSITIVE` and
+  `EF_G_LOW_LAI_BRANCH`.
 * Classed conditions can carry optional data fields (for example the
   diagnostics of a failed calibration); new condition classes for
   calibration errors and convergence warnings.

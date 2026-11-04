@@ -24,6 +24,9 @@ reference:
   - subtitle: Net radiation
     contents:
       - ef_net_radiation
+  - subtitle: Soil heat flux
+    contents:
+      - ef_g
   - subtitle: Latent heat and evapotranspiration
     contents:
       - ef_latent_heat

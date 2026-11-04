@@ -1,7 +1,8 @@
 # EarthFlux — Especificación: flujo de calor del suelo (G)
 
-Estado: **borrador M1** · Componente: `metric` · Archivo de destino:
-`R/metric-soil-heat.R` · Tests: `tests/testthat/test-soil-heat.R`
+Estado: **implementada en M2 como `CANDIDATA`** (2026-11-04; ver §13) ·
+Componente: `metric` · Archivo: `R/metric-soil-heat.R` · Tests:
+`tests/testthat/test-soil-heat.R`
 
 > Este documento detalla la fila **G** de la tabla de variables de
 > `SCIENTIFIC_SPEC.md` (§3). `SCIENTIFIC_SPEC.md` sigue siendo la fuente de
@@ -9,6 +10,10 @@ Estado: **borrador M1** · Componente: `metric` · Archivo de destino:
 > `VERIFICADA`, su estado, referencia y caso numérico deben trasladarse allí.
 > Mientras tanto **ninguna** ecuación de este documento puede implementarse
 > (Definition of Done, `DEVELOPMENT.md` §3).
+>
+> *Enmienda (2026-11-04):* por la regla de M2 de `DECISIONS.md` §1.0, las
+> dos formulaciones se implementaron como `CANDIDATA`, rotuladas así en
+> roxygen y sin método por defecto (§13).
 
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`).
@@ -681,3 +686,35 @@ entradas y unidades (§4), NA (§6.1), dominio (§6.2), casos numéricos
 recalculados (§8) y tests diseñados (§9). En ese momento se actualiza la
 fila G de `SCIENTIFIC_SPEC.md` §3 y la entrada de `REFERENCES.md`
 (*Soil heat flux*).
+
+---
+
+## 13. Estado de implementación (M2, 2026-11-04)
+
+Implementado en `R/metric-soil-heat.R` con los nombres de `NAMING.md`
+(opción B): `ef_g(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
+method)`, `ef_g_bastiaanssen(rn, lst, albedo, ndvi)` y
+`ef_g_tasumi(rn, lst, lai)`, exportadas y documentadas en un solo `.Rd`
+(`?ef_g`, "Soil heat flux"). Ambas formulaciones siguen `CANDIDATA`.
+
+Decisiones tomadas al implementar:
+
+| Tema | Decisión |
+|---|---|
+| Salida de las funciones por método | Solo G (W m⁻²), `numeric` con el `dim` de las entradas |
+| G/R_n | La calcula el despachador como `g / rn` (`NA` donde R_n = 0) con una auxiliar interna; no hay función pública de la razón (T-16) |
+| Objeto del despachador (G-D3) | Clase `c("earthflux_soil_heat_flux", "list")` con `g`, `g_rn_ratio`, `method`, `branch`, `flags`, `provenance` |
+| `branch` | Tasumi: vector de caracteres `"lai_ge_0.5"` / `"lai_lt_0.5"` con la forma de `g` (`NA` donde G es `NA`); Bastiaanssen: `NULL` |
+| `provenance` | `method`, `fun`, `status` (`"CANDIDATA"`), `references`, `kelvin_offset` (273.15), `coefficients` (incluido el umbral de LAI 0.5), `inputs`, `earthflux_version` |
+| Rama de Tasumi | Combinación por máscara (`low * g_bare + (!low) * g_veg`), sin `ifelse()`; LAI = 0.5 pertenece a la rama vegetada; `lst` `NA` da G `NA` en ambas ramas (D5, provisional) |
+| Flags | `ef_diagnose_soil_heat()` construye `EF_G_RN_NONPOSITIVE`, `EF_G_RATIO_NEGATIVE`, `EF_G_AVAILABLE_NONPOSITIVE` (condición R_n − G ≤ 0, que reemplaza a `EF_G_EXCEEDS_RN`, `flags.md` C3) y `EF_G_LOW_LAI_BRANCH`; solo se incluye un registro si la condición se cumple en alguna posición. El despachador agrega `EF_INPUT_NA` (ámbito `cell`) sobre las entradas requeridas por el método |
+| Clase II | `EF_G_NDVI_NONPOSITIVE` y `EF_G_RATIO_IMPLAUSIBLE` no se registran ni se evalúan (D4, D7); el caso B6 no levanta flag |
+| Errores (§9.4) | `earthflux_dimension_error` no existe: longitudes o `dim` incompatibles dan `earthflux_input_error` (`ARCHITECTURE.md` §3.3). `method` ausente da `earthflux_missing_input` (`ARCHITECTURE.md` §3.1), no `earthflux_unknown_method` |
+| Tolerancias (§9) | Los valores de §8 están redondeados a 5–6 cifras y no cumplen la tolerancia relativa de 10⁻⁶ en todos los casos (p. ej., B2: 108.349 frente a 108.34938072). Los tests usan valores recalculados con `bc -l` (30 dígitos) y tolerancia relativa 10⁻¹⁰, y comprueban además los valores impresos aquí tras redondear a su precisión |
+
+Pendiente: tests con `SpatRaster` (cuando `terra` entre en `Imports`);
+verificación cruzada con `water` (§9.6, fuera del tarball); todos los ítems
+de §10. `EF_G_LOW_LAI_BRANCH` es I-m y se registró junto con
+`ef_g_tasumi()` `CANDIDATA` (regla de M2), aunque `flags.md` §7.3 pide
+método `VERIFICADA`: revisar al verificar Tasumi (2003) / Allen et al.
+(2007).
