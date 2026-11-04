@@ -59,13 +59,13 @@ established result.
 
 | Function | Purpose | Status |
 |---|---|---|
-| `ef_net_radiation()` | Surface net radiation | **Available**; equation candidate (corroborated) |
-| `ef_solar_geometry()` | Solar angles and incidence on sloping terrain | Planned; candidate |
-| `ef_air_pressure()` | Atmospheric pressure from elevation | Planned; equation verified (FAO-56, Eq. 7) |
-| `ef_tau_sw()` | Broadband shortwave transmissivity with beam/diffuse partition | Planned; candidate |
-| `ef_rs_in()` | Incoming shortwave radiation, including slope and aspect | Planned; candidate |
-| `ef_atm_emissivity()` | Clear-sky atmospheric emissivity | Planned; candidate |
-| `ef_rl_in()`, `ef_rl_out()` | Incoming and emitted longwave radiation | Planned; candidate |
+| `ef_net_radiation()` | Surface net radiation | **Available**; candidate (corroborated) |
+| `ef_solar_geometry()` | Solar angles and incidence on sloping terrain | **Available**; calendar terms and hour angle verified (FAO-56), incidence on a tilted plane candidate |
+| `ef_air_pressure()` | Atmospheric pressure from elevation | **Available**; verified (FAO-56, Eq. 7) |
+| `ef_tau_sw()`, `ef_tau_sw_allen()`, `ef_tau_sw_elevation()` | Broadband shortwave transmissivity, with beam/diffuse partition (`"allen"`) or from elevation | **Available**; candidate |
+| `ef_rs_in()`, `ef_rs_in_modelled()`, `ef_rs_in_measured()` | Incoming shortwave radiation on the pixel plane (slope and aspect), clear-sky or measured | **Available**; candidate |
+| `ef_atm_emissivity()` | Clear-sky atmospheric emissivity | **Available**; candidate |
+| `ef_rl_in()`, `ef_rl_out()` | Incoming and emitted longwave radiation | **Available**; candidate |
 
 Specifications: `r spec("ef_net_radiation.md")`, `r spec("radiation-components.md")`.
 
@@ -73,7 +73,7 @@ Specifications: `r spec("ef_net_radiation.md")`, `r spec("radiation-components.m
 
 | Function | Purpose | Status |
 |---|---|---|
-| `ef_g()` | Soil heat flux with an explicit method | Planned; candidate |
+| `ef_g()`, `ef_g_bastiaanssen()`, `ef_g_tasumi()` | Soil heat flux with an explicit method | **Available**; candidate |
 
 Specification: `r spec("soil-heat-flux.md")`.
 
@@ -81,9 +81,10 @@ Specification: `r spec("soil-heat-flux.md")`.
 
 | Function | Purpose | Status |
 |---|---|---|
-| `ef_anchor_criteria()` | Explicit, documented selection criteria | Planned |
-| `ef_select_anchors()` | Automatic, deterministic and auditable selection of hot and cold pixels | Planned; candidate |
-| `ef_anchors()` | Anchors chosen explicitly by the user | Planned |
+| `ef_anchor_criteria()`, `ef_anchor_rule()`, `ef_homogeneity()`, `ef_anchor_pick()` | Explicit, documented selection criteria (no default thresholds) | **Available**; every value is a user choice |
+| `ef_select_anchors()` | Automatic, deterministic and auditable selection of hot and cold pixels | **Available**; candidate |
+| `ef_anchors()` | Anchors chosen explicitly by the user | **Available** |
+| `ef_anchor_conditions()` | Boundary conditions (target LE and H) at the anchors | **Available**; candidate (unit conversion verified) |
 
 Specification: `r spec("anchor-pixels.md")`.
 
@@ -91,11 +92,13 @@ Specification: `r spec("anchor-pixels.md")`.
 
 | Function | Purpose | Status |
 |---|---|---|
-| `ef_zom()` | Momentum roughness length | Planned; candidate |
-| `ef_ustar()`, `ef_rah()` | Friction velocity and aerodynamic resistance with stability correction | Planned; candidate |
-| `ef_air_density()` | Air density | Planned; candidate |
-| `ef_dt_coef()` | Calibration of the near-surface temperature difference from the anchors | Planned; candidate |
-| `ef_sensible_heat()` | Sensible heat flux | Planned; candidate |
+| `ef_zom()`, `ef_zom_lai()`, `ef_zom_ndvi()`, `ef_zom_perrier()`, `ef_zom_height()` | Momentum roughness length | **Available**; candidate (`ef_zom_height()` verified as FAO-56 content) |
+| `ef_blending_wind()` | Wind speed at the blending height | **Available**; candidate |
+| `ef_ustar()`, `ef_rah()` | Friction velocity and aerodynamic resistance with stability correction | **Available**; candidate (neutral profile verified as FAO-56 content) |
+| `ef_air_density()` | Air density | **Available**; FAO-56 form verified, use in METRIC candidate |
+| `ef_ts_datum()`, `ef_dt_coef()` | Datum surface temperature and coefficients of dT from the anchors | **Available**; candidate |
+| `ef_sensible_heat()` | Sensible heat flux | **Available**; candidate |
+| `ef_h_control()`, `ef_calibrate_h()` | Iterative calibration of dT and H with stability correction | **Available**; candidate (open decision SH-11 is an explicit argument) |
 
 Specification: `r spec("sensible-heat.md")`.
 
@@ -103,10 +106,17 @@ Specification: `r spec("sensible-heat.md")`.
 
 | Function | Purpose | Status |
 |---|---|---|
-| `ef_latent_heat()` | Latent heat flux as the energy balance residual | Planned; balance verified (FAO-56) |
-| `ef_et_inst()` | Instantaneous ET from latent heat flux | Planned; unit conversion verified (FAO-56) |
-| `ef_etrf()`, `ef_et_daily()` | Reference ET fraction and daily actual ET | Planned; candidate |
+| `ef_lambda()` | Latent heat of vaporization with an explicit method | **Available**; verified (FAO-56) |
+| `ef_latent_heat()` | Latent heat flux as the energy balance residual | **Available**; balance verified (FAO-56) |
+| `ef_et_inst()` | Instantaneous ET from latent heat flux | **Available**; unit conversion verified (FAO-56) |
+| `ef_etrf()`, `ef_et_daily()`, `ef_et_daily_etrf()` | Reference ET fraction and daily actual ET | **Available**; candidate (corroborated) |
 | `ef_et_period()` | ET between image dates | Planned (later) |
+
+Dispatchers (`ef_tau_sw()`, `ef_rs_in()`, `ef_g()`, `ef_zom()`,
+`ef_et_daily()`) take the method as their last argument, with no default,
+and return a classed list with the values, the method, diagnostic flags and
+provenance; the method functions return plain numeric values. An
+end-to-end test runs a synthetic scene through the whole chain.
 
 Specification: `r spec("evapotranspiration.md")`.
 
