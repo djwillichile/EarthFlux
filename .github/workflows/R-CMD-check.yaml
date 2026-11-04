@@ -1,9 +1,18 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+#
+# macOS runs on pushes to main, weekly and on demand, but not on pull
+# requests: hosted macOS arm64 runners are often unavailable for minutes to
+# hours, which blocked merges without any failure of the package
+# (dev/DEVELOPMENT.md section 2.5). The release checklist requires a green
+# macOS run on main (dev/RELEASING.md).
 on:
   push:
     branches: [main, master]
   pull_request:
+  schedule:
+    - cron: '17 7 * * 1'
+  workflow_dispatch:
 
 name: R-CMD-check.yaml
 
@@ -18,12 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
-          - {os: ubuntu-latest,   r: 'oldrel-1'}
+        config: ${{ fromJSON(github.event_name == 'pull_request' && '[{"os":"windows-latest","r":"release"},{"os":"ubuntu-latest","r":"devel","http-user-agent":"release"},{"os":"ubuntu-latest","r":"release"},{"os":"ubuntu-latest","r":"oldrel-1"}]' || '[{"os":"macos-latest","r":"release"},{"os":"windows-latest","r":"release"},{"os":"ubuntu-latest","r":"devel","http-user-agent":"release"},{"os":"ubuntu-latest","r":"release"},{"os":"ubuntu-latest","r":"oldrel-1"}]') }}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
