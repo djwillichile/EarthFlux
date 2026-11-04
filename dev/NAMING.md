@@ -70,7 +70,9 @@ Comportamiento común de los despachadores:
 ## 3. Tabla de nombres
 
 Se listan las 81 funciones públicas o candidatas a públicas que nombran las
-especificaciones, más 3 despachadores nuevos (—) de `dev/specs/` (se excluyen las internas `ef_abort()`,
+especificaciones, más 3 despachadores nuevos (—) de `dev/specs/` y las
+funciones nuevas agregadas al implementar (regla §6.4; p. ej.,
+`ef_anchor_conditions()`) (se excluyen las internas `ef_abort()`,
 `ef_flag()`, `ef_flag_bits()` y `ef_flag_registry()`). "=" indica que el
 nombre se mantiene.
 
@@ -114,6 +116,7 @@ nombre se mantiene.
 | `ef_rule()` | 7 | **`ef_anchor_rule()`** | 14 | `ef_rule` es demasiado genérico (habrá reglas de QC) |
 | `ef_pick()` | 7 | **`ef_anchor_pick()`** | 14 | Ídem |
 | `ef_homogeneity()` | 14 | = | 14 | Nombre específico; no necesita la raíz `anchor` |
+| — (función de la etapa [B], D-AP-03) | — | **`ef_anchor_conditions()`** | 20 | Nueva (2026-11-04, N4 §6): condiciones de borde en las anclas; raíz del módulo como `ef_anchor_rule()` (N9); completa el elemento `conditions` del objeto |
 
 ### Aerodinámica y calor sensible (`sensible-heat.md`)
 
@@ -201,7 +204,7 @@ nombre se mantiene.
 
 | | Especificaciones | Decisión |
 |---|---:|---:|
-| Funciones | 81 | 84 (3 despachadores nuevos) |
+| Funciones | 81 | 84 (3 despachadores nuevos) + `ef_anchor_conditions()` (§6.4) |
 | Nombres que cambian | — | 44 |
 | Mediana de caracteres | 17 | 14 |
 | Máximo de caracteres | 36 | 21 |
