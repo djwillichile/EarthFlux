@@ -430,9 +430,13 @@ códigos y de bits por etapa (R1, R7). Dueños: `ef_flags_core()`
 (`metric-radiation.R`, `EF_RAD_`), `ef_flags_soil_heat()`
 (`metric-soil-heat.R`, `EF_G_`), `ef_flags_anchors()`
 (`metric-anchors.R`, `EF_ANCHOR_`), `ef_flags_sensible_heat()`
-(`metric-sensible-heat.R`, `EF_H_`) y `ef_flags_et()` (`metric-et.R`,
-`EF_ET_`); `surface`, `forcing` y `spatial` agregan la suya con su primer
-código. Registrados: `EF_INPUT_NA` (`INPUT`, info, `cell,record`, bit 0) y
+(`metric-sensible-heat.R`, `EF_H_`), `ef_flags_et()` (`metric-et.R`,
+`EF_ET_`), `ef_flags_reference_et()` (`reference-et.R`, `EF_WS_`),
+`ef_flags_stations()` (`prep-qc.R`, `EF_WS_`) y `ef_flags_gwr()`
+(`gwr-diagnostics.R`, `EF_GWR_`); solo `surface` agregará la suya con su
+primer código. El registro es estático: `ef_flag_registry()` lo guarda la
+primera vez que se usa y `ef_flag_registry_build()` lo reconstruye sin
+caché para los tests de §8 (`DECISIONS.md` §1.3, M3-37). Registrados: `EF_INPUT_NA` (`INPUT`, info, `cell,record`, bit 0) y
 `EF_ET_NEGATIVE` (`ET`, warning, `cell`, bit 1), ambos con las columnas de
 §7, y los diez códigos de clase I de `EF_ANCHOR_` (ámbitos `object`/`record`,
 sin bit), registrados con `ef_select_anchors()`, `ef_anchors()` y
@@ -443,8 +447,10 @@ informativos, de ámbito `record` y sin bit (`weather-forcing.md` §13), y
 además `EF_WS_INCOMPLETE_DAY` y `EF_WS_OVERPASS_OUTSIDE_RECORDS` (I,
 levantados por `ef_station_ref_et()`, `weather-forcing.md` §13.4); el QC
 de estaciones (`ef_flags_stations()`, `prep-qc.R`) registra 9 códigos
-`EF_WS_` (incluido `EF_WS_RS_GT_RA`). Las demás filas de este catálogo
-siguen sin registrar y se registran según §7.
+`EF_WS_` (incluido `EF_WS_RS_GT_RA`). El núcleo GWR y la orquestación de
+la regionalización (`ef_flags_gwr()`, `gwr-diagnostics.R`) registran 13
+códigos `EF_GWR_`. Total registrado: 54 códigos (§4.4). Las demás filas de
+este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
 
@@ -632,17 +638,23 @@ división).
 | `ET` | 5 | 2 | 0 | 7 | 1 |
 | **Total** | **73** | **35** | **4** | **112** | **54** |
 
-Registrados (actualizado con la armonización M2, 2026-11-04): 28 códigos,
-todos de clase I y ejercitados por un test de su módulo (R11, sin
-excepciones): `EF_INPUT_NA` y `EF_ET_NEGATIVE` (registrados en M0 y
-levantados desde M2), los 4 `EF_RAD_*` de clase I, los 4 `EF_G_*` de clase
+Registrados (armonización M3, 2026-11-04; recuento de
+`ef_flag_registry()`): **54 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
+`ANCHOR` 10, `H` 8, `ET` 1 (los 28 de M2), `WS` 13 y `GWR` 13 (los 26 de
+M3); 51 de clase I y 3 de clase III (`EF_WS_OUT_OF_DOMAIN`,
+`EF_WS_TMIN_GT_TMAX`, `EF_GWR_OUT_OF_DOMAIN`), todos ejercitados por un
+test de su módulo (R11, sin excepciones); ningún código de clase II (los
+35 siguen en la guardia de `test-diagnostics.R`).
+
+M2 (armonización M2): 28 códigos, todos de clase I: `EF_INPUT_NA` y
+`EF_ET_NEGATIVE` (registrados en M0 y levantados desde M2), los 4 `EF_RAD_*` de clase I, los 4 `EF_G_*` de clase
 I (incluido el I-m `EF_G_LOW_LAI_BRANCH`, registrado con su método
 `CANDIDATA` como excepción a §7, punto 3; `DECISIONS.md` §1.2, M2-03), los
 10 `EF_ANCHOR_*` de clase I y 8 de los 11 `EF_H_*` de clase I. Sin
 registrar en M2: `EF_H_ZOM_FLOOR_APPLIED` (I-m, SH-02),
 `EF_H_ZOM_TERRAIN_ADJUSTED` (método de terreno no implementado),
 `EF_H_WIND_FLOOR_APPLIED` (SH-06) y los 4 `EF_ET_PERIOD_*` de clase I
-(`ef_et_period()` no implementada); ningún código de clase II ni III.
+(`ef_et_period()` no implementada).
 
 Estaciones y ET de referencia (M3, 2026-11-04): los 13 `EF_WS_*` de
 clase I y III están registrados: 9 en `ef_flags_stations()` (`ef_station_qc()`;
@@ -759,7 +771,19 @@ la vista de auditoría del ámbito `record` para estaciones; su columna
 
 ### 6.2 Registro `earthflux_flag` (extensión propuesta)
 
-Campos actuales: `code`, `severity`, `description`, `index`, `n_flagged`,
+**Estado de implementación (M3, 2026-11-04).** Implementados: `stage` y
+`scope` (en todo registro, desde M2, `ef_flag()`) y **`target`**, adoptado
+(`DECISIONS.md` §1.3, M3-18; `ARCHITECTURE.md` §3.5) para los objetos con
+varias tablas a las que puede referirse `index`: primer uso,
+`ef_station_ref_et()` (`"series"`, `"etr_inst"`, `"etr_24"`, con
+`provenance$flags_evaluated_by_target`). Los objetos de una sola tabla o
+vector no lo llevan, y las superficies regionalizadas no usan registros
+con índice de celda (los flags de celda viven en `flag_word`, §6.3). Sin
+implementar: `time` (una superficie lleva sus `target_time` en el objeto y
+en los nombres de capa) y `parameters` (ningún código con parámetro está
+registrado).
+
+Campos de M0: `code`, `severity`, `description`, `index`, `n_flagged`,
 `n_total`. Se proponen, para cuando se implemente la primera función
 espacial:
 

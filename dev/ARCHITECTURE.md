@@ -1,7 +1,7 @@
 # EarthFlux — Arquitectura
 
-Estado: **borrador M0**; §3–§4 actualizadas para M2 (2026-11-04) ·
-Complementa `SCIENTIFIC_SPEC.md`.
+Estado: **borrador M0**; §3–§4 actualizadas para M2 y M3, §6.3 con el
+estado de M3 (2026-11-04) · Complementa `SCIENTIFIC_SPEC.md`.
 
 ## 1. Principios
 
@@ -57,8 +57,8 @@ Complementa `SCIENTIFIC_SPEC.md`.
 | Módulo | Responsabilidad | Archivos | No hace |
 |---|---|---|---|
 | `surface` | Leer productos satelitales y convertirlos en variables físicas estandarizadas (Ts, α, NDVI, LAI, ε₀) con QA y procedencia | `io-modis.R`, `prep-modis.R`, `io-aoi.R` | Ecuaciones de balance de energía |
-| `forcing` | Leer, estandarizar y controlar calidad de datos de estaciones; derivar variables (ea, u a altura de referencia, ETr) | `io-weather.R`, `prep-weather.R`, `prep-qc.R` | Interpolación espacial |
-| `spatial` | Regionalizar variables meteorológicas (GWR; alternativas de referencia) y conservar parámetros, kernel, bandwidth, criterios, residuos, AICc, CV, diagnósticos y flags | `gwr-fit.R`, `gwr-bandwidth.R`, `gwr-predict.R`, `gwr-diagnostics.R` | Conocer METRIC |
+| `forcing` | Leer, estandarizar y controlar calidad de datos de estaciones; derivar variables (ea, u a altura de referencia, ETr) | `io-weather.R`, `prep-qc.R`, `forcing-derived.R`, `reference-et.R`, `prep-weather.R` | Interpolación espacial |
+| `spatial` | Regionalizar variables meteorológicas (GWR; alternativas de referencia) y conservar parámetros, kernel, bandwidth, criterios, residuos, AICc, CV, diagnósticos y flags | `gwr-fit.R`, `gwr-bandwidth.R`, `gwr-predict.R`, `gwr-diagnostics.R` (núcleo); `regionalize.R`, `regionalize-methods.R`, `regionalize-baselines.R`, `regionalize-cv.R` (orquestación, C1/C2, CV) | Conocer METRIC |
 | `metric` | Núcleo físico modular: Rn, G, anclas, rah, dT, H, LE, ET_inst, ETrF, ETa | `metric-*.R` | Leer archivos o conocer el sensor |
 | `diagnostics` | Registro de flags y su construcción; resúmenes de calidad | `diagnostics.R` | Modificar valores |
 | `validation` | Métricas de concordancia y comparación entre configuraciones | `validation.R`, `api-validate.R` | Ajustar el modelo a los datos de validación |
@@ -186,9 +186,27 @@ distintos de `message` y `call`.
 | `earthflux_calibration_error` | `earthflux_error` | La calibración interna no puede continuar (p. ej., `NA` o valores no finitos en un ancla; SH-18) |
 | `earthflux_convergence_warning` | `earthflux_warning` | Iteración detenida sin cumplir su criterio (SH-18) |
 
-Las subclases específicas de un módulo (p. ej.,
-`earthflux_anchor_no_candidates`) se crean con la función que las levanta y
-heredan de una de las clases anteriores.
+Las subclases específicas de un módulo se crean con la función que las
+levanta y heredan de una de las clases anteriores (lista completa en la
+cabecera de `R/utils.R`):
+
+| Clase | Hereda de | Módulo | Uso |
+|---|---|---|---|
+| `earthflux_anchor_error` | `earthflux_error` | anclas | Padre de `earthflux_anchor_no_candidates` (campos `type`, `funnel`, `thresholds`), `earthflux_anchor_insufficient_domain`, `earthflux_anchor_inverted` y, con `earthflux_input_error`, `earthflux_anchor_na_input` y `earthflux_anchor_outside_grid` |
+| `earthflux_station_field_error` | `earthflux_input_error` | estaciones | Campo faltante, desconocido o de tipo erróneo; tabla vacía; `NA` en un campo obligatorio |
+| `earthflux_station_time_error` | `earthflux_input_error` | estaciones | `timestamp` sin zona horaria explícita, no interpretable o semántica de período inválida |
+| `earthflux_station_unknown_id` | `earthflux_input_error` | estaciones | Observación de una estación ausente de `stations` |
+| `earthflux_station_duplicate` | `earthflux_input_error` | estaciones | `station_id` duplicado o registros duplicados en conflicto |
+| `earthflux_station_provenance_error` | `earthflux_input_error` | estaciones | Procedencia mal formada (CRS, campos reservados) |
+| `earthflux_undefined_reference` | `earthflux_input_error` | ET de referencia | Referencia no definida por la norma (FAO-56 con `reference = "alfalfa"`); campos `reference`, `standard` |
+| `earthflux_gwr_error` | `earthflux_error` | GWR | Padre de los errores del núcleo GWR (`gwr_abort()`) |
+| `earthflux_gwr_insufficient_stations` | `earthflux_gwr_error` | GWR, C2 | Menos estaciones válidas que las necesarias (campos `n`, `p`); lo reutilizan OLS e IDW |
+| `earthflux_gwr_no_feasible_bandwidth` | `earthflux_gwr_error` | GWR | Ningún bandwidth del perfil es factible (campo `profile`) |
+| `earthflux_gwr_singular_error` | `earthflux_gwr_error` | GWR | Diseño local de rango deficiente en una estación con bandwidth del usuario (campo `stations`) |
+
+Los errores de dimensión son `earthflux_input_error` en todo el paquete
+(como `check_same_dim()`); **no** se creó `earthflux_dimension_error`, que
+proponía `specs/gwr-forcing.md` §9.3 (`DECISIONS.md` §1.3, M3-22).
 
 ### 3.4 Registro de flags por etapa
 
@@ -204,13 +222,37 @@ evitar conflictos al desarrollar los módulos en paralelo
 | `ef_flags_anchors()` | `metric-anchors.R` | `EF_ANCHOR_` |
 | `ef_flags_sensible_heat()` | `metric-sensible-heat.R` | `EF_H_` |
 | `ef_flags_et()` | `metric-et.R` | `EF_ET_` |
+| `ef_flags_reference_et()` | `reference-et.R` | `EF_WS_` (ET de referencia y serie por estación) |
+| `ef_flags_stations()` | `prep-qc.R` | `EF_WS_` (QC de estaciones) |
+| `ef_flags_gwr()` | `gwr-diagnostics.R` | `EF_GWR_` (núcleo GWR y orquestación) |
 
 Cada función devuelve `ef_flag_rows(code, stage, severity, scope, bit,
 error_class, description, spec, since)` (sin argumentos: tabla de cero
-filas). Los módulos `surface`, `forcing` y `spatial` agregan su
+filas). Falta solo el módulo `surface`, que agregará su
 `ef_flags_<etapa>()` con su primer código. Las columnas, la severidad
 `critical` y las reglas de validación están en `specs/flags.md` §4.2, §5 y
-§8.
+§8. Recuento al 2026-11-04: 54 códigos (`INPUT` 1, `RAD` 4, `G` 4,
+`ANCHOR` 10, `H` 8, `ET` 1, `WS` 13, `GWR` 13; `specs/flags.md` §4.4).
+
+El registro es estático: `ef_flag_registry_build()` une y valida las filas
+y `ef_flag_registry()` lo guarda en un entorno del paquete la primera vez
+que se usa (armonización M3, `DECISIONS.md` §1.3, M3-37). Antes se
+reconstruía en cada `ef_flag()` (≈ 9 ms por registro de flag), lo que
+dominaba el tiempo de `ef_regionalize()` con bloques pequeños. Los tests
+del registro usan la versión sin caché.
+
+### 3.5 Registro `earthflux_flag` y campo `target`
+
+Campos de todo registro: `code`, `stage`, `severity`, `scope`,
+`description`, `index` (entero 1-based), `n_flagged` y `n_total`
+(`ef_flag()`). Un objeto con **varias tablas o capas** a las que puede
+referirse `index` agrega el campo `target` con el nombre de esa tabla o
+capa (`specs/flags.md` §6.2). Primer uso, `ef_station_ref_et()`:
+`target` ∈ {`"series"`, `"etr_inst"`, `"etr_24"`}, y la procedencia
+registra `flags_evaluated` y `flags_evaluated_by_target` (`DECISIONS.md`
+§1.3, M3-18). Los objetos con una sola tabla o vector no lo llevan. Los
+flags de celda de las superficies regionalizadas no son registros con
+índice: viven en la palabra de flags (`flag_word`, §4).
 
 ## 4. Contratos de datos (borrador)
 
@@ -240,6 +282,25 @@ tiempo: **DECIDIDA (provisional, 2026-11-04)**, P0-4 (§3.1).
 | `solar_radiation` | W m⁻² | Sí |
 | `etr_inst`, `etr_24` | mm h⁻¹, mm d⁻¹ | Sí |
 | `method` | texto (estación única / GWR / alternativa) | Sí |
+
+**Superficie regionalizada** (`earthflux_surface`, salida de
+`ef_regionalize()`; contrato para la orquestación de M5):
+
+| Elemento | Contenido | Obligación del consumidor |
+|---|---|---|
+| `surface` | `SpatRaster`, una capa por `target_time`, en la unidad del contrato de la variable (°C para `air_temperature`, kPa para `vapour_pressure`, W m⁻² para `solar_radiation`, mm h⁻¹ / mm d⁻¹ para `etr_inst`/`etr_24`) | Convertir explícitamente a K (`+ EF_KELVIN_OFFSET`) la temperatura del aire **al entrar al núcleo `metric`** (P0-4, WF-02); el núcleo no acepta °C |
+| `flag_word` | `SpatRaster` entero (`INT4S`), una capa por `target_time`, con los bits de `flag_bits` (etapa `GWR`): 0 `EF_INPUT_NA`, 1 `EF_GWR_EXTRAPOLATION_COVARIATE`, 2 `EF_GWR_EXTRAPOLATION_LOCAL`, 3 `EF_GWR_OUTSIDE_HULL`, 4 `EF_GWR_FEW_NEIGHBOURS`, 5 `EF_GWR_LOCAL_SINGULAR`, 6 `EF_GWR_OUT_OF_DOMAIN` | **Enmascarar** las celdas con el bit 6 (`EF_GWR_OUT_OF_DOMAIN`, `critical`: valor conservado fuera del dominio físico) **antes** de llamar al núcleo, que daría `earthflux_domain_error` (P0-11, T-13; `specs/flags.md` §6.6); contar la exclusión |
+| `flag_bits` | Tabla `bit`, `code`, `severity`, `description` (vista del registro) | Leer los bits por código, nunca por número fijo |
+| `diagnostics`, `station_table`, `provenance`, `flags` | Ajuste por `target_time`, tabla de estaciones (residuos, LOO, exclusiones), procedencia y flags de objeto/registro | Propagar a `earthflux_result` |
+
+En las anclas (`anchor-pixels.md` §2.4, §6), la extrapolación del
+forzamiento en la celda del ancla se lee en la palabra de flags: la
+definición propuesta por `gwr-forcing.md` §6.3 es "bit 1
+(`EF_GWR_EXTRAPOLATION_COVARIATE`) o bit 3 (`EF_GWR_OUTSIDE_HULL`)
+activo", insumo de `EF_ANCHOR_FORCING_EXTRAPOLATED` (sin registrar; la
+decisión es de `anchor-pixels.md`). Una llamada a `ef_regionalize()`
+regionaliza **una** variable (decisión 5.1 abierta: la orquestación decide
+si regionaliza ETr o sus insumos).
 
 **Resultado** (`earthflux_result`, futuro): capas Rn, G, rah, dT, H, LE,
 ET_inst, ETrF, ETa; registro de anclas; parámetros de GWR; flags;
@@ -324,6 +385,36 @@ Reglas:
    primera función que los use, justificando la elección.
 6. Medir antes de optimizar: benchmarks reproducibles en `dev/` (no en el
    tarball) antes de introducir paralelismo en una etapa.
+
+**Estado M3 (2026-11-04).** Primera función paralela: `ef_regionalize()`
+y `ef_regionalize_cv()` (`specs/parallel-processing.md`, nota de estado;
+`specs/gwr-forcing.md`, estado de la orquestación, punto 12). ARCH-6.3b
+resuelta para esta etapa con `future.apply` (`future_lapply(future.seed =
+TRUE)` solo si `future::nbrOfWorkers() > 1`, si no `lapply()`); `future` y
+`future.apply` en `Imports`. Las tareas son ajustes por `target_time`,
+bloques de predicción y pliegues de CV, y reciben matrices y modelos,
+nunca un `SpatRaster`; el proceso principal lee y escribe los bloques en
+orden. Tests: `block_rows` = 1, 7, 60 y el de `terra` dan rásteres
+`identical()`; secuencial = `multisession` (2 workers) `identical()`,
+omitido en CRAN.
+
+Benchmarks (R 4.3.3, 4 núcleos, BLAS de referencia; orientativos):
+
+| Caso | Secuencial | 2 workers | Fuente |
+|---|---|---|---|
+| GWR bicuadrado fijo 40 km, 150 estaciones, 2 `target_time`, 2,5 × 10⁵ celdas | 16,0 s (13,4 s con `block_rows = 50`) | 7,4 s (2,2×) | `dev/benchmarks/regionalize.R` |
+| Ídem, 10⁶ celdas | 46,8 s | 28,7 s (1,6×) | Ídem |
+| Predicción exacta del núcleo, 150 estaciones → 99 856 celdas | 1,9–3,6 s según kernel | — | `dev/benchmarks/gwr-core.R` |
+| `ef_regionalize()`, 35 estaciones, 60 × 60 celdas, `block_rows` = 1 / 5 / 60 (antes → después de la caché del registro de flags, §3.4) | 4,37 → 0,44 s / 0,91 → 0,12 s / 0,21 → 0,09 s | — | Armonización M3 (mediana de 3) |
+
+Las sumas ponderadas del núcleo GWR usan `colSums()` y no un producto BLAS
+(`crossprod()`), para que el valor de una celda no dependa del bloque en
+que se calcula (los productos BLAS pueden cambiar el orden de suma con la
+forma de la matriz); cuesta ≈ 7× en esa operación con el BLAS de
+referencia y es la condición del test `identical()` por bloques
+(`gwr-forcing.md`, estado del núcleo, punto 5). Abierto: el `datatype` de
+la superficie en disco (D-PP-05; hoy el de `wopt`, por defecto `FLT4S`) y
+la paralelización intra-escena del núcleo METRIC (M5).
 
 ### 6.4 Lecciones del paquete `water` (inspiración, sin reutilizar código)
 
