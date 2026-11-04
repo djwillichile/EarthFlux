@@ -111,6 +111,24 @@ recomendada por RC-17 = WF-01 (`R/shared-physics.R`), también
 documentos dueños: `ARCHITECTURE.md` §3–§4, `specs/flags.md` §4.2, §5, §7
 y §9, `R/constants.R` y `R/diagnostics.R`.
 
+### 1.2 Decisiones de implementación y armonización de M2 (2026-11-04)
+
+Tomadas al implementar los cinco módulos de M2 (radiación, G, anclas, H,
+LE/ET) y al armonizarlos después de fusionarlos. Estado: **`DECIDIDA
+(provisional)`, 2026-11-04**, revisables por el autor antes de `0.1.0`
+(las tres primeras por indicación del autor de avanzar M2). Los documentos
+dueños registran el detalle en sus secciones de estado de implementación.
+
+| ID | Decisión | Fundamento | Dónde |
+|---|---|---|---|
+| M2-01 | `ef_etrf()` y `ef_et_daily_etrf()` (y el despachador `ef_et_daily()`) se implementaron como definiciones operativas `CANDIDATA (corroborada)` (Olmedo et al., 2016, Ec. 4) **antes** de verificar Allen et al. (2007). Es la "decisión explícita registrada" que pide P0-1 para adelantarlas | Indicación del autor de avanzar M2; la forma ETrF = ET_inst/ETr_inst y ETa = ETrF·ETr_24 es la definición operativa de METRIC en todas las fuentes secundarias consultadas; P0-1 sigue `ABIERTA` y el rótulo `CANDIDATA` se revisa al leer el artículo | `evapotranspiration.md` §14, §14.1 |
+| M2-02 | Argumento `reference` (`"alfalfa"` / `"grass"`) **obligatorio y sin defecto** en `ef_etrf()`, `ef_et_daily_etrf()` y `ef_et_daily()` (y en `ef_anchor_conditions()`), validado por una sola función (`check_reference_type()`, con las clases de `check_method()`) | Una ETrF solo tiene sentido respecto de una referencia (T-12); hacer explícita la elección no cambia la aritmética; la comprobación de coherencia entre pasos sigue en la orquestación (ET-D9) | `evapotranspiration.md` §6.4, §14.1; `anchor-pixels.md` (nota de estado) |
+| M2-03 | `EF_G_LOW_LAI_BRANCH` (clase I-m) registrado junto con `ef_g_tasumi()` `CANDIDATA`. **Excepción** a `flags.md` §7, punto 3 (I-m exige método `VERIFICADA`) | El flag solo informa qué rama de un método ya expuesto se aplicó (no corrige ni impone umbral propio: el umbral LAI < 0.5 es parte del método); ocultarlo haría menos auditable un método `CANDIDATA`. Se revisa al verificar Tasumi (2003) / Allen et al. (2007): si el método cambia, el código se retira o se redefine según `flags.md` §7.6 | `soil-heat-flux.md` §13; `flags.md` §4.2 |
+| M2-04 | **Despachadores**: `ef_tau_sw()`, `ef_rs_in()`, `ef_g()`, `ef_zom()` y `ef_et_daily()` validan `method` (sin defecto, `check_method()`), llaman a la función del método, construyen los flags de celda de su etapa con `ef_diagnose_<etapa>()` más `EF_INPUT_NA` (`ef_input_na_flags()`) y devuelven `new_ef_object(list(<valores>, method, flags, provenance), "earthflux_<magnitud>")`: `earthflux_sw_transmissivity`, `earthflux_incoming_shortwave`, `earthflux_soil_heat_flux`, `earthflux_roughness_length`, `earthflux_daily_et`. Las funciones de método siguen devolviendo `numeric` (o una lista simple si producen varias magnitudes). `ef_tau_sw()` es de tipo estable (`total` siempre; `beam`/`diffuse` con nombre, `NULL` con `"elevation"`). `method` es el **último** argumento en todos (se corrigió `ef_zom()`). El test "despachador ≡ llamada directa" compara el elemento de valor. `ef_lambda()` es una función única con `method` (N6b) y sigue devolviendo `numeric` | Convención `ARCHITECTURE.md` §3.2 (punto 4), que solo `ef_g()` cumplía; antes `ef_tau_sw()` no era de tipo estable (lista con `allen`, numérico con `elevation`) y `ef_et_daily()`, `ef_rs_in()` y `ef_zom()` reenviaban el valor del método. **Cambio visible para el usuario**: el valor numérico se lee ahora en `$total`, `$g`, `$zom` o `$eta_24` | `ARCHITECTURE.md` §3.2; `NAMING.md` §2.1; especificaciones de cada módulo |
+| M2-05 | **Diagnósticos**: toda `ef_diagnose_<etapa>()` devuelve una lista (posiblemente vacía) con registros solo para los códigos marcados en alguna posición (`n_flagged > 0`); los códigos evaluados viajan en el atributo `evaluated` y el despachador o procedimiento los registra en `provenance$flags_evaluated`. Se alinearon radiación y calor sensible (que devolvían todo código evaluado, con `n_flagged = 0`) y los flags de objeto de `ef_calibrate_h()` | Una sola convención para todas las etapas; los flags de un objeto se leen como "lo que ocurrió"; "evaluado y ausente" sigue distinguible de "no evaluado" (`flags.md` §6.7) | `R/diagnostics.R` (cabecera); `ARCHITECTURE.md` §3.2 |
+| M2-06 | **Auxiliares en un solo lugar**: `check_core_args()`, `check_whole()`, `check_doy()`, `check_angle()`, `check_condition()`, `check_scalar()` (con cotas y `whole` opcionales; reemplaza a `anchor_check_scalar()`), `common_dim()` y `ef_reshape()` en `R/utils.R`; `ef_input_na_flags()` en `R/diagnostics.R`; `EF_SECONDS_PER_HOUR` y `EF_MM_PER_M` en `R/constants.R`. `stats` (paquete base) en `Imports`: las anclas usan `stats::quantile(type = )`, `stats::median()` y `stats::sd()` en lugar de reimplementaciones (resultados idénticos). Una sola conversión LE ↔ ET: las anclas usan la inversa interna `ef_et_inst_to_latent_heat()` | Eliminar duplicación y notas `TODO(shared)` tras fusionar los cinco módulos desarrollados en paralelo | `R/utils.R`, `R/diagnostics.R`, `R/constants.R`, `R/metric-anchors.R` |
+| M2-07 | **Hallazgo SH-11** (no es una decisión): con el ancla fría estable de la especificación (H_target < 0), `stable_psi_m_height` = 200 m hace **divergir** la Fase A (rah del ancla fría sin cota → `earthflux_calibration_error`), mientras que 2 m converge. P0-2 sigue `ABIERTA` y ahora se sabe **decisiva** para cualquier escena con ancla fría estable (advección) | Observado en la escena de `sensible-heat.md` §14 (H_target = −50 y −5 W m⁻²) y en la variante estable del test de extremo a extremo (`tests/testthat/test-metric-chain.R`). Es un comportamiento de las formas `CANDIDATA`, no una validación | `sensible-heat.md` §21; P0-2 |
+
 ### 1.1 Preguntas P0
 
 Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
@@ -133,7 +151,8 @@ Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
    con L = 41.97 m la corrección vale −0.238 o −23.8; cambia u*, rah y H en
    todo píxel estable. El control propuesto incluye `stable_psi_m_height`
    (§12), de modo que el resto de la iteración puede implementarse sin fijar
-   el valor.
+   el valor. *Hallazgo M2 (§1.2, M2-07):* con un ancla fría estable, 200 m
+   hace divergir la calibración y 2 m converge: la decisión es decisiva.
 3. **P0-3 · RC-12 (con RC-13, GW-07, SPEC-5.1; transversal T-01).** ¿Qué
    temperatura entra en RL↓? — *Recomendación:* función agnóstica
    `ef_rl_in(temperature, atm_emissivity)`; (a) Ta del forzamiento y
@@ -693,7 +712,7 @@ la columna Recomendación.
 | SH-08 | Forma y temperatura de ρ_air; 273 vs 273.15 | §8.1 con T_a / §8.2 / con Ts | §8.1 con T_a y P de `ef_air_pressure()` o medida → **DECIDIDA (provisional, 2026-11-04)** | §8 | T-06; T-08; P0-6 |
 | SH-09 | c_p | 1004 / 1013 | Verificar en Allen et al. (2007) → sigue **ABIERTA** (depende de P0-1); constante única `EF_SPECIFIC_HEAT_AIR` = 1004 `CANDIDATA` | §8.3 | T-04; P0-6 |
 | SH-10 | T, ρ y g en L | Ts / T_a; ρ inicial / iterada; 9.807 / otro | T_a y ρ iterada; g con referencia → **DECIDIDA (provisional, 2026-11-04)** salvo g (`EF_GRAVITY` = 9.807 `CANDIDATA`) | §10.1 | P0-6 |
-| SH-11 | Altura de ψ_m estable en z_b | 2/L / 200/L | **Bloqueante**: verificar en la fuente primaria | §10.3 | P0-2 |
+| SH-11 | Altura de ψ_m estable en z_b | 2/L / 200/L | **Bloqueante**: verificar en la fuente primaria. Hallazgo M2 (§1.2, M2-07): con ancla fría estable, 200/L diverge y 2/L converge | §10.3 | P0-2 |
 | SH-12 | Notación de a y b | SPEC / artículo | Mantener SPEC salvo que el artículo difiera | §4.2 | `water` invierte a ↔ b |
 | SH-13 | Γ y z_datum | 6.49 K km⁻¹ fijo / argumento; z_datum estación / escena | Γ argumento documentado; z_datum constante explícito | §9.1 | D-AP-07; T-20 |
 | SH-14 | Agregación de varias anclas | Promedio entradas / dT / por par / regresión | Coordinar con anclas; caso base 1 valor por clase → **DECIDIDA (provisional, 2026-11-04)** | §2.3 | = D-AP-06; T-03; P0-9 |

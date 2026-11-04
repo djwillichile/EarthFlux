@@ -43,9 +43,11 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 >    empates resueltos por índice de celda y `EF_ANCHOR_TIES`). Las celdas
 >    válidas son las utilizables sin `NA` en las variables que usa el
 >    criterio; las reglas se evalúan sobre las válidas y los percentiles
->    sobre el dominio de percentiles. Los cuantiles reproducen
->    `stats::quantile()` (tipos 1–9) con código base (stats no está en
->    `Imports`).
+>    sobre el dominio de percentiles. Los cuantiles son
+>    `stats::quantile()` (tipos 1–9); la mediana y la desviación estándar,
+>    `stats::median()` y `stats::sd()` (`stats` en `Imports` desde la
+>    armonización M2, que reemplazó las versiones en código base con
+>    resultados idénticos; `DECISIONS.md` §1.2, M2-06).
 > 3. **Búsqueda y relajación.** Por tipo: dominios de `search_area` en
 >    orden y, dentro de cada uno, `criteria` y luego los pasos de `relax`;
 >    se usa la primera combinación con anclas y se registra.
@@ -65,7 +67,9 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 >    unidades) escalares o capas de la grilla, evaluadas en cada ancla;
 >    `etrf_cold` (k), y exactamente uno de `etrf_hot` / `le_hot`, sin
 >    defecto; `reference` ∈ {`"alfalfa"`, `"grass"`} (T-12); `source` y
->    `status` obligatorios. LE = ETrF·ETr_inst·λ·ρ_w/(3600·1000).
+>    `status` obligatorios. LE = ETrF·ETr_inst·λ·ρ_w/(3600·1000), con la
+>    inversa interna de `ef_et_inst()` (`ef_et_inst_to_latent_heat()`,
+>    única conversión LE ↔ ET del paquete desde la armonización M2).
 >    Opcionalmente `zom`, `u_blend` y `pressure` (escalar o capa) pasan,
 >    agregados, a `calibration_points`, que entonces contiene todas las
 >    columnas que exige `ef_calibrate_h()` (`type`, `lst`, `elevation`,
@@ -85,6 +89,12 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 >    clase II siguen sin registrar. No implementado: contraste de anclas
 >    manuales con criterios (§5.7), selección sobre Ts_datum (D-AP-07,
 >    abierta), presets con nombre, `summary()` y `plot()`.
+> 10. **Armonización M2** (`DECISIONS.md` §1.2): `flags` contiene solo los
+>     códigos que se cumplen; los evaluados están en
+>     `provenance$flags$evaluated` (§6.7 de `flags.md`) y, como en todos los
+>     objetos del núcleo, en `provenance$flags_evaluated`. La comprobación de
+>     escalares es la compartida `check_scalar()` (`R/utils.R`) y la del
+>     tipo de referencia, la de `ef_etrf()` (`check_reference_type()`).
 
 ---
 

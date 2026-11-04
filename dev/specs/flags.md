@@ -443,7 +443,7 @@ según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_INPUT_NA` | `EF_INPUT_NA`, `EF_ETRF_NO_VALID_DATE` | fusión (C8) | I (registrado) | info | cell, record | 0 (en todas las palabras) | Construido por la orquestación con `!is.na()`; nunca por la función numérica |
+| `EF_INPUT_NA` | `EF_INPUT_NA`, `EF_ETRF_NO_VALID_DATE` | fusión (C8) | I (registrado; levantado por los despachadores de M2 con `ef_input_na_flags()`, tests en los módulos) | info | cell, record | 0 (en todas las palabras) | Construido por los despachadores y la orquestación con `!is.na()`; nunca por la función numérica |
 
 #### `EF_SURF_` (21)
 
@@ -612,21 +612,32 @@ división).
 
 ### 4.4 Recuento por clase y etapa
 
-| Prefijo | I | II | III | Total |
-|---|---|---|---|---|
-| `INPUT` | 1 | 0 | 0 | 1 |
-| `SURF` | 13 | 7 | 1 | 21 |
-| `WS` | 11 | 13 | 2 | 26 |
-| `GWR` | 14 | 4 | 1 | 19 |
-| `RAD` | 4 | 1 | 0 | 5 |
-| `G` | 4 | 2 | 0 | 6 |
-| `ANCHOR` | 10 | 4 | 0 | 14 |
-| `H` | 11 | 2 | 0 | 13 |
-| `ET` | 5 | 2 | 0 | 7 |
-| **Total** | **73** | **35** | **4** | **112** |
+| Prefijo | I | II | III | Total | Registrados |
+|---|---|---|---|---|---|
+| `INPUT` | 1 | 0 | 0 | 1 | 1 |
+| `SURF` | 13 | 7 | 1 | 21 | 0 |
+| `WS` | 11 | 13 | 2 | 26 | 0 |
+| `GWR` | 14 | 4 | 1 | 19 | 0 |
+| `RAD` | 4 | 1 | 0 | 5 | 4 |
+| `G` | 4 | 2 | 0 | 6 | 4 |
+| `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
+| `H` | 11 | 2 | 0 | 13 | 8 |
+| `ET` | 5 | 2 | 0 | 7 | 1 |
+| **Total** | **73** | **35** | **4** | **112** | **28** |
 
-De la clase I, 2 están registrados (`EF_INPUT_NA`, `EF_ET_NEGATIVE`) y 3
-son I-m (`EF_WS_RS_RSO_LIMITED`, `EF_G_LOW_LAI_BRANCH`,
+Registrados (actualizado con la armonización M2, 2026-11-04): 28 códigos,
+todos de clase I y ejercitados por un test de su módulo (R11, sin
+excepciones): `EF_INPUT_NA` y `EF_ET_NEGATIVE` (registrados en M0 y
+levantados desde M2), los 4 `EF_RAD_*` de clase I, los 4 `EF_G_*` de clase
+I (incluido el I-m `EF_G_LOW_LAI_BRANCH`, registrado con su método
+`CANDIDATA` como excepción a §7, punto 3; `DECISIONS.md` §1.2, M2-03), los
+10 `EF_ANCHOR_*` de clase I y 8 de los 11 `EF_H_*` de clase I. Sin
+registrar en M2: `EF_H_ZOM_FLOOR_APPLIED` (I-m, SH-02),
+`EF_H_ZOM_TERRAIN_ADJUSTED` (método de terreno no implementado),
+`EF_H_WIND_FLOOR_APPLIED` (SH-06) y los 4 `EF_ET_PERIOD_*` de clase I
+(`ef_et_period()` no implementada); ningún código de clase II ni III.
+
+De la clase I, 3 son I-m (`EF_WS_RS_RSO_LIMITED`, `EF_G_LOW_LAI_BRANCH`,
 `EF_H_ZOM_FLOOR_APPLIED`). Varios de clase I están además **condicionados
 a una decisión** de su especificación (el flag solo existe si se adopta
 la opción): `EF_GWR_TRANSFORMED` (GW-12), `EF_H_WIND_FLOOR_APPLIED`
@@ -936,7 +947,7 @@ con la primera función espacial o con parámetro.
 | R8 | Capacidad | Por etapa, número de códigos `cell` + 1 (bit 0) ≤ 31 |
 | R9 | `critical` justificado | Toda fila `critical` tiene `error_class` no `NA` o ámbito `object` (fallo de procedimiento) |
 | R10 | Guardia de clase II | Ningún código del vector de guardia (§7.7) está en el registro |
-| R11 | Definition of Done | Cada código registrado aparece en al menos un archivo `test-*.R` distinto de `test-diagnostics.R` (lectura de los archivos de `test_path()`). Excepción explícita y temporal: `EF_INPUT_NA` y `EF_ET_NEGATIVE` (registrados en M0 antes de esta política) hasta que existan sus funciones |
+| R11 | Definition of Done | Cada código registrado aparece en al menos un archivo `test-*.R` distinto de `test-diagnostics.R` (lectura de los archivos de `test_path()`). La excepción temporal de `EF_INPUT_NA` y `EF_ET_NEGATIVE` (registrados en M0 antes de esta política) se retiró en la armonización M2: ambos los levantan funciones de M2 con tests en sus módulos |
 | R12 | Ida y vuelta de bits | Para cada etapa, máscaras aleatorias con semilla fija → palabra → desempaquetado → máscaras idénticas; palabra ∈ [0, 2³¹ − 1]; la palabra con todos los bits de la etapa activos no es `NA` |
 | R13 | Vista única | `ef_flag_bits(stage)` (nombre por decidir) es idéntica al subconjunto del registro; no existe otra tabla de bits mantenida a mano |
 | R14 | Retirados | Ningún código o bit retirado reaparece en el registro (cuando exista la lista de retirados) |
@@ -949,9 +960,11 @@ con la primera función espacial o con parámetro.
 Notas:
 
 - Implementados (2026-11-04) en `test-diagnostics.R`: R1–R11, R15, R17
-  (con el vector de guardia de clase II, 35 códigos, y la excepción
-  temporal de R11), más tests de `ef_flag_rows()` y de
-  `ef_flag()`. R18 se garantiza en `ef_flag()`. R12–R14, R16 y R19 entran
+  (con el vector de guardia de clase II, 35 códigos; la excepción
+  temporal de R11 se retiró en la armonización M2), más tests de
+  `ef_flag_rows()`, de `ef_flag()` y de los auxiliares de la convención de
+  diagnósticos (`ef_flag_set()`, `ef_input_na_flags()`,
+  `ef_flags_combine()`). R18 se garantiza en `ef_flag()`. R12–R14, R16 y R19 entran
   con la palabra de bits, la lista de retirados, `terra` y los flags de
   procedencia.
 - La expresión regular `^EF_[A-Z0-9_]+$` se sustituyó por la de R2
