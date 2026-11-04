@@ -231,7 +231,7 @@ Implementado en `R/io-weather.R` (`ef_station_table()`, exportada;
 `ef_validate_stations()`, interna) con tests en
 `tests/testthat/test-weather.R` y datos sintéticos en
 `tests/testthat/helper-stations.R`. Decisiones tomadas al implementar
-(provisionales, para que el integrador las registre en `DECISIONS.md`):
+(provisionales, registradas en `DECISIONS.md` §1.3, M3-07 y M3-08):
 
 - **WF-03** adoptada: dos `data.frame` base + clase S3
   `earthflux_station_table` (`new_ef_object()`), con elementos `stations`,
@@ -1388,7 +1388,7 @@ Rama `feature/m3-station-ref-et`. Archivo `R/prep-weather.R` (exportada,
 clase `earthflux_station_ref_et`), tests en
 `tests/testthat/test-station-ref-et.R`. Usa solo funciones existentes
 (§4–§5); no agrega ecuaciones. Decisiones tomadas al implementar
-(provisionales, para que el integrador las registre en `DECISIONS.md`):
+(provisionales, registradas en `DECISIONS.md` §1.3, M3-11 … M3-19):
 
 1. **Firma y decisiones abiertas como argumentos sin defecto.**
    `reference`, `timestep`, `standard`, `humidity`, `day_definition` (WF-11)
