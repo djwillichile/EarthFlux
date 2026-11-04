@@ -84,16 +84,16 @@ reference, 0.12 m) or <code>"alfalfa"</code> (tall reference, about 0.5 m).</p><
 
 <dt id="arg-standard">standard<a class="anchor" aria-label="anchor" href="#arg-standard"></a></dt>
 <dd><p>Character, no default. <code>"fao56"</code> (FAO-56, grass only) or
-<code>"asce"</code> (ASCE-EWRI 2005 standardized equation, <code>CANDIDATA</code>).</p></dd>
+<code>"asce"</code> (ASCE-EWRI 2005 standardized equation).</p></dd>
 
 
 <dt id="arg-daytime">daytime<a class="anchor" aria-label="anchor" href="#arg-daytime"></a></dt>
 <dd><p>Logical or <code>NULL</code>. For <code>timestep = "hourly"</code>, <code>TRUE</code> for
 daytime and <code>FALSE</code> for night-time periods (required); must be <code>NULL</code>
-for <code>"daily"</code>. <code>NA</code> gives <code>NA</code>. The criterion (for example
-\(R_n &gt; 0\) or \(R_a &gt; 0\)) is the caller's
-choice: FAO-56 speaks of "daylight periods" without a threshold
-(decision WF-15).</p></dd>
+for <code>"daily"</code>. <code>NA</code> gives <code>NA</code>. The criterion is the caller's choice
+(decision WF-15): FAO-56 speaks of "daylight periods" without a
+threshold; ASCE-EWRI (2005) defines daytime as a positive hourly net
+radiation, <code>daytime = net_radiation &gt; 0</code> (see Details).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -107,9 +107,20 @@ where <code>net_radiation</code> is <code>NA</code>).</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>\(G = c_G R_n\) with \(c_G\) from the internal
 constants table of the reference equations
-(dev/specs/weather-forcing.md 5.3):</p><table class="table table"><tr><td>Reference, standard</td><td>Daily</td><td>Hourly, day</td><td>Hourly, night</td><td>Status</td></tr><tr><td>grass, <code>"fao56"</code></td><td>0 (Eq. 42)</td><td>0.1 (Eq. 45)</td><td>0.5 (Eq. 46)</td><td><code>VERIFICADA</code></td></tr><tr><td>grass, <code>"asce"</code></td><td>0</td><td>0.1</td><td>0.5</td><td><code>CANDIDATA</code></td></tr><tr><td>alfalfa, <code>"asce"</code></td><td>0</td><td>0.04</td><td>0.2</td><td><code>CANDIDATA</code></td></tr></table><p>FAO-56 (Eq. 42) states that the daily soil heat flux beneath the grass
-reference is small and may be ignored (G about 0). The monthly forms
-(FAO-56 Eqs. 43-44) are out of scope. <code>standard = "fao56"</code> with
+(dev/specs/weather-forcing.md 5.3):</p><table class="table table"><tr><td>Reference, standard</td><td>Daily</td><td>Hourly, day</td><td>Hourly, night</td><td>Status</td></tr><tr><td>grass, <code>"fao56"</code></td><td>0 (Eq. 42)</td><td>0.1 (Eq. 45)</td><td>0.5 (Eq. 46)</td><td><code>VERIFICADA</code></td></tr><tr><td>grass, <code>"asce"</code></td><td>0 (Eq. 30)</td><td>0.1 (Eq. 65a)</td><td>0.5 (Eq. 65b)</td><td><code>VERIFICADA</code></td></tr><tr><td>alfalfa, <code>"asce"</code></td><td>0 (Eq. 30)</td><td>0.04 (Eq. 66a)</td><td>0.2 (Eq. 66b)</td><td><code>VERIFICADA</code></td></tr></table><p>FAO-56 (Eq. 42) and ASCE-EWRI (2005, Eq. 30, p. 25) state that the daily
+soil heat flux beneath the reference surface is small and is ignored
+(G = 0). The monthly forms (FAO-56 Eqs. 43-44; ASCE-EWRI Eqs. 31-32) are
+out of scope.</p>
+<p><strong>Day and night in ASCE-EWRI (2005).</strong> The report defines daytime as a
+positive mean net radiation of the hourly period (text before Table 1,
+p. 5; Table 2, p. 5: daytime \(R_n &gt; 0\), night-time
+\(R_n \le 0\)), which <code>daytime = net_radiation &gt; 0</code> follows
+(option <code>"rn_positive"</code> of <code><a href="ef_station_ref_et.html">ef_station_ref_et()</a></code>). The report is not
+consistent at \(R_n = 0\): p. 44 (after Eqs. 65-66) and the
+glossary (p. 58) define night-time as \(R_n &lt; 0\) and daytime
+as \(R_n \ge 0\). At \(R_n = 0\) G is 0 under
+both readings; only \(C_d\) of <code><a href="ef_ref_et.html">ef_ref_et()</a></code> depends on it.</p>
+<p><code>standard = "fao56"</code> with
 <code>reference = "alfalfa"</code> raises <code>earthflux_undefined_reference</code> (also
 <code>earthflux_input_error</code>): FAO-56 does not define the tall reference.</p>
 <p>Missing values propagate. Missing or unknown choices raise
@@ -123,9 +134,8 @@ infinite <code>net_radiation</code> raises <code>earthflux_domain_error</code>.<
 
 
 <p>FAO-56 grass rows: <code>VERIFICADA</code> (FAO-56, chapter 4, Eqs. 42, 45, 46;
-cases V15 and V16). ASCE-EWRI rows: <code>CANDIDATA</code> (ASCE-EWRI, 2005, was not
-accessible; values from secondary implementations, implemented as
-<code>CANDIDATA</code> by direction of the author to advance milestone M3).</p>
+cases V15 and V16). ASCE-EWRI rows: <code>VERIFICADA</code> (ASCE-EWRI, 2005,
+Eq. 30, p. 25; Eqs. 65a-b and 66a-b, p. 44).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -133,8 +143,12 @@ accessible; values from secondary implementations, implemented as
 evapotranspiration: Guidelines for computing crop water requirements</em>
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.</p>
 <p>ASCE-EWRI (2005). <em>The ASCE Standardized Reference Evapotranspiration
-Equation</em>. American Society of Civil Engineers.
-<a href="https://doi.org/10.1061/9780784408056" class="external-link">doi:10.1061/9780784408056</a></p>
+Equation</em>. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., &amp; Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. <a href="https://doi.org/10.1061/9780784408056" class="external-link">doi:10.1061/9780784408056</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -151,6 +165,12 @@ Equation</em>. American Society of Civil Engineers.
 <span class="r-in"><span>                      timestep <span class="op">=</span> <span class="st">"hourly"</span>, standard <span class="op">=</span> <span class="st">"fao56"</span>,</span></span>
 <span class="r-in"><span>                      daytime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1]  0.1749 -0.0500</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Tall reference, ASCE-EWRI daytime rule (Rn &gt; 0)</span></span></span>
+<span class="r-in"><span><span class="va">rn</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.749</span>, <span class="op">-</span><span class="fl">0.100</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">ef_ref_soil_heat_flux</span><span class="op">(</span><span class="va">rn</span>, reference <span class="op">=</span> <span class="st">"alfalfa"</span>, timestep <span class="op">=</span> <span class="st">"hourly"</span>,</span></span>
+<span class="r-in"><span>                      standard <span class="op">=</span> <span class="st">"asce"</span>, daytime <span class="op">=</span> <span class="va">rn</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1]  0.06996 -0.02000</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Daily step: G = 0</span></span></span>
 <span class="r-in"><span><span class="fu">ef_ref_soil_heat_flux</span><span class="op">(</span><span class="fl">13.28</span>, reference <span class="op">=</span> <span class="st">"grass"</span>, timestep <span class="op">=</span> <span class="st">"daily"</span>,</span></span>

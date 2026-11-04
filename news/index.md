@@ -5,7 +5,11 @@
 First development version. It sets up the package infrastructure and
 provides the core physics of the METRIC surface energy balance chain as
 numeric functions, from net radiation to daily actual evapotranspiration
-(milestone M2). Most formulations are candidates pending verification
+(milestone M2), and the meteorological forcing of that chain: weather
+station tables and their quality control, reference evapotranspiration
+at the stations and the regionalization of station variables over the
+working grid by geographically weighted regression and its baselines
+(milestone M3). Most formulations are candidates pending verification
 against the primary references; no scientific result has been validated
 yet.
 
@@ -197,6 +201,53 @@ yet.
   formulations are corroborated by secondary sources; verification
   against Allen et al. (2007) is pending.
 
+#### Dispatchers, flags and provenance
+
+- Every dispatcher of a method family
+  ([`ef_tau_sw()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md),
+  [`ef_rs_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md),
+  [`ef_g()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md),
+  [`ef_zom()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md),
+  [`ef_et_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md))
+  takes `method` as its last argument, with no default, and returns a
+  classed list with the values of the method (`$total`, `$g`, `$zom`,
+  `$eta_24`, …), `method`, diagnostic `flags` and `provenance`
+  (including the flag codes evaluated); the method functions
+  ([`ef_tau_sw_allen()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md),
+  [`ef_g_tasumi()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md),
+  …) return plain numeric values. The classes are
+  `earthflux_sw_transmissivity` (always with `total`, and with `beam`
+  and `diffuse` set to `NULL` when the method gives no partition),
+  `earthflux_incoming_shortwave`, `earthflux_soil_heat_flux`,
+  `earthflux_roughness_length` and `earthflux_daily_et`. A required
+  input that is missing at a position is flagged `EF_INPUT_NA`.
+
+- Results carry a flag record only for the conditions that hold
+  somewhere; the codes that were evaluated are listed in
+  `provenance$flags_evaluated`, so that “evaluated and absent” is
+  distinguishable from “not evaluated”.
+
+- Diagnostic flags registered for the METRIC stages (values are never
+  truncated or corrected):
+
+  - radiation: `EF_RAD_SELF_SHADED`, `EF_RAD_ATM_EMISSIVITY_GT1`,
+    `EF_RAD_RS_GT_RA` and `EF_RAD_RN_NEGATIVE`;
+  - soil heat flux: `EF_G_RN_NONPOSITIVE`, `EF_G_RATIO_NEGATIVE`,
+    `EF_G_AVAILABLE_NONPOSITIVE` and `EF_G_LOW_LAI_BRANCH`;
+  - anchor pixels: `EF_ANCHOR_USER_SUPPLIED`,
+    `EF_ANCHOR_CRITERIA_RELAXED`, `EF_ANCHOR_SEARCH_EXPANDED`,
+    `EF_ANCHOR_HOMOGENEITY_DROPPED`, `EF_ANCHOR_WINDOW_INCOMPLETE`,
+    `EF_ANCHOR_TIES`, `EF_ANCHOR_SINGLE_PIXEL`,
+    `EF_ANCHOR_COLD_H_NEGATIVE`, `EF_ANCHOR_HOT_LE_ASSUMED_ZERO` and
+    `EF_ANCHOR_OVERPASS_SPREAD`; flags evaluated upstream in an anchor
+    cell are inherited, not duplicated;
+  - sensible heat flux: `EF_H_USTAR_INVALID`,
+    `EF_H_PIXEL_NOT_CONVERGED`, `EF_H_DT_EXTRAPOLATED_HOT`,
+    `EF_H_DT_EXTRAPOLATED_COLD`, `EF_H_NEGATIVE`, `EF_H_GT_AVAILABLE`
+    (cell) and `EF_H_CALIBRATION_NOT_CONVERGED`,
+    `EF_H_DT_SLOPE_NONPOSITIVE` (object, critical);
+  - evapotranspiration: `EF_ET_NEGATIVE`, evaluated on each ET layer.
+
 #### Meteorological forcing
 
 - [`ef_station_table()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_table.md)
@@ -248,8 +299,9 @@ yet.
   ([`ef_ea_rh()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)),
   from daily extremes with an explicit `method`
   ([`ef_ea_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md):
-  `"rhmax_rhmin"`, `"rhmax"`, `"rhmean"`) and from the minimum
-  temperature with an explicit aridity correction
+  `"rhmax_rhmin"`, `"rhmax"`, `"rhmean"`, and the ASCE-EWRI (2005) forms
+  `"rhmin"` and `"rhmean_tmean"`) and from the minimum temperature with
+  an explicit aridity correction
   ([`ef_ea_tmin()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)),
   [`ef_dewpoint()`](https://djwillichile.github.io/EarthFlux/reference/ef_dewpoint.md),
   [`ef_wind_2m()`](https://djwillichile.github.io/EarthFlux/reference/ef_wind_2m.md)
@@ -258,16 +310,19 @@ yet.
   and
   [`ef_ra_period()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_period.md)
   (extraterrestrial radiation per day and per hourly or shorter period,
-  reusing the solar geometry of the METRIC core) and
+  reusing the solar geometry of the METRIC core; an explicit `standard`
+  selects the FAO-56 midpoint criterion or the ASCE-EWRI limits of
+  integration at sunrise and sunset) and
   [`ef_rso()`](https://djwillichile.github.io/EarthFlux/reference/ef_rso.md)
   (clear-sky radiation from elevation). Relative humidities above 100 %
   are computed, never truncated.
 
 - Reference evapotranspiration:
   [`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md)
-  (net radiation of the reference surface, daily or hourly; a
-  carried-over cloudiness term can be supplied for night-time periods)
-  and
+  (net radiation of the reference surface, daily or hourly, with an
+  explicit `standard` for the Stefan-Boltzmann constant and the limits
+  of Rs/Rso; a carried-over cloudiness term can be supplied for
+  night-time periods) and
   [`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md)
   (soil heat flux of the reference surface) feed
   [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md),
@@ -276,16 +331,20 @@ yet.
   `standard` and no defaults, and returns an `earthflux_reference_et`
   object with flags and provenance. The FAO-56 grass equations reproduce
   FAO-56 examples 18 and 19. The constants of the ASCE-EWRI (2005)
-  standardized equation (tall reference, hourly day and night
-  coefficients) are `CANDIDATA`: the standard could not be read and the
-  values come from secondary implementations. FAO-56 with the alfalfa
+  standardized equation (short and tall reference, daily and hourly day
+  and night coefficients, soil heat flux ratios) and the rest of its
+  reference ET chain are verified against the January 2005 Task
+  Committee report (equation, table and page cited in the
+  documentation); its worked examples (Appendix C) are not reproduced
+  yet, as the appendices were not available. FAO-56 with the alfalfa
   reference is a classed error (`earthflux_undefined_reference`).
   Negative reference ET is kept and flagged.
 
 - Diagnostic flags of the reference ET stage: `EF_WS_RS_RSO_LIMITED`
-  (the ratio Rs/Rso is limited to 1 inside the FAO-56 cloudiness term,
-  Rs is not modified) and `EF_WS_ETR_NEGATIVE` (negative reference ET,
-  kept).
+  (the ratio Rs/Rso is limited to the range of the standard inside the
+  cloudiness term, at most 1 for FAO-56 and between 0.3 and 1 for
+  ASCE-EWRI; Rs is not modified) and `EF_WS_ETR_NEGATIVE` (negative
+  reference ET, kept).
 
 - [`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md)
   computes the reference ET series of every station of a
@@ -298,69 +357,76 @@ yet.
   values of complete days, or the daily record). The open choices are
   explicit arguments without defaults: humidity source, day definition
   (UTC or local standard time with a UTC offset) and completeness rule,
-  day/night criterion, night-time cloudiness (ratio of the period 2-3
-  hours before sunset, or a fixed ratio) and the overpass method. It
-  reproduces FAO-56 examples 18 and 19 and returns an
+  day/night criterion (extraterrestrial or net radiation above zero, the
+  latter the ASCE-EWRI definition), night-time cloudiness (ratio of the
+  period 2-3 hours before sunset, the ASCE-EWRI rule of the last period
+  with a sun angle above 0.3 rad, or a fixed ratio) and the overpass
+  method. It reproduces FAO-56 examples 18 and 19 and returns an
   `earthflux_station_ref_et` object whose flags name the table they
   refer to; days without all their periods (`EF_WS_INCOMPLETE_DAY`) and
   overpass times outside the records (`EF_WS_OVERPASS_OUTSIDE_RECORDS`)
   give `NA` and are flagged.
 
-#### Dispatchers, flags and provenance
+#### Spatial regionalization
 
-- Every dispatcher of a method family
-  ([`ef_tau_sw()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md),
-  [`ef_rs_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md),
-  [`ef_g()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md),
-  [`ef_zom()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md),
-  [`ef_et_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md))
-  takes `method` as its last argument, with no default, and returns a
-  classed list with the values of the method (`$total`, `$g`, `$zom`,
-  `$eta_24`, …), `method`, diagnostic `flags` and `provenance`
-  (including the flag codes evaluated); the method functions
-  ([`ef_tau_sw_allen()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md),
-  [`ef_g_tasumi()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md),
-  …) return plain numeric values. The classes are
-  `earthflux_sw_transmissivity` (always with `total`, and with `beam`
-  and `diffuse` set to `NULL` when the method gives no partition),
-  `earthflux_incoming_shortwave`, `earthflux_soil_heat_flux`,
-  `earthflux_roughness_length` and `earthflux_daily_et`. A required
-  input that is missing at a position is flagged `EF_INPUT_NA`.
+- [`ef_regionalize()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize.md)
+  regionalizes one meteorological station variable over the working grid
+  for every target time and returns an `earthflux_surface`: the surface
+  (`SpatRaster`, one layer per target time, in memory or in a file), an
+  integer flag word per cell and target time with its bit table, the
+  fitted model of every target time, the station table (observed and
+  fitted values, residuals, leave-one-out residuals, exclusions with
+  their reason), flags and provenance. It projects the station
+  coordinates (WGS84) to the projected CRS of the grid, extracts the
+  covariates at the stations from the same rasters (or takes them from a
+  table), applies an explicit QC policy (`use_qc`, no default) and user
+  exclusions, and predicts exactly at every cell by blocks of raster
+  rows with `terra`; the block size never changes the result. It accepts
+  the regionalization input table or the result of
+  [`ef_station_qc()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_qc.md).
 
-- Results carry a flag record only for the conditions that hold
-  somewhere; the codes that were evaluated are listed in
-  `provenance$flags_evaluated`, so that “evaluated and absent” is
-  distinguishable from “not evaluated”.
+- One interface for the configurations compared in the validation plan,
+  with no default for any scientific choice:
+  [`ef_method_gwr()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_gwr.md)
+  (C3: kernel, fixed or adaptive bandwidth, either given or selected by
+  AICc or CV for every fit),
+  [`ef_method_station()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_station.md)
+  (C1: representative station, optionally with an explicit lapse rate
+  for air temperature),
+  [`ef_method_ols()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_ols.md)
+  (C2: global regression on the same covariates) and
+  [`ef_method_idw()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_idw.md)
+  (C2: inverse distance weighting with a given power or one selected by
+  leave-one-out CV on a grid).
+  [`ef_predict_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_predict_control.md)
+  sets the block size, the output files and the write options.
 
-- Diagnostic flags registered for the METRIC stages (values are never
-  truncated or corrected):
+- Covariates derived from the surface state (LST, NDVI, …) must be
+  declared in `surface_covariates` (decision GW-07 is open, so there is
+  no default) and raise `EF_GWR_SURFACE_COVARIATE`.
 
-  - radiation: `EF_RAD_SELF_SHADED`, `EF_RAD_ATM_EMISSIVITY_GT1`,
-    `EF_RAD_RS_GT_RA` and `EF_RAD_RN_NEGATIVE`;
-  - soil heat flux: `EF_G_RN_NONPOSITIVE`, `EF_G_RATIO_NEGATIVE`,
-    `EF_G_AVAILABLE_NONPOSITIVE` and `EF_G_LOW_LAI_BRANCH`;
-  - anchor pixels: `EF_ANCHOR_USER_SUPPLIED`,
-    `EF_ANCHOR_CRITERIA_RELAXED`, `EF_ANCHOR_SEARCH_EXPANDED`,
-    `EF_ANCHOR_HOMOGENEITY_DROPPED`, `EF_ANCHOR_WINDOW_INCOMPLETE`,
-    `EF_ANCHOR_TIES`, `EF_ANCHOR_SINGLE_PIXEL`,
-    `EF_ANCHOR_COLD_H_NEGATIVE`, `EF_ANCHOR_HOT_LE_ASSUMED_ZERO` and
-    `EF_ANCHOR_OVERPASS_SPREAD`; flags evaluated upstream in an anchor
-    cell are inherited, not duplicated;
-  - sensible heat flux: `EF_H_USTAR_INVALID`,
-    `EF_H_PIXEL_NOT_CONVERGED`, `EF_H_DT_EXTRAPOLATED_HOT`,
-    `EF_H_DT_EXTRAPOLATED_COLD`, `EF_H_NEGATIVE`, `EF_H_GT_AVAILABLE`
-    (cell) and `EF_H_CALIBRATION_NOT_CONVERGED`,
-    `EF_H_DT_SLOPE_NONPOSITIVE` (object, critical);
-  - evapotranspiration: `EF_ET_NEGATIVE`, evaluated on each ET layer.
+- [`ef_spatial_folds()`](https://djwillichile.github.io/EarthFlux/reference/ef_spatial_folds.md)
+  builds deterministic spatial block folds (square tiles of a given
+  side) and
+  [`ef_regionalize_cv()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize_cv.md)
+  returns the long table of out-of-fold predictions at the stations for
+  any method, re-selecting the GWR bandwidth (or the IDW power) inside
+  each fold by default; failed folds are reported, never dropped. The
+  same folds serve C1, C2 and C3.
 
-#### Spatial regionalization (GWR core)
+- Optional parallelism with `future.apply` over target times, raster
+  blocks and folds, only when the user has set a `future` plan;
+  EarthFlux never sets a plan or changes `terra` options. Results are
+  identical in sequential and parallel runs, and the execution plan is
+  recorded in the provenance.
 
-- Internal numeric core of geographically weighted regression (GWR) in
-  base R, to regionalize meteorological station variables (milestone
-  M3). It works on plain vectors and matrices (response, named
-  covariates and projected coordinates in metres) and knows nothing
-  about rasters, so that the regionalization orchestrator can call it
-  block by block:
+- Numeric core of geographically weighted regression (GWR), implemented
+  in base R and used by
+  [`ef_regionalize()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize.md).
+  It works on plain vectors and matrices (response, named covariates and
+  projected coordinates in metres) and knows nothing about rasters, so
+  that the orchestrator can call it block by block:
+
   - [`ef_gwr_fit()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_fit.md)
     fits the local weighted least squares models at the stations for a
     fixed (metres) or adaptive (k nearest stations, counting the station
@@ -400,93 +466,61 @@ yet.
     and `earthflux_gwr_singular_error` (rank-deficient design at a
     station), all inheriting `earthflux_gwr_error`. Stations with
     missing values are excluded with their reason, never silently.
-  - Diagnostic flags registered for the GWR stage:
-    `EF_GWR_EXTRAPOLATION_COVARIATE`, `EF_GWR_EXTRAPOLATION_LOCAL`,
-    `EF_GWR_OUTSIDE_HULL`, `EF_GWR_FEW_NEIGHBOURS`,
-    `EF_GWR_LOCAL_SINGULAR` (cell, bits 1-5), `EF_GWR_BW_AT_BOUND`,
-    `EF_GWR_BW_MULTIMODAL`, `EF_GWR_AICC_UNDEFINED`,
-    `EF_GWR_GLOBAL_PREFERRED` (object) and `EF_GWR_STATION_EXCLUDED`
-    (record).
 
-#### Spatial regionalization (orchestrator)
-
-- [`ef_regionalize()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize.md)
-  regionalizes one meteorological station variable over the working grid
-  for every target time and returns an `earthflux_surface`: the surface
-  (`SpatRaster`, one layer per target time, in memory or in a file), an
-  integer flag word per cell and target time with its bit table, the
-  fitted model of every target time, the station table (observed and
-  fitted values, residuals, leave-one-out residuals, exclusions with
-  their reason), flags and provenance. It projects the station
-  coordinates (WGS84) to the projected CRS of the grid, extracts the
-  covariates at the stations from the same rasters (or takes them from a
-  table), applies an explicit QC policy (`use_qc`, no default) and user
-  exclusions, and predicts exactly at every cell by blocks of raster
-  rows with `terra`; the block size never changes the result. It accepts
-  the regionalization input table or the result of
-  [`ef_station_qc()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_qc.md).
-- One interface for the configurations compared in the validation plan,
-  with no default for any scientific choice:
-  [`ef_method_gwr()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_gwr.md)
-  (C3: kernel, fixed or adaptive bandwidth, either given or selected by
-  AICc or CV for every fit),
-  [`ef_method_station()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_station.md)
-  (C1: representative station, optionally with an explicit lapse rate
-  for air temperature),
-  [`ef_method_ols()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_ols.md)
-  (C2: global regression on the same covariates) and
-  [`ef_method_idw()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_idw.md)
-  (C2: inverse distance weighting with a given power or one selected by
-  leave-one-out CV on a grid).
-  [`ef_predict_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_predict_control.md)
-  sets the block size, the output files and the write options.
-- Covariates derived from the surface state (LST, NDVI, …) must be
-  declared in `surface_covariates` (decision GW-07 is open, so there is
-  no default) and raise `EF_GWR_SURFACE_COVARIATE`.
-- [`ef_spatial_folds()`](https://djwillichile.github.io/EarthFlux/reference/ef_spatial_folds.md)
-  builds deterministic spatial block folds (square tiles of a given
-  side) and
-  [`ef_regionalize_cv()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize_cv.md)
-  returns the long table of out-of-fold predictions at the stations for
-  any method, re-selecting the GWR bandwidth (or the IDW power) inside
-  each fold by default; failed folds are reported, never dropped. The
-  same folds serve C1, C2 and C3.
-- Optional parallelism with `future.apply` over target times, raster
-  blocks and folds, only when the user has set a `future` plan;
-  EarthFlux never sets a plan or changes `terra` options. Results are
-  identical in sequential and parallel runs, and the execution plan is
-  recorded in the provenance.
-- Diagnostic flags registered for the orchestrator:
-  `EF_GWR_OUT_OF_DOMAIN` (cell, bit 6, critical: a prediction outside
-  the physical domain of the variable is kept and flagged, never
-  truncated), `EF_GWR_SURFACE_COVARIATE` and `EF_GWR_SINGLE_STATION`
-  (object).
+- Diagnostic flags registered for the GWR stage, in the flag word of
+  every surface (cell) or in the flag records (object, record):
+  `EF_GWR_EXTRAPOLATION_COVARIATE`, `EF_GWR_EXTRAPOLATION_LOCAL`,
+  `EF_GWR_OUTSIDE_HULL`, `EF_GWR_FEW_NEIGHBOURS`,
+  `EF_GWR_LOCAL_SINGULAR` (cell, bits 1-5), `EF_GWR_OUT_OF_DOMAIN`
+  (cell, bit 6, critical: a prediction outside the physical domain of
+  the variable is kept and flagged, never truncated, and must be masked
+  before the METRIC core), `EF_GWR_BW_AT_BOUND`, `EF_GWR_BW_MULTIMODAL`,
+  `EF_GWR_AICC_UNDEFINED`, `EF_GWR_GLOBAL_PREFERRED`,
+  `EF_GWR_SURFACE_COVARIATE`, `EF_GWR_SINGLE_STATION` (object) and
+  `EF_GWR_STATION_EXCLUDED` (record).
 
 ### Changes
 
 - Modular source layout for the surface, forcing, spatial (GWR), METRIC,
   diagnostics, validation and API modules.
+
 - Internal infrastructure for classed conditions and diagnostic flags:
   results are flagged, never silently corrected.
+
 - Physical constants (Kelvin offset, Stefan-Boltzmann constant, solar
   constant, von Karman constant, gravity, specific heat of air, density
   of water and the FAO-56 latent heat of vaporization) and the unit
   factors of the ET conversion are defined once, with their unit, source
   and verification status.
-- The registry of diagnostic flags is assembled from one table per
-  METRIC stage and records, for each code, its stage, severity (now
-  including `critical`), scope, bit, error counterpart, specification
-  and version. Flag records also carry their stage and scope.
+
+- The registry of diagnostic flags is assembled from one table per stage
+  (METRIC, station forcing, reference ET and regionalization) and
+  records, for each code, its stage, severity (now including
+  `critical`), scope, bit, error counterpart, specification and version.
+  Flag records also carry their stage and scope, and the table they
+  refer to (`target`) when an object holds several tables. The registry
+  is built and validated once per session instead of at every flag
+  record, which makes the regionalization with small blocks about ten
+  times faster.
+
 - Classed conditions can carry optional data fields (for example the
   diagnostics of a failed calibration); new condition classes for
   calibration errors and convergence warnings.
+
 - EarthFlux imports the base package stats (sample quantiles, medians
   and standard deviations of the anchor selection).
+
 - An end-to-end test runs a synthetic scene through the whole METRIC
-  core chain, from solar geometry to daily actual evapotranspiration.
+  core chain, from solar geometry to daily actual evapotranspiration,
+  and a second one runs synthetic stations through the quality control,
+  the regionalization of air temperature and vapour pressure (converted
+  to kelvin at the METRIC boundary) and the station reference ET into
+  the METRIC core.
+
 - `GWmodel` is suggested (not imported) as the cross-verification
   reference of the GWR core tests, which are skipped when it is not
   installed.
+
 - EarthFlux imports `terra` (raster input and output of the
   regionalization) and `future` and `future.apply` (optional parallel
   execution under the user’s plan, and its record in the provenance).
@@ -497,8 +531,10 @@ yet.
   the package title from `DESCRIPTION` and include an executable
   [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md)
   example.
+
 - pkgdown site at <https://djwillichile.github.io/EarthFlux/>, rebuilt
   on every change to `main`.
+
 - Continuous integration: `R CMD check` on Linux (release, devel,
   oldrel), Windows and macOS; a check that the roxygen2 documentation
   and `README.md` are up to date; repository settings synchronised from

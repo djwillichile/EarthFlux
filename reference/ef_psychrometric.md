@@ -44,13 +44,27 @@ Missing values propagate. Non-numeric or empty input raises
 ## Verification status
 
 `VERIFICADA` (FAO-56, chapter 3, Eq. 8; dev/specs/weather-forcing.md
-4.2, case V1: P = 81.8 kPa gives 0.054 kPa degC-1).
+4.2, case V1: P = 81.8 kPa gives 0.054 kPa degC-1). The same
+coefficient, \\\gamma = 0.000665 P\\, is ASCE-EWRI (2005) Eqs. 4 and 35
+(pp. 10, 28), with \\\lambda\\ = 2.45 MJ kg-1 (pp. 9, 27); the pressure
+of
+[`ef_air_pressure()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.md)
+is its Eqs. 3 and 34.
 
 ## References
 
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 evapotranspiration: Guidelines for computing crop water requirements*
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+
+ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+Equation*. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA.
+[doi:10.1061/9780784408056](https://doi.org/10.1061/9780784408056)
 
 ## See also
 

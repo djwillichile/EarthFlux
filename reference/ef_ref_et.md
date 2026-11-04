@@ -90,17 +90,20 @@ ef_ref_et(
 
 - standard:
 
-  Character, no default. `"fao56"` (FAO-56 Eqs. 6 and 53; grass only,
-  `VERIFICADA`) or `"asce"` (ASCE-EWRI 2005 standardized constants,
-  `CANDIDATA`).
+  Character, no default. `"fao56"` (FAO-56 Eqs. 6 and 53; grass only) or
+  `"asce"` (ASCE-EWRI 2005 standardized equation, Eq. 1 and Table 1);
+  both `VERIFICADA`.
 
 - daytime:
 
   Logical or `NULL`. Required for `timestep = "hourly"` with
   `standard = "asce"`, where \\C_d\\ differs by day and night: `TRUE`
   for daytime periods (`NA` gives `NA`); the day/night criterion is the
-  caller's choice (decision WF-15). Not used with `standard = "fao56"`
-  (\\C_d\\ = 0.34 day and night); must be `NULL` for daily steps.
+  caller's choice (decision WF-15); ASCE-EWRI (2005, p. 5) defines
+  daytime as \\R_n \> 0\\ (see
+  [`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md)).
+  Not used with `standard = "fao56"` (\\C_d\\ = 0.34 day and night);
+  must be `NULL` for daily steps.
 
 ## Value
 
@@ -117,28 +120,38 @@ An object of class `earthflux_reference_et`: a list with
   reference ET, kept; the code covers ETo and ETr);
 
 - `provenance`: the rows of the constants table used (`constants`, with
-  source and status of each), the verification `status` (`"VERIFICADA"`
-  for FAO-56 grass, `"CANDIDATA"` otherwise), references,
-  `flags_evaluated` and package version.
+  source and status of each), the verification `status`
+  (`"VERIFICADA"`), references, `flags_evaluated` and package version.
 
 ## Details
 
 \$\$ET\_{ref} = \frac{0.408\\\Delta (R_n - G) + \gamma \frac{C_n}{T +
-273} u_2 (e_s - e_a)}{\Delta + \gamma (1 + C_d u_2)}\$\$ With \\C_n\\ =
-900 and \\C_d\\ = 0.34 it is FAO-56 Eq. 6 (daily ETo, mm d-1); with
+273} u_2 (e_s - e_a)}{\Delta + \gamma (1 + C_d u_2)}\$\$ This is the
+standardized reference evapotranspiration equation of ASCE-EWRI (2005,
+Eq. 1, p. 4), with ETos (short) and ETrs (tall reference). With \\C_n\\
+= 900 and \\C_d\\ = 0.34 it is FAO-56 Eq. 6 (daily ETo, mm d-1); with
 \\C_n\\ = 37 and \\C_d\\ = 0.34, FAO-56 Eq. 53 (hourly ETo, mm h-1). The
 constants come from one internal table with the source and status of
 each row (dev/specs/weather-forcing.md 5.3):
 
-|                           |         |                       |              |
-|---------------------------|---------|-----------------------|--------------|
-| Reference, standard, step | \\C_n\\ | \\C_d\\               | Status       |
-| grass, `"fao56"`, daily   | 900     | 0.34                  | `VERIFICADA` |
-| grass, `"fao56"`, hourly  | 37      | 0.34                  | `VERIFICADA` |
-| grass, `"asce"`, daily    | 900     | 0.34                  | `CANDIDATA`  |
-| alfalfa, `"asce"`, daily  | 1600    | 0.38                  | `CANDIDATA`  |
-| grass, `"asce"`, hourly   | 37      | 0.24 day / 0.96 night | `CANDIDATA`  |
-| alfalfa, `"asce"`, hourly | 66      | 0.25 day / 1.7 night  | `CANDIDATA`  |
+|                           |         |                       |                   |
+|---------------------------|---------|-----------------------|-------------------|
+| Reference, standard, step | \\C_n\\ | \\C_d\\               | Source            |
+| grass, `"fao56"`, daily   | 900     | 0.34                  | FAO-56 Eq. 6      |
+| grass, `"fao56"`, hourly  | 37      | 0.34                  | FAO-56 Eq. 53     |
+| grass, `"asce"`, daily    | 900     | 0.34                  | ASCE-EWRI Table 1 |
+| alfalfa, `"asce"`, daily  | 1600    | 0.38                  | ASCE-EWRI Table 1 |
+| grass, `"asce"`, hourly   | 37      | 0.24 day / 0.96 night | ASCE-EWRI Table 1 |
+| alfalfa, `"asce"`, hourly | 66      | 0.25 day / 1.7 night  | ASCE-EWRI Table 1 |
+
+All rows are `VERIFICADA`. Units (ASCE-EWRI, p. 4): \\C_n\\ in K mm s3
+Mg-1 d-1 or h-1 (it absorbs the time conversion, the \\K\_{time}\\ of
+86400 s d-1 or 3600 s h-1 of the full Penman-Monteith form), \\C_d\\ in
+s m-1 and 0.408 in m2 mm MJ-1 (1 / 2.45 MJ kg-1 with a water density of
+1 Mg m-3, pp. 9 and 27). The report fixes the reference heights (0.12 m
+short, 0.50 m tall), the surface resistances (daily 70 and 45 s m-1;
+hourly 50 and 30 s m-1 by day, 200 s m-1 by night) and \\\lambda\\ =
+2.45 MJ kg-1 behind these constants (Table 2, p. 5).
 
 FAO-56 reference surface: hypothetical grass 0.12 m high, fixed surface
 resistance 70 s m-1 and albedo 0.23, with measurements at 2 m (FAO-56,
@@ -150,15 +163,16 @@ and that hourly values summed over 24 hours generally match the daily
 computation.
 
 **`standard` matters for the grass reference.** For hourly grass, FAO-56
-uses \\C_d\\ = 0.34 day and night, while the ASCE-EWRI candidate
-constants use 0.24 / 0.96: with the inputs of FAO-56 example 19
-(14:00-15:00) they give 0.627 and 0.656 mm h-1.
+uses \\C_d\\ = 0.34 day and night, while ASCE-EWRI (2005) uses 0.24 /
+0.96: with the inputs of FAO-56 example 19 (14:00-15:00) they give 0.627
+and 0.656 mm h-1.
 
 `standard = "fao56"` with `reference = "alfalfa"` raises
 `earthflux_undefined_reference` (also `earthflux_input_error`): FAO-56
-does not define the tall reference. The constants of the alfalfa
-reference verify only the arithmetic here: a verification case for ETr
-requires the examples of ASCE-EWRI (2005), not yet read.
+does not define the tall reference. The worked examples of ASCE-EWRI
+(2005) (its Appendix C, Greeley, Colorado) are not part of the copy of
+the report that was read, so no published ETrs value is reproduced yet
+(dev/specs/weather-forcing.md 8.2).
 
 The instantaneous reference ET at the satellite overpass (spec 5.5) and
 the daily ETr from hourly values (spec 5.6) belong to the station
@@ -169,19 +183,20 @@ not to this function.
 Missing values propagate (and are flagged `EF_INPUT_NA`). Negative
 results (for example at night, when \\R_n - G \< 0\\ with a small
 deficit) are kept and flagged `EF_WS_ETR_NEGATIVE` (principle 6), never
-truncated. Missing or unknown choices raise `earthflux_missing_input` or
-`earthflux_unknown_method`; values outside the domains above raise
-`earthflux_domain_error`.
+truncated; ASCE-EWRI (2005, p. 45) states that it "may be appropriate to
+retain the negative values" in the 24-hour sums. Missing or unknown
+choices raise `earthflux_missing_input` or `earthflux_unknown_method`;
+values outside the domains above raise `earthflux_domain_error`.
 
 ## Verification status
 
 `standard = "fao56"`, `reference = "grass"`: `VERIFICADA` (FAO-56,
 chapter 4, Eqs. 6 and 53; examples 18 and 19, cases V14-V16 of
 dev/specs/weather-forcing.md 8.1). `standard = "asce"` (short and tall
-reference, daily and hourly, day and night \\C_d\\): `CANDIDATA`
-(ASCE-EWRI, 2005, was not accessible; constants from secondary
-implementations; implemented as `CANDIDATA` by direction of the author
-to advance milestone M3; dev/specs/weather-forcing.md 13).
+reference, daily and hourly, day and night \\C_d\\): `VERIFICADA`
+(ASCE-EWRI, 2005, Eq. 1, p. 4, and Table 1, p. 5; the values are those
+first implemented from secondary sources, unchanged). No worked example
+of ASCE-EWRI (2005) is reproduced yet (Appendix C not read).
 
 ## References
 
@@ -190,7 +205,12 @@ evapotranspiration: Guidelines for computing crop water requirements*
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
 
 ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
-Equation*. American Society of Civil Engineers.
+Equation*. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA.
 [doi:10.1061/9780784408056](https://doi.org/10.1061/9780784408056)
 
 ## See also
@@ -211,7 +231,7 @@ es <- mean(ef_es(c(21.5, 12.3)))
 rn <- ef_ref_net_radiation(solar_radiation = 22.07,
                            clear_sky_radiation = 30.90,
                            vapour_pressure = ea, tmax = 21.5, tmin = 12.3,
-                           timestep = "daily")$rn
+                           timestep = "daily", standard = "fao56")$rn
 eto <- ef_ref_et(
   net_radiation = rn, soil_heat_flux = 0, air_temperature = tmean,
   wind_speed_2m = ef_wind_2m(10 / 3.6, 10),
@@ -222,7 +242,7 @@ eto <- ef_ref_et(
 eto$et_ref
 #> [1] 3.880101
 
-# Same inputs, tall reference with the ASCE-EWRI candidate constants
+# Same inputs, tall reference with the ASCE-EWRI (2005) constants
 ef_ref_et(
   net_radiation = rn, soil_heat_flux = 0, air_temperature = tmean,
   wind_speed_2m = ef_wind_2m(10 / 3.6, 10),

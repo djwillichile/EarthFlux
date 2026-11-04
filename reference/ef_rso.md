@@ -54,13 +54,25 @@ elevations raise `earthflux_domain_error`.
 ## Verification status
 
 `VERIFICADA` (FAO-56, chapter 3, Eq. 37; annex 3, Eq. 3-13; cases V14
-and V15).
+and V15). The same equation is the default clear-sky radiation of the
+ASCE-EWRI (2005) standardized procedure for daily (Eq. 19, p. 22) and
+hourly periods (Eq. 47, p. 37); the report reserves the more complex
+forms of its Appendix D for assessing the solar radiation data.
 
 ## References
 
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 evapotranspiration: Guidelines for computing crop water requirements*
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+
+ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+Equation*. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA.
+[doi:10.1061/9780784408056](https://doi.org/10.1061/9780784408056)
 
 ## See also
 

@@ -69,9 +69,14 @@ ef_station_ref_et(
 
 - standard:
 
-  Character, no default. `"fao56"` (grass only, `VERIFICADA`) or
-  `"asce"` (ASCE-EWRI 2005 standardized constants, `CANDIDATA`); see
+  Character, no default. `"fao56"` (grass only) or `"asce"` (ASCE-EWRI
+  2005 standardized equation), both `VERIFICADA`; see
   [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md).
+  It also selects the constants and limits of the net radiation
+  ([`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md))
+  and the treatment of sunrise and sunset in the hourly extraterrestrial
+  radiation
+  ([`ef_ra_period()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_period.md)).
 
 - humidity:
 
@@ -80,7 +85,8 @@ ef_station_ref_et(
   `"dewpoint_temperature"` (FAO-56 Eq. 14 on `dewpoint_temperature`) or
   `"relative_humidity"` (hourly: FAO-56 Eq. 54 with `air_temperature`
   and `relative_humidity`; daily: Eq. 17 with `tmin`, `tmax`, `rh_max`
-  and `rh_min`).
+  and `rh_min`). The same forms are ASCE-EWRI (2005) Eqs. 8, 38, 41 and
+  11, ranked first or second in its Tables 3 and 4.
 
 - day_definition:
 
@@ -103,28 +109,45 @@ ef_station_ref_et(
   for daily): criterion of the daytime periods, which select the soil
   heat flux ratio and, with `standard = "asce"`, the denominator
   constant: `"ra_positive"` (extraterrestrial radiation of the period \>
-  0, i.e. sun above the horizon at the mid-point, FAO-56 midpoint
-  criterion) or `"rn_positive"` (net radiation of the reference surface
-  \> 0, the criterion that secondary implementations attribute to
-  ASCE-EWRI, `CANDIDATA`).
+  0; with `standard = "fao56"`, sun above the horizon at the mid-point,
+  FAO-56 midpoint criterion) or `"rn_positive"` (net radiation of the
+  reference surface \> 0, the definition of daytime of ASCE-EWRI 2005,
+  text before Table 1 and Table 2, p. 5; see
+  [`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md)
+  for the inconsistency of the report at \\R_n = 0\\).
 
 - night_cloudiness:
 
   Character or `NULL`. Hourly only (required; `NULL` for daily): the
-  ratio \\R_s/R\_{so}\\ of the night-time periods (\\R\_{so} = 0\\),
-  where it is undefined (FAO-56, chapter 4, hourly time step):
-  `"before_sunset"` (the ratio of the last period of the same station,
-  in the previous 24 hours, whose mid-point hour angle lies in
-  \\\[\omega_s - 0.79, \omega_s - 0.52\]\\, i.e. 2-3 hours before
-  sunset; `NA` if there is none or its ratio is missing) or `"fixed"`
-  (the constant `night_ratio`).
+  cloudiness term of the periods where the ratio \\R_s/R\_{so}\\ is not
+  used:
+
+  - `"before_sunset"` (FAO-56, chapter 4, hourly time step): night-time
+    periods (\\R\_{so} = 0\\) take the term of the last period of the
+    same station, in the previous 24 hours, whose mid-point hour angle
+    lies in \\\[\omega_s - 0.79, \omega_s - 0.52\]\\, i.e. 2-3 hours
+    before sunset;
+
+  - `"low_sun"` (ASCE-EWRI 2005, Eq. 46, pp. 35-36): every period whose
+    sun angle above the horizon at the mid-point (Eq. 62) is at most 0.3
+    rad (night, dusk and dawn, including periods with \\R\_{so} \> 0\\)
+    takes the term of the last period of the same station, in the
+    previous 24 hours, with a sun angle above 0.3 rad;
+
+  - `"fixed"`: night-time periods take the constant ratio `night_ratio`.
+
+  With `"before_sunset"` and `"low_sun"` the result is `NA` if there is
+  no qualifying period or its term is missing (e.g. the first night of a
+  series, or a season without any period of sun angle above 0.3 rad).
 
 - night_ratio:
 
-  Numeric scalar in \[0, 1\] or `NULL`. The night-time ratio
-  \\R_s/R\_{so}\\ for `night_cloudiness = "fixed"` (FAO-56 suggests
-  0.4-0.6 in humid and sub-humid and 0.7-0.8 in arid and semi-arid
-  climates; 0.3 means complete cloud cover). `NULL` otherwise.
+  Numeric scalar or `NULL`. The night-time ratio \\R_s/R\_{so}\\ for
+  `night_cloudiness = "fixed"`, in \[0, 1\] for `"fao56"` and in \[0.3,
+  1\] for `"asce"` (FAO-56 suggests 0.4-0.6 in humid and sub-humid and
+  0.7-0.8 in arid and semi-arid climates; 0.3 means complete cloud
+  cover; ASCE-EWRI, p. 36, allows a ratio from 0.3 to 1 where no period
+  has a sun angle of 0.3 rad). `NULL` otherwise.
 
 - overpass:
 
@@ -196,8 +219,8 @@ An object of class `earthflux_station_ref_et`: a list with
 **Hourly records.** For each record, with \\t\\ the mid-point of the
 period: \\R_a\\ of the period with
 [`ef_ra_period()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_period.md)
-(FAO-56 Eq. 28, midpoint criterion, day of year of \\t\\ in UTC),
-\\R\_{so}\\ with
+(FAO-56 Eq. 28 or ASCE-EWRI Eq. 48; the treatment of sunrise and sunset
+follows `standard`; day of year of \\t\\ in UTC), \\R\_{so}\\ with
 [`ef_rso()`](https://djwillichile.github.io/EarthFlux/reference/ef_rso.md)
 (Eq. 37, decision WF-12), the air pressure from the station elevation
 ([`ef_air_pressure()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.md),
@@ -209,8 +232,9 @@ from W m-2 to MJ m-2 h-1 (x 0.0036, FAO-56 Table 3), then
 [`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md)
 and
 [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md).
-Periods with \\R\_{so} \> 0\\ use their own ratio \\R_s/R\_{so}\\
-(limited to 1 inside the cloudiness term and flagged
+Periods with \\R\_{so} \> 0\\ (with `"low_sun"`: with a sun angle above
+0.3 rad) use their own ratio \\R_s/R\_{so}\\ (limited to the range of
+the standard inside the cloudiness term and flagged
 `EF_WS_RS_RSO_LIMITED`); the others use `night_cloudiness`.
 
 **Daily records.** Tmean = (Tmax + Tmin)/2 (Eq. 9), \\e_s\\ = mean of
@@ -224,11 +248,14 @@ gives `NA`.
 
 **Daily sums** (option D1 of the specification for hourly records,
 decision WF-16): `etr_24` is the sum of the 24 hourly depths of the day
-(rate in mm h-1 times 1 h); FAO-56 (chapter 4) states that hourly sums
-over 24 hours generally match the daily computation for the grass
-reference; for the alfalfa reference and METRIC this is `CANDIDATA`. For
-daily records `etr_24` is the daily value of the record (option D2 with
-daily data).
+(rate in mm h-1 times 1 h), negative values included; FAO-56 (chapter 4)
+states that hourly sums over 24 hours generally match the daily
+computation for the grass reference, and ASCE-EWRI (2005, p. 45) sums
+hourly ETos or ETrs over the 24-hour period and recommends retaining the
+negative values; neither source defines the clock of the day (UTC or
+local standard time, WF-11). Its use for METRIC (Allen et al., 2007) is
+`TODO`. For daily records `etr_24` is the daily value of the record
+(option D2 with daily data).
 
 **Instantaneous reference ET** (decision WF-09): `etr_inst` is a rate in
 mm h-1. An overpass time outside the time covered by the records of a
@@ -248,14 +275,16 @@ subclasses.
 
 ## Verification status
 
-The physics is that of the functions called (FAO-56 grass: `VERIFICADA`;
-ASCE-EWRI constants: `CANDIDATA`), reproduced through this function for
-FAO-56 example 19. The orchestration choices are recorded in the
-provenance; `"before_sunset"` follows FAO-56 (chapter 4) with the
-selection of the last qualifying period as an implementation choice;
-`"rn_positive"` and the daily sum of hourly ETr for the alfalfa
-reference are `CANDIDATA`; the day definition and the completeness rule
-are open decisions (WF-11).
+The physics is that of the functions called (FAO-56 grass and ASCE-EWRI
+2005 short and tall reference: `VERIFICADA`), reproduced through this
+function for FAO-56 examples 18 and 19. The orchestration choices are
+recorded in the provenance: `"before_sunset"` follows FAO-56 (chapter 4)
+with the selection of the last qualifying period as an implementation
+choice; `"low_sun"` (ASCE-EWRI Eq. 46) and `"rn_positive"` (ASCE-EWRI p.
+5) are `VERIFICADA`; the day definition and the completeness rule are
+open decisions (WF-11); the daily sum is `TODO` for METRIC. The worked
+examples of ASCE-EWRI (2005), Appendix C, are not reproduced: the copy
+of the report that was read does not include the appendices.
 
 ## References
 
@@ -264,7 +293,12 @@ evapotranspiration: Guidelines for computing crop water requirements*
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
 
 ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
-Equation*. American Society of Civil Engineers.
+Equation*. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA.
 [doi:10.1061/9780784408056](https://doi.org/10.1061/9780784408056)
 
 ## See also
@@ -299,16 +333,16 @@ st <- ef_station_table(
 et <- ef_station_ref_et(
   st, reference = "alfalfa", timestep = "hourly", standard = "asce",
   humidity = "relative_humidity", day_definition = "utc",
-  day_completeness = "all_periods", daytime_rule = "ra_positive",
-  night_cloudiness = "before_sunset",
+  day_completeness = "all_periods", daytime_rule = "rn_positive",
+  night_cloudiness = "low_sun",
   overpass = as.POSIXct("2024-01-15 14:48", tz = "UTC"),
   inst_method = "O3"
 )
 et$etr_inst
 #>   station_id       overpass_time  etr_inst method
-#> 1       ST01 2024-01-15 14:48:00 0.6835128     O3
+#> 1       ST01 2024-01-15 14:48:00 0.6835366     O3
 et$etr_24
 #>   station_id       date n_periods   etr_24
-#> 1       ST01 2024-01-15        14       NA
-#> 2       ST01 2024-01-16        24 6.164534
+#> 1       ST01 2024-01-15        13       NA
+#> 2       ST01 2024-01-16        24 6.059376
 ```

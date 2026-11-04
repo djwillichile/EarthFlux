@@ -133,15 +133,17 @@ reference fraction on an alfalfa basis are not interchangeable.</p></dd>
 
 <dt id="arg-standard">standard<a class="anchor" aria-label="anchor" href="#arg-standard"></a></dt>
 <dd><p>Character, no default. <code>"fao56"</code> (FAO-56 Eqs. 6 and 53;
-grass only, <code>VERIFICADA</code>) or <code>"asce"</code> (ASCE-EWRI 2005 standardized
-constants, <code>CANDIDATA</code>).</p></dd>
+grass only) or <code>"asce"</code> (ASCE-EWRI 2005 standardized equation, Eq. 1
+and Table 1); both <code>VERIFICADA</code>.</p></dd>
 
 
 <dt id="arg-daytime">daytime<a class="anchor" aria-label="anchor" href="#arg-daytime"></a></dt>
 <dd><p>Logical or <code>NULL</code>. Required for <code>timestep = "hourly"</code> with
 <code>standard = "asce"</code>, where \(C_d\) differs by day and night:
 <code>TRUE</code> for daytime periods (<code>NA</code> gives <code>NA</code>); the day/night criterion is
-the caller's choice (decision WF-15). Not used with
+the caller's choice (decision WF-15); ASCE-EWRI (2005, p. 5) defines
+daytime as \(R_n &gt; 0\) (see <code><a href="ef_ref_soil_heat_flux.html">ef_ref_soil_heat_flux()</a></code>). Not
+used with
 <code>standard = "fao56"</code> (\(C_d\) = 0.34 day and night); must be
 <code>NULL</code> for daily steps.</p></dd>
 
@@ -157,18 +159,28 @@ codes that hold somewhere: <code>EF_INPUT_NA</code> and <code>EF_WS_ETR_NEGATIVE
 (negative reference ET, kept; the code covers ETo and ETr);</p></li>
 <li><p><code>provenance</code>: the rows of the constants table used (<code>constants</code>,
 with source and status of each), the verification <code>status</code>
-(<code>"VERIFICADA"</code> for FAO-56 grass, <code>"CANDIDATA"</code> otherwise),
-references, <code>flags_evaluated</code> and package version.</p></li>
+(<code>"VERIFICADA"</code>), references, <code>flags_evaluated</code> and package version.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>$$ET_{ref} = \frac{0.408\,\Delta (R_n - G) + \gamma
   \frac{C_n}{T + 273} u_2 (e_s - e_a)}{\Delta + \gamma (1 + C_d u_2)}$$
-With \(C_n\) = 900 and \(C_d\) = 0.34 it is FAO-56 Eq. 6
-(daily ETo, mm d-1); with \(C_n\) = 37 and \(C_d\) = 0.34,
-FAO-56 Eq. 53 (hourly ETo, mm h-1). The constants come from one internal
-table with the source and status of each row
-(dev/specs/weather-forcing.md 5.3):</p><table class="table table"><tr><td>Reference, standard, step</td><td>\(C_n\)</td><td>\(C_d\)</td><td>Status</td></tr><tr><td>grass, <code>"fao56"</code>, daily</td><td>900</td><td>0.34</td><td><code>VERIFICADA</code></td></tr><tr><td>grass, <code>"fao56"</code>, hourly</td><td>37</td><td>0.34</td><td><code>VERIFICADA</code></td></tr><tr><td>grass, <code>"asce"</code>, daily</td><td>900</td><td>0.34</td><td><code>CANDIDATA</code></td></tr><tr><td>alfalfa, <code>"asce"</code>, daily</td><td>1600</td><td>0.38</td><td><code>CANDIDATA</code></td></tr><tr><td>grass, <code>"asce"</code>, hourly</td><td>37</td><td>0.24 day / 0.96 night</td><td><code>CANDIDATA</code></td></tr><tr><td>alfalfa, <code>"asce"</code>, hourly</td><td>66</td><td>0.25 day / 1.7 night</td><td><code>CANDIDATA</code></td></tr></table><p>FAO-56 reference surface: hypothetical grass 0.12 m high, fixed surface
+This is the standardized reference evapotranspiration equation of
+ASCE-EWRI (2005, Eq. 1, p. 4), with ETos (short) and ETrs (tall
+reference). With \(C_n\) = 900 and \(C_d\) = 0.34 it is
+FAO-56 Eq. 6 (daily ETo, mm d-1); with \(C_n\) = 37 and
+\(C_d\) = 0.34, FAO-56 Eq. 53 (hourly ETo, mm h-1). The constants
+come from one internal table with the source and status of each row
+(dev/specs/weather-forcing.md 5.3):</p><table class="table table"><tr><td>Reference, standard, step</td><td>\(C_n\)</td><td>\(C_d\)</td><td>Source</td></tr><tr><td>grass, <code>"fao56"</code>, daily</td><td>900</td><td>0.34</td><td>FAO-56 Eq. 6</td></tr><tr><td>grass, <code>"fao56"</code>, hourly</td><td>37</td><td>0.34</td><td>FAO-56 Eq. 53</td></tr><tr><td>grass, <code>"asce"</code>, daily</td><td>900</td><td>0.34</td><td>ASCE-EWRI Table 1</td></tr><tr><td>alfalfa, <code>"asce"</code>, daily</td><td>1600</td><td>0.38</td><td>ASCE-EWRI Table 1</td></tr><tr><td>grass, <code>"asce"</code>, hourly</td><td>37</td><td>0.24 day / 0.96 night</td><td>ASCE-EWRI Table 1</td></tr><tr><td>alfalfa, <code>"asce"</code>, hourly</td><td>66</td><td>0.25 day / 1.7 night</td><td>ASCE-EWRI Table 1</td></tr></table><p>All rows are <code>VERIFICADA</code>. Units (ASCE-EWRI, p. 4): \(C_n\) in K
+mm s3 Mg-1 d-1 or h-1 (it absorbs the time conversion, the
+\(K_{time}\) of 86400 s d-1 or 3600 s h-1 of the full
+Penman-Monteith form), \(C_d\) in s m-1 and 0.408 in m2 mm MJ-1
+(1 / 2.45 MJ kg-1 with a water density of 1 Mg m-3, pp. 9 and 27). The
+report fixes the reference heights (0.12 m short, 0.50 m tall), the
+surface resistances (daily 70 and 45 s m-1; hourly 50 and 30 s m-1 by
+day, 200 s m-1 by night) and \(\lambda\) = 2.45 MJ kg-1
+behind these constants (Table 2, p. 5).</p>
+<p>FAO-56 reference surface: hypothetical grass 0.12 m high, fixed surface
 resistance 70 s m-1 and albedo 0.23, with measurements at 2 m (FAO-56,
 chapter 2). The factor 0.408 (1 / 2.45 MJ kg-1) and 273 in the
 aerodynamic term are the literals of the standard (decision WF-14).
@@ -177,23 +189,26 @@ underestimate hourly ETo in daytime and overestimate it in the evening,
 and that hourly values summed over 24 hours generally match the daily
 computation.</p>
 <p><strong><code>standard</code> matters for the grass reference.</strong> For hourly grass, FAO-56
-uses \(C_d\) = 0.34 day and night, while the ASCE-EWRI candidate
-constants use 0.24 / 0.96: with the inputs of FAO-56 example 19
-(14:00-15:00) they give 0.627 and 0.656 mm h-1.</p>
+uses \(C_d\) = 0.34 day and night, while ASCE-EWRI (2005) uses
+0.24 / 0.96: with the inputs of FAO-56 example 19 (14:00-15:00) they give
+0.627 and 0.656 mm h-1.</p>
 <p><code>standard = "fao56"</code> with <code>reference = "alfalfa"</code> raises
 <code>earthflux_undefined_reference</code> (also <code>earthflux_input_error</code>): FAO-56
-does not define the tall reference. The constants of the alfalfa
-reference verify only the arithmetic here: a verification case for ETr
-requires the examples of ASCE-EWRI (2005), not yet read.</p>
+does not define the tall reference. The worked examples of ASCE-EWRI
+(2005) (its Appendix C, Greeley, Colorado) are not part of the copy of
+the report that was read, so no published ETrs value is reproduced yet
+(dev/specs/weather-forcing.md 8.2).</p>
 <p>The instantaneous reference ET at the satellite overpass (spec 5.5) and
 the daily ETr from hourly values (spec 5.6) belong to the station
 orchestration <code><a href="ef_station_ref_et.html">ef_station_ref_et()</a></code>, not to this function.</p>
 <p>Missing values propagate (and are flagged <code>EF_INPUT_NA</code>). Negative
 results (for example at night, when \(R_n - G &lt; 0\) with a
 small deficit) are kept and flagged <code>EF_WS_ETR_NEGATIVE</code> (principle 6),
-never truncated. Missing or unknown choices raise
-<code>earthflux_missing_input</code> or <code>earthflux_unknown_method</code>; values outside
-the domains above raise <code>earthflux_domain_error</code>.</p>
+never truncated; ASCE-EWRI (2005, p. 45) states that it "may be
+appropriate to retain the negative values" in the 24-hour sums. Missing
+or unknown choices raise <code>earthflux_missing_input</code> or
+<code>earthflux_unknown_method</code>; values outside the domains above raise
+<code>earthflux_domain_error</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="verification-status">Verification status<a class="anchor" aria-label="anchor" href="#verification-status"></a></h2>
@@ -202,10 +217,10 @@ the domains above raise <code>earthflux_domain_error</code>.</p>
 <p><code>standard = "fao56"</code>, <code>reference = "grass"</code>: <code>VERIFICADA</code> (FAO-56,
 chapter 4, Eqs. 6 and 53; examples 18 and 19, cases V14-V16 of
 dev/specs/weather-forcing.md 8.1). <code>standard = "asce"</code> (short and tall
-reference, daily and hourly, day and night \(C_d\)): <code>CANDIDATA</code>
-(ASCE-EWRI, 2005, was not accessible; constants from secondary
-implementations; implemented as <code>CANDIDATA</code> by direction of the author to
-advance milestone M3; dev/specs/weather-forcing.md 13).</p>
+reference, daily and hourly, day and night \(C_d\)): <code>VERIFICADA</code>
+(ASCE-EWRI, 2005, Eq. 1, p. 4, and Table 1, p. 5; the values are those
+first implemented from secondary sources, unchanged). No worked example
+of ASCE-EWRI (2005) is reproduced yet (Appendix C not read).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -213,8 +228,12 @@ advance milestone M3; dev/specs/weather-forcing.md 13).</p>
 evapotranspiration: Guidelines for computing crop water requirements</em>
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.</p>
 <p>ASCE-EWRI (2005). <em>The ASCE Standardized Reference Evapotranspiration
-Equation</em>. American Society of Civil Engineers.
-<a href="https://doi.org/10.1061/9780784408056" class="external-link">doi:10.1061/9780784408056</a></p>
+Equation</em>. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., &amp; Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. <a href="https://doi.org/10.1061/9780784408056" class="external-link">doi:10.1061/9780784408056</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -234,7 +253,7 @@ Equation</em>. American Society of Civil Engineers.
 <span class="r-in"><span><span class="va">rn</span> <span class="op">&lt;-</span> <span class="fu"><a href="ef_ref_net_radiation.html">ef_ref_net_radiation</a></span><span class="op">(</span>solar_radiation <span class="op">=</span> <span class="fl">22.07</span>,</span></span>
 <span class="r-in"><span>                           clear_sky_radiation <span class="op">=</span> <span class="fl">30.90</span>,</span></span>
 <span class="r-in"><span>                           vapour_pressure <span class="op">=</span> <span class="va">ea</span>, tmax <span class="op">=</span> <span class="fl">21.5</span>, tmin <span class="op">=</span> <span class="fl">12.3</span>,</span></span>
-<span class="r-in"><span>                           timestep <span class="op">=</span> <span class="st">"daily"</span><span class="op">)</span><span class="op">$</span><span class="va">rn</span></span></span>
+<span class="r-in"><span>                           timestep <span class="op">=</span> <span class="st">"daily"</span>, standard <span class="op">=</span> <span class="st">"fao56"</span><span class="op">)</span><span class="op">$</span><span class="va">rn</span></span></span>
 <span class="r-in"><span><span class="va">eto</span> <span class="op">&lt;-</span> <span class="fu">ef_ref_et</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  net_radiation <span class="op">=</span> <span class="va">rn</span>, soil_heat_flux <span class="op">=</span> <span class="fl">0</span>, air_temperature <span class="op">=</span> <span class="va">tmean</span>,</span></span>
 <span class="r-in"><span>  wind_speed_2m <span class="op">=</span> <span class="fu"><a href="ef_wind_2m.html">ef_wind_2m</a></span><span class="op">(</span><span class="fl">10</span> <span class="op">/</span> <span class="fl">3.6</span>, <span class="fl">10</span><span class="op">)</span>,</span></span>
@@ -245,7 +264,7 @@ Equation</em>. American Society of Civil Engineers.
 <span class="r-in"><span><span class="va">eto</span><span class="op">$</span><span class="va">et_ref</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 3.880101</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Same inputs, tall reference with the ASCE-EWRI candidate constants</span></span></span>
+<span class="r-in"><span><span class="co"># Same inputs, tall reference with the ASCE-EWRI (2005) constants</span></span></span>
 <span class="r-in"><span><span class="fu">ef_ref_et</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  net_radiation <span class="op">=</span> <span class="va">rn</span>, soil_heat_flux <span class="op">=</span> <span class="fl">0</span>, air_temperature <span class="op">=</span> <span class="va">tmean</span>,</span></span>
 <span class="r-in"><span>  wind_speed_2m <span class="op">=</span> <span class="fu"><a href="ef_wind_2m.html">ef_wind_2m</a></span><span class="op">(</span><span class="fl">10</span> <span class="op">/</span> <span class="fl">3.6</span>, <span class="fl">10</span><span class="op">)</span>,</span></span>
