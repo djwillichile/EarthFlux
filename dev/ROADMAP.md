@@ -52,7 +52,7 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       `ef_station_qc()`; pruebas de clase I y III; las de clase II quedan
       sin evaluar hasta tener umbral con referencia, WF-06).
 - [x] Variables derivadas (FAO-56, `VERIFICADA`) y ETo/ETr de referencia
-      (`ef_ref_et()`; constantes ASCE-EWRI `CANDIDATA`) y serie por estación
+      (`ef_ref_et()`, FAO-56 y ASCE-EWRI) y serie por estación
       con `etr_inst` y `etr_24` (`ef_station_ref_et()`).
 - [x] Núcleo GWR interno (AICc, CV, LOO; verificación cruzada con
       `GWmodel`), baselines C1/C2, predicción exacta por bloques,
@@ -63,13 +63,15 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       reconciliados) y test de extremo a extremo estaciones → QC →
       regionalización → núcleo METRIC
       (`tests/testthat/test-forcing-chain.R`).
-- [ ] Verificar las constantes ASCE-EWRI (2005) en la fuente primaria (en
-      curso, cambio separado).
+- [x] Verificar la cadena ASCE-EWRI (2005) en la fuente primaria (cambio
+      separado; `DECISIONS.md` §1.3, M3-01a … M3-01e). Pendiente: caso
+      numérico publicado (Apéndice C, no disponible).
 - [ ] Decisiones abiertas expuestas como argumentos sin defecto: WF-09,
-      WF-11, WF-15, WF-16, GW-04, GW-05, GW-07, decisión 5.1; y abiertas
-      para el autor: Rs nocturna y días incompletos, dos definiciones de Ra
-      horaria (WF-10), regla de vecinos con kernels continuos (GW-06),
-      umbrales de WF-06 (`DECISIONS.md` §1.3, A-1 … A-6).
+      WF-11 (reloj del día), WF-15 (FAO-56), WF-16, GW-04, GW-05, GW-07,
+      decisión 5.1; y abiertas para el autor: Rs nocturna y días
+      incompletos, Ra de QC-05b frente a la de la ETr con FAO-56 (WF-10),
+      regla de vecinos con kernels continuos (GW-06), umbrales de WF-06
+      (`DECISIONS.md` §1.3, A-1 … A-6).
 - [ ] Sin implementar: modo grueso (GW-08), I de Moran, KED/reanálisis,
       opciones O2/O4/O5 de ETr_inst, traspaso de `etr_inst`/`etr_24` a la
       tabla de regionalización, `datatype` en disco (D-PP-05).
