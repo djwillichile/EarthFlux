@@ -276,6 +276,29 @@ Convención:
   Standardization of Reference Evapotranspiration, Environmental and Water
   Resources Institute. American Society of Civil Engineers, Reston, VA.
   https://doi.org/10.1061/9780784408056 `VERIFIED (2026-11-04, Crossref)`
+  (edición publicada por ASCE, 2005-08-03; ISBN 9780784408056 /
+  9780784475638).
+  - Texto leído: informe final del comité, *The ASCE Standardized
+    Reference Evapotranspiration Equation*, Task Committee on
+    Standardization of Reference Evapotranspiration of the Environmental
+    and Water Resources Institute of the American Society of Civil
+    Engineers, enero de 2005, "Final Report" (portada y p. i–ii).
+    Portada: editores principales R. G. Allen, I. A. Walter, R. Elliott,
+    T. Howell, D. Itenfisu y M. Jensen; miembros del comité I. A. Walter
+    (presidente), R. G. Allen (vicepresidente), R. Elliott, D. Itenfisu,
+    P. Brown, M. E. Jensen, B. Mecham, T. A. Howell, R. Snyder, S. Eching,
+    T. Spofford, M. Hattendorf, D. Martin, R. H. Cuenca y J. L. Wright;
+    respaldo de la Irrigation Association (2004). La lista de editores de
+    la edición publicada (Crossref) agrega a R. L. Snyder. Copia PDF de 70
+    páginas (i–vii y 1–59; metadatos del PDF: creado 2005-02-28) entregada
+    por el integrador el 2026-11-04 junto con su texto extraído con
+    `pdftotext -layout`; URL de descarga no registrada en la rama.
+    **No incluye los apéndices A–F** (solo su lista, p. vii).
+    `VERIFIED (2026-11-04, documento)` para el contenido de las p. i–59
+    (ecuaciones, Tablas 1–4 y páginas citadas en
+    `specs/weather-forcing.md` §13.5). La paginación citada en el código
+    es la de este informe; la de la edición publicada por ASCE no se
+    verificó.
 - Allen et al. (1998), FAO-56 (ver arriba).
 
 ## Anchor pixel selection

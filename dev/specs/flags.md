@@ -153,7 +153,7 @@ códigos distintos).
 | 43 | `EF_WS_HEIGHT_NONSTANDARD` | QC-11 | Altura de T/HR ≠ 2 m | No | warning | forcing |
 | 44 | `EF_WS_SPATIAL_OUTLIER` | QC-12 | Residuo frente a vecinos o superficie regional | Sí `TODO` | warning | forcing |
 | 45 | `EF_STATION_CLOUDY` (ref.) | QC-13 | Rs/Rso a la hora de paso bajo un umbral | Sí `TODO` | warning | forcing |
-| 46 | `EF_WS_RS_RSO_LIMITED` | §4.8 | Rs/Rso > 1 limitado dentro del término de nubosidad (Ec. 39) | No (definición FAO-56) | info | forcing |
+| 46 | `EF_WS_RS_RSO_LIMITED` | §4.8 | Rs/Rso fuera del rango de la norma (> 1; con ASCE-EWRI también < 0,3) limitado dentro del término de nubosidad (FAO-56 Ec. 39; ASCE-EWRI 2005 Ec. 18 y 45) | No (definición de la norma) | info | forcing |
 | 47 | `EF_ETREF_NEGATIVE` | §5.4 | ETr/ETo < 0, conservada | No | info | forcing |
 | 48 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | §5.5 | Hora de paso fuera del rango de registros → `NA` | No | — | forcing |
 
@@ -492,7 +492,7 @@ siguen sin registrar y se registran según §7.
 | `EF_WS_INCOMPLETE_DAY` | `EF_WS_INCOMPLETE_DAY` | — | I (registrado en `ef_flags_reference_et()`; lo levanta `ef_station_ref_et()`, tabla `etr_24`) | warning | record | — | Política de huecos (WF-11): solo `day_completeness = "all_periods"`; no cambia la condición |
 | `EF_WS_HEIGHT_MISSING` | `EF_WS_HEIGHT_MISSING` | — | I (registrado; `ef_station_qc()`) | warning | record | — | – |
 | `EF_WS_HEIGHT_NONSTANDARD` | `EF_WS_HEIGHT_NONSTANDARD` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Altura ≠ 2 m exacta |
-| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
+| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 y límites 0,3–1,0 de ASCE-EWRI 2005 Ec. 18 y 45 (`VERIFICADA`) |
 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | I (registrado en `ef_flags_reference_et()`; lo levanta `ef_station_ref_et()`, tabla `etr_inst`) | info* | record | — | Causa de `NA`; el soporte depende de la opción (O1: inicio del primer período a fin del último; O3: primer a último punto medio) |
 | `EF_WS_ETR_NEGATIVE` | `EF_ETREF_NEGATIVE` | prefijo + renombre | I (registrado; `ef_ref_et()`, `R/reference-et.R`) | info | record | — | Cubre ETr y ETo (tipo en la procedencia); ámbito `cell` si se adopta la opción C (FL-09) |
 | `EF_WS_IMPLAUSIBLE` | `EF_WS_IMPLAUSIBLE` | — | II | warning | record | — | Límites de `water` sin cita: no se adoptan |
