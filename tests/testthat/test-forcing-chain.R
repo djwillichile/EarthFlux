@@ -55,19 +55,19 @@ fc_station_table <- function(n = 15L) {
   times <- as.POSIXct("2024-01-15 01:00", tz = "UTC") + 3600 * (0:23)
   mid <- seq(0.5, 23.5, by = 1)
   obs <- do.call(rbind, lapply(seq_len(n), function(i) {
-    ra <- ef_ra_period(lat = stations$lat[i] * fc_deg,
-                       lon = stations$lon[i] * fc_deg, doy = 15,
-                       utc_mid = mid, period_hours = 1)
-    # extraterrestrial radiation of the period [MJ m-2 h-1] -> W m-2
-    ra_w <- ra * 1e6 / 3600
-    sun <- ra_w / 1400
+    # cosine of the solar zenith angle at the mid-point of each period (0
+    # at night): a smooth daily cycle of the fictitious weather
+    geo <- ef_solar_geometry(doy = 15, utc_hour = mid,
+                             lat = stations$lat[i] * fc_deg,
+                             lon = stations$lon[i] * fc_deg)
+    sun <- pmax(geo$cos_zenith, 0)
     tair <- 12 + 12 * sun - 0.0065 * stations$elevation[i] + 0.03 * u[i]
     data.frame(
       station_id = stations$station_id[i], timestamp = times,
       air_temperature = tair,
       vapour_pressure = (0.45 + 0.002 * u[i]) * ef_es(tair),
       wind_speed = 1.5 + 2 * sun,
-      solar_radiation = 0.6 * ra_w,
+      solar_radiation = 0.5 * EF_SOLAR_CONSTANT * sun,
       stringsAsFactors = FALSE
     )
   }))
