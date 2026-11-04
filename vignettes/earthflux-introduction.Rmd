@@ -20,6 +20,8 @@ library(EarthFlux)
 
 ## Purpose
 
+*`r utils::packageDescription("EarthFlux")$Title`*
+
 EarthFlux aims to provide a reproducible workflow to estimate spatially
 distributed actual evapotranspiration (ETa) following the conceptual chain
 
