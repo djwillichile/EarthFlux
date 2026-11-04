@@ -160,7 +160,7 @@ nombre se mantiene.
 |---|---:|---|---:|---|
 | `ef_air_pressure()` | 15 | = | 15 | Ya implementada en la base de M2 |
 | `ef_station_table()` | 16 | = | 16 |  |
-| `ef_validate_station_table()` | 25 | **`ef_validate_stations()`** | 20 |  |
+| `ef_validate_station_table()` | 25 | **`ef_validate_stations()`** | 20 | Creada **interna** (M3; `DECISIONS.md` §1.3, M3-07): la llaman `ef_station_table()` y `ef_station_qc()` |
 | `ef_station_qc()` | 13 | = | 13 |  |
 | `ef_sat_vapour_pressure()` | 22 | **`ef_es()`** | 5 | Símbolo e_s (FAO-56) |
 | `ef_sat_vapour_slope()` | 19 | **`ef_es_slope()`** | 11 | Pendiente Δ de la curva de saturación |
@@ -174,12 +174,12 @@ nombre se mantiene.
 | `ef_extraterrestrial_radiation_daily()` | 35 | **`ef_ra_daily()`** | 11 | Símbolo R_a (FAO-56) |
 | `ef_extraterrestrial_radiation_period()` | 36 | **`ef_ra_period()`** | 12 |  |
 | `ef_clear_sky_radiation()` | 22 | **`ef_rso()`** | 6 | Símbolo R_so (FAO-56) |
-| `ef_reference_net_radiation()` | 26 | **`ef_ref_net_radiation()`** | 20 | Prefijo `ref_` para la superficie de referencia |
-| `ef_reference_soil_heat_flux()` | 27 | **`ef_ref_soil_heat_flux()`** | 21 |  |
+| `ef_reference_net_radiation()` | 26 | **`ef_ref_net_radiation()`** | 20 | Prefijo `ref_` para la superficie de referencia; exportada (WF-13, M3-03) |
+| `ef_reference_soil_heat_flux()` | 27 | **`ef_ref_soil_heat_flux()`** | 21 | Exportada (WF-13, M3-03) |
 | `ef_reference_et()` | 15 | **`ef_ref_et()`** | 9 |  |
-| `ef_station_reference_et()` | 23 | **`ef_station_ref_et()`** | 17 |  |
-| `ef_etr_hourly()` | 13 | = | 13 |  |
-| `ef_etr_daily()` | 12 | = | 12 |  |
+| `ef_station_reference_et()` | 23 | **`ef_station_ref_et()`** | 17 | Serie de ETr por estación, `etr_inst` y `etr_24` (M3) |
+| `ef_etr_hourly()` | 13 | = | 13 | **No creada** (M3-03): no aporta sobre `ef_ref_et(timestep = "hourly")` |
+| `ef_etr_daily()` | 12 | = | 12 | **No creada** (M3-03): ídem con `timestep = "daily"` |
 
 ### Regionalización y GWR (`gwr-forcing.md`)
 
@@ -187,32 +187,45 @@ nombre se mantiene.
 |---|---:|---|---:|---|
 | `ef_regionalize()` | 14 | = | 14 |  |
 | `ef_regionalize_cv()` | 17 | = | 17 |  |
-| `ef_method_gwr()` | 13 | = | 13 |  |
-| `ef_method_idw()` | 13 | = | 13 |  |
-| `ef_method_ols()` | 13 | = | 13 |  |
-| `ef_method_station()` | 17 | = | 17 |  |
-| `ef_gwr_config()` | 13 | = | 13 |  |
+| `ef_method_gwr()` | 13 | = | 13 | Constructor de método (C3), clase `earthflux_regionalization_method` |
+| `ef_method_idw()` | 13 | = | 13 | Constructor de método (C2) |
+| `ef_method_ols()` | 13 | = | 13 | Constructor de método (C2) |
+| `ef_method_station()` | 17 | = | 17 | Constructor de método (C1) |
+| `ef_gwr_config()` | 13 | = | 13 | **No creada** (M3-27): la configuración por variable es `variable` + capas de `covariates` de `ef_regionalize()` |
 | `ef_gwr_fit()` | 10 | = | 10 |  |
 | `ef_gwr_bandwidth()` | 16 | = | 16 |  |
 | `ef_gwr_search()` | 13 | = | 13 |  |
 | `ef_gwr_predict()` | 14 | = | 14 |  |
 | `ef_gwr_diagnostics()` | 18 | = | 18 |  |
-| `ef_idw_fit()` | 10 | = | 10 |  |
-| `ef_ols_fit()` | 10 | = | 10 |  |
-| `ef_prediction_control()` | 21 | **`ef_predict_control()`** | 18 | Simetría con `ef_h_control()` |
+| `ef_idw_fit()` | 10 | = | 10 | **No creada** como pública (M3-33): ajuste interno `rgn_idw_fit()` (clase `earthflux_idw`), vía `ef_method_idw()` |
+| `ef_ols_fit()` | 10 | = | 10 | **No creada** como pública (M3-33): ajuste interno `rgn_ols_fit()` (clase `earthflux_ols`), vía `ef_method_ols()` |
+| `ef_prediction_control()` | 21 | **`ef_predict_control()`** | 18 | Simetría con `ef_h_control()`; clase `earthflux_predict_control` |
 | `ef_spatial_folds()` | 16 | = | 16 |  |
-| `ef_spatial_forcing()` | 18 | = | 18 |  |
-| `ef_station_forcing()` | 18 | = | 18 |  |
+| `ef_spatial_forcing()` | 18 | = | 18 | **No creada** (GW-23, M3-27): la regionalización es `ef_regionalize()` |
+| `ef_station_forcing()` | 18 | = | 18 | **No creada** como pública (M3-33): C1 es `ef_method_station()` + `ef_regionalize()` (ajuste interno `rgn_station_fit()`, clase `earthflux_station_forcing`) |
 
 ## 4. Resumen
 
 | | Especificaciones | Decisión |
 |---|---:|---:|
-| Funciones | 81 | 84 (3 despachadores nuevos) + `ef_anchor_conditions()` (§6.4) |
+| Funciones | 81 | 84 (3 despachadores nuevos) + `ef_anchor_conditions()` (§6.4) + 4 métodos de `ef_zom()` = 89 filas |
 | Nombres que cambian | — | 44 |
 | Mediana de caracteres | 17 | 14 |
 | Máximo de caracteres | 36 | 21 |
 | Nombres con más de 22 caracteres | 23 | 0 |
+
+Estado al cierre de M3 (armonización, 2026-11-04): de las **89 filas** de
+§3, **73** funciones están exportadas (la API pública de `NAMESPACE`);
+**7** existen como internas: la geometría solar y `ef_rs_to_slope()` de M2
+(`ef_declination()`, `ef_inv_distance()`, `ef_equation_of_time()`,
+`ef_hour_angle()`, `ef_cos_incidence()`, `ef_rs_to_slope()`) y
+`ef_validate_stations()`; **9** no se crearon: futuras (`ef_et_period()`,
+`ef_et_daily_evapfrac()`) o descartadas en M3 por no aportar sobre otra
+función (`ef_etr_hourly()`, `ef_etr_daily()`, `ef_gwr_config()`,
+`ef_spatial_forcing()`, `ef_station_forcing()`, `ef_ols_fit()`,
+`ef_idw_fit()`). Por tabla de M3: forzamiento, 19 exportadas de 22 filas
+(incluida `ef_air_pressure()`, de la base de M2); regionalización, 13
+exportadas de 18 filas.
 
 ## 5. Alternativas consideradas
 
