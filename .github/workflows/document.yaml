@@ -41,6 +41,9 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          # pak from the package repository: downloads from r-lib.github.io
+          # timed out or returned 503 on several runs (2026-11-04).
+          pak-version: repo
           extra-packages: roxygen2@8.1.1, any::devtools
           needs: roxygen2
 
