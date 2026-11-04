@@ -3,13 +3,14 @@
 # Purpose: lightweight S3 classes for EarthFlux objects.
 #
 # Convention (dev/ARCHITECTURE.md section 3.2; DECISIONS.md P0-12, T-17;
-# harmonised for M2 in DECISIONS.md section 1.2 and kept for M3 in section
-# 1.3): numeric core functions return plain numeric values; only procedures
-# whose result describes a whole object (anchor selection, H calibration,
-# station tables, reference ET series, GWR fits, regionalized surfaces,
-# dispatchers that record method and provenance) return a lightweight
-# classed list built with new_ef_object(). Such lists always carry a
-# `flags` element (a list of `earthflux_flag`, possibly empty).
+# harmonised for M2 in DECISIONS.md section 1.2 and kept for M3 and M4 in
+# sections 1.3 and 1.4): numeric core functions return plain numeric values;
+# only procedures whose result describes a whole object (anchor selection,
+# H calibration, station tables, reference ET series, GWR fits,
+# regionalized surfaces, the MODIS surface state, dispatchers that record
+# method and provenance) return a lightweight classed list built with
+# new_ef_object(). Such lists always carry a `flags` element (a list of
+# `earthflux_flag`, possibly empty).
 #
 # Every dispatcher of the METRIC core returns one of these objects with its
 # value element(s), `method`, `flags` (records only for codes flagged
@@ -83,6 +84,17 @@
 #     (`surface`, `flag_word`, `flag_bits`, `diagnostics`, `station_table`).
 #   - earthflux_regionalization_cv (R/regionalize-cv.R): output of
 #     ef_regionalize_cv() (long table of out-of-fold predictions).
+#
+# Surface state (M4)
+#   - earthflux_modis_source (R/modis-surface.R): specification object of
+#     modis_source() (one HDF4 file or declared converted files of a
+#     product, with UTC date, scaling and composite period).
+#   - earthflux_modis_surface_options (R/modis-surface.R): specification
+#     object of modis_surface_options() (explicit choices of the assembly).
+#   - earthflux_surface_state (R/modis-surface.R): output of
+#     modis_surface_state(), the surface contract of dev/ARCHITECTURE.md
+#     section 4 (`lst`, `albedo`, `ndvi`, `lai`, `emissivity`,
+#     `overpass_time`, `lonlat`, `qa`, `units`, `flags`, `provenance`).
 #
 # Planned classes (created with their first constructor, not before):
 #   - earthflux_result         : all intermediate layers + diagnostics +

@@ -281,7 +281,7 @@ de nombres `EF_*` (colisión C9, §3.3).
 | Prefijo | Módulo (`ARCHITECTURE.md` §2) | Archivos | Qué marca |
 |---|---|---|---|
 | `EF_INPUT_` | orquestación (transversal) | `diagnostics.R`, `api-*.R` | Propagación de `NA` de entradas |
-| `EF_SURF_` | `surface` | `io-modis.R`, `modis-qa.R`, `prep-modis.R`, `io-aoi.R` | QA del producto, plausibilidad y tiempo del estado de superficie |
+| `EF_SURF_` | `surface` | `io-modis.R`, `modis-qa.R`, `prep-modis.R`, `modis-surface.R`, `io-aoi.R` | QA del producto, plausibilidad y tiempo del estado de superficie |
 | `EF_WS_` | `forcing` | `io-weather.R`, `prep-weather.R`, `prep-qc.R` | QC de estaciones y variables derivadas en estación (incluida ETr) |
 | `EF_GWR_` | `spatial` | `gwr-*.R` (y alternativas C1/C2) | Ajuste, bandwidth, extrapolación y dominio de las superficies |
 | `EF_RAD_` | `metric` (Rn y componentes) | `metric-radiation.R` | Geometría solar, onda corta/larga, Rn |
@@ -451,8 +451,12 @@ de estaciones (`ef_flags_stations()`, `prep-qc.R`) registra 9 códigos
 la regionalización (`ef_flags_gwr()`, `gwr-diagnostics.R`) registran 13
 códigos `EF_GWR_`. En M4, los decodificadores QA de MODIS
 (`ef_flags_surface()`, `modis-qa.R`) registran 12 códigos `EF_SURF_` de
-clase I (bits 1–12; `modis-products.md`, bloque de estado de M4). Total
-registrado: 66 códigos (§4.4). Las demás filas de
+clase I (bits 1–12; `modis-products.md`, bloque de estado de M4), y el
+ensamblaje del estado de superficie (`modis_surface_state()`,
+`modis-surface.R`) levanta `EF_SURF_OVERPASS_MISSING` (clase I, bit 13) y
+el de clase III `EF_SURF_ALBEDO_GT1` (bit 14, `critical`, contraparte
+`earthflux_domain_error`), registrados en la misma función. Total
+registrado: 68 códigos (§4.4). Las demás filas de
 este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
@@ -477,8 +481,8 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_SURF_SALT_PAN` | `EF_MODIS_SALT_PAN` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 10 | Relevante en salares altiplánicos |
 | `EF_SURF_LAI_BACKUP` | `EF_MODIS_LAI_BACKUP` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 11 | – |
 | `EF_SURF_ALBEDO_MAGNITUDE` | `EF_MODIS_ALBEDO_MAGNITUDE` | prefijo | I (registrado; `modis_qa_masks()`) | warning* | cell | 12 | – |
-| `EF_SURF_OVERPASS_MISSING` | `EF_OVERPASS_TIME_MISSING` | prefijo + renombre | I | warning* | cell | 13 | LST conservada; geometría solar `NA` aguas abajo |
-| `EF_SURF_ALBEDO_GT1` | `EF_MODIS_ALBEDO_GT1` | prefijo | **III** | critical* | cell | 14 | `earthflux_domain_error` en G y Rn (C12) |
+| `EF_SURF_OVERPASS_MISSING` | `EF_OVERPASS_TIME_MISSING` | prefijo + renombre | I (registrado; `modis_surface_state()` con la máscara `missing` de `modis_overpass_time()`, solo donde la LST es válida) | warning* | cell | 13 | LST conservada; geometría solar `NA` aguas abajo |
+| `EF_SURF_ALBEDO_GT1` | `EF_MODIS_ALBEDO_GT1` | prefijo | **III** (registrado; `modis_surface_state()` con la máscara `gt1` de `modis_albedo()`; exclusión antes del núcleo con `surface_exclusion()`) | critical* | cell | 14 | `earthflux_domain_error` en G y Rn (C12); valor conservado |
 | `EF_SURF_LST_ERROR` | `EF_MODIS_LST_ERROR` | prefijo | II | warning* | cell | libre | Qué categoría de error `TODO` |
 | `EF_SURF_EMIS_ERROR` | `EF_MODIS_EMIS_ERROR` | prefijo | II | warning* | cell | libre | `TODO` |
 | `EF_SURF_VIEW_ANGLE_HIGH` | `EF_MODIS_VIEW_ANGLE_HIGH` | prefijo | II | warning* | cell | libre | Absorbe `EF_ANCHOR_HIGH_VIEW_ANGLE` por herencia |
@@ -631,7 +635,7 @@ división).
 | Prefijo | I | II | III | Total | Registrados |
 |---|---|---|---|---|---|
 | `INPUT` | 1 | 0 | 0 | 1 | 1 |
-| `SURF` | 13 | 7 | 1 | 21 | 12 |
+| `SURF` | 13 | 7 | 1 | 21 | 14 |
 | `WS` | 11 | 13 | 2 | 26 | 13 |
 | `GWR` | 14 | 4 | 1 | 19 | 13 |
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
@@ -639,15 +643,25 @@ división).
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
 | `H` | 11 | 2 | 0 | 13 | 8 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **73** | **35** | **4** | **112** | **66** |
+| **Total** | **73** | **35** | **4** | **112** | **68** |
 
-Registrados (armonización M3, 2026-11-04; recuento de
-`ef_flag_registry()`): **54 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
+Registrados (armonización M4, 2026-11-04; recuento de
+`ef_flag_registry()`): **68 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
 `ANCHOR` 10, `H` 8, `ET` 1 (los 28 de M2), `WS` 13 y `GWR` 13 (los 26 de
-M3); 51 de clase I y 3 de clase III (`EF_WS_OUT_OF_DOMAIN`,
-`EF_WS_TMIN_GT_TMAX`, `EF_GWR_OUT_OF_DOMAIN`), todos ejercitados por un
-test de su módulo (R11, sin excepciones); ningún código de clase II (los
-35 siguen en la guardia de `test-diagnostics.R`).
+M3) y `SURF` 14 (M4); 64 de clase I y 4 de clase III
+(`EF_WS_OUT_OF_DOMAIN`, `EF_WS_TMIN_GT_TMAX`, `EF_GWR_OUT_OF_DOMAIN`,
+`EF_SURF_ALBEDO_GT1`), todos ejercitados por un test de su módulo (R11,
+sin excepciones); ningún código de clase II (los 35 siguen en la guardia
+de `test-diagnostics.R`).
+
+Superficie (M4, 2026-11-04): los 13 `EF_SURF_*` de clase I y el de clase
+III están registrados en `ef_flags_surface()` (`R/modis-qa.R`): 12
+levantados por los decodificadores (bits 1–12), `EF_SURF_OVERPASS_MISSING`
+(bit 13) y `EF_SURF_ALBEDO_GT1` (bit 14, `critical`) levantados por
+`modis_surface_state()` (`R/modis-surface.R`). Los 7 de clase II siguen en
+la guardia; `EF_SURF_AGG_INCOMPLETE` y `EF_SURF_COMPOSITE_LAG` tienen ya
+sus insumos (`modis_to_grid()$incomplete`, `lag_days`) a la espera de un
+umbral con referencia.
 
 M2 (armonización M2): 28 códigos, todos de clase I: `EF_INPUT_NA` y
 `EF_ET_NEGATIVE` (registrados en M0 y levantados desde M2), los 4 `EF_RAD_*` de clase I, los 4 `EF_G_*` de clase

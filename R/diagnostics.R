@@ -26,10 +26,10 @@
 #     ef_flags_reference_et()     R/reference-et.R         (EF_WS_*, reference ET)
 #     ef_flags_stations()         R/prep-qc.R              (EF_WS_*, station QC)
 #     ef_flags_gwr()              R/gwr-diagnostics.R      (EF_GWR_*)
+#     ef_flags_surface()          R/modis-qa.R             (EF_SURF_*)
 #
-#   Stages of other modules (EF_SURF_*) add their own ef_flags_<stage>() in
-#   their module file when their first code is registered, and list it in
-#   ef_flag_registry_build().
+#   A new stage adds its own ef_flags_<stage>() in its module file when its
+#   first code is registered, and lists it in ef_flag_registry_build().
 #
 #   The registry is static (it is built from code, never from user input),
 #   so ef_flag_registry() assembles and validates it once per session, on

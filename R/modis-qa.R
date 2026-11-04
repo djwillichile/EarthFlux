@@ -3,9 +3,10 @@
 # Purpose: decode the QA layers of the MODIS products (bit fields and coded
 #   layers), turn them into the cell flags EF_SURF_* of the surface stage and
 #   convert the DN of the product layers into physical variables with their
-#   masks, flags and QA policy. Together with R/io-modis.R and
-#   R/prep-modis.R, the only place that knows MODIS QA conventions
-#   (dev/specs/modis-products.md section 1; ARCHITECTURE principle 2).
+#   masks, flags and QA policy. Together with R/io-modis.R,
+#   R/prep-modis.R and R/modis-surface.R, the only place that knows MODIS QA
+#   conventions (dev/specs/modis-products.md section 1; ARCHITECTURE
+#   principle 2).
 #
 # Specification: dev/specs/modis-products.md section 5 (QA tables of each
 #   sheet), 10 (QA policy: mask vs flag, `qa_policy`, bit decoding) and
@@ -20,7 +21,9 @@
 #   modis_qa_masks()       decoded fields -> named list of logical masks
 #   modis_qa_flags()       one QA layer -> masks, NA mask of the policy, flags
 #   modis_na_codes(), modis_maskable_codes(), modis_policy_na()
-#   ef_flags_surface()     registry rows of the stage (EF_SURF_*)
+#   ef_flags_surface()     registry rows of the stage (EF_SURF_*, including
+#                          the view time and broadband albedo codes raised
+#                          by modis_surface_state(), R/modis-surface.R)
 #   ef_diagnose_surface()  masks -> earthflux_flag records (cell scope)
 #   modis_flag_word()      masks -> integer flag word (bits of the registry)
 #   modis_variable()       DN of one layer + its QA layers -> value, masks,
@@ -425,11 +428,15 @@ modis_qa_flags <- function(decoded, qa_policy, mask_codes = NULL) {
 
 #' Flag codes of the surface stage (EF_SURF_*)
 #'
-#' Class I codes of dev/specs/flags.md section 4.2 raised by the MODIS
-#' decoders of this file, with the bits of section 6.4 (cell scope). Not
-#' registered here: `EF_SURF_OVERPASS_MISSING` (bit 13, view time) and the
-#' class III `EF_SURF_ALBEDO_GT1` (bit 14, broadband albedo), which belong
-#' to the functions that produce those variables, and the class II codes
+#' Codes of dev/specs/flags.md section 4.2 raised by the surface stage, with
+#' the bits of section 6.4 (cell scope): the twelve class I codes of the
+#' MODIS decoders of this file (bits 1-12), `EF_SURF_OVERPASS_MISSING`
+#' (bit 13, class I: the view time is missing where the LST is valid; mask
+#' `missing` of `modis_overpass_time()`) and the class III
+#' `EF_SURF_ALBEDO_GT1` (bit 14, `critical`, error counterpart
+#' `earthflux_domain_error`: the broadband albedo is above 1 and kept; mask
+#' `gt1` of `modis_albedo()`), both raised by `modis_surface_state()`
+#' (R/modis-surface.R). Not registered: the class II codes
 #' (`EF_SURF_LST_ERROR`, `EF_SURF_EMIS_ERROR`, `EF_SURF_VIEW_ANGLE_HIGH`,
 #' `EF_SURF_COMPOSITE_LAG`, `EF_SURF_AGG_INCOMPLETE`,
 #' `EF_SURF_OVERPASS_OUTSIDE_WINDOW`, `EF_SURF_LST_IMPLAUSIBLE`), which need
@@ -442,16 +449,17 @@ ef_flags_surface <- function() {
     "EF_SURF_FILL", "EF_SURF_CLOUD", "EF_SURF_NOT_PRODUCED",
     "EF_SURF_DN_OUT_OF_RANGE", "EF_SURF_LAI_NONVEG", "EF_SURF_QA_OTHER",
     "EF_SURF_CLOUD_ADJACENT", "EF_SURF_SNOW", "EF_SURF_WATER",
-    "EF_SURF_SALT_PAN", "EF_SURF_LAI_BACKUP", "EF_SURF_ALBEDO_MAGNITUDE"
+    "EF_SURF_SALT_PAN", "EF_SURF_LAI_BACKUP", "EF_SURF_ALBEDO_MAGNITUDE",
+    "EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1"
   )
   n <- length(codes)
   ef_flag_rows(
     code = codes,
     stage = rep("SURF", n),
-    severity = c(rep("info", 5L), rep("warning", 7L)),
+    severity = c(rep("info", 5L), rep("warning", 8L), "critical"),
     scope = rep("cell", n),
     bit = seq_len(n),
-    error_class = rep(NA_character_, n),
+    error_class = c(rep(NA_character_, n - 1L), "earthflux_domain_error"),
     description = c(
       "The product value is the fill value of its layer; the output is NA.",
       paste0("The product QA reports the value as not produced (or most ",
@@ -473,9 +481,17 @@ ef_flags_surface <- function() {
       paste0("The LAI was retrieved with the backup empirical method ",
              "(SCF_QC 010 or 011); the value is kept."),
       paste0("The albedo was retrieved by a magnitude inversion (mandatory ",
-             "quality 1, 3, 5 or 7); the value is kept.")
+             "quality 1, 3, 5 or 7); the value is kept."),
+      paste0("The view time is missing where the LST is valid; the LST is ",
+             "kept and the solar geometry of the cell is NA downstream."),
+      paste0("The broadband albedo is above 1; the value is kept and must ",
+             "be excluded before the soil heat flux and the net radiation.")
     ),
-    spec = rep("dev/specs/flags.md 4.2; dev/specs/modis-products.md 10.2", n),
+    spec = c(
+      rep("dev/specs/flags.md 4.2; dev/specs/modis-products.md 10.2", n - 2L),
+      "dev/specs/flags.md 4.2; dev/specs/modis-products.md 6.2",
+      "dev/specs/flags.md 4.2 (C12); dev/specs/modis-products.md 8.1"
+    ),
     since = rep("0.0.0.9000", n)
   )
 }

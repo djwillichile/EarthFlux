@@ -7,8 +7,10 @@ numeric functions, from net radiation to daily actual evapotranspiration
 station tables and their quality control, reference evapotranspiration at
 the stations and the regionalization of station variables over the working
 grid by geographically weighted regression and its baselines (milestone
-M3). Most formulations are candidates pending verification against the
-primary references; no scientific result has been validated yet.
+M3), and the preprocessing of MODIS products into the surface state of
+that chain (milestone M4). Most formulations are candidates pending
+verification against the primary references; no scientific result has
+been validated yet.
 
 ## New features
 
@@ -371,22 +373,41 @@ primary references; no scientific result has been validated yet.
 
 ### Surface state (MODIS)
 
+* MODIS surface state (internal, not exported yet): from the files of one
+  scene (one tile and one LST date), an area of interest and explicit
+  options, EarthFlux assembles on the working grid (the native 1 km
+  sinusoidal grid of the LST) the variables that the METRIC core consumes:
+  land surface temperature (K), broadband albedo, NDVI, LAI (m2 m-2),
+  broadband surface emissivity and the overpass instant (UTC day of year
+  and hour, and the instant as POSIXct), with one integer flag word per
+  layer, flag records and provenance (granules, products, collection,
+  DOIs, methods, product table rows and software versions). Every
+  scientific choice is an explicit option without default: LST product
+  (MOD11A1 or MYD11A1), albedo method and diffuse fraction, emissivity
+  method, NDVI source, temporal matching of the composites, aggregation
+  method and minimum valid fraction of the 500 m layers, and QA policy.
+  The cells that the METRIC core must not receive (albedo above 1) are
+  identified from the flag words so that the orchestration can exclude
+  and count them before the soil heat flux and the net radiation.
+
 * Internal MODIS product table: one table holds the scale, offset and its
   convention, valid range, fill value, data type, HDF-EOS grid and QA
   layout of every supported layer of MOD11A1/MYD11A1, MOD21A1D/MYD21A1D,
   MOD09GA, MOD09GQ, MOD13Q1, MOD13A2, MCD43A3, MCD43A2 (snow), MCD15A2H
   and MCD12Q1, collection 6.1, each row with its citation to the official
-  user guide or file specification. Layers whose facts are not verified
-  are refused with a classed error (`earthflux_modis_unsupported`).
+  user guide or file specification, plus the data set DOI of each product.
+  Layers whose facts are not verified are refused with a classed error
+  (`earthflux_modis_unsupported`).
 
 * Internal readers for local files only (no downloads, no credentials):
   raw digital numbers of official HDF4/HDF-EOS files through `terra`/GDAL,
   matched to the layer names of the table, never scaled by GDAL, with the
   sinusoidal geometry of the tile, the file's scale and its NoData checked
   against the table; converted rasters (e.g. GeoTIFF) only with an explicit
-  declaration of whether their values are already scaled; MODIS file name
-  parsing (product, UTC date, tile, collection); cropping to an area of
-  interest in the native sinusoidal grid; and mosaics of adjacent tiles.
+  declaration of their product, date and whether their values are already
+  scaled; MODIS file name parsing (product, UTC date, tile, collection);
+  cropping to an area of interest in the native sinusoidal grid; and
+  mosaics of adjacent tiles.
 
 * Scaling of digital numbers into physical values from the table (LST in
   K, emissivity, view angle, NDVI, albedo, LAI, reflectance), with fill
@@ -400,23 +421,39 @@ primary references; no scientific result has been validated yet.
   non-vegetated LAI classes); `"mask"` additionally masks the conditions
   listed by the user, keeps their flags and counts them.
 
-* Diagnostic flags registered for the surface stage (cell scope, bits 1-12
+* Preparation steps: conversion of the MOD11A1/MYD11A1 day view time (local
+  mean solar time) to UTC day of year and hour per pixel, with the
+  equation of time left to the solar geometry so that it is applied
+  exactly once; blue-, white- and black-sky albedo from MCD43A3 with an
+  explicit diffuse fraction; broadband emissivity from LAI; NDVI from
+  surface reflectance; matching of 8- and 16-day composites to the LST date
+  with the lag in days; and integer-factor aggregation to the working grid
+  with an explicit minimum valid fraction, the QA conditions of the
+  sub-cells carried to the aggregated cell. Options of the specification
+  whose formulas or product facts are not verified (e.g. albedo at the
+  overpass time, emissivity from the band 31/32 emissivities, LST from
+  MOD21A1D, NDVI from MOD13Q1 or daily reflectance) raise
+  `earthflux_method_not_implemented`.
+
+* Diagnostic flags registered for the surface stage (cell scope, bits 1-14
   of the surface flag word): `EF_SURF_FILL`, `EF_SURF_CLOUD`,
   `EF_SURF_NOT_PRODUCED`, `EF_SURF_DN_OUT_OF_RANGE`, `EF_SURF_LAI_NONVEG`
   (causes of `NA`), `EF_SURF_QA_OTHER`, `EF_SURF_CLOUD_ADJACENT`,
-  `EF_SURF_SNOW`, `EF_SURF_WATER`, `EF_SURF_SALT_PAN`, `EF_SURF_LAI_BACKUP`
-  and `EF_SURF_ALBEDO_MAGNITUDE` (values kept).
+  `EF_SURF_SNOW`, `EF_SURF_WATER`, `EF_SURF_SALT_PAN`, `EF_SURF_LAI_BACKUP`,
+  `EF_SURF_ALBEDO_MAGNITUDE` (values kept), `EF_SURF_OVERPASS_MISSING`
+  (view time missing where the LST is valid; the solar geometry of the
+  cell is `NA` downstream) and `EF_SURF_ALBEDO_GT1` (broadband albedo
+  above 1, kept with severity `critical` and excluded before the METRIC
+  core, which rejects it with `earthflux_domain_error`).
 
-* Internal MODIS preparation steps (not exported yet): conversion of the
-  MOD11A1/MYD11A1 day view time (local solar time) to UTC day of year and
-  hour per pixel, with the equation of time left to the solar geometry so
-  that it is applied exactly once; blue-, white- and black-sky albedo from
-  MCD43A3 with an explicit diffuse fraction; broadband emissivity from LAI;
-  NDVI from surface reflectance; matching of 8- and 16-day composites to
-  the LST date with the lag in days; and integer-factor aggregation to the
-  working grid with an explicit minimum valid fraction. Options whose
-  formulas are not verified in the specification raise
-  `earthflux_method_not_implemented`.
+* Example area of interest: the official boundary of the Cauquenes
+  province (Maule Region, Chile; DPA 2023, SUBDERE, published through IDE
+  Chile; circulation authorised by DIFROL Resolution No 87 of 2023), taken
+  from the author's package thermify, is shipped in `inst/extdata` with its
+  provenance. A reproducible script (`data-raw/modis-example.R`, not part
+  of the package) builds the example MODIS scene over it from NASA CMR and
+  LP DAAC with an Earthdata token read from the environment; the scene
+  itself is not included yet (its date is still to be chosen).
 
 ## Changes
 
@@ -433,11 +470,11 @@ primary references; no scientific result has been validated yet.
   verification status.
 
 * The registry of diagnostic flags is assembled from one table per stage
-  (METRIC, station forcing, reference ET and regionalization) and records,
-  for each code, its stage, severity (now including `critical`), scope,
-  bit, error counterpart, specification and version. Flag records also
-  carry their stage and scope, and the table they refer to (`target`) when
-  an object holds several tables. The registry is built and validated once
+  (METRIC, station forcing, reference ET, regionalization and surface) and
+  records, for each code, its stage, severity (now including `critical`),
+  scope, bit, error counterpart, specification and version. Flag records
+  also carry their stage and scope, and the table or layer they refer to
+  (`target`) when an object holds several. The registry is built and validated once
   per session instead of at every flag record, which makes the
   regionalization with small blocks about ten times faster.
 
@@ -449,11 +486,14 @@ primary references; no scientific result has been validated yet.
   standard deviations of the anchor selection).
 
 * An end-to-end test runs a synthetic scene through the whole METRIC core
-  chain, from solar geometry to daily actual evapotranspiration, and a
-  second one runs synthetic stations through the quality control, the
+  chain, from solar geometry to daily actual evapotranspiration; a second
+  one runs synthetic stations through the quality control, the
   regionalization of air temperature and vapour pressure (converted to
   kelvin at the METRIC boundary) and the station reference ET into the
-  METRIC core.
+  METRIC core; and a third one runs tiny synthetic MODIS files through the
+  surface state into the solar geometry at the overpass, the emitted
+  longwave radiation, the net radiation and the soil heat flux, checking
+  that the equation of time is applied exactly once.
 
 * `GWmodel` is suggested (not imported) as the cross-verification reference
   of the GWR core tests, which are skipped when it is not installed.
