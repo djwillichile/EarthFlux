@@ -398,10 +398,13 @@ gwr_design <- function(x, scaling) {
 #'   covariate, with column names `(Intercept)` and the covariates.
 #' @noRd
 gwr_unscale_coef <- function(beta, scaling) {
-  k <- length(scaling$scale)
   slope <- sweep(beta[, -1L, drop = FALSE], 2L, scaling$scale, "/")
+  # Row-wise sum with rowSums() instead of `%*%`: a BLAS matrix product may
+  # round differently depending on the number of rows (optimised BLAS
+  # kernels), which would make the coefficients depend on the block size of
+  # the prediction (dev/specs/parallel-processing.md, rule 2).
   intercept <- beta[, 1L] -
-    as.vector(slope %*% matrix(scaling$center, nrow = k))
+    rowSums(slope * rep(scaling$center, each = nrow(slope)))
   out <- cbind(intercept, slope)
   colnames(out) <- c("(Intercept)", names(scaling$scale))
   out
