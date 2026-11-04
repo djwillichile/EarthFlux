@@ -158,6 +158,30 @@ and standard.
 - [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md)
   : Reference evapotranspiration (grass ETo, alfalfa ETr)
 
+## Spatial regionalization (GWR)
+
+Internal numeric core of geographically weighted regression used to
+regionalize meteorological station variables over the working grid:
+plain vectors and matrices in a projected CRS, with explicit kernel,
+bandwidth and criterion, auditable bandwidth profiles, prediction by
+blocks of rows and extrapolation flags.
+
+### Fit and bandwidth selection
+
+- [`ef_gwr_fit()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_fit.md)
+  : Fit a geographically weighted regression
+- [`ef_gwr_bandwidth()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_bandwidth.md)
+  : Select the bandwidth of a geographically weighted regression
+- [`ef_gwr_search()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_search.md)
+  : Search settings of the GWR bandwidth selection
+
+### Prediction and diagnostics
+
+- [`ef_gwr_predict()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_predict.md)
+  : Predict a geographically weighted regression at new locations
+- [`ef_gwr_diagnostics()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_diagnostics.md)
+  : Diagnostics of a geographically weighted regression
+
 ## Shared physical quantities
 
 Atmospheric and thermodynamic quantities used by several modules

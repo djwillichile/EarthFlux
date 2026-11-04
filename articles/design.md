@@ -132,7 +132,7 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| `ef_gwr_fit()`, `ef_gwr_predict()` | GWR with documented kernel, bandwidth and AICc conventions; block-wise prediction | Planned |
+| [`ef_gwr_fit()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_fit.md), [`ef_gwr_predict()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_predict.md) | GWR with documented kernel, bandwidth and AICc conventions; block-wise prediction | Planned |
 | `ef_ols_fit()`, `ef_idw_fit()` | Simple spatial alternatives (C2) | Planned |
 | `ef_station_forcing()` | Single representative station (C1) | Planned |
 

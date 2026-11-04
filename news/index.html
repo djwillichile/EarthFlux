@@ -86,6 +86,22 @@
 <li>evapotranspiration: <code>EF_ET_NEGATIVE</code>, evaluated on each ET layer.</li>
 </ul></li>
 </ul></div>
+<div class="section level4">
+<h4 id="spatial-regionalization-gwr-core-0-0-0-9000">Spatial regionalization (GWR core)<a class="anchor" aria-label="anchor" href="#spatial-regionalization-gwr-core-0-0-0-9000"></a></h4>
+<ul><li>Internal numeric core of geographically weighted regression (GWR) in base R, to regionalize meteorological station variables (milestone M3). It works on plain vectors and matrices (response, named covariates and projected coordinates in metres) and knows nothing about rasters, so that the regionalization orchestrator can call it block by block:
+<ul><li>
+<code><a href="../reference/ef_gwr_fit.html">ef_gwr_fit()</a></code> fits the local weighted least squares models at the stations for a fixed (metres) or adaptive (k nearest stations, counting the station itself) bandwidth, with an explicit kernel and no default (<code>"gaussian"</code>, <code>"exponential"</code>, <code>"bisquare"</code>, <code>"tricube"</code>, <code>"boxcar"</code> with support d &lt;= b). The result (class <code>earthflux_gwr</code>) keeps the station table (fitted values, residuals, leave-one-out residuals, s_ii, local R2, bandwidth, neighbours, condition number, exclusions with their reason), local coefficients in original units, tr(S), tr(S’S), AICc, CV, the global OLS reference, the conventions applied, flags and provenance. Covariates are scaled internally for conditioning; coefficients and predictions do not change.</li>
+<li>
+<code><a href="../reference/ef_gwr_bandwidth.html">ef_gwr_bandwidth()</a></code> selects the bandwidth by AICc or leave-one-out CV (explicit criterion, no default) with a recorded search set by <code><a href="../reference/ef_gwr_search.html">ef_gwr_search()</a></code> (log grid plus Brent refinement for fixed bandwidths, exhaustive search over k), and returns the whole criterion profile including the global model. Infeasible bandwidths (rank-deficient local designs, too few neighbours, undefined AICc or LOO) are kept in the profile and never selected.</li>
+<li>
+<code><a href="../reference/ef_gwr_predict.html">ef_gwr_predict()</a></code> predicts exactly at new locations (one local fit per location); results do not depend on how locations are split into blocks or chunks.</li>
+<li>
+<code><a href="../reference/ef_gwr_diagnostics.html">ef_gwr_diagnostics()</a></code> collects fit statistics, the station table, the profile and the flags.</li>
+<li>AICc uses n stations, sigma = sqrt(RSS/n) and tr(S), the form read in Gollini et al. (2015); it reproduces <code>GWmodel</code>’s AICc. Coefficients, RSS, AICc, CV, leave-one-out residuals and predictions agree with <code>GWmodel</code> 2.4-1 to 1e-10 in tests that run when it is installed. The formulations are candidates pending the primary references.</li>
+<li>Errors: <code>earthflux_gwr_insufficient_stations</code> (fewer than p + 3 stations), <code>earthflux_gwr_no_feasible_bandwidth</code> (with the profile) and <code>earthflux_gwr_singular_error</code> (rank-deficient design at a station), all inheriting <code>earthflux_gwr_error</code>. Stations with missing values are excluded with their reason, never silently.</li>
+<li>Diagnostic flags registered for the GWR stage: <code>EF_GWR_EXTRAPOLATION_COVARIATE</code>, <code>EF_GWR_EXTRAPOLATION_LOCAL</code>, <code>EF_GWR_OUTSIDE_HULL</code>, <code>EF_GWR_FEW_NEIGHBOURS</code>, <code>EF_GWR_LOCAL_SINGULAR</code> (cell, bits 1-5), <code>EF_GWR_BW_AT_BOUND</code>, <code>EF_GWR_BW_MULTIMODAL</code>, <code>EF_GWR_AICC_UNDEFINED</code>, <code>EF_GWR_GLOBAL_PREFERRED</code> (object) and <code>EF_GWR_STATION_EXCLUDED</code> (record).</li>
+</ul></li>
+</ul></div>
 </div>
 <div class="section level3">
 <h3 id="changes-0-0-0-9000">Changes<a class="anchor" aria-label="anchor" href="#changes-0-0-0-9000"></a></h3>
@@ -96,6 +112,8 @@
 <li>Classed conditions can carry optional data fields (for example the diagnostics of a failed calibration); new condition classes for calibration errors and convergence warnings.</li>
 <li>EarthFlux imports the base package stats (sample quantiles, medians and standard deviations of the anchor selection).</li>
 <li>An end-to-end test runs a synthetic scene through the whole METRIC core chain, from solar geometry to daily actual evapotranspiration.</li>
+<li>
+<code>GWmodel</code> is suggested (not imported) as the cross-verification reference of the GWR core tests, which are skipped when it is not installed.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-0-0-0-9000">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-0-0-9000"></a></h3>

@@ -424,6 +424,64 @@
         </dt>
         <dd>Reference evapotranspiration (grass ETo, alfalfa ETr)</dd>
       </dl></div><div class="section level2">
+      <h2 id="spatial-regionalization-gwr-">Spatial regionalization (GWR)<a class="anchor" aria-label="anchor" href="#spatial-regionalization-gwr-"></a></h2>
+
+      <div class="section-desc"><p>Internal numeric core of geographically weighted regression used to regionalize meteorological station variables over the working grid: plain vectors and matrices in a projected CRS, with explicit kernel, bandwidth and criterion, auditable bandwidth profiles, prediction by blocks of rows and extrapolation flags.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+      <h3 id="fit-and-bandwidth-selection">Fit and bandwidth selection<a class="anchor" aria-label="anchor" href="#fit-and-bandwidth-selection"></a></h3>
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="ef_gwr_fit.html">ef_gwr_fit()</a></code>
+
+        </dt>
+        <dd>Fit a geographically weighted regression</dd>
+
+        <dt>
+
+          <code><a href="ef_gwr_bandwidth.html">ef_gwr_bandwidth()</a></code>
+
+        </dt>
+        <dd>Select the bandwidth of a geographically weighted regression</dd>
+
+        <dt>
+
+          <code><a href="ef_gwr_search.html">ef_gwr_search()</a></code>
+
+        </dt>
+        <dd>Search settings of the GWR bandwidth selection</dd>
+      </dl></div><div class="section level2">
+
+      <h3 id="prediction-and-diagnostics">Prediction and diagnostics<a class="anchor" aria-label="anchor" href="#prediction-and-diagnostics"></a></h3>
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="ef_gwr_predict.html">ef_gwr_predict()</a></code>
+
+        </dt>
+        <dd>Predict a geographically weighted regression at new locations</dd>
+
+        <dt>
+
+          <code><a href="ef_gwr_diagnostics.html">ef_gwr_diagnostics()</a></code>
+
+        </dt>
+        <dd>Diagnostics of a geographically weighted regression</dd>
+      </dl></div><div class="section level2">
       <h2 id="shared-physical-quantities">Shared physical quantities<a class="anchor" aria-label="anchor" href="#shared-physical-quantities"></a></h2>
 
       <div class="section-desc"><p>Atmospheric and thermodynamic quantities used by several modules (radiation, sensible heat, evapotranspiration and reference ET).</p></div>
