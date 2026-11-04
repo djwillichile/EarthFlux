@@ -11,6 +11,22 @@ Complementa `ARCHITECTURE.md` §3, §6.2 y §6.6, `DEVELOPMENT.md` §4, §5 y §
 > define código del paquete: fija reglas y convenciones para cuando existan
 > los envoltorios ráster (M2) y la orquestación (M5).
 
+> **Estado de implementación (M3, 2026-11-04).** Primera función que
+> paraleliza entre tareas: `ef_regionalize()` / `ef_regionalize_cv()`
+> (`gwr-forcing.md`, bloque de estado de la orquestación). Aplicado:
+> `future.apply` y `future` en `Imports` (D-PP-01; `future` por
+> `nbrOfWorkers()` y `class(plan())` para la procedencia, P-11);
+> `future_lapply(future.seed = TRUE)` solo si `nbrOfWorkers() > 1`, si no
+> `lapply()` (P-01, P-05); sin `plan()`, sin cambios de `terraOptions()` ni
+> `options()` (P-04); tareas con matrices y modelos, nunca `SpatRaster`
+> (P-06); bucle propio por bloques con `block_rows` (no `max_cells`,
+> nombre de `gwr-forcing.md` §9.1) y `filename`/`overwrite`/`wopt` (P-08,
+> P-09); archivos de una llamada fallida eliminados con `on.exit()`; test
+> secuencial = `multisession` (2 workers), omitido en CRAN. El benchmark
+> quedó en `dev/benchmarks/regionalize.R` (carpeta existente
+> `dev/benchmarks/`, no `dev/bench/`): 2 workers dieron 2,2× (2,5 × 10⁵
+> celdas) y 1,6× (10⁶ celdas) con resultados `identical()`.
+
 ---
 
 ## 0. Resumen de decisiones propuestas

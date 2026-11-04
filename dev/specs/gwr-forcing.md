@@ -39,9 +39,9 @@ referencia, decisión GW-22) · Tests: `tests/testthat/test-gwr-*.R`
 > generador del sintético G7). Casos G1a–G7 reproducidos; verificación
 > cruzada con `GWmodel` 2.4-1 a 1 × 10⁻¹⁰ (coeficientes, RSS, AICc, AIC,
 > `enp_alt`, edf, CV, residuos LOO, R² local en su convención con kernel
-> fijo, predicción). Pendiente para la fase de orquestación:
-> `ef_regionalize()`, `ef_method_*()`, `ef_predict_control()`, modo
-> grueso (§6.2), CV por bloques (§8.2), C1/C2 (§5), I de Moran (§7.3).
+> fijo, predicción). La orquestación se implementó después (bloque
+> siguiente); siguen pendientes el modo grueso (§6.2) y el I de Moran
+> (§7.3).
 >
 > Decisiones y desviaciones tomadas al implementar (para registrar en
 > `DECISIONS.md`):
@@ -109,6 +109,150 @@ referencia, decisión GW-22) · Tests: `tests/testthat/test-gwr-*.R`
 >    (gaussiano fijo) y ≈ 2,8–3,6 s (bicuadrado adaptativo); selección
 >    AICc fija (30 valores + Brent) ≈ 0,2 s; adaptativa exhaustiva
 >    ≈ 0,4 s. Benchmark: `dev/benchmarks/gwr-core.R`.
+
+> **Estado de implementación — orquestación (M3, 2026-11-04).**
+> Implementados en `R/regionalize.R` (`ef_regionalize()`, clase
+> `earthflux_surface`), `R/regionalize-methods.R` (`ef_method_gwr()`,
+> `ef_method_station()`, `ef_method_ols()`, `ef_method_idw()`,
+> `ef_predict_control()` —nombre de `NAMING.md`— y el despacho interno
+> ajuste/predicción), `R/regionalize-baselines.R` (C1 y C2 internos:
+> clases `earthflux_ols`, `earthflux_idw`, `earthflux_station_forcing`;
+> GW-22: archivo propio) y `R/regionalize-cv.R` (`ef_spatial_folds()`,
+> `ef_regionalize_cv()`, clase `earthflux_regionalization_cv`). Tests:
+> `tests/testthat/test-regionalize.R`, `test-regionalize-methods.R`,
+> `test-regionalize-cv.R` y `helper-regionalize.R` (grilla sintética de
+> 60 × 60 celdas de 1 km en UTM 19S y 35 estaciones ficticias).
+> Dependencias: `terra`, `future` y `future.apply` en `Imports`.
+>
+> Decisiones y desviaciones tomadas al implementar (para registrar en
+> `DECISIONS.md`):
+>
+> 1. **Firma (GW-23).** `ef_regionalize(data, variable, covariates,
+>    method, use_qc, surface_covariates, grid = NULL, exclude = NULL,
+>    station_covariates = NULL, prediction = ef_predict_control())`: una
+>    llamada = una variable (todas sus `target_time`), de modo que `method`
+>    es por variable (enmienda A4). No se creó `ef_gwr_config()`: la
+>    configuración por variable es `variable` + las capas de `covariates`
+>    (GWR y OLS usan todas; `station_lapse` usa `elevation`; IDW y C1
+>    ninguna). `data` acepta la tabla `ef_regionalization_input` o el
+>    resultado de `ef_station_qc()` (convertido con
+>    `station_regionalization_input()`).
+> 2. **Sin defectos científicos.** `method`, `use_qc` (subconjunto de
+>    `"ok"`/`"warning"`) y `surface_covariates` no tienen defecto;
+>    `ef_method_gwr()` exige `kernel`, `adaptive` y exactamente uno de
+>    `bandwidth` o `criterion` + `search`; `ef_method_idw(power)` sin
+>    defecto (varios valores = rejilla registrada con selección por LOOCV,
+>    empates al menor); `ef_method_station(station_id, lapse_rate = NULL)`.
+>    Se agregaron `min_neighbours` y `scale_covariates` a
+>    `ef_method_gwr()` (con `criterion`, `min_neighbours` va en
+>    `ef_gwr_search()`).
+> 3. **GW-07 (abierta) como argumento explícito.** `surface_covariates`
+>    declara las covariables derivadas del estado de superficie
+>    (`character(0)` si ninguna); es obligatorio cuando el método usa
+>    covariables. Una capa con nombre de variable de superficie conocida
+>    (`lst`, `ts`, `ndvi`, `evi`, `savi`, `lai`, `albedo`, `emissivity`,
+>    `fvc`, …) no declarada es `earthflux_input_error`. Si hay alguna:
+>    `EF_GWR_SURFACE_COVARIATE` (objeto) y registro en la procedencia. No
+>    hay valor por defecto que decida si se permiten.
+> 4. **GW-08 (abierta): modo grueso no implementado.**
+>    `ef_predict_control(mode = "exact")` solo admite `"exact"` (defecto de
+>    §6.1, no es una elección científica); `EF_GWR_COARSE_MODE` no se
+>    registra. Tampoco se implementaron `coarse_factor`, `check_every` ni
+>    `write_coefficients`; se agregaron `chunk_rows`, `flags_filename`,
+>    `overwrite` y `wopt` (P-08).
+> 5. **Decisión 5.1 (abierta).** El orquestador acepta cualquier variable
+>    del contrato y no decide entre A y C: se llama una vez por variable
+>    (ETr regionalizada en A; insumos en C). Para `etr_*` exige un único
+>    `reference` no `NA`.
+> 6. **Salida `earthflux_surface`.** El elemento ráster de flags de §2.4 se
+>    llama `flag_word` (el nombre `flags` lo exige `new_ef_object()` para
+>    la lista de `earthflux_flag`), con la tabla `flag_bits` (vista del
+>    registro, enmienda A1); `diagnostics` (un objeto por `target_time`),
+>    `station_table` (enmienda A5, con `elevation_metadata`, `x`, `y`,
+>    covariables usadas, `status`, `exclusion_reason`, `fitted`,
+>    `residual`, `loo_fitted`, `loo_residual`), `uncertainty = NULL`
+>    (GW-19), `method_settings` y `provenance` (incluye `covariate_source`
+>    —enmienda A2—, `distance_method`/`crs` —A3—, política de QC,
+>    exclusiones, plan de ejecución según `parallel-processing.md` §8,
+>    versiones y `provenance$flags` según `flags.md` §6.7). Los flags de
+>    ámbito celda viven solo en `flag_word` (y sus conteos por capa y
+>    código en `provenance$flags$counts`), no como registros con índice de
+>    celda.
+> 7. **Dominio de cálculo.** Las celdas con alguna capa de `covariates`
+>    `NA` quedan `NA` con `EF_INPUT_NA` (bit 0) para **todos** los métodos,
+>    para que C1, C2 y C3 cubran las mismas celdas; en cambio, una estación
+>    se excluye solo por `NA` en las covariables que usa el método (C1 e
+>    IDW pueden usar una estación fuera de la grilla). Motivos de
+>    exclusión registrados: `qc_status:<estado>`, `user:<motivo>`,
+>    `missing_coordinates`, `missing_value`, `outside_grid`,
+>    `missing_covariate:<nombre>`.
+> 8. **Dominio físico (§2.3).** `EF_GWR_OUT_OF_DOMAIN` (clase III,
+>    `critical`, bit 6, contraparte `earthflux_domain_error`) marca:
+>    `air_temperature` ≤ −273,15 °C (`EF_KELVIN_OFFSET`),
+>    `vapour_pressure` ≤ 0, `etr_inst` ≤ 0, y valores < 0 de
+>    `wind_speed_2m`, `clearness`, `solar_radiation` y `etr_24`. El valor se
+>    conserva; la exclusión la hace el consumidor (`flags.md` §6.6).
+> 9. **Flags por método.** GWR: bits 0–6 según el kernel (bit 2 solo con
+>    kernels compactos); OLS: covariable fuera de rango (1) y envolvente
+>    (3); IDW: envolvente (3); C1: solo bits 0 y 6. Todos los métodos
+>    reutilizan `gwr_extrapolation_flags()`/`gwr_in_hull()` del núcleo.
+> 10. **C1/C2 (§5.2–5.4).** OLS: QR sobre el diseño escalado, n ≥ p + 1,
+>     LOO por diagonal de la matriz hat, AICc con tr S = p (reproduce
+>     `global_reference` de `ef_gwr_fit()` a 1 × 10⁻¹⁰). IDW: distancias
+>     divididas por la máxima distancia entre estaciones del ajuste (no
+>     cambia los pesos); en una ubicación que coincide con estaciones, la
+>     media de sus valores; n ≥ 2. C1: superficie constante o con gradiente
+>     sobre la elevación del MDE en la celda de la estación (GW-10); la
+>     estación representativa no se evalúa (LOO `NA`) y, si no tiene valor
+>     usable en una `target_time`, `earthflux_input_error`. OLS e IDW con
+>     pocas estaciones reutilizan `earthflux_gwr_insufficient_stations`.
+> 11. **Bloques (§6.1).** Bucle propio `readStart()`/`readValues()` +
+>     `writeStart()`/`writeValues()`/`writeStop()`; tamaño de bloque de
+>     `writeStart()` o `block_rows`; con un plan de más de un worker y
+>     `block_rows = NULL`, los bloques se subdividen hasta al menos 4 por
+>     worker. Test: `block_rows` = 1, 7, 60 y el de `terra` dan rásteres
+>     `identical()` (GWR fijo y adaptativo, IDW, OLS). La salida en disco
+>     usa el `datatype` de `wopt` (por defecto el de `terra`, `FLT4S`;
+>     D-PP-05 abierta); la palabra de flags siempre `INT4S`. Si la llamada
+>     falla, se cierran y eliminan los archivos que creó.
+> 12. **Paralelismo (§6.5, `parallel-processing.md`).** Tareas: ajustes
+>     (uno por `target_time`), bloques de predicción y pliegues de CV, con
+>     `future.apply::future_lapply(future.seed = TRUE)` solo si
+>     `future::nbrOfWorkers() > 1`; si no, `lapply()`. Los workers reciben
+>     matrices y modelos (funciones de nivel superior del namespace, nunca
+>     un `SpatRaster`); el proceso principal lee y escribe los bloques en
+>     orden. `future` entra en `Imports` por `nbrOfWorkers()` y
+>     `class(plan())` (procedencia, P-11). Test con
+>     `plan(multisession, workers = 2)` dentro del test (restaurando el plan
+>     previo), omitido en CRAN y con el paquete cargado por `pkgload`:
+>     superficies, palabras, tabla de estaciones, diagnósticos y flags
+>     `identical()`.
+> 13. **CV (§8.2).** `ef_spatial_folds()`: origen por defecto = mínimos de
+>     x e y; teselas numeradas por iy y luego ix; acepta matriz, tabla
+>     (`station_id`, `x`, `y`) o `SpatVector`. `ef_regionalize_cv()`
+>     agrega `variable`, `use_qc`, `surface_covariates`, `grid`, `exclude`
+>     y `station_covariates` (mismas reglas que `ef_regionalize()`);
+>     `reselect_bandwidth = TRUE` re-selecciona el bandwidth GWR (y la
+>     potencia IDW de una rejilla) en cada entrenamiento; con `FALSE` se
+>     selecciona una vez por `target_time` con todas las estaciones
+>     (registrado como `conditional_on_all_stations`). Tabla larga con
+>     `status` (`ok`, `failed` con `reason`, `representative_station`),
+>     `n_train`, `tuning` (bandwidth o potencia del pliegue) y `flag_word`.
+>     En C1 la estación representativa se mantiene siempre en el
+>     entrenamiento y no se evalúa. Pliegues de tamaño 1 reproducen los
+>     residuos LOO de `station_table` (OLS, IDW, GWR fijo).
+> 14. **Rendimiento** (R 4.3.3, 4 núcleos, BLAS de referencia; 150
+>     estaciones, GWR bicuadrado fijo de 40 km, 2 `target_time`,
+>     `dev/benchmarks/regionalize.R`): 250 000 celdas, secuencial 16,0 s
+>     (mediana de 3; 13,4 s con `block_rows = 50`) frente a 7,4 s con
+>     `multisession` de 2 workers; 10⁶ celdas, 46,8 s frente a 28,7 s
+>     (1 repetición). Resultados `identical()` en todos los casos.
+> 15. **No implementado:** modo grueso (GW-08), transformaciones (GW-12,
+>     solo identidad; `EF_GWR_TRANSFORMED` sin registrar), KED y
+>     reanálisis (C2 opcionales), I de Moran (§7.3), distancia de gran
+>     círculo (GW-09), flag de diferencia de elevación metadatos–MDE (clase
+>     II; la tabla de estaciones trae ambas), varianza de predicción
+>     (GW-19).
 
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`). Aquí `VERIFICADA` significa **contrastada en
