@@ -528,10 +528,10 @@ según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_RAD_SELF_SHADED` | `EF_SELF_SHADED` | prefijo | I | info | cell | 1 | Irradiancia directa = 0 por definición, no por corrección |
-| `EF_RAD_ATM_EMISSIVITY_GT1` | `EF_ATM_EMISSIVITY_GT1` | prefijo | I | warning | cell | 2 | Salida de modelo empírico; sin recorte |
-| `EF_RAD_RS_GT_RA` | `EF_RS_EXCEEDS_EXTRATERRESTRIAL` (radiación) | división (C5) | I | warning | cell, record | 3 | Instantánea, plano horizontal |
-| `EF_RAD_RN_NEGATIVE` | "Rn negativo" (sin código) | nombrado | I | info* | cell | 4 | Rn < 0 es posible; `ef_net_radiation.md` §10.1: sin warning (el flag no emite warning) |
+| `EF_RAD_SELF_SHADED` | `EF_SELF_SHADED` | prefijo | I (registrado) | info | cell | 1 | Irradiancia directa = 0 por definición, no por corrección |
+| `EF_RAD_ATM_EMISSIVITY_GT1` | `EF_ATM_EMISSIVITY_GT1` | prefijo | I (registrado) | warning | cell | 2 | Salida de modelo empírico; sin recorte |
+| `EF_RAD_RS_GT_RA` | `EF_RS_EXCEEDS_EXTRATERRESTRIAL` (radiación) | división (C5) | I (registrado) | warning | cell, record | 3 | Instantánea, plano horizontal |
+| `EF_RAD_RN_NEGATIVE` | "Rn negativo" (sin código) | nombrado | I (registrado) | info* | cell | 4 | Rn < 0 es posible; `ef_net_radiation.md` §10.1: sin warning (el flag no emite warning) |
 | `EF_RAD_SUN_LOW` | `EF_LOW_SUN` | prefijo + orden | II | warning | cell | libre | `TODO` |
 
 #### `EF_G_` (6)

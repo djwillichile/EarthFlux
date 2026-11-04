@@ -15,6 +15,31 @@ No scientific result has been validated yet.
   corroborated by secondary sources; verification against the primary
   reference (Allen et al., 2007) is pending.
 
+* Radiation components that produce the inputs of `ef_net_radiation()`
+  (all `CANDIDATA` except where stated; unverified choices are explicit
+  arguments without defaults):
+  * `ef_solar_geometry()` returns, per pixel and overpass instant (numeric
+    `doy` of the UTC date and `utc_hour`, angles in radians), the cosines of
+    the solar zenith angle and of the incidence angle on the tilted pixel
+    plane (GIS aspect), the declination, the hour angle and the inverse
+    relative Earth-Sun distance. The calendar terms and the hour angle are
+    verified against FAO-56; the equation of time is applied exactly once.
+  * `ef_tau_sw()` (with an explicit `method`) dispatches to
+    `ef_tau_sw_allen()`, the clear-sky shortwave transmissivity split into
+    direct-beam and diffuse parts (function of zenith angle, pressure,
+    vapour pressure and an explicit turbidity), and `ef_tau_sw_elevation()`,
+    the simple elevation form.
+  * `ef_atm_emissivity()` computes the effective atmospheric emissivity
+    from the clear-sky transmissivity.
+  * `ef_rs_in()` (with an explicit `method`) dispatches to
+    `ef_rs_in_modelled()` (clear-sky) and `ef_rs_in_measured()` (measured
+    radiation with a given diffuse fraction); both project the direct-beam,
+    diffuse and ground-reflected components onto the pixel plane.
+  * `ef_rl_in()` computes the incoming longwave radiation from an effective
+    atmospheric emissivity and a temperature whose choice (air, cold-pixel
+    or pixel surface temperature) is left to the caller, and `ef_rl_out()`
+    the longwave radiation emitted by the surface.
+
 * `ef_air_pressure()` computes the mean atmospheric pressure from elevation
   (FAO-56 Eq. 7), shared by the radiation, sensible heat and reference
   evapotranspiration modules.
@@ -73,6 +98,10 @@ No scientific result has been validated yet.
 * New diagnostic flags of the soil heat flux stage: `EF_G_RN_NONPOSITIVE`,
   `EF_G_RATIO_NEGATIVE`, `EF_G_AVAILABLE_NONPOSITIVE` and
   `EF_G_LOW_LAI_BRANCH`.
+* Diagnostic flags of the radiation stage registered:
+  `EF_RAD_SELF_SHADED`, `EF_RAD_ATM_EMISSIVITY_GT1`, `EF_RAD_RS_GT_RA` and
+  `EF_RAD_RN_NEGATIVE`. They are computed from the numeric inputs and
+  outputs, never by the numeric functions, which return values unchanged.
 * Classed conditions can carry optional data fields (for example the
   diagnostics of a failed calibration); new condition classes for
   calibration errors and convergence warnings.

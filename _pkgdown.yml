@@ -21,6 +21,18 @@ articles:
 reference:
   - title: METRIC
     desc: Physics core of the METRIC surface energy balance.
+  - subtitle: Radiation components
+    desc: >
+      Solar geometry, shortwave transmissivity, incoming shortwave and
+      longwave radiation and longwave radiation emitted by the surface: the
+      inputs of the net radiation.
+    contents:
+      - ef_solar_geometry
+      - ef_tau_sw
+      - ef_rs_in
+      - ef_atm_emissivity
+      - ef_rl_in
+      - ef_rl_out
   - subtitle: Net radiation
     contents:
       - ef_net_radiation
