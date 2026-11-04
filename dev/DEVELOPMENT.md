@@ -102,7 +102,7 @@ git config user.email "32119499+djwillichile@users.noreply.github.com"
 |---|---|---|
 | Referencia de funciones (`man/`, `NAMESPACE`) | Bloques roxygen2 en `R/` | Workflow `document.yaml`: regenera con roxygen2 **8.1.1** (versión fijada) y falla si hay diferencias. No hace commits: se regenera localmente con `devtools::document()` |
 | Sitio web | `README`, `man/`, vignettes, `NEWS.md`, `_pkgdown.yml` | Workflow `pkgdown.yaml`: construye y publica en `gh-pages` en cada push a `main` |
-| About de GitHub (descripción, website, topics) | `DESCRIPTION`: `Title`, `URL`, `Config/github/topics` | Workflow `about.yaml` en cada cambio de `DESCRIPTION` en `main`; también activa Pages y el borrado automático de ramas fusionadas |
+| About de GitHub (descripción, website, topics) | `DESCRIPTION`: `Config/github/description` (o `Title` si no existe), `URL`, `Config/github/topics` | Workflow `about.yaml` en cada cambio de `DESCRIPTION` en `main`; también activa Pages y el borrado automático de ramas fusionadas |
 
 Configuración única de `about.yaml` (requisito de GitHub: el `GITHUB_TOKEN`
 por defecto no puede modificar ajustes del repositorio):

@@ -30,3 +30,4 @@ Language: en-GB
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.1
 Config/github/topics: r, r-package, rstats, evapotranspiration, surface-energy-balance, metric, modis, remote-sensing, earth-observation, geographically-weighted-regression, gwr, hydrology, agrometeorology, spatial-analysis, terra
+Config/github/description: EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data. R package for spatially distributed actual evapotranspiration with the METRIC surface energy balance, MODIS inputs and spatially varying weather forcing (GWR). Reproducible, tested and diagnostic-first; in active development.
