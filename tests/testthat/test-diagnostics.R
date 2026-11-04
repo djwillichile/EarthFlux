@@ -221,3 +221,50 @@ test_that("check_flag_list() accepts only lists of flag records", {
                class = "earthflux_input_error")
   expect_error(check_flag_list(NULL), class = "earthflux_input_error")
 })
+
+# Convention of the stage diagnostics (records only for flagged codes) ------------
+
+test_that("ef_flag_set() keeps flagged codes and records the evaluated ones", {
+  flags <- ef_flag_set(
+    list(EF_G_RN_NONPOSITIVE = c(FALSE, TRUE),
+         EF_G_RATIO_NEGATIVE = c(FALSE, FALSE)),
+    scope = "cell"
+  )
+  expect_length(flags, 1L)
+  expect_null(names(flags))
+  expect_identical(flags[[1]]$code, "EF_G_RN_NONPOSITIVE")
+  expect_identical(flags[[1]]$index, 2L)
+  expect_identical(ef_flags_evaluated(flags),
+                   c("EF_G_RN_NONPOSITIVE", "EF_G_RATIO_NEGATIVE"))
+  empty <- ef_flag_set(list())
+  expect_length(empty, 0L)
+  expect_identical(ef_flags_evaluated(empty), character(0))
+  expect_identical(ef_flags_evaluated(list()), character(0))
+})
+
+test_that("ef_input_na_flags() builds EF_INPUT_NA over the common length", {
+  na <- ef_input_na_flags(list(a = c(1, NA, 3), b = NaN, c = NULL), 3L)
+  expect_identical(na[[1]]$code, "EF_INPUT_NA")
+  expect_identical(na[[1]]$scope, "cell")
+  expect_identical(na[[1]]$index, 1:3)
+  none <- ef_input_na_flags(list(a = c(1, 2), b = 3), 2L)
+  expect_length(none, 0L)
+  expect_identical(ef_flags_evaluated(none), "EF_INPUT_NA")
+  expect_identical(ef_flags_evaluated(ef_input_na_flags(list(), 2L)),
+                   character(0))
+})
+
+test_that("ef_flags_combine() returns plain records and evaluated codes", {
+  out <- ef_flags_combine(
+    ef_input_na_flags(list(a = c(NA, 1)), 2L),
+    ef_flag_set(list(EF_ET_NEGATIVE = c(FALSE, FALSE)))
+  )
+  expect_named(out, c("flags", "evaluated"))
+  expect_null(attr(out$flags, "evaluated"))
+  expect_invisible(check_flag_list(out$flags))
+  expect_identical(vapply(out$flags, `[[`, "", "code"), "EF_INPUT_NA")
+  expect_identical(out$evaluated, c("EF_INPUT_NA", "EF_ET_NEGATIVE"))
+  nothing <- ef_flags_combine()
+  expect_identical(nothing$flags, list())
+  expect_identical(nothing$evaluated, character(0))
+})
