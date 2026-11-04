@@ -37,13 +37,17 @@
 <p>First development version. It sets up the package infrastructure and provides the first component of the METRIC surface energy balance chain. No scientific result has been validated yet.</p>
 <div class="section level3">
 <h3 id="new-features-0-0-0-9000">New features<a class="anchor" aria-label="anchor" href="#new-features-0-0-0-9000"></a></h3>
-<ul><li>
-<code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code> computes the instantaneous net radiation at the land surface from incoming shortwave radiation, albedo, incoming longwave radiation, emitted longwave radiation and surface emissivity (METRIC surface radiation balance), keeping the reflected incoming longwave term explicit. Inputs are validated (type, recycling and physical domain, with classed errors) and missing values propagate. The form of the equation is corroborated by secondary sources; verification against the primary reference (Allen et al., 2007) is pending.</li>
+<ul><li><p><code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code> computes the instantaneous net radiation at the land surface from incoming shortwave radiation, albedo, incoming longwave radiation, emitted longwave radiation and surface emissivity (METRIC surface radiation balance), keeping the reflected incoming longwave term explicit. Inputs are validated (type, recycling and physical domain, with classed errors) and missing values propagate. The form of the equation is corroborated by secondary sources; verification against the primary reference (Allen et al., 2007) is pending.</p></li>
+<li><p><code><a href="../reference/ef_air_pressure.html">ef_air_pressure()</a></code> computes the mean atmospheric pressure from elevation (FAO-56 Eq. 7), shared by the radiation, sensible heat and reference evapotranspiration modules.</p></li>
+<li><p><code><a href="../reference/ef_latent_heat_vaporization.html">ef_latent_heat_vaporization()</a></code> returns the latent heat of vaporization in J kg-1 with an explicit <code>method</code> and no default: the FAO-56 constant (<code>"constant"</code>) or the FAO-56 function of the air temperature in K (<code>"fao56"</code>). The same function is meant to be used throughout the METRIC chain.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="changes-0-0-0-9000">Changes<a class="anchor" aria-label="anchor" href="#changes-0-0-0-9000"></a></h3>
 <ul><li>Modular source layout for the surface, forcing, spatial (GWR), METRIC, diagnostics, validation and API modules.</li>
 <li>Internal infrastructure for classed conditions and diagnostic flags: results are flagged, never silently corrected.</li>
+<li>Physical constants (Kelvin offset, Stefan-Boltzmann constant, solar constant, von Karman constant, gravity, specific heat of air, density of water and the FAO-56 latent heat of vaporization) are defined once, with their unit, source and verification status.</li>
+<li>The registry of diagnostic flags is assembled from one table per METRIC stage and records, for each code, its stage, severity (now including <code>critical</code>), scope, bit, error counterpart, specification and version. Flag records also carry their stage and scope.</li>
+<li>Classed conditions can carry optional data fields (for example the diagnostics of a failed calibration); new condition classes for calibration errors and convergence warnings.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-0-0-0-9000">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-0-0-9000"></a></h3>

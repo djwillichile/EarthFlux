@@ -47,7 +47,7 @@ designed to test, not an established result.
 |----|----|----|
 | [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md) | Surface net radiation | **Available**; equation candidate (corroborated) |
 | `ef_solar_geometry()` | Solar angles and incidence on sloping terrain | Planned; candidate |
-| `ef_air_pressure()` | Atmospheric pressure from elevation | Planned; equation verified (FAO-56, Eq. 7) |
+| [`ef_air_pressure()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.md) | Atmospheric pressure from elevation | Planned; equation verified (FAO-56, Eq. 7) |
 | `ef_sw_transmissivity()` | Broadband shortwave transmissivity with beam/diffuse partition | Planned; candidate |
 | `ef_shortwave_in()` | Incoming shortwave radiation, including slope and aspect | Planned; candidate |
 | `ef_atmospheric_emissivity()` | Clear-sky atmospheric emissivity | Planned; candidate |

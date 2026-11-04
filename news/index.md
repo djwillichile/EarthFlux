@@ -18,12 +18,34 @@ No scientific result has been validated yet.
   equation is corroborated by secondary sources; verification against
   the primary reference (Allen et al., 2007) is pending.
 
+- [`ef_air_pressure()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.md)
+  computes the mean atmospheric pressure from elevation (FAO-56 Eq. 7),
+  shared by the radiation, sensible heat and reference
+  evapotranspiration modules.
+
+- [`ef_latent_heat_vaporization()`](https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat_vaporization.md)
+  returns the latent heat of vaporization in J kg-1 with an explicit
+  `method` and no default: the FAO-56 constant (`"constant"`) or the
+  FAO-56 function of the air temperature in K (`"fao56"`). The same
+  function is meant to be used throughout the METRIC chain.
+
 ### Changes
 
 - Modular source layout for the surface, forcing, spatial (GWR), METRIC,
   diagnostics, validation and API modules.
 - Internal infrastructure for classed conditions and diagnostic flags:
   results are flagged, never silently corrected.
+- Physical constants (Kelvin offset, Stefan-Boltzmann constant, solar
+  constant, von Karman constant, gravity, specific heat of air, density
+  of water and the FAO-56 latent heat of vaporization) are defined once,
+  with their unit, source and verification status.
+- The registry of diagnostic flags is assembled from one table per
+  METRIC stage and records, for each code, its stage, severity (now
+  including `critical`), scope, bit, error counterpart, specification
+  and version. Flag records also carry their stage and scope.
+- Classed conditions can carry optional data fields (for example the
+  diagnostics of a failed calibration); new condition classes for
+  calibration errors and convergence warnings.
 
 ### Documentation
 
