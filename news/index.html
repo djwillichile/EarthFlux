@@ -38,6 +38,19 @@
 <div class="section level3">
 <h3 id="new-features-0-0-0-9000">New features<a class="anchor" aria-label="anchor" href="#new-features-0-0-0-9000"></a></h3>
 <ul><li><p><code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code> computes the instantaneous net radiation at the land surface from incoming shortwave radiation, albedo, incoming longwave radiation, emitted longwave radiation and surface emissivity (METRIC surface radiation balance), keeping the reflected incoming longwave term explicit. Inputs are validated (type, recycling and physical domain, with classed errors) and missing values propagate. The form of the equation is corroborated by secondary sources; verification against the primary reference (Allen et al., 2007) is pending.</p></li>
+<li>
+<p>Radiation components that produce the inputs of <code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code> (all <code>CANDIDATA</code> except where stated; unverified choices are explicit arguments without defaults):</p>
+<ul><li>
+<code><a href="../reference/ef_solar_geometry.html">ef_solar_geometry()</a></code> returns, per pixel and overpass instant (numeric <code>doy</code> of the UTC date and <code>utc_hour</code>, angles in radians), the cosines of the solar zenith angle and of the incidence angle on the tilted pixel plane (GIS aspect), the declination, the hour angle and the inverse relative Earth-Sun distance. The calendar terms and the hour angle are verified against FAO-56; the equation of time is applied exactly once.</li>
+<li>
+<code><a href="../reference/ef_tau_sw.html">ef_tau_sw()</a></code> (with an explicit <code>method</code>) dispatches to <code><a href="../reference/ef_tau_sw.html">ef_tau_sw_allen()</a></code>, the clear-sky shortwave transmissivity split into direct-beam and diffuse parts (function of zenith angle, pressure, vapour pressure and an explicit turbidity), and <code><a href="../reference/ef_tau_sw.html">ef_tau_sw_elevation()</a></code>, the simple elevation form.</li>
+<li>
+<code><a href="../reference/ef_atm_emissivity.html">ef_atm_emissivity()</a></code> computes the effective atmospheric emissivity from the clear-sky transmissivity.</li>
+<li>
+<code><a href="../reference/ef_rs_in.html">ef_rs_in()</a></code> (with an explicit <code>method</code>) dispatches to <code><a href="../reference/ef_rs_in.html">ef_rs_in_modelled()</a></code> (clear-sky) and <code><a href="../reference/ef_rs_in.html">ef_rs_in_measured()</a></code> (measured radiation with a given diffuse fraction); both project the direct-beam, diffuse and ground-reflected components onto the pixel plane.</li>
+<li>
+<code><a href="../reference/ef_rl_in.html">ef_rl_in()</a></code> computes the incoming longwave radiation from an effective atmospheric emissivity and a temperature whose choice (air, cold-pixel or pixel surface temperature) is left to the caller, and <code><a href="../reference/ef_rl_out.html">ef_rl_out()</a></code> the longwave radiation emitted by the surface.</li>
+</ul></li>
 <li><p><code><a href="../reference/ef_air_pressure.html">ef_air_pressure()</a></code> computes the mean atmospheric pressure from elevation (FAO-56 Eq. 7), shared by the radiation, sensible heat and reference evapotranspiration modules.</p></li>
 <li><p><code><a href="../reference/ef_lambda.html">ef_lambda()</a></code> returns the latent heat of vaporization in J kg-1 with an explicit <code>method</code> and no default: the FAO-56 constant (<code>"constant"</code>) or the FAO-56 function of the air temperature in K (<code>"fao56"</code>). The same function is meant to be used throughout the METRIC chain.</p></li>
 <li><p><code><a href="../reference/ef_latent_heat.html">ef_latent_heat()</a></code> computes the instantaneous latent heat flux as the residual of the surface energy balance, LE = Rn - G - H (FAO-56, chapter 1, Eq. 1). Negative values are returned unchanged, never set to zero.</p></li>
@@ -53,6 +66,7 @@
 <li>Physical constants (Kelvin offset, Stefan-Boltzmann constant, solar constant, von Karman constant, gravity, specific heat of air, density of water and the FAO-56 latent heat of vaporization) are defined once, with their unit, source and verification status.</li>
 <li>The registry of diagnostic flags is assembled from one table per METRIC stage and records, for each code, its stage, severity (now including <code>critical</code>), scope, bit, error counterpart, specification and version. Flag records also carry their stage and scope.</li>
 <li>New diagnostic flags of the soil heat flux stage: <code>EF_G_RN_NONPOSITIVE</code>, <code>EF_G_RATIO_NEGATIVE</code>, <code>EF_G_AVAILABLE_NONPOSITIVE</code> and <code>EF_G_LOW_LAI_BRANCH</code>.</li>
+<li>Diagnostic flags of the radiation stage registered: <code>EF_RAD_SELF_SHADED</code>, <code>EF_RAD_ATM_EMISSIVITY_GT1</code>, <code>EF_RAD_RS_GT_RA</code> and <code>EF_RAD_RN_NEGATIVE</code>. They are computed from the numeric inputs and outputs, never by the numeric functions, which return values unchanged.</li>
 <li>Classed conditions can carry optional data fields (for example the diagnostics of a failed calibration); new condition classes for calibration errors and convergence warnings.</li>
 </ul></div>
 <div class="section level3">

@@ -46,12 +46,12 @@ designed to test, not an established result.
 | Function | Purpose | Status |
 |----|----|----|
 | [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md) | Surface net radiation | **Available**; equation candidate (corroborated) |
-| `ef_solar_geometry()` | Solar angles and incidence on sloping terrain | Planned; candidate |
+| [`ef_solar_geometry()`](https://djwillichile.github.io/EarthFlux/reference/ef_solar_geometry.md) | Solar angles and incidence on sloping terrain | Planned; candidate |
 | [`ef_air_pressure()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.md) | Atmospheric pressure from elevation | Planned; equation verified (FAO-56, Eq. 7) |
-| `ef_tau_sw()` | Broadband shortwave transmissivity with beam/diffuse partition | Planned; candidate |
-| `ef_rs_in()` | Incoming shortwave radiation, including slope and aspect | Planned; candidate |
-| `ef_atm_emissivity()` | Clear-sky atmospheric emissivity | Planned; candidate |
-| `ef_rl_in()`, `ef_rl_out()` | Incoming and emitted longwave radiation | Planned; candidate |
+| [`ef_tau_sw()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md) | Broadband shortwave transmissivity with beam/diffuse partition | Planned; candidate |
+| [`ef_rs_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md) | Incoming shortwave radiation, including slope and aspect | Planned; candidate |
+| [`ef_atm_emissivity()`](https://djwillichile.github.io/EarthFlux/reference/ef_atm_emissivity.md) | Clear-sky atmospheric emissivity | Planned; candidate |
+| [`ef_rl_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_in.md), [`ef_rl_out()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_out.md) | Incoming and emitted longwave radiation | Planned; candidate |
 
 Specifications:
 [ef_net_radiation.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/ef_net_radiation.md),
