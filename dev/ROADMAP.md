@@ -21,10 +21,11 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 - [x] Productos MODIS (metadatos verificados con guías oficiales).
 - [x] Backend GWR decidido y especificación del módulo GWR.
 - [x] Auditoría de referencias.
-- [ ] Diseño de paralelismo e historias de usuario.
-- [ ] Registro consolidado de decisiones y decisiones P0 del autor.
-- [ ] Registro unificado de flags.
-- [ ] Diseño experimental de validación (C1/C2/C3).
+- [x] Diseño de paralelismo e historias de usuario.
+- [x] Registro consolidado de decisiones (`DECISIONS.md`).
+- [ ] Decisiones P0 del autor.
+- [x] Registro unificado de flags (`specs/flags.md`).
+- [x] Diseño experimental de validación (C1/C2/C3).
 - [ ] Verificar Allen et al. (2007) y ASCE-EWRI (2005) en la fuente
       primaria.
 
