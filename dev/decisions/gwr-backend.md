@@ -6,8 +6,9 @@ Autor: Guillermo Servando Fuentes-Jaque ·
 Relacionado: `ARCHITECTURE.md` §6.1 y §6.3, `SCIENTIFIC_SPEC.md` §1.2, §5 y
 §6, `VALIDATION_PLAN.md` §1.1 y §2.3, `DEVELOPMENT.md` §4.
 
-> Este documento reúne evidencia para decidir el backend de GWR. **No es una
-> decisión tomada.** Todo dato de metadatos proviene de observaciones
+> Este documento reúne la evidencia con la que el autor decidió el backend de
+> GWR (ver "Decisiones del autor"); las secciones siguientes conservan la
+> evaluación original. Todo dato de metadatos proviene de observaciones
 > realizadas el 2026-11-04 (CRAN y pruebas locales); lo no observado se marca
 > `TODO`. Las fórmulas se marcan `CANDIDATA` según la convención de
 > `SCIENTIFIC_SPEC.md`: ninguna está `VERIFICADA` contra la fuente primaria.
@@ -46,8 +47,9 @@ decisiones.
   duras recursivas.
 - **Propuesta:** implementar internamente el núcleo GWR (WLS por punto,
   traza de S, AICc y CV, predicción por bloques) y usar `GWmodel` **solo
-  en `Suggests`** como referencia cruzada en tests (con `spgwr` como
-  segunda referencia ligera opcional). MGWR se difiere; si se necesita, se
+  en `Suggests`** como referencia cruzada en tests. (La propuesta original
+  incluía `spgwr` como segunda referencia ligera; **descartado** por el
+  autor el 2026-11-04.) MGWR se difiere; si se necesita, se
   reevalúa como backend opcional externo en vez de implementarlo.
 
 ---

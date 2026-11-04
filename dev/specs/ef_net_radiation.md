@@ -50,8 +50,8 @@ auditable.
   & Trezza, R. (2007). Satellite-based energy balance for mapping
   evapotranspiration with internalized calibration (METRIC) — Model.
   *Journal of Irrigation and Drainage Engineering*, 133(4), 380–394.
-  DOI `10.1061/(ASCE)0733-9437(2007)133:4(380)` (DOI tal como se cita en el
-  archivo `DESCRIPTION` del paquete `water` v1.0; `TODO: confirmar DOI`).
+  DOI `10.1061/(ASCE)0733-9437(2007)133:4(380)` (verificado con Crossref,
+  2026-11-04; ver D4).
   Número de ecuación en el artículo: `TODO`.
 - **Fuente secundaria 1:** paquete R `water` v1.0, función
   `netRadiation()`, que cita Allen, Tasumi y Trezza (2007). Implementa
@@ -83,7 +83,7 @@ auditable.
 | Forma de la ecuación | Corroborada por dos fuentes secundarias independientes |
 | Contraste con Allen et al. (2007) | **Pendiente** |
 | Número de ecuación | `TODO` |
-| DOI | `TODO: confirmar` (tomado de `water`) |
+| DOI | Verificado con Crossref (2026-11-04) |
 | Constantes | La ecuación no contiene constantes numéricas |
 
 Por lo tanto el estado es **`CANDIDATA (corroborada)`** y no `VERIFICADA`.

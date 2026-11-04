@@ -220,7 +220,7 @@ autor y licencia, sus convenciones se adoptan como estilo de la casa.
 | Motor interno sobre matrices (celdas × tiempo) que nunca lee ni escribe archivos (`engine.R`) | Núcleo `ef_*()` aritmético y vectorizado (sección 3) |
 | Envoltorio ráster por bloques con `terra::readStart()` / `writeStart()` y opciones de escritura explícitas | Patrón base para los envoltorios ráster (M2/M4); el paralelismo (6.3) se agrega sobre este patrón, no en su lugar |
 | Test de integración "el tamaño de bloque no cambia el resultado" | Igual, más "secuencial = paralelo" |
-| Verificación cruzada contra implementaciones GPL sin empaquetarlas (`inst/verification/`) | Script de verificación contra `water` (GPL) fuera del tarball, cargado solo si está instalado |
+| Verificación cruzada contra implementaciones GPL sin empaquetarlas (`inst/verification/`) | Script de verificación contra `water` (GPL) en `dev/verification/` (excluido del tarball porque `dev/` está en `.Rbuildignore`; `inst/` sí se incluiría), cargado solo si `water` está instalado |
 | Grupos de tests opcionales por variable de entorno (online, lentos, referencias externas) | `EARTHFLUX_ONLINE_TESTS`, `EARTHFLUX_SLOW_TESTS` (por definir) |
 | Historias de usuario con tests de aceptación (`docs/USER_STORIES.md`, `test-story-XX.R`) | A definir en M1 (`dev/USER_STORIES.md`) |
 | Workflows `pkgdown` (gh-pages) y `release` (tag ↔ versión ↔ sección de NEWS) | Planificados para M0/M7 |

@@ -177,7 +177,7 @@ Estado actual:
 | `terra` | Imports | **Aceptada**; se declara con la primera función que la use |
 | `future` / `future.apply` | Imports/Suggests | Aceptado el requisito de paralelismo; decisión de paquete en M1 |
 | `sf` | – | Solo si se justifica |
-| Backend GWR | – | Decisión abierta |
+| Backend GWR | – | **Decidido** (2026-11-04): núcleo interno; `GWmodel` en `Suggests` como referencia de tests (`decisions/gwr-backend.md`) |
 | `renv` | – | No en el paquete; posible en el repositorio de experimentos |
 
 ## 5. CRAN
