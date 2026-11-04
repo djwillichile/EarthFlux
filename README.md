@@ -1,8 +1,11 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
-# EarthFlux <img src="man/figures/logo.png" align="right" height="139" alt="EarthFlux logo" />
-
+<h1 align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="man/figures/logo-horizontal-dark.svg">
+<img src="man/figures/logo-horizontal.svg" alt="EarthFlux" width="560">
+</picture>
+</h1>
 <!-- badges: start -->
 
 [![GitHub

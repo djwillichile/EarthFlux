@@ -13,7 +13,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-# EarthFlux <img src="man/figures/logo.png" align="right" height="139" alt="EarthFlux logo" />
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="man/figures/logo-horizontal-dark.svg">
+    <img src="man/figures/logo-horizontal.svg" alt="EarthFlux" width="560">
+  </picture>
+</h1>
 
 <!-- badges: start -->
 [![GitHub release](https://img.shields.io/github/v/release/djwillichile/EarthFlux?label=release)](https://github.com/djwillichile/EarthFlux/releases/latest)
