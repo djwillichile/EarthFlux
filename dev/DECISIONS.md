@@ -90,7 +90,7 @@ Regla para M2 mientras P0-1 … P0-3 estén abiertas: las formulaciones no
 verificadas quedan `CANDIDATA`, se exponen mediante **argumentos explícitos
 sin valor por defecto** (p. ej., la altura de ψ_m estable de SH-11 como
 control del tipo `stable_psi_m_height`; RL↓ mediante un argumento de
-temperatura agnóstico, `ef_longwave_in(temperature, …)`, RC-12) y se
+temperatura agnóstico, `ef_rl_in(temperature, …)`, RC-12) y se
 rotulan como `CANDIDATA` en roxygen.
 
 | P0 | Se adopta | Filas que pasan a `DECIDIDA (provisional)` (§5) | Sigue pendiente |
@@ -98,7 +98,7 @@ rotulan como `CANDIDATA` en roxygen.
 | P0-4 | K y radianes en el núcleo `metric`; °C en `forcing` y ET de referencia con conversión explícita en la frontera; `doy` + `utc_hour` numéricos | ARCH-4, WF-02, RC-01, RC-03 (convención) | *View time* de MOD21 (MP-01) |
 | P0-5 | Una constante por magnitud (`R/constants.R`): 273.15 K, σ CODATA exacto, regla de Gsc; literales normativos solo en ET de referencia | G-D9, RC-07, WF-14; ET-D3 (ρ_w como constante, misma regla) | Valor de Gsc (RC-06: regla adoptada, valor sin verificar; constante `CANDIDATA`) |
 | P0-6 | ρ_air de §8.1 con T_a = Ts − dT y P de `ef_air_pressure()` o medida; T_a y ρ iteradas en L; dT₀ = 0; c_p en una sola constante nombrada | SH-08, SH-10 (salvo g), SH-19 | SH-09 (valor de c_p, depende de P0-1): constante `CANDIDATA` 1004; g `CANDIDATA` |
-| P0-7 | Una sola `ef_latent_heat_vaporization()`, `method` sin defecto; `"constant"` como defecto futuro de `earthflux()` hasta V2; guarda [10⁶, 10⁷] J kg⁻¹ | ET-D1, ET-D2 | `"metric"` (`CANDIDATA`, no implementada hasta V2) |
+| P0-7 | Una sola `ef_lambda()`, `method` sin defecto; `"constant"` como defecto futuro de `earthflux()` hasta V2; guarda [10⁶, 10⁷] J kg⁻¹ | ET-D1, ET-D2 | `"metric"` (`CANDIDATA`, no implementada hasta V2) |
 | P0-8 | Núcleo de anclas sin umbrales ni k por defecto, sin relajación automática, `etrf_hot`/`le_hot` explícitos | D-AP-01, D-AP-02, D-AP-04, D-AP-05 | Preset `VERIFICADA` para `earthflux()` |
 | P0-9 | Un punto de calibración por clase con `aggregate` explícito; condiciones de borde en función propia de la etapa [B] | D-AP-06, SH-14, D-AP-03 | — |
 | P0-10 | Fase B con estrategia P2, `tol` = 0.01 por ancla, `maxit` = 20, ω = 0, driver de calibración exportado | SH-15, SH-16, SH-17 | — |
@@ -121,7 +121,7 @@ Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
    antes de implementarlas, o se registran algunas como definiciones
    operativas? — *Recomendación:* verificar primero; `ef_net_radiation()` no
    se fusiona a `main` sin confirmar forma, notación y número de ecuación
-   (NR-D3); `ef_etrf()` y `ef_et_daily()` solo se adelantan con una decisión
+   (NR-D3); `ef_etrf()` y `ef_et_daily_etrf()` solo se adelantan con una decisión
    explícita registrada. — *Consecuencia:* hasta entonces solo es
    implementable lo `VERIFICADA` contra FAO-56 (LE residual, λ `"constant"`
    y `"fao56"`, ET_inst, ρ_w, P(z)); una única lectura del artículo
@@ -136,7 +136,7 @@ Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
    el valor.
 3. **P0-3 · RC-12 (con RC-13, GW-07, SPEC-5.1; transversal T-01).** ¿Qué
    temperatura entra en RL↓? — *Recomendación:* función agnóstica
-   `ef_longwave_in(temperature, atm_emissivity)`; (a) Ta del forzamiento y
+   `ef_rl_in(temperature, atm_emissivity)`; (a) Ta del forzamiento y
    (b) Ts del píxel frío como configuraciones explícitas; (c) Ts por píxel
    solo para verificación cruzada con `water`; verificar antes Allen et al.
    (2007) (`radiation-components.md` §6.5.B). — *Consecuencia:* (b) obliga a
@@ -172,7 +172,7 @@ Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
    (§8.3), por lo que una constante única nombrada no bloquea la
    implementación; diferencia con `water` ≈ 0.6 % en ρ.
 7. **P0-7 · λ única en la cadena (ET-D1, ET-D2; T-05).** ¿Una sola función
-   `ef_latent_heat_vaporization()` para la condición del ancla fría y para la
+   `ef_lambda()` para la condición del ancla fría y para la
    conversión LE → ET, con `method` explícito y `"constant"` como defecto de
    `earthflux()` hasta verificar V2? — *Recomendación:* `"constant"`
    (FAO-56) hasta V2; luego evaluar `"metric"`; función de bajo nivel sin
@@ -331,8 +331,8 @@ recomendaciones ya escritas en los documentos citados; el autor decide.
   §6.5.B, opción (a)) dice "Estación única + gradiente = C1; **GWR = C2**",
   mientras `VALIDATION_PLAN.md` §2.1 define C2 = alternativa espacial de
   referencia y **C3 = GWR**.
-- **Ruta propuesta:** (1) M2: implementar `ef_longwave_in(temperature, …)`
-  agnóstica y `ef_atmospheric_emissivity()` con método explícito (forma en
+- **Ruta propuesta:** (1) M2: implementar `ef_rl_in(temperature, …)`
+  agnóstica y `ef_atm_emissivity()` con método explícito (forma en
   τ_sw; Brutsaert solo cuando se verifique, con coeficiente explícito y
   registrado, RC-13); (2) pipeline con RC-12 (a) y (b) como configuraciones
   registradas; (3) M3: GW-07 por defecto (a) y LST como opción (b) con
@@ -390,7 +390,7 @@ recomendaciones ya escritas en los documentos citados; el autor decide.
   temperatura del **aire**; 2.501 − 0.00236·(Ts − 273.15) con temperatura de
   **superficie**) y un uso cruzado en anclas y en la conversión LE → ET.
 - **Ruta propuesta:** la condición de borde del ancla fría llama a la misma
-  `ef_latent_heat_vaporization()` que la conversión de ET (regla de
+  `ef_lambda()` que la conversión de ET (regla de
   `evapotranspiration.md` §4.3); `method` explícito; defecto `"constant"`
   hasta verificar V2 (ET-D1).
 
@@ -445,17 +445,17 @@ recomendaciones ya escritas en los documentos citados; el autor decide.
 ### T-10 · Emisividad superficial ε₀ — P0 (contrato) / P1 (fuente)
 
 - **IDs:** RC-14, MP-04, NR-D7, contrato C2 de `radiation-components.md` §1.
-- **Ruta propuesta:** la misma ε₀ en `ef_longwave_out()` y
+- **Ruta propuesta:** la misma ε₀ en `ef_rl_out()` y
   `ef_net_radiation()` (C2, garantizado por el orquestador); preferir la ε₀
   derivada del producto LST (RC-14; MP-04 E1/E2) con referencia primaria;
-  NR-D7 se decide junto con `ef_longwave_out(lst, emissivity)`.
+  NR-D7 se decide junto con `ef_rl_out(lst, emissivity)`.
 
 ### T-11 · Albedo, fracción difusa y circularidad con Rs↓ — P1
 
 - **IDs:** MP-03, RC-09 (ρ_g), `modis-products.md` §8.1 (opción A1),
   antecedente §3 (fuente del modelo de fracción difusa por tramos `TODO`).
 - **Ruta propuesta:** A2/A3 explícitas mientras no se resuelva la
-  circularidad (S de `ef_sw_transmissivity()`, que usa α como ρ_g); A1 solo
+  circularidad (S de `ef_tau_sw_allen()`, que usa α como ρ_g); A1 solo
   con la solución documentada (MP-03).
 
 ### T-12 · Coeficiente del ancla fría, tipo de referencia y rango de ETrF — P0 / P1
@@ -639,7 +639,7 @@ grupo**.
 | RC-12 | RC-12 | Temperatura para RL↓ | Ta / Ts del píxel frío / Ts por píxel | Función agnóstica; (a) y (b) configuraciones; (c) solo verificación; verificar Allen 2007 | ABIERTA | P0 | §6.5.B, §9 | GW-07; SPEC-5.1; D-AP-03; T-01; P0-3 |
 | RC-13 | RC-13 | Formulación de ε_a y τ de entrada | τ_sw / Brutsaert (eₐ, Ta); τ modelada / efectiva | τ_sw modelada; evaluar Brutsaert calibrado (evidencia del autor, 2023) | ABIERTA | P0 | §6.5.A, §9 | RC-12; T-01 |
 | RC-14 | RC-14 | ε₀ de banda ancha y coherencia con LST | Desde LAI / producto LST / MOD21 | Preferir derivada del producto; registrar procedencia | ABIERTA | P1 | §6.6, §9 | MP-04; NR-D7; T-10 |
-| RC-15 | RC-15 | Tipo de retorno | Vector / lista | Lista en `ef_shortwave_in()` y `ef_solar_geometry()`; vector en onda larga | ABIERTA | P0 | §9 | T-17 |
+| RC-15 | RC-15 | Tipo de retorno | Vector / lista | Lista en `ef_rs_in_modelled()` y `ef_solar_geometry()`; vector en onda larga | ABIERTA | P0 | §9 | T-17 |
 | RC-16 | RC-16 | Orientación `NA` en celdas planas | Propagar / aceptar si s = 0 | Propagar; el envoltorio del MDE asigna valor | ABIERTA | P0 | §4.6, §9 | RC-02 |
 | RC-17 | RC-17 | Ubicación de `ef_air_pressure()` | `metric-radiation.R` / módulo compartido | Archivo compartido | DECIDIDA (provisional, 2026-11-04), tomada al implementar `ef_air_pressure()` (`R/shared-physics.R`) | — | §6.2, §9 | = WF-01; T-08 |
 

@@ -47,7 +47,7 @@ test_that("air pressure rejects invalid input with classed errors", {
   expect_match(conditionMessage(cnd), "found 2 value(s)", fixed = TRUE)
 })
 
-# ef_latent_heat_vaporization() ---------------------------------------------
+# ef_lambda() ---------------------------------------------
 #
 # Case B of evapotranspiration.md section 10: lambda(20 C) = 2453780 and
 # lambda(30 C) = 2430170 J kg-1. The tolerance is relative,
@@ -57,37 +57,37 @@ test_that("air pressure rejects invalid input with classed errors", {
 rel_tol <- sqrt(.Machine$double.eps)
 
 test_that("the constant method returns the FAO-56 value", {
-  expect_identical(ef_latent_heat_vaporization(method = "constant"), 2.45e6)
+  expect_identical(ef_lambda(method = "constant"), 2.45e6)
   # temperature is ignored by the constant method
   expect_identical(
-    ef_latent_heat_vaporization(c(280, 300), method = "constant"),
+    ef_lambda(c(280, 300), method = "constant"),
     2.45e6
   )
 })
 
 test_that("the fao56 method matches case B", {
-  lambda <- ef_latent_heat_vaporization(c(293.15, 303.15), method = "fao56")
+  lambda <- ef_lambda(c(293.15, 303.15), method = "fao56")
   expected <- c(2453780, 2430170)
   expect_lt(max(abs(lambda / expected - 1)), rel_tol)
 })
 
 test_that("the fao56 method keeps dim and propagates NA", {
   temp <- matrix(c(293.15, NA, 303.15, NaN), 2, 2)
-  lambda <- ef_latent_heat_vaporization(temp, method = "fao56")
+  lambda <- ef_lambda(temp, method = "fao56")
   expect_identical(dim(lambda), c(2L, 2L))
   expect_true(is.na(lambda[2, 1]) && is.na(lambda[2, 2]))
-  expect_silent(ef_latent_heat_vaporization(c(NA, 300), method = "fao56"))
+  expect_silent(ef_lambda(c(NA, 300), method = "fao56"))
 })
 
 test_that("method has no default and must match exactly", {
-  expect_error(ef_latent_heat_vaporization(300),
+  expect_error(ef_lambda(300),
                class = "earthflux_missing_input")
-  expect_error(ef_latent_heat_vaporization(300, method = "FAO56"),
+  expect_error(ef_lambda(300, method = "FAO56"),
                class = "earthflux_unknown_method")
-  expect_error(ef_latent_heat_vaporization(300, method = "const"),
+  expect_error(ef_lambda(300, method = "const"),
                class = "earthflux_unknown_method")
   # The surface-temperature form is CANDIDATA and not available.
-  cnd <- tryCatch(ef_latent_heat_vaporization(300, method = "metric"),
+  cnd <- tryCatch(ef_lambda(300, method = "metric"),
                   error = identity)
   expect_s3_class(cnd, "earthflux_unknown_method")
   expect_s3_class(cnd, "earthflux_input_error")
@@ -95,22 +95,22 @@ test_that("method has no default and must match exactly", {
 })
 
 test_that("the fao56 method validates temperature", {
-  expect_error(ef_latent_heat_vaporization(method = "fao56"),
+  expect_error(ef_lambda(method = "fao56"),
                class = "earthflux_missing_input")
-  expect_error(ef_latent_heat_vaporization(0, method = "fao56"),
+  expect_error(ef_lambda(0, method = "fao56"),
                class = "earthflux_domain_error")
-  expect_error(ef_latent_heat_vaporization(-5, method = "fao56"),
+  expect_error(ef_lambda(-5, method = "fao56"),
                class = "earthflux_domain_error")
-  expect_error(ef_latent_heat_vaporization(Inf, method = "fao56"),
+  expect_error(ef_lambda(Inf, method = "fao56"),
                class = "earthflux_domain_error")
-  expect_error(ef_latent_heat_vaporization("300", method = "fao56"),
+  expect_error(ef_lambda("300", method = "fao56"),
                class = "earthflux_input_error")
-  expect_error(ef_latent_heat_vaporization(numeric(0), method = "fao56"),
+  expect_error(ef_lambda(numeric(0), method = "fao56"),
                class = "earthflux_input_error")
-  cnd <- tryCatch(ef_latent_heat_vaporization(-1, method = "fao56"),
+  cnd <- tryCatch(ef_lambda(-1, method = "fao56"),
                   error = identity)
   expect_identical(cnd$call,
-                   quote(ef_latent_heat_vaporization(-1, method = "fao56")))
+                   quote(ef_lambda(-1, method = "fao56")))
 })
 
 test_that("the lambda unit guard accepts J kg-1 and rejects other units", {
@@ -124,6 +124,6 @@ test_that("the lambda unit guard accepts J kg-1 and rejects other units", {
                class = "earthflux_domain_error")
   expect_error(check_latent_heat_units(c(2.45, 2.45e6, 2450), "lambda"),
                "found 2 value(s)", fixed = TRUE)
-  lambda <- ef_latent_heat_vaporization(c(273.15, 323.15), method = "fao56")
+  lambda <- ef_lambda(c(273.15, 323.15), method = "fao56")
   expect_invisible(check_latent_heat_units(lambda, "lambda"))
 })

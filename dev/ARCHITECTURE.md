@@ -97,9 +97,9 @@ Modelo de referencia: `ef_net_radiation()` (`specs/ef_net_radiation.md`
 | NA | `NA`/`NaN` se propagan sin error ni warning; la comprobación de dominio los ignora; `EF_INPUT_NA` lo construye la orquestación |
 | Dominio | Valor imposible o infinito → `earthflux_domain_error` (subclase de `earthflux_input_error`) con nombre del argumento y conteo (`check_in_range()`). Nunca se corrige, trunca ni recorta. Política única (P0-11, T-13): error por defecto en el núcleo; la orquestación convierte en `NA` + flag lo marcado aguas arriba (QA, QC, superficies GWR) **antes** de llamar al núcleo; no hay opción `on_invalid` |
 | `method` | Sin valor por defecto y con coincidencia exacta (`check_method()`): faltante → `earthflux_missing_input`; desconocido → `earthflux_unknown_method` (ambas subclases de `earthflux_input_error`). `earthflux()` podrá fijar un defecto documentado solo para formulaciones `VERIFICADA` (T-15) |
-| Formulaciones no verificadas | Mientras P0-1 … P0-3 sigan abiertas: `CANDIDATA`, expuestas mediante argumentos explícitos **sin defecto** (p. ej., `stable_psi_m_height` en el control de H, SH-11; `ef_longwave_in(temperature, …)` agnóstica, RC-12) y rotuladas como `CANDIDATA` en roxygen |
+| Formulaciones no verificadas | Mientras P0-1 … P0-3 sigan abiertas: `CANDIDATA`, expuestas mediante argumentos explícitos **sin defecto** (p. ej., `stable_psi_m_height` en el control de H, SH-11; `ef_rl_in(temperature, …)` agnóstica, RC-12) y rotuladas como `CANDIDATA` en roxygen |
 | Constantes | Una por magnitud en `R/constants.R` (`EF_KELVIN_OFFSET`, `EF_STEFAN_BOLTZMANN`, `EF_SOLAR_CONSTANT`, `EF_VON_KARMAN`, `EF_GRAVITY`, `EF_SPECIFIC_HEAT_AIR`, `EF_WATER_DENSITY`, `EF_LATENT_HEAT_FAO56`), cada una con unidad, fuente y estado (P0-5). Los coeficientes normativos (FAO-56, ASCE-EWRI) quedan como literales solo dentro de la función que implementa esa ecuación (WF-14) |
-| Magnitudes compartidas | `ef_air_pressure()` y `ef_latent_heat_vaporization()` en `R/shared-physics.R`; ningún módulo las reimplementa. La misma λ (mismo `method`) se usa en el ancla fría y en LE → ET (P0-7) |
+| Magnitudes compartidas | `ef_air_pressure()` y `ef_lambda()` en `R/shared-physics.R`; ningún módulo las reimplementa. La misma λ (mismo `method`) se usa en el ancla fría y en LE → ET (P0-7) |
 
 ### 3.2 Objetos de retorno (convención M2; P0-12, T-17)
 
@@ -125,8 +125,8 @@ Modelo de referencia: `ef_net_radiation()` (`specs/ef_net_radiation.md`
    añade su validador junto a su constructor. Los flags de objeto usan una
    máscara de longitud 1 (`ef_flag(TRUE, code)`).
 4. **Una función exportada por método** (aritmética pura, p. ej.,
-   `ef_soil_heat_flux_tasumi()`) más un **despachador delgado**
-   (`ef_soil_heat_flux(…, method)`) con `method` sin defecto, que valida,
+   `ef_g_tasumi()`) más un **despachador delgado**
+   (`ef_g(…, method)`) con `method` sin defecto, que valida,
    despacha, llama a `ef_diagnose_<etapa>()` y registra procedencia
    (`specs/soil-heat-flux.md` §5.2, opción C; G-5.2, G-D3). Test obligatorio:
    despachador ≡ llamada directa. Las auxiliares quedan internas; el tamaño

@@ -460,17 +460,17 @@ con pérdida de fidelidad espacial. El procedimiento no se leyó (`TODO`).
 ```r
 crit <- ef_anchor_criteria(
   cold = list(
-    ef_rule("ndvi", ">=", 0.95, scale = "percentile", domain = "land"),
-    ef_rule("lai",  ">=", 4,    scale = "absolute")
+    ef_anchor_rule("ndvi", ">=", 0.95, scale = "percentile", domain = "land"),
+    ef_anchor_rule("lai",  ">=", 4,    scale = "absolute")
   ),
   hot = list(
-    ef_rule("ndvi",   "<=", 0.10, scale = "percentile", domain = "land"),
-    ef_rule("ndvi",   ">",  0,    scale = "absolute"),
-    ef_rule("albedo", "between", c(0.10, 0.35), scale = "absolute")
+    ef_anchor_rule("ndvi",   "<=", 0.10, scale = "percentile", domain = "land"),
+    ef_anchor_rule("ndvi",   ">",  0,    scale = "absolute"),
+    ef_anchor_rule("albedo", "between", c(0.10, 0.35), scale = "absolute")
   ),
   homogeneity = ef_homogeneity("lst", window = 5L, stat = "sd", max = 1.5),
-  select = list(cold = ef_pick("lst", "lowest_fraction", 0.2),
-                hot  = ef_pick("lst", "highest_fraction", 0.2)),
+  select = list(cold = ef_anchor_pick("lst", "lowest_fraction", 0.2),
+                hot  = ef_anchor_pick("lst", "highest_fraction", 0.2)),
   percentile_domain = "land",        # NDVI > 0 y válidos (definición registrada)
   quantile_type = 7L,
   source = "water v1.0 anchors.control() defaults",
@@ -484,7 +484,7 @@ crit <- ef_anchor_criteria(
 - Cada regla registra variable, operador, valor, escala (`"absolute"` /
   `"percentile"`), dominio del percentil y, a nivel de objeto, `source`
   (texto con la referencia) y `status` (`"TODO"`, `"CANDIDATA"`,
-  `"VERIFICADA"`). Los nombres `ef_rule()`, `ef_homogeneity()` y `ef_pick()`
+  `"VERIFICADA"`). Los nombres `ef_anchor_rule()`, `ef_homogeneity()` y `ef_anchor_pick()`
   son provisionales (D-AP-08: exportarlos o aceptar listas validadas).
 - Validación: variables conocidas; operadores de una lista cerrada;
   percentiles en (0, 1]; ventana impar ≥ 3; `quantile_type` en 1–9;

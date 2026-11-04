@@ -26,14 +26,14 @@ exacta indicada (capítulo, recuadro, ecuación, tabla o página).
 | Magnitud | Ecuación (notación propia) | Estado | Evidencia | Función |
 |---|---|---|---|---|
 | Flujo de calor latente | LE = Rn − G − H | **`VERIFICADA`** como balance de energía (FAO-56, cap. 1, Ec. 1, reordenada). Número de ecuación en Allen et al. (2007): `TODO` | §3 | `ef_latent_heat()` |
-| Calor latente de vaporización, constante | λ = 2.45 MJ kg⁻¹ (≈ 20 °C) | **`VERIFICADA`** (FAO-56, cap. 3 y anexo 3) | §4.1 | `ef_latent_heat_vaporization(method = "constant")` |
+| Calor latente de vaporización, constante | λ = 2.45 MJ kg⁻¹ (≈ 20 °C) | **`VERIFICADA`** (FAO-56, cap. 3 y anexo 3) | §4.1 | `ef_lambda(method = "constant")` |
 | λ dependiente de la temperatura del aire | λ = 2.501 − 2.361 × 10⁻³·T [MJ kg⁻¹], T en °C | **`VERIFICADA`** como ecuación de FAO-56 (anexo 3, Ec. 3-1). Su uso en METRIC: no aplica (ver fila siguiente) | §4.2 | `method = "fao56"` |
 | λ dependiente de Ts, forma METRIC | λ = 2.501 − 0.00236·(Ts − 273.15) [MJ kg⁻¹] | `CANDIDATA` (paquete `water` v1.0; número de ecuación atribuido por notas terciarias) | §4.3 | `method = "metric"` |
 | Densidad del agua | ρ_w = 1000 kg m⁻³ | **`VERIFICADA`** (FAO-56, cap. 3, recuadro 8; cap. 1, nota de la tabla 1) | §4.4 | constante interna |
 | Conversión energía → lámina | lámina [m] = energía por área [J m⁻²] / (λ·ρ_w) | **`VERIFICADA`** (FAO-56, cap. 3, recuadro 8 y Ec. 20) | §5 | — |
-| ET instantánea | ET_inst = 1000·3600·LE / (λ·ρ_w) [mm h⁻¹] | **`VERIFICADA`** como conversión de unidades (FAO-56, recuadro 8, + 3600 s h⁻¹). Notación METRIC "3600·LE/(λ·ρ_w)": `CANDIDATA (corroborada)`, con observación dimensional (§5.2) | §5, §6.1 | `ef_et_instantaneous()` |
+| ET instantánea | ET_inst = 1000·3600·LE / (λ·ρ_w) [mm h⁻¹] | **`VERIFICADA`** como conversión de unidades (FAO-56, recuadro 8, + 3600 s h⁻¹). Notación METRIC "3600·LE/(λ·ρ_w)": `CANDIDATA (corroborada)`, con observación dimensional (§5.2) | §5, §6.1 | `ef_et_inst()` |
 | Fracción de ET de referencia | ETrF = ET_inst / ETr_inst | `CANDIDATA (corroborada)` | §6.2 | `ef_etrf()` |
-| ETa diaria | ETa_24 = ETrF · ETr_24 | `CANDIDATA (corroborada)` | §6.3 | `ef_et_daily()` |
+| ETa diaria | ETa_24 = ETrF · ETr_24 | `CANDIDATA (corroborada)` | §6.3 | `ef_et_daily_etrf()` |
 | Corrección por pendiente de ETa_24 | ETa_24 = C_rad · ETrF · ETr_24 | `CANDIDATA` (una fuente secundaria; número de ecuación contradictorio) | §6.3 | decisión ET-D7 |
 | ET de período | ET_per = Σ_d ETrF_d · ETr_24,d con ETrF_d interpolada | `CANDIDATA` (una fuente secundaria) | §8 | `ef_et_period()` (posterior, opcional) |
 | Rango plausible de ETrF | — | `TODO` (indicio terciario) | §7 | flag no registrado |
@@ -188,7 +188,7 @@ con argumentos con nombre en la orquestación y en los ejemplos.
 
 ---
 
-## 4. Calor latente de vaporización y densidad del agua — `ef_latent_heat_vaporization()`
+## 4. Calor latente de vaporización y densidad del agua — `ef_lambda()`
 
 > **Implementada (2026-11-04)** en `R/shared-physics.R` (archivo compartido
 > con `ef_air_pressure()`, porque la usan el módulo de anclas y la cadena
@@ -263,7 +263,7 @@ conversión ×10⁶ es interna y está documentada.
 ### 4.5 Firma propuesta
 
 ```r
-ef_latent_heat_vaporization(temperature = NULL, method)
+ef_lambda(temperature = NULL, method)
 ```
 
 | `method` | `temperature` | Ecuación | Estado |
@@ -353,7 +353,7 @@ implementación (§11.3), que detecta un factor 1000 omitido o duplicado
 
 ## 6. ET instantánea, ETrF y extrapolación diaria
 
-### 6.1 `ef_et_instantaneous(le, lambda)`
+### 6.1 `ef_et_inst(le, lambda)`
 
 ```text
 ET_inst = 1000 · 3600 · LE / (λ · ρ_w)       [mm h⁻¹]
@@ -362,7 +362,7 @@ ET_inst = 1000 · 3600 · LE / (λ · ρ_w)       [mm h⁻¹]
 | Argumento | Unidad | Dominio |
 |---|---|---|
 | `le` | W m⁻² | real finito (negativos permitidos) |
-| `lambda` | J kg⁻¹ | finito y > 0 (salida de `ef_latent_heat_vaporization()`) |
+| `lambda` | J kg⁻¹ | finito y > 0 (salida de `ef_lambda()`) |
 
 - Constantes internas nombradas: `EF_SECONDS_PER_HOUR = 3600` (exacta por
   definición), `EF_MM_PER_M = 1000` (exacta), `EF_WATER_DENSITY = 1000`
@@ -399,7 +399,7 @@ ETrF = ET_inst / ETr_inst          [–]
 - ETrF < 0 (ET_inst < 0) se devuelve sin cambios; ETrF fuera de un rango
   plausible → flag (§7), nunca truncamiento.
 
-### 6.3 `ef_et_daily(etrf, etr_24)` — `CANDIDATA (corroborada)`
+### 6.3 `ef_et_daily_etrf(etrf, etr_24)` — `CANDIDATA (corroborada)`
 
 ```text
 ETa_24 = ETrF · ETr_24             [mm d⁻¹]
@@ -420,7 +420,7 @@ ETa_24 = ETrF · ETr_24             [mm d⁻¹]
   el roxygen de `water::ETperiod()` cita la misma corrección como "Eq. 55".
   Las notas terciarias la describen como Eqs. 56–57, p. 390. Es relevante en
   terreno andino (`SCIENTIFIC_SPEC.md` §2.2), pero su definición y número de
-  ecuación deben verificarse (ítem V6). Propuesta: `ef_et_daily()` no lo
+  ecuación deben verificarse (ítem V6). Propuesta: `ef_et_daily_etrf()` no lo
   incluye en la primera implementación; se reserva el argumento `c_rad`
   (decisión ET-D7).
 
@@ -490,7 +490,7 @@ de `SCIENTIFIC_SPEC.md` §1.2 y debe trasladarse allí al fusionar.
 | C. Otros modelos de escalamiento desde una medición de una hora del día | — | `TODO`. Colaizzi et al. (2006) comparan cinco modelos (según el título); Chávez et al. (2008) y Ryu et al. (2012) tratan la extrapolación diaria y a sumas de 8 días (según el título). Contenido no consultado | Según el modelo |
 
 Recomendación provisional: implementar solo A en M2. B y C como funciones
-separadas futuras (p. ej., `ef_et_daily_evaporative_fraction()`, nombre a
+separadas futuras (p. ej., `ef_et_daily_evapfrac()`, nombre a
 decidir), cada una con su propia especificación, para permitir comparar
 métodos de extrapolación como parte de la validación (no como sustitución
 silenciosa).
@@ -553,7 +553,7 @@ referencia (`R/diagnostics.R`).
 
 ## 8. ET de período entre imágenes — `ef_et_period()` (opcional, posterior)
 
-Prioridad: después de `ef_et_daily()`. Útil para ET mensual o de temporada
+Prioridad: después de `ef_et_daily_etrf()`. Útil para ET mensual o de temporada
 y para validación contra balance hídrico (`VALIDATION_PLAN.md` §2.2).
 
 ### 8.1 Formulación — `CANDIDATA` (una fuente secundaria)
@@ -631,10 +631,10 @@ bloques (`ARCHITECTURE.md` §6.3).
 | Función | Firma | Salida | Estado de la ecuación | Exportar (ET-D11) |
 |---|---|---|---|---|
 | `ef_latent_heat()` | `(rn, g, h)` | LE [W m⁻²] | `VERIFICADA` (FAO-56 Ec. 1) | Sí (API avanzada) |
-| `ef_latent_heat_vaporization()` | `(temperature = NULL, method)` | λ [J kg⁻¹] | `"constant"` y `"fao56"`: `VERIFICADA`; `"metric"`: `CANDIDATA` | Sí |
-| `ef_et_instantaneous()` | `(le, lambda)` | ET_inst [mm h⁻¹] | `VERIFICADA` como conversión (FAO-56 recuadro 8) | Sí |
+| `ef_lambda()` | `(temperature = NULL, method)` | λ [J kg⁻¹] | `"constant"` y `"fao56"`: `VERIFICADA`; `"metric"`: `CANDIDATA` | Sí |
+| `ef_et_inst()` | `(le, lambda)` | ET_inst [mm h⁻¹] | `VERIFICADA` como conversión (FAO-56 recuadro 8) | Sí |
 | `ef_etrf()` | `(et_inst, etr_inst)` | ETrF [–] | `CANDIDATA (corroborada)` | Sí |
-| `ef_et_daily()` | `(etrf, etr_24)` | ETa_24 [mm d⁻¹] | `CANDIDATA (corroborada)` | Sí |
+| `ef_et_daily_etrf()` | `(etrf, etr_24)` | ETa_24 [mm d⁻¹] | `CANDIDATA (corroborada)` | Sí |
 | `ef_et_period()` | §8.3 | lista | `CANDIDATA` | Sí (posterior) |
 | inversa interna `et_inst_to_latent_heat()` (nombre a decidir) | `(et_inst, lambda)` | LE [W m⁻²] | álgebra de §5.1 | No (`@noRd`; para tests y para la condición del ancla fría) |
 
@@ -642,15 +642,15 @@ Orden de la cadena en la orquestación:
 
 ```text
 rn, g, h ──► ef_latent_heat() ──► le
-temperature ──► ef_latent_heat_vaporization(method) ──► lambda
-le, lambda ──► ef_et_instantaneous() ──► et_inst
+temperature ──► ef_lambda(method) ──► lambda
+le, lambda ──► ef_et_inst() ──► et_inst
 et_inst, etr_inst ──► ef_etrf() ──► etrf
-etrf, etr_24 ──► ef_et_daily() ──► eta_24
+etrf, etr_24 ──► ef_et_daily_etrf() ──► eta_24
 [etrf de varias fechas, serie de etr_24] ──► ef_et_period() ──► et_period
 ```
 
 La misma λ (mismo `method` y misma temperatura) debe usarse en la condición
-del ancla fría (módulo de anclas) y en `ef_et_instantaneous()` (§4.3,
+del ancla fría (módulo de anclas) y en `ef_et_inst()` (§4.3,
 §11.4). La orquestación registra `method` de λ en la procedencia.
 
 ### 9.2 Tipo, longitud, forma y NA (como `ef_net_radiation.md` §3.1 y §5)
@@ -673,13 +673,13 @@ del ancla fría (módulo de anclas) y en `ef_et_instantaneous()` (§4.3,
 | Función | Argumento | Dominio | Fuera de dominio |
 |---|---|---|---|
 | `ef_latent_heat()` | `rn`, `g`, `h` | reales finitos | `earthflux_domain_error` (solo `Inf`) |
-| `ef_latent_heat_vaporization()` | `temperature` | finita, > 0 K | `earthflux_domain_error` |
+| `ef_lambda()` | `temperature` | finita, > 0 K | `earthflux_domain_error` |
 |  | `method` | `"constant"`, `"fao56"`, `"metric"` | `earthflux_unknown_method` |
-| `ef_et_instantaneous()` | `le` | real finito | `earthflux_domain_error` (solo `Inf`) |
+| `ef_et_inst()` | `le` | real finito | `earthflux_domain_error` (solo `Inf`) |
 |  | `lambda` | finita, > 0; guarda de unidades (ET-D2) | `earthflux_domain_error` |
 | `ef_etrf()` | `et_inst` | real finito | `earthflux_domain_error` (solo `Inf`) |
 |  | `etr_inst` | finita, > 0 | `earthflux_domain_error` |
-| `ef_et_daily()` | `etrf` | real finito | `earthflux_domain_error` (solo `Inf`) |
+| `ef_et_daily_etrf()` | `etrf` | real finito | `earthflux_domain_error` (solo `Inf`) |
 |  | `etr_24` | finita, ≥ 0 | `earthflux_domain_error` |
 | `ef_et_period()` | estructura | §8.3 | `earthflux_input_error`; días sin ETr_24 → `earthflux_missing_input` |
 
@@ -805,11 +805,11 @@ valores calculados a mano.
 | ET_inst | Casos A2, C2, D, E |
 | Anclas FAO-56 | Caso F (detecta un factor 1000 omitido o duplicado) |
 | Guarda de unidades de λ | `lambda = 2.45` → error (si se aprueba ET-D2) |
-| Ida y vuelta | Grilla LE ∈ {−200, −49, 0, 1, 490, 612.5, 800} × λ ∈ {2.38e6, 2.45e6, 2.52e6}: `et_inst_to_latent_heat(ef_et_instantaneous(le, lambda), lambda)` = LE (relativa `sqrt(eps)`, absoluta en LE = 0) |
+| Ida y vuelta | Grilla LE ∈ {−200, −49, 0, 1, 490, 612.5, 800} × λ ∈ {2.38e6, 2.45e6, 2.52e6}: `et_inst_to_latent_heat(ef_et_inst(le, lambda), lambda)` = LE (relativa `sqrt(eps)`, absoluta en LE = 0) |
 | ETrF | Casos A3, C3; `etr_inst` = 0 o < 0 → `earthflux_domain_error` |
 | ETa_24 | Casos A4, C4; `etr_24` < 0 → error; `etr_24` = 0 permitido |
 | Negativos | ET_inst, ETrF y ETa_24 negativos devueltos sin cambios y sin warning |
-| Cadena | `ef_et_daily(ef_etrf(ef_et_instantaneous(ef_latent_heat(...), λ), etr_inst), etr_24)` = caso A completo |
+| Cadena | `ef_et_daily_etrf(ef_etrf(ef_et_inst(ef_latent_heat(...), λ), etr_inst), etr_24)` = caso A completo |
 | Flags (orquestación) | Caso C: máscaras `EF_ET_NEGATIVE` con índices correctos; con `NA` en la entrada, la máscara no contiene `NA` |
 
 ### 11.4 Coherencia con `VALIDATION_PLAN.md` §1.2
@@ -921,7 +921,7 @@ Para `REFERENCES.md` (al fusionar): DOIs verificados en api.crossref.org el
 | ET-D4 | Flag de LE negativo: código nuevo `EF_LE_NEGATIVE` o reutilizar `EF_ET_NEGATIVE` | Código nuevo (diagnostica H > Rn − G en la etapa de balance) | Revisión del registro |
 | ET-D5 | Rango plausible de ETrF | Ninguno hasta verificar V7; flag no registrado | V7 |
 | ET-D6 | `etr_inst` ≤ 0 y `etr_24` < 0 | Error de dominio (no `NA` + flag) | Especificación de forzamiento |
-| ET-D7 | C_rad en `ef_et_daily()` / `ef_et_period()` | Reservar argumento `c_rad`; implementar tras V6 y con la función que lo calcule en el módulo de radiación | V6 |
+| ET-D7 | C_rad en `ef_et_daily_etrf()` / `ef_et_period()` | Reservar argumento `c_rad`; implementar tras V6 y con la función que lo calcule en el módulo de radiación | V6 |
 | ET-D8 | Métodos de extrapolación alternativos (fracción evaporativa, otros) | Solo ETrF en M2; alternativas como funciones separadas con especificación propia | V14 |
 | ET-D9 | Dónde y cómo se comprueba el tipo de referencia | Orquestación; atributo explícito; error `earthflux_reference_mismatch` | Especificación de forzamiento |
 | ET-D10 | ET de período: `method` sin defecto; extrapolación fuera de fechas; hueco máximo; spline con < 3 fechas; ETr_24 faltante | `method` obligatorio; `extrapolation = "none"` por defecto (error); hueco máximo `TODO`; spline con < 3 fechas → error; ETr_24 faltante → error | V8 |
@@ -938,11 +938,11 @@ Para `REFERENCES.md` (al fusionar): DOIs verificados en api.crossref.org el
 
 - Implementables tras la fusión de esta especificación (ecuaciones
   `VERIFICADA` contra FAO-56): `ef_latent_heat()`,
-  `ef_latent_heat_vaporization()` con `"constant"` y `"fao56"`, y
-  `ef_et_instantaneous()`. Requisitos restantes de la *Definition of Done*
+  `ef_lambda()` con `"constant"` y `"fao56"`, y
+  `ef_et_inst()`. Requisitos restantes de la *Definition of Done*
   (`DEVELOPMENT.md` §3): entradas y unidades (§3.2, §4.5, §6.1), NA (§9.2),
   dominio (§9.3), casos (§10) y tests (§11) están definidos aquí.
-- `ef_etrf()` y `ef_et_daily()` son definiciones aritméticas simples, pero
+- `ef_etrf()` y `ef_et_daily_etrf()` son definiciones aritméticas simples, pero
   su estado es `CANDIDATA (corroborada)` hasta V4–V6: **no implementar**
   hasta que el autor confirme contra Allen et al. (2007), o hasta que se
   decida explícitamente registrarlas como definiciones operativas con su

@@ -35,7 +35,7 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 ## M2 — METRIC core physics (objetivo: 0.1.0)
 - [x] Convenciones comunes del núcleo (`ARCHITECTURE.md` §3), constantes
       físicas, registro de flags por etapa, condiciones con datos,
-      `ef_air_pressure()` y `ef_latent_heat_vaporization()`.
+      `ef_air_pressure()` y `ef_lambda()`.
 - [ ] Componentes de radiación (RL↑, RL↓, Rs↓, geometría solar).
 - [ ] Flujo de calor del suelo.
 - [ ] Píxeles ancla (selección automática y explícita, auditable).

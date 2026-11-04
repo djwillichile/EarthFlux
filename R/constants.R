@@ -87,5 +87,5 @@ EF_WATER_DENSITY <- 1000
 # Source: FAO-56, chapter 3, "Latent heat of vaporization": 2.45 MJ kg-1, the
 #   latent heat for an air temperature of about 20 degrees C; annex 3
 #   (dev/specs/evapotranspiration.md section 4.1).
-# Status: VERIFICADA. Used by ef_latent_heat_vaporization(method = "constant").
+# Status: VERIFICADA. Used by ef_lambda(method = "constant").
 EF_LATENT_HEAT_FAO56 <- 2.45e6

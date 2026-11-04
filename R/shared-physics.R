@@ -9,7 +9,7 @@
 #   - ef_air_pressure(): atmospheric pressure from elevation (FAO-56 Eq. 7,
 #     VERIFICADA). Used by the shortwave transmissivity, the air density of
 #     the sensible heat module and the reference ET.
-#   - ef_latent_heat_vaporization(): latent heat of vaporization, one function
+#   - ef_lambda(): latent heat of vaporization, one function
 #     for the whole chain (cold anchor condition and LE -> ET conversion;
 #     decision ET-D1 / P0-7). Methods "constant" and "fao56" (VERIFICADA as
 #     FAO-56). The surface-temperature form used in METRIC implementations
@@ -161,11 +161,11 @@ ef_air_pressure <- function(elevation) {
 #'
 #' @examples
 #' # FAO-56 constant value (J kg-1)
-#' ef_latent_heat_vaporization(method = "constant")
+#' ef_lambda(method = "constant")
 #'
 #' # Function of the air temperature, given in K (20 and 30 degrees C)
-#' ef_latent_heat_vaporization(c(293.15, 303.15), method = "fao56")
-ef_latent_heat_vaporization <- function(temperature = NULL, method) {
+#' ef_lambda(c(293.15, 303.15), method = "fao56")
+ef_lambda <- function(temperature = NULL, method) {
   call <- sys.call()
   if (!missing(method) && identical(method, "metric")) {
     ef_abort(

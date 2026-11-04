@@ -130,7 +130,7 @@ Módulos: `forcing`, `spatial`, `metric`, `validation`, `api`. Hito: M5
 
 Como **modelador/a avanzado/a**, quiero llamar directamente a
 `ef_net_radiation()` y a otros componentes (provisionales
-`ef_soil_heat_flux()`, `ef_longwave_out()`, ...) con vectores, matrices o
+`ef_g()`, `ef_rl_out()`, ...) con vectores, matrices o
 rásteres, para ensamblar variantes de METRIC o depurar una etapa sin usar
 la API de alto nivel.
 
@@ -150,7 +150,7 @@ Criterios de aceptación:
    flags y no cambian opciones globales (`terraOptions()`, `future::plan()`,
    `options()`): el test compara el estado antes y después de la llamada.
 5. Componer `ef_*()` en cadena (Rn → G → ...) da el mismo resultado que el
-   despachador correspondiente (p. ej., `ef_soil_heat_flux(method = )` ≡
+   despachador correspondiente (p. ej., `ef_g(method = )` ≡
    función del método; `specs/soil-heat-flux.md` §9.6).
 
 Módulos: `metric`. Hito: M2. Test: `tests/testthat/test-story-03.R`.

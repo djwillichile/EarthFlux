@@ -36,10 +36,10 @@ Convención de trazabilidad usada en este documento:
 6. Funciones
    - 6.1 `ef_solar_geometry()` y auxiliares geométricas
    - 6.2 `ef_air_pressure()`
-   - 6.3 `ef_sw_transmissivity()` y `ef_sw_transmissivity_elevation()`
-   - 6.4 `ef_shortwave_in()` y `ef_shortwave_in_measured()`
-   - 6.5 `ef_atmospheric_emissivity()` y `ef_longwave_in()`
-   - 6.6 `ef_longwave_out()`
+   - 6.3 `ef_tau_sw_allen()` y `ef_tau_sw_elevation()`
+   - 6.4 `ef_rs_in_modelled()` y `ef_rs_in_measured()`
+   - 6.5 `ef_atm_emissivity()` y `ef_rl_in()`
+   - 6.6 `ef_rl_out()`
 7. Caso integrado de cadena (Rn)
 8. Verificación cruzada con `water`: diferencias esperadas
 9. Registro de decisiones abiertas
@@ -68,7 +68,7 @@ Requisitos de contrato que estas funciones deben respetar:
 | # | Requisito | Motivo |
 |---|---|---|
 | C1 | `rl_out` es la onda larga **emitida** por la superficie, ε₀·σ·Ts⁴. **No** incluye la onda larga reflejada. | `ef_net_radiation()` resta la reflejada explícitamente con el término (1 − ε₀)·RL↓; incluirla en `rl_out` la contaría dos veces. Un RL↑ **medido** con pirgeómetro (torres de validación) es emitida + reflejada y no es intercambiable con `rl_out`. |
-| C2 | La `emissivity` pasada a `ef_longwave_out()` y a `ef_net_radiation()` es **el mismo objeto** (ε₀ de banda ancha). | Si difieren, el balance de onda larga deja de ser ε₀·(RL↓ − σTs⁴) y aparece un término espurio. El orquestador (`earthflux()`) debe garantizarlo. |
+| C2 | La `emissivity` pasada a `ef_rl_out()` y a `ef_net_radiation()` es **el mismo objeto** (ε₀ de banda ancha). | Si difieren, el balance de onda larga deja de ser ε₀·(RL↓ − σTs⁴) y aparece un término espurio. El orquestador (`earthflux()`) debe garantizarlo. |
 | C3 | `rs_in` es la irradiancia de onda corta **instantánea** sobre el plano del píxel (horizontal o inclinado, según se haya pedido corrección topográfica), a la hora de paso de ese píxel. | α es una propiedad del plano del píxel; Rn es instantánea (SPEC §3). |
 | C4 | Todas las salidas en W m⁻²; temperaturas en K. | `ARCHITECTURE.md` §5. |
 | C5 | Las funciones son aritméticas y vectorizadas (`ARCHITECTURE.md` §3): no leen archivos ni conocen el sensor. | Principios 1–2. |
@@ -86,9 +86,9 @@ Se registra explícitamente (consistente con `SCIENTIFIC_SPEC.md` §2.2):
   radiación incidente: a lo sumo absorben parte de un sesgo **total** de Rn
   en esos píxeles, pero no pueden separar directa de difusa ni producir un
   campo espacial de esa partición (son uno o pocos píxeles).
-- Por lo tanto, la partición se calcula en `ef_sw_transmissivity()` (§6.3)
+- Por lo tanto, la partición se calcula en `ef_tau_sw_allen()` (§6.3)
   o se obtiene de un modelo de descomposición aplicado a radiación medida
-  (§6.4.B), y se usa en `ef_shortwave_in()` para la corrección por
+  (§6.4.B), y se usa en `ef_rs_in_modelled()` para la corrección por
   pendiente y orientación.
 
 ---
@@ -115,23 +115,23 @@ Se registra explícitamente (consistente con `SCIENTIFIC_SPEC.md` §2.2):
  vapour_pressure, turbidity ─────────────┤
                                          ▼
                            ┌──────────────────────────┐
-                           │ ef_sw_transmissivity     │──► tau_beam, tau_diffuse,
+                           │ ef_tau_sw_allen     │──► tau_beam, tau_diffuse,
                            └──────────────────────────┘    tau_sw (horizontal)
                               │                    │
          ┌────────────────────┘                    └───────────────┐
          ▼                                                         ▼
  ┌──────────────────┐  ◄── slope, albedo (ρ_g)            ┌────────────────────────────┐
- │ ef_shortwave_in  │                                     │ ef_atmospheric_emissivity  │──► ε_a
+ │ ef_rs_in_modelled  │                                     │ ef_atm_emissivity  │──► ε_a
  └──────────────────┘                                     └────────────────────────────┘
-   (alternativa: ef_shortwave_in_measured                            │
+   (alternativa: ef_rs_in_measured                            │
     ◄── rs_measured, diffuse_fraction)          T (decisión RC-12) ──┤
          │                                                           ▼
          │ rs_in                                            ┌─────────────────┐
-         │                                                  │ ef_longwave_in  │
+         │                                                  │ ef_rl_in  │
          │                                                  └─────────────────┘
          │                                                           │ rl_in
          │      lst, emissivity ─► ┌─────────────────┐               │
-         │                         │ ef_longwave_out │── rl_out      │
+         │                         │ ef_rl_out │── rl_out      │
          │                         └─────────────────┘     │         │
          ▼                                                 ▼         ▼
  ┌───────────────────────────────────────────────────────────────────────┐
@@ -146,7 +146,7 @@ Notas:
   frío debe hacerse sin usar Rn (solo Ts, NDVI, α, cobertura), y luego se
   calcula Rn en toda la escena. Debe documentarse en el orden de la cadena
   del pipeline.
-- La fracción difusa que produce `ef_shortwave_in()` puede alimentar la
+- La fracción difusa que produce `ef_rs_in_modelled()` puede alimentar la
   combinación white-sky/black-sky del albedo en `surface` (SPEC §3, fila
   albedo: "blue-sky vs. white/black-sky", `TODO`). Es una dependencia
   opcional que no crea ciclo (α no interviene en la partición).
@@ -161,19 +161,19 @@ espacial** (GWR), es decir, dónde puede actuar la hipótesis H1
 
 | Entrada | Símbolo | Unidad | Módulo de origen | Función que la usa | ¿Puede venir de GWR? | Comentario |
 |---|---|---|---|---|---|---|
-| Temperatura superficial | Ts | K | `surface` | `ef_longwave_out()`; opción de T en `ef_longwave_in()` | No | MODIS LST, por píxel; cielo despejado |
-| Emisividad de banda ancha | ε₀ | – | `surface` | `ef_longwave_out()`, `ef_net_radiation()` | No | Ver RC-14 |
-| Albedo de banda ancha | α | – | `surface` | `ef_net_radiation()`; ρ_g en `ef_shortwave_in()` | No | |
+| Temperatura superficial | Ts | K | `surface` | `ef_rl_out()`; opción de T en `ef_rl_in()` | No | MODIS LST, por píxel; cielo despejado |
+| Emisividad de banda ancha | ε₀ | – | `surface` | `ef_rl_out()`, `ef_net_radiation()` | No | Ver RC-14 |
+| Albedo de banda ancha | α | – | `surface` | `ef_net_radiation()`; ρ_g en `ef_rs_in_modelled()` | No | |
 | Hora de paso por píxel | doy, utc_hour | –, h | `surface` | `ef_solar_geometry()` | No | Desde el *view time* del producto (SPEC §2.4) |
 | Latitud, longitud | φ, λ | rad | `surface` / grilla | `ef_solar_geometry()` | No | Centro de píxel en WGS84 |
-| Elevación | z | m | DEM | `ef_air_pressure()`, `ef_sw_transmissivity_elevation()` | No | Remuestreo coherente a la grilla (SPEC §2.2) |
-| Pendiente, orientación | s, A | rad | DEM | `ef_solar_geometry()`, `ef_shortwave_in()` | No | Ver RC-02, RC-11 |
-| Presión de vapor | eₐ | kPa | `forcing` / `spatial` | `ef_sw_transmissivity()` (vía W) | **Sí** | Efecto sobre Rs↓ pequeño pero espacial; ver §6.3 |
-| Presión atmosférica | P | kPa | `forcing` / `spatial` **o** DEM vía `ef_air_pressure()` | `ef_sw_transmissivity()` | Derivable de z (SPEC §5) | RC-08 |
-| Turbidez | K_t | – | parámetro de escena **o** `spatial` (calibrado con estaciones) | `ef_sw_transmissivity()` | **Sí** (opción híbrida, RC-10) | |
-| Radiación global medida | Rs_meas | W m⁻² | `forcing` / `spatial` | `ef_shortwave_in_measured()` | **Sí** | Entrada fuerte de H1 en Rs↓; RC-10 |
-| Fracción difusa | k_d | – | modelo de descomposición o modelado | `ef_shortwave_in_measured()` | Indirecta | `TODO` |
-| Temperatura para RL↓ | T | K | `forcing` / `spatial` **o** `surface` / anclas | `ef_longwave_in()` | **Sí**, solo si T = Ta | **Decisión RC-12**: es el punto donde el forzamiento espacial puede entrar en RL↓ |
+| Elevación | z | m | DEM | `ef_air_pressure()`, `ef_tau_sw_elevation()` | No | Remuestreo coherente a la grilla (SPEC §2.2) |
+| Pendiente, orientación | s, A | rad | DEM | `ef_solar_geometry()`, `ef_rs_in_modelled()` | No | Ver RC-02, RC-11 |
+| Presión de vapor | eₐ | kPa | `forcing` / `spatial` | `ef_tau_sw_allen()` (vía W) | **Sí** | Efecto sobre Rs↓ pequeño pero espacial; ver §6.3 |
+| Presión atmosférica | P | kPa | `forcing` / `spatial` **o** DEM vía `ef_air_pressure()` | `ef_tau_sw_allen()` | Derivable de z (SPEC §5) | RC-08 |
+| Turbidez | K_t | – | parámetro de escena **o** `spatial` (calibrado con estaciones) | `ef_tau_sw_allen()` | **Sí** (opción híbrida, RC-10) | |
+| Radiación global medida | Rs_meas | W m⁻² | `forcing` / `spatial` | `ef_rs_in_measured()` | **Sí** | Entrada fuerte de H1 en Rs↓; RC-10 |
+| Fracción difusa | k_d | – | modelo de descomposición o modelado | `ef_rs_in_measured()` | Indirecta | `TODO` |
+| Temperatura para RL↓ | T | K | `forcing` / `spatial` **o** `surface` / anclas | `ef_rl_in()` | **Sí**, solo si T = Ta | **Decisión RC-12**: es el punto donde el forzamiento espacial puede entrar en RL↓ |
 
 Resumen para H1:
 
@@ -356,7 +356,7 @@ ef_solar_geometry(doy, utc_hour, lat, lon, slope = 0, aspect = 0)
 ```
 
 Auxiliares internas (no exportadas, testeadas por separado; RC-05):
-`ef_solar_declination(doy)`, `ef_inverse_relative_distance(doy)`,
+`ef_declination(doy)`, `ef_inv_distance(doy)`,
 `ef_equation_of_time(doy)`, `ef_hour_angle(doy, utc_hour, lon)`,
 `ef_cos_incidence(lat, declination, hour_angle, slope, aspect)`.
 
@@ -537,7 +537,7 @@ P = 101.3 × 0.8886932 = 90.0246 kPa. z = 3000 m → P = 70.5150 kPa.
 
 ---
 
-### 6.3 `ef_sw_transmissivity()` y `ef_sw_transmissivity_elevation()`
+### 6.3 `ef_tau_sw_allen()` y `ef_tau_sw_elevation()`
 
 **Propósito.** Transmisividad atmosférica de banda ancha para onda corta, de
 cielo despejado, **sobre superficie horizontal**, separada en componente
@@ -547,12 +547,12 @@ Se proponen **dos funciones** en lugar de un argumento `method` cuyo
 conjunto de entradas obligatorias cambie según el método (firmas honestas,
 tests separados).
 
-#### A. Forma tipo ASCE-EWRI, particionada — `ef_sw_transmissivity()`
+#### A. Forma tipo ASCE-EWRI, particionada — `ef_tau_sw_allen()`
 
 **Interfaz propuesta.**
 
 ```text
-ef_sw_transmissivity(cos_zenith, pressure, vapour_pressure, turbidity = 1)
+ef_tau_sw_allen(cos_zenith, pressure, vapour_pressure, turbidity = 1)
   → list(beam = τ_b, diffuse = τ_d, total = τ_sw)
 ```
 
@@ -658,9 +658,9 @@ rama elegida sea la documentada); monotonía: τ_b decrece con eₐ, con P y con
 el ángulo cenital, crece con K_t; cos θ_h = 0 y negativo → error clasificado;
 K_t = 0 y K_t > 1 → error; `NA` propaga; τ_b < 0.98 siempre.
 
-#### B. Forma simple por elevación — `ef_sw_transmissivity_elevation()`
+#### B. Forma simple por elevación — `ef_tau_sw_elevation()`
 
-**Interfaz propuesta.** `ef_sw_transmissivity_elevation(elevation)` →
+**Interfaz propuesta.** `ef_tau_sw_elevation(elevation)` →
 τ_sw [–] (solo total).
 
 **Ecuación candidata** (`CANDIDATA`; forma atribuida a FAO-56 para la
@@ -692,7 +692,7 @@ dominio; `NA`.
 
 ---
 
-### 6.4 `ef_shortwave_in()` y `ef_shortwave_in_measured()`
+### 6.4 `ef_rs_in_modelled()` y `ef_rs_in_measured()`
 
 **Propósito.** Irradiancia de onda corta instantánea Rs↓ sobre el plano del
 píxel a la hora de paso, con corrección por pendiente y orientación
@@ -701,14 +701,14 @@ separando directa, difusa y reflejada por el terreno.
 Diseño: separar (a) la obtención de las componentes **horizontales**
 (modeladas de cielo despejado o medidas + descomposición) de (b) su
 **proyección al plano inclinado**. La proyección es un núcleo común interno
-(`ef_sw_to_slope()`, no exportado) que usan ambos caminos.
+(`ef_rs_to_slope()`, no exportado) que usan ambos caminos.
 
-#### A. Camino modelado de cielo despejado — `ef_shortwave_in()`
+#### A. Camino modelado de cielo despejado — `ef_rs_in_modelled()`
 
 **Interfaz propuesta.**
 
 ```text
-ef_shortwave_in(cos_zenith, cos_incidence, inv_rel_distance,
+ef_rs_in_modelled(cos_zenith, cos_incidence, inv_rel_distance,
                 tau_beam, tau_diffuse, slope = 0, ground_albedo = NULL)
   → list(total, beam, diffuse, reflected, diffuse_fraction)    [W m⁻²; – ]
 ```
@@ -778,7 +778,7 @@ forma particionada; en pendiente no. Casos S2–S4 cuantifican la diferencia.
 | `cos_zenith` | – | (0, 1] | `ef_solar_geometry()` |
 | `cos_incidence` | – | [−1, 1] | `ef_solar_geometry()` |
 | `inv_rel_distance` | – | (0.9, 1.1) aprox.; dominio físico `TODO` | `ef_solar_geometry()` |
-| `tau_beam`, `tau_diffuse` | – | [0, 1), τ_b + τ_d < 1 | `ef_sw_transmissivity()` |
+| `tau_beam`, `tau_diffuse` | – | [0, 1), τ_b + τ_d < 1 | `ef_tau_sw_allen()` |
 | `slope` | rad | [0, π/2] | DEM |
 | `ground_albedo` | – | [0, 1] | `surface` |
 
@@ -840,7 +840,7 @@ flag cuando cos θ_rel ≤ 0; conservación: con ρ_g = 0 y s → 0, total →
 R_b,h + R_d,h; `ground_albedo = NULL` con `slope > 0` → error; cos θ_h ≤ 0 →
 error; `NA` propaga; envoltorio ráster = vector (mismo resultado).
 
-#### B. Camino con radiación medida — `ef_shortwave_in_measured()` (alternativa)
+#### B. Camino con radiación medida — `ef_rs_in_measured()` (alternativa)
 
 **Propósito.** Usar Rs global **medida** sobre horizontal (piranómetro de
 estación, puntual, o superficie regionalizada por GWR) en lugar del valor
@@ -849,7 +849,7 @@ modelado de cielo despejado, y proyectarla al plano del píxel.
 **Interfaz propuesta.**
 
 ```text
-ef_shortwave_in_measured(rs_horizontal, diffuse_fraction, cos_zenith,
+ef_rs_in_measured(rs_horizontal, diffuse_fraction, cos_zenith,
                          cos_incidence, slope = 0, ground_albedo = NULL)
   → list(total, beam, diffuse, reflected)
 ```
@@ -896,13 +896,13 @@ consistencia entre caminos); Rs_meas negativa → error; `NA` propaga.
 
 ---
 
-### 6.5 `ef_atmospheric_emissivity()` y `ef_longwave_in()`
+### 6.5 `ef_atm_emissivity()` y `ef_rl_in()`
 
 Se separa la emisividad atmosférica efectiva (empírica, con alternativas)
 de la ley de Stefan-Boltzmann (forma física), para poder sustituir una sin
 tocar la otra.
 
-#### A. `ef_atmospheric_emissivity(tau_sw)`
+#### A. `ef_atm_emissivity(tau_sw)`
 
 **Propósito.** Emisividad efectiva de la atmósfera ε_a a partir de la
 transmisividad de onda corta.
@@ -918,7 +918,7 @@ Universidad de Idaho; ninguna de las dos figura en `REFERENCES.md`;
 ```
 
 **Entrada.** `tau_sw` [–]: la transmisividad **total, horizontal, de cielo
-despejado** de `ef_sw_transmissivity()`. No la transmisividad efectiva
+despejado** de `ef_tau_sw_allen()`. No la transmisividad efectiva
 medida (Rs_meas/R_a,h) salvo decisión explícita (RC-13): la relación
 empírica se planteó para cielo despejado (`TODO: verify`), y bajo nubes la
 onda larga entrante aumenta, mientras que esta fórmula con τ efectiva baja
@@ -944,7 +944,7 @@ función de eₐ y Ta (familia de ecuaciones de tipo Brutsaert; Brutsaert,
 `TODO: verify` si contiene esa formulación). Interés para H1: serían
 funciones directas del forzamiento (eₐ, Ta) regionalizable por GWR.
 
-#### B. `ef_longwave_in(temperature, atm_emissivity)`
+#### B. `ef_rl_in(temperature, atm_emissivity)`
 
 **Propósito.** Onda larga entrante RL↓ en la superficie.
 
@@ -962,7 +962,7 @@ RL↓ = ε_a · σ · T⁴                                  [W m⁻²]
 | Argumento | Unidad | Dominio | Fuente |
 |---|---|---|---|
 | `temperature` | K | (0, ∞) | **Decisión RC-12** (ver abajo) |
-| `atm_emissivity` | – | (0, ∞); > 1 flag | `ef_atmospheric_emissivity()` u otra |
+| `atm_emissivity` | – | (0, ∞); > 1 flag | `ef_atm_emissivity()` u otra |
 
 La función es **agnóstica** respecto de qué temperatura se pasa: la
 elección es de configuración (pipeline), queda registrada en la
@@ -1026,7 +1026,7 @@ zona). Conclusión de los autores: el coeficiente de Brutsaert no debe
 tratarse como constante en el tiempo ni en el espacio. Implicancias para
 EarthFlux:
 
-- `ef_atmospheric_emissivity()` debería admitir, además de la forma en τ_sw,
+- `ef_atm_emissivity()` debería admitir, además de la forma en τ_sw,
   la formulación de Brutsaert en función de eₐ y Ta, con coeficiente
   explícito y registrado (no fijo en el código);
 - la formulación en eₐ y Ta conecta directamente RL↓ con el forzamiento
@@ -1036,11 +1036,11 @@ EarthFlux:
 
 ---
 
-### 6.6 `ef_longwave_out()`
+### 6.6 `ef_rl_out()`
 
 **Propósito.** Onda larga **emitida** por la superficie (requisito C1).
 
-**Interfaz propuesta.** `ef_longwave_out(lst, emissivity)` → RL↑ [W m⁻²].
+**Interfaz propuesta.** `ef_rl_out(lst, emissivity)` → RL↑ [W m⁻²].
 
 **Ecuación candidata** (`CANDIDATA`; ley de Stefan-Boltzmann para cuerpo
 gris; forma observada en `water` v1.0, `outLWradiation()`; fuente citada
@@ -1080,7 +1080,7 @@ la media de Ts; `TODO` cuantificar si es relevante); instantáneo.
    Convertir las emisividades de banda del producto a banda ancha requiere
    una regresión publicada `TODO: identify primary reference` (no se
    proponen coeficientes).
-3. **Mismo ε₀ en `ef_longwave_out()` y `ef_net_radiation()`** (requisito C2).
+3. **Mismo ε₀ en `ef_rl_out()` y `ef_net_radiation()`** (requisito C2).
 
 Opciones para ε₀: (i) empírica METRIC desde LAI (forma observada en
 `water` v1.0: ε₀ = 0.95 + 0.01·LAI para LAI ≤ 3 y 0.98 para LAI > 3;
@@ -1191,7 +1191,7 @@ está instalado). Diferencias que deben esperarse y documentarse, no forzarse:
 | RC-12 | Temperatura para RL↓ | Ta (estación/GWR) / Ts píxel frío / Ts por píxel | Función agnóstica; (a) y (b) como configuraciones; verificar Allen et al. (2007) | 6.5, H1 |
 | RC-13 | Formulación de ε_a y τ de entrada | Empírica en τ_sw / alternativas en eₐ y Ta (p. ej., Brutsaert); τ modelada vs efectiva medida | τ_sw modelada de cielo despejado; evaluar Brutsaert calibrado como alternativa (Morales-Salinas et al., 2023) | 6.5 |
 | RC-14 | ε₀ de banda ancha y coherencia con LST | Empírica desde LAI / desde emisividades del producto LST / MOD21 | Preferir derivada del producto; registrar procedencia | 6.6 |
-| RC-15 | Tipo de retorno | Vector (solo total) / lista de componentes | Lista para `ef_shortwave_in()` y `ef_solar_geometry()`; vector para onda larga | 6.1, 6.4 |
+| RC-15 | Tipo de retorno | Vector (solo total) / lista de componentes | Lista para `ef_rs_in_modelled()` y `ef_solar_geometry()`; vector para onda larga | 6.1, 6.4 |
 | RC-16 | Orientación `NA` en celdas planas | Propagar `NA` siempre / aceptar `NA` si s = 0 | Propagar; el envoltorio del MDE asigna un valor definido a celdas planas y lo documenta | 6.1 |
 | RC-17 | Ubicación de `ef_air_pressure()` | `metric-radiation.R` / módulo compartido con ETr y ρ_air | Archivo compartido (evita duplicar la ecuación) | 6.2 |
 
