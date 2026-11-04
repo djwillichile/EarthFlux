@@ -1,0 +1,44 @@
+# Checks that the roxygen2 documentation (man/, NAMESPACE, DESCRIPTION) is
+# up to date with the source code. It never commits: if the check fails,
+# regenerate locally with the pinned roxygen2 version and commit the result:
+#
+#   pak::pak("roxygen2@8.1.1"); devtools::document()
+#
+# To upgrade roxygen2, change the pinned version here and regenerate locally.
+
+name: document.yaml
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: read-all
+
+jobs:
+  document:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: roxygen2@8.1.1, any::devtools
+          needs: roxygen2
+
+      - name: Regenerate documentation
+        run: devtools::document()
+        shell: Rscript {0}
+
+      - name: Fail if documentation is out of date
+        run: |
+          if ! git diff --exit-code -- man NAMESPACE DESCRIPTION; then
+            echo "::error::Documentation is out of date. Run devtools::document() with roxygen2 8.1.1 and commit the changes."
+            exit 1
+          fi

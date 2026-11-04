@@ -39,12 +39,18 @@ domain of validity and a verifiable test case.
 Useful links:
 \itemize{
   \item \url{https://github.com/djwillichile/EarthFlux}
+  \item \url{https://djwillichile.github.io/EarthFlux/}
   \item Report bugs at \url{https://github.com/djwillichile/EarthFlux/issues}
 }
 
 }
 \author{
 \strong{Maintainer}: Guillermo Servando Fuentes-Jaque \email{gfuentesj@correo.uss.cl} (\href{https://orcid.org/0000-0002-7864-4899}{ORCID}) [copyright holder]
+
+Authors:
+\itemize{
+  \item Guillermo Servando Fuentes-Jaque \email{gfuentesj@correo.uss.cl} (\href{https://orcid.org/0000-0002-7864-4899}{ORCID}) [copyright holder]
+}
 
 }
 \keyword{internal}

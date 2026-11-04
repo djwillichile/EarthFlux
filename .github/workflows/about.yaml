@@ -1,0 +1,94 @@
+# Keeps the repository settings in sync with the package metadata:
+#   - About description  <- DESCRIPTION "Title"
+#   - About website      <- DESCRIPTION "URL" (the github.io entry, if any)
+#   - About topics       <- DESCRIPTION "Config/github/topics"
+#   - GitHub Pages enabled from the gh-pages branch (pkgdown site)
+#   - Automatic deletion of head branches after merging pull requests
+#
+# Repository settings cannot be changed with the default GITHUB_TOKEN. This
+# workflow needs a repository secret named ABOUT_TOKEN: a fine-grained
+# personal access token restricted to this repository with the permissions
+# "Administration: Read and write" and "Pages: Read and write". Without the
+# secret, the job is skipped with a notice and does not fail.
+
+name: about.yaml
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - DESCRIPTION
+      - .github/workflows/about.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  about:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ABOUT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check token
+        id: token
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::notice::ABOUT_TOKEN secret not set; repository settings were not updated."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Read package metadata
+        if: steps.token.outputs.available == 'true'
+        id: meta
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import re
+          fields, key = {}, None
+          with open("DESCRIPTION", encoding="utf-8") as f:
+              for line in f:
+                  if line[:1] in (" ", "\t") and key:
+                      fields[key] += " " + line.strip()
+                  elif ":" in line:
+                      key, value = line.split(":", 1)
+                      fields[key] = value.strip()
+          title = re.sub(r"\s+", " ", fields["Title"]).strip()
+          urls = [u.strip() for u in fields.get("URL", "").split(",") if u.strip()]
+          site = next((u for u in urls if "github.io" in u), urls[0] if urls else "")
+          topics = [t.strip() for t in fields.get("Config/github/topics", "").split(",") if t.strip()]
+          print(f"title={title}")
+          print(f"homepage={site}")
+          print(f"topics={' '.join(topics)}")
+          PY
+
+      - name: Update About and repository settings
+        if: steps.token.outputs.available == 'true'
+        env:
+          TITLE: ${{ steps.meta.outputs.title }}
+          HOMEPAGE: ${{ steps.meta.outputs.homepage }}
+          TOPICS: ${{ steps.meta.outputs.topics }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          gh repo edit "$repo" --description "$TITLE" --homepage "$HOMEPAGE" --delete-branch-on-merge
+
+          args=()
+          for t in $TOPICS; do args+=(-f "names[]=$t"); done
+          if [ ${#args[@]} -gt 0 ]; then
+            gh api -X PUT "repos/$repo/topics" "${args[@]}" --silent
+          fi
+
+          if ! gh api "repos/$repo/pages" --silent 2>/dev/null; then
+            if git ls-remote --exit-code --heads origin gh-pages >/dev/null; then
+              gh api -X POST "repos/$repo/pages" -f "source[branch]=gh-pages" -f "source[path]=/" --silent
+              echo "GitHub Pages enabled from gh-pages."
+            else
+              echo "::notice::gh-pages branch not found yet; Pages not enabled."
+            fi
+          fi
+
+          echo "About updated: $TITLE | $HOMEPAGE | $TOPICS"
