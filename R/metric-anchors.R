@@ -29,12 +29,10 @@
 #   left corner (row-major), whatever the storage order of R matrices.
 #   Neighbourhood operations (homogeneity windows) need matrix layers.
 #
-# Base R only: stats is not in Imports, so the quantile (Hyndman and Fan
-#   types 1-9, identical to stats::quantile()), the median and the sample
-#   standard deviation are implemented here.
-#   TODO(shared): if stats is added to Imports, replace anchor_quantile(),
-#   anchor_median() and anchor_sd() by stats::quantile(), stats::median() and
-#   stats::sd().
+# Statistics: percentile thresholds use stats::quantile() with the explicit
+#   `quantile_type` of the criteria (Hyndman and Fan types 1-9); medians and
+#   sample standard deviations use stats::median() and stats::sd() (stats is
+#   in Imports since the M2 harmonisation).
 
 # Vocabulary -------------------------------------------------------------------
 
@@ -63,78 +61,6 @@ anchor_require <- function(is_missing, arg, call) {
     )
   }
   invisible(TRUE)
-}
-
-# Base R statistics ------------------------------------------------------------
-
-#' Sample quantiles (Hyndman and Fan types 1-9)
-#'
-#' Same algorithm and results as `stats::quantile(x, probs, type = type,
-#' names = FALSE)` for non-missing `x` (length >= 1) and `probs` in \[0, 1\].
-#'
-#' @noRd
-anchor_quantile <- function(x, probs, type) {
-  x <- sort(x)
-  n <- length(x)
-  if (type == 7L) {
-    index <- 1 + max(n - 1, 0) * probs
-    lo <- floor(index)
-    hi <- ceiling(index)
-    qs <- x[lo]
-    i <- which(index > lo & x[hi] != qs)
-    h <- (index - lo)[i]
-    qs[i] <- (1 - h) * qs[i] + h * x[hi[i]]
-    return(qs)
-  }
-  if (type <= 3L) {
-    nppm <- if (type == 3L) n * probs - 0.5 else n * probs
-    j <- floor(nppm)
-    h <- switch(type,
-                as.numeric(nppm > j),
-                ((nppm > j) + 1) / 2,
-                as.numeric((nppm != j) | ((j %% 2L) == 1L)))
-  } else {
-    ab <- switch(type - 3L, c(0, 1), c(0.5, 0.5), c(0, 0), c(1, 1),
-                 c(1 / 3, 1 / 3), c(3 / 8, 3 / 8))
-    fuzz <- 4 * .Machine$double.eps
-    nppm <- ab[1L] + probs * (n + 1 - ab[1L] - ab[2L])
-    j <- floor(nppm + fuzz)
-    h <- nppm - j
-    h[abs(h) < fuzz] <- 0
-  }
-  xx <- c(x[1L], x[1L], x, x[n], x[n])
-  lo <- xx[j + 2L]
-  hi <- xx[j + 3L]
-  qs <- lo
-  qs[h == 1] <- hi[h == 1]
-  other <- (0 < h) & (h < 1) & (lo != hi)
-  qs[other] <- ((1 - h) * lo + h * hi)[other]
-  qs
-}
-
-#' Median with NA propagation (as `stats::median()`)
-#' @noRd
-anchor_median <- function(x) {
-  if (anyNA(x)) {
-    return(NA_real_)
-  }
-  n <- length(x)
-  half <- (n + 1L) %/% 2L
-  if (n %% 2L == 1L) {
-    sort(x)[half]
-  } else {
-    mean(sort(x)[half + 0L:1L])
-  }
-}
-
-#' Sample standard deviation (denominator n - 1) with NA propagation
-#' @noRd
-anchor_sd <- function(x) {
-  n <- length(x)
-  if (n < 2L || anyNA(x)) {
-    return(NA_real_)
-  }
-  sqrt(sum((x - mean(x))^2) / (n - 1L))
 }
 
 # Criteria constructors --------------------------------------------------------
@@ -698,7 +624,7 @@ anchor_window_stats <- function(v, cells, homogeneity, grid) {
     vals <- v[as.vector(outer((rr - 1L) * grid$ncol, cc, "+"))]
     vals <- vals[!is.na(vals)]
     n_valid[i] <- length(vals)
-    stat[i] <- anchor_sd(vals)
+    stat[i] <- stats::sd(vals)
   }
   n_window <- homogeneity$window^2
   data.frame(
@@ -773,13 +699,13 @@ anchor_pick_cells <- function(v, idx, pick, quantile_type) {
   prob <- NULL
   if (pick$method == "lowest_fraction") {
     prob <- pick$value
-    thr <- anchor_quantile(v, prob, quantile_type)
+    thr <- stats::quantile(v, prob, type = quantile_type, names = FALSE)
     sel <- idx[v <= thr]
     operator <- "<="
     scale <- "percentile"
   } else if (pick$method == "highest_fraction") {
     prob <- 1 - pick$value
-    thr <- anchor_quantile(v, prob, quantile_type)
+    thr <- stats::quantile(v, prob, type = quantile_type, names = FALSE)
     sel <- idx[v >= thr]
     operator <- ">="
     scale <- "percentile"
@@ -829,7 +755,7 @@ anchor_run <- function(type, criteria, layers, usable, grid, stage, step) {
     r <- rules[[i]]
     x <- layers[[r$variable]]
     if (r$scale == "percentile") {
-      thr <- anchor_quantile(x[domain], r$value, qt)
+      thr <- stats::quantile(x[domain], r$value, type = qt, names = FALSE)
       thresholds[[length(thresholds) + 1L]] <- anchor_threshold_row(
         type, stage, step, "rule", i, r$variable, r$operator, r$scale,
         r$value, thr, criteria$percentile_domain, sum(domain), qt
@@ -969,7 +895,7 @@ anchor_pixel_table <- function(cells, types, layers, usable, grid,
 anchor_aggregate <- function(x, aggregate) {
   switch(aggregate,
          mean = mean(x),
-         median = anchor_median(x),
+         median = stats::median(x),
          none = x[1L])
 }
 
@@ -1012,7 +938,7 @@ anchor_dispersion <- function(table, vars) {
       x <- sub[[v]]
       rows[[length(rows) + 1L]] <- data.frame(
         type = t, variable = v, n = length(x), mean = mean(x),
-        median = anchor_median(x), sd = anchor_sd(x),
+        median = stats::median(x), sd = stats::sd(x),
         min = if (anyNA(x)) NA_real_ else min(x),
         max = if (anyNA(x)) NA_real_ else max(x)
       )
