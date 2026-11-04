@@ -1052,6 +1052,86 @@ bajo nivel, `DEVELOPMENT.md` §1). El paralelismo sigue `ARCHITECTURE.md`
 | `modis_surface_state(files, aoi, options)` | Rutas, AOI, opciones (producto LST, métodos, `qa_policy`) | Objeto con el contrato de `surface` (`lst`, `albedo`, `ndvi`, `lai`, `emissivity`, `overpass_time`, `qa`) + procedencia |
 | `modis_provenance(...)` | Metadatos | Lista: granulos, colecciones, DOI, métodos, versiones de GDAL/`terra` |
 
+> **Estado de implementación — preparación independiente de las fichas
+> de producto (M4, 2026-11-04).** Implementadas en `R/prep-modis.R`
+> (internas, `@noRd`; tests sintéticos en
+> `tests/testthat/test-modis-prep.R`): `modis_overpass_time()`,
+> `modis_cell_lonlat()` (nueva: longitud/latitud del centro de celda,
+> §6.1 punto 2), `modis_albedo()`, `modis_broadband_emissivity()`,
+> `modis_ndvi_from_reflectance()`, `modis_match_composite()` y
+> `modis_to_grid()`. Decisiones de implementación (a trasladar a
+> `DECISIONS.md`):
+>
+> 1. **Hora de paso (§6.2, `CANDIDATA`; RC-03, MP-01, MP-02).** Entrada en
+>    horas ya escaladas (`Day_view_time`; el relleno llega como `NA`);
+>    t_utc = (t_ls − λ/15) mod 24 con la longitud del centro de celda; la
+>    fecha UTC del archivo nunca se desplaza (la fecha solar local puede
+>    diferir en ±1 día; casos V2/V3), `doy` = día del año de esa fecha.
+>    **Sin ecuación del tiempo**: es hora solar media (§6.1); la ecuación
+>    del tiempo se aplica una sola vez, en `ef_hour_angle()`; un test
+>    encadena `modis_overpass_time()` → `ef_solar_geometry()` y comprueba
+>    que la hora solar del ángulo horario es t_ls + S_c. Un resultado que
+>    por redondeo vale 24 h pasa a 0 h de la misma fecha. Donde no hay
+>    hora, `doy`, `utc_hour` y el `POSIXct` son `NA` y la máscara
+>    `missing` es `TRUE` (→ `EF_SURF_OVERPASS_MISSING` donde la LST es
+>    válida; lo emite la etapa `surface`, no esta función). Solo
+>    MOD11A1/MYD11A1 (§6.4 sigue `TODO`); Terra y Aqua se tratan igual.
+> 2. **Albedo (§8.1, MP-03).** Opciones A1 `"blue_sky"` (con
+>    `diffuse_fraction` explícita, sin valor por defecto, por la
+>    circularidad con `ef_tau_sw_allen()`, T-11), A2 `"white_sky"` y A3
+>    `"black_sky"`, todas `CANDIDATA`; A4–A6 → error
+>    `earthflux_method_not_implemented` (A4 `TODO`; coeficientes de A5 y
+>    fórmula de A6 no dados). Albedo > 1 se conserva y se devuelve la
+>    máscara `gt1` (→ `EF_SURF_ALBEDO_GT1`, clase III). Los insumos no
+>    usados por el método deben ser `NULL` (error si se entregan).
+> 3. **Emisividad de banda ancha (§8.2, MP-04, RC-14).** Solo E3
+>    `"lai_empirical"` (ε₀ = min(0.95 + 0.01·LAI, 0.98), `CANDIDATA`,
+>    desacoplada de la LST); E1 (coeficientes `TODO`), E2 y E4 (`TODO`) →
+>    `earthflux_method_not_implemented`. `e31`/`e32` quedan reservados
+>    para E1. Las clases no vegetadas de LAI deben llegar como `NA`
+>    (MP-06).
+> 4. **NDVI (D4 ec. 1, `VERIFICADA` la forma; MP-05).** Denominador
+>    ρ_NIR + ρ_red ≤ 0 → `NA` + máscara `undefined`; |NDVI| > 1 (posible
+>    con reflectancias válidas negativas) se conserva con máscara
+>    `outside_unit`. Ninguna de las dos tiene código en `flags.md` §4.2
+>    (pregunta abierta). El orden agregar-luego-NDVI o NDVI-luego-agregar
+>    queda a cargo del llamador y debe registrarse en la procedencia.
+> 5. **Desfase temporal (§9.1, MP-07).** `method` sin valor por defecto:
+>    `"period"` (T1), `"period_pixel_lag"` (T2, desfase por píxel
+>    `lst_date − fecha del píxel` [días], positivo si el compuesto es
+>    anterior; períodos que cruzan el año se resuelven dentro del
+>    período) y `"same_day"` (T4/T5, por fecha nominal). T3
+>    `"interpolate"` → `earthflux_method_not_implemented` (instante de
+>    referencia del compuesto no definido). Los períodos (`composite_start`,
+>    `composite_end`) los entrega el llamador: la relación fecha del
+>    nombre ↔ período de MOD13/MCD15 no está en esta especificación.
+>    Períodos solapados o fechas duplicadas → error; sin compuesto →
+>    índice `NA`. Se devuelve además la cota `lag_bound_days`. No se
+>    calcula máscara de `EF_SURF_COMPOSITE_LAG` (clase II, umbral `TODO`).
+> 6. **Remuestreo (§9.2, MP-08).** Solo agregación por factor entero entre
+>    grillas anidadas (mismo CRS y misma extensión; si no, error: regla de
+>    alineación `TODO`); métodos `"mean"`, `"median"`, `"modal"` (empates
+>    al valor menor, determinista) y `"any"` (capas 0/1 de condiciones QA
+>    decodificadas: peor caso); `"bilinear"` →
+>    `earthflux_method_not_implemented`. `min_valid_fraction` explícito en
+>    (0, 1], sin valor por defecto (umbral `TODO`). Devuelve `value`,
+>    `valid_fraction` e `incomplete` (0 < fracción < umbral →
+>    `EF_SURF_AGG_INCOMPLETE`, clase II, no registrable aún). Fracciones
+>    por clase de cobertura: pendiente.
+> 7. **Rásteres.** `modis_overpass_time()`, `modis_albedo()`,
+>    `modis_broadband_emissivity()`, `modis_ndvi_from_reflectance()` y el
+>    `composite_doy` de T2 aceptan `SpatRaster` de una capa con geometría
+>    común; se aplica el mismo código numérico a los valores de celda
+>    (tests de igualdad vector = ráster).
+> 8. **Clase de condición nueva:** `earthflux_method_not_implemented`
+>    (subclase de `earthflux_unknown_method` y `earthflux_input_error`;
+>    campos `method` y `choices` = métodos disponibles) para opciones de la
+>    especificación no implementables (`TODO`). Pendiente listarla en el
+>    catálogo de `R/utils.R`.
+>
+> Ningún código `EF_SURF_` se registra aquí: las máscaras se cablean en
+> `ef_flags_surface()` (módulo de producto/QA).
+
 ---
 
 ## 14. Tests planificados (`tests/testthat/test-modis.R`)
