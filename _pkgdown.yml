@@ -110,11 +110,33 @@ reference:
       - ef_ref_et
   - title: Spatial regionalization (GWR)
     desc: >
-      Internal numeric core of geographically weighted regression used to
-      regionalize meteorological station variables over the working grid:
-      plain vectors and matrices in a projected CRS, with explicit kernel,
-      bandwidth and criterion, auditable bandwidth profiles, prediction by
-      blocks of rows and extrapolation flags.
+      Regionalization of meteorological station variables over the working
+      grid: an orchestrator that projects the stations, extracts the
+      covariates and predicts by blocks with terra, the comparison
+      configurations (representative station, global regression, inverse
+      distance weighting) and geographically weighted regression with one
+      common interface, the numeric GWR core (plain vectors and matrices in a
+      projected CRS, explicit kernel, bandwidth and criterion, auditable
+      bandwidth profiles, extrapolation flags) and spatial block
+      cross-validation.
+  - subtitle: Regionalization
+    desc: >
+      One surface per variable and target time, with a flag word per cell,
+      the fitted models, the station table and the provenance (including the
+      execution plan).
+    contents:
+      - ef_regionalize
+  - subtitle: Methods and control
+    desc: >
+      Configurations C1 (representative station), C2 (global regression,
+      inverse distance weighting) and C3 (GWR), without defaults for the
+      scientific choices, and the settings of the block prediction.
+    contents:
+      - ef_method_gwr
+      - ef_method_station
+      - ef_method_ols
+      - ef_method_idw
+      - ef_predict_control
   - subtitle: Fit and bandwidth selection
     contents:
       - ef_gwr_fit
@@ -124,6 +146,13 @@ reference:
     contents:
       - ef_gwr_predict
       - ef_gwr_diagnostics
+  - subtitle: Validation
+    desc: >
+      Deterministic spatial block folds and out-of-fold predictions at the
+      stations, with the same folds for every method.
+    contents:
+      - ef_spatial_folds
+      - ef_regionalize_cv
   - title: Shared physical quantities
     desc: >
       Atmospheric and thermodynamic quantities used by several modules

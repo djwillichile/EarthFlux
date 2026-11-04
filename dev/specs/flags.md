@@ -517,16 +517,16 @@ demás filas de este catálogo siguen sin registrar y se registran según §7.
 | `EF_GWR_OUTSIDE_HULL` | ídem | — | I (registrado) | warning | cell | 3 | Heredado por anclas (C7) |
 | `EF_GWR_FEW_NEIGHBOURS` | ídem | — | I (registrado) | warning | cell, record | 4 | Con el mínimo matemático p + 1; un mínimo mayor exige referencia y se registra como parámetro |
 | `EF_GWR_LOCAL_SINGULAR` | ídem | — | I (registrado) | warning | cell | 5 | En una **estación**: `earthflux_gwr_singular_error` |
-| `EF_GWR_OUT_OF_DOMAIN` | `EF_GWR_PHYSICAL_RANGE` | renombre (C10) | **III** | critical* | cell | 6 | Consumidores (`evapotranspiration.md` §1.3, ETr) rechazan con `earthflux_domain_error`; la plausibilidad (p. ej., clearness > 1 + margen) queda `TODO` sin código |
+| `EF_GWR_OUT_OF_DOMAIN` | `EF_GWR_PHYSICAL_RANGE` | renombre (C10) | **III** (registrado; `ef_regionalize()`) | critical* | cell | 6 | Consumidores (`evapotranspiration.md` §1.3, ETr) rechazan con `earthflux_domain_error`; la plausibilidad (p. ej., clearness > 1 + margen) queda `TODO` sin código |
 | `EF_GWR_COARSE_MODE` | ídem | — | I | info | object | — | Derivado de `provenance$prediction_mode` |
 | `EF_GWR_TRANSFORMED` | ídem | — | I | info | object | — | Solo si GW-12 admite transformaciones |
-| `EF_GWR_SURFACE_COVARIATE` | ídem | — | I | warning | object | — | Derivado de la lista de covariables en la procedencia |
+| `EF_GWR_SURFACE_COVARIATE` | ídem | — | I (registrado) | warning | object | — | Derivado de la lista de covariables en la procedencia |
 | `EF_GWR_BW_AT_BOUND` | ídem | — | I (registrado) | warning | object | — | – |
 | `EF_GWR_BW_MULTIMODAL` | ídem | — | I (registrado) | info | object | — | Dada la rejilla registrada |
 | `EF_GWR_AICC_UNDEFINED` | ídem | — | I (registrado) | info | object | — | Sin bandwidth factible: `earthflux_gwr_no_feasible_bandwidth` |
 | `EF_GWR_GLOBAL_PREFERRED` | ídem | — | I (registrado) | info | object | — | – |
 | `EF_GWR_STATION_EXCLUDED` | ídem | — | I (registrado) | info | record | — | `index` = estaciones excluidas en `station_table` |
-| `EF_GWR_SINGLE_STATION` | `EF_FORCING_SINGLE_STATION` | prefijo + renombre | I | info | object | — | Derivado de `provenance$method == "station"` |
+| `EF_GWR_SINGLE_STATION` | `EF_FORCING_SINGLE_STATION` | prefijo + renombre | I (registrado) | info | object | — | Derivado de `provenance$method == "station"` |
 | `EF_GWR_FAR_FROM_STATIONS` | ídem | — | II | warning | cell | libre | `d_max` `TODO` |
 | `EF_GWR_ILL_CONDITIONED` | ídem | — | II | warning | cell, record | libre | `kappa_max` `TODO` |
 | `EF_GWR_FEW_STATIONS` | ídem | — | II | warning | object | — | n < p + 3: `earthflux_gwr_insufficient_stations`; `n_min` `TODO` |
@@ -623,13 +623,13 @@ división).
 | `INPUT` | 1 | 0 | 0 | 1 | 1 |
 | `SURF` | 13 | 7 | 1 | 21 | 0 |
 | `WS` | 11 | 13 | 2 | 26 | 10 |
-| `GWR` | 14 | 4 | 1 | 19 | 10 |
+| `GWR` | 14 | 4 | 1 | 19 | 13 |
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
 | `G` | 4 | 2 | 0 | 6 | 4 |
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
 | `H` | 11 | 2 | 0 | 13 | 8 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **73** | **35** | **4** | **112** | **48** |
+| **Total** | **73** | **35** | **4** | **112** | **51** |
 
 Registrados (actualizado con la armonización M2, 2026-11-04): 28 códigos,
 todos de clase I y ejercitados por un test de su módulo (R11, sin
@@ -648,10 +648,14 @@ Núcleo GWR (M3, 2026-11-04): 10 `EF_GWR_*` de clase I registrados en
 `ef_gwr_bandwidth()` y `ef_gwr_predict()`: los 5 de ámbito `cell` (bits
 1–5) y `EF_GWR_BW_AT_BOUND`, `EF_GWR_BW_MULTIMODAL`,
 `EF_GWR_AICC_UNDEFINED`, `EF_GWR_GLOBAL_PREFERRED`,
-`EF_GWR_STATION_EXCLUDED`. Quedan para la orquestación
-(`ef_regionalize()`): `EF_GWR_COARSE_MODE`, `EF_GWR_TRANSFORMED`,
-`EF_GWR_SURFACE_COVARIATE`, `EF_GWR_SINGLE_STATION` y el de clase III
-`EF_GWR_OUT_OF_DOMAIN`; los 4 de clase II siguen en la guardia.
+`EF_GWR_STATION_EXCLUDED`. Orquestación (`ef_regionalize()`,
+`ef_regionalize_cv()`, M3): se registran `EF_GWR_SURFACE_COVARIATE` y
+`EF_GWR_SINGLE_STATION` (clase I, objeto, derivados de la procedencia) y el
+de clase III `EF_GWR_OUT_OF_DOMAIN` (celda, bit 6, `critical`, contraparte
+`earthflux_domain_error`; el valor se conserva). Siguen sin registrar
+`EF_GWR_COARSE_MODE` (modo grueso no implementado, GW-08) y
+`EF_GWR_TRANSFORMED` (solo identidad, GW-12); los 4 de clase II siguen en
+la guardia.
 
 De la clase I, 3 son I-m (`EF_WS_RS_RSO_LIMITED`, `EF_G_LOW_LAI_BRANCH`,
 `EF_H_ZOM_FLOOR_APPLIED`). Varios de clase I están además **condicionados

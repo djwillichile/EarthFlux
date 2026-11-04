@@ -124,11 +124,14 @@ gwr_local_r2_global_fit <- function(w, y, fitted) {
 #' Flag codes owned by the GWR stage
 #'
 #' Rows of `ef_flag_registry()` for the codes with prefix `EF_GWR_` raised
-#' by the GWR core (dev/specs/flags.md section 4.2; bits of section 6.4).
-#' Codes of the orchestration (`EF_GWR_COARSE_MODE`, `EF_GWR_TRANSFORMED`,
-#' `EF_GWR_SURFACE_COVARIATE`, `EF_GWR_SINGLE_STATION`, class III
-#' `EF_GWR_OUT_OF_DOMAIN`) are registered with the functions that raise
-#' them. Class II codes (`EF_GWR_FAR_FROM_STATIONS`,
+#' by the GWR core and by the regionalization orchestrator
+#' (dev/specs/flags.md section 4.2; bits of section 6.4). The orchestrator
+#' (`ef_regionalize()`, `ef_regionalize_cv()`) raises
+#' `EF_GWR_SURFACE_COVARIATE` and `EF_GWR_SINGLE_STATION` (object) and the
+#' class III `EF_GWR_OUT_OF_DOMAIN` (cell, `critical`, bit 6; the value is
+#' kept). Not registered: `EF_GWR_COARSE_MODE` (coarse mode not
+#' implemented, GW-08) and `EF_GWR_TRANSFORMED` (only the identity
+#' transformation, GW-12). Class II codes (`EF_GWR_FAR_FROM_STATIONS`,
 #' `EF_GWR_ILL_CONDITIONED`, `EF_GWR_FEW_STATIONS`,
 #' `EF_GWR_ELEVATION_MISMATCH`) are never registered until their thresholds
 #' have a reference.
@@ -148,16 +151,22 @@ ef_flags_gwr <- function() {
       "EF_GWR_BW_MULTIMODAL",
       "EF_GWR_AICC_UNDEFINED",
       "EF_GWR_GLOBAL_PREFERRED",
-      "EF_GWR_STATION_EXCLUDED"
+      "EF_GWR_STATION_EXCLUDED",
+      "EF_GWR_OUT_OF_DOMAIN",
+      "EF_GWR_SURFACE_COVARIATE",
+      "EF_GWR_SINGLE_STATION"
     ),
-    stage = rep("GWR", 10L),
+    stage = rep("GWR", 13L),
     severity = c("warning", "info", "warning", "warning", "warning",
-                 "warning", "info", "info", "info", "info"),
+                 "warning", "info", "info", "info", "info", "critical",
+                 "warning", "info"),
     scope = c("cell", "cell", "cell", "cell,record", "cell", "object",
-              "object", "object", "object", "record"),
-    bit = c(1L, 2L, 3L, 4L, 5L, NA, NA, NA, NA, NA),
+              "object", "object", "object", "record", "cell", "object",
+              "object"),
+    bit = c(1L, 2L, 3L, 4L, 5L, NA, NA, NA, NA, NA, 6L, NA, NA),
     error_class = c(NA, NA, NA, NA, "earthflux_gwr_singular_error", NA, NA,
-                    "earthflux_gwr_no_feasible_bandwidth", NA, NA),
+                    "earthflux_gwr_no_feasible_bandwidth", NA, NA,
+                    "earthflux_domain_error", NA, NA),
     description = c(
       paste0("A covariate is outside the range of the stations used in the ",
              "fit."),
@@ -175,11 +184,18 @@ ef_flags_gwr <- function() {
              "bandwidths evaluated."),
       paste0("The global regression has a criterion not larger than the ",
              "selected bandwidth."),
-      paste0("The station was excluded from the fit (missing response, ",
-             "covariate or coordinate).")
+      paste0("The station was excluded from the fit (QC status, user ",
+             "exclusion, missing value, covariate or coordinate)."),
+      paste0("The prediction is outside the physical domain of the ",
+             "variable; it is kept, not truncated, and must not be used ",
+             "without action."),
+      paste0("A covariate derived from the surface state (e.g. LST, NDVI) ",
+             "was used; see the circularity risk of decision GW-07."),
+      paste0("The surface is the value of a single representative station ",
+             "(configuration C1).")
     ),
     spec = paste(spec, c("6.3", "6.3", "6.3", "4.5", "4.6", "4.4", "4.4",
-                         "4.1", "4.4", "9.4")),
-    since = rep("0.0.0.9000", 10L)
+                         "4.1", "4.4", "9.4", "2.3", "2.7", "5.3")),
+    since = rep("0.0.0.9000", 13L)
   )
 }
