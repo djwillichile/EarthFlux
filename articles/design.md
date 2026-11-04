@@ -59,9 +59,9 @@ Specifications:
 
 ### Soil heat flux (M2)
 
-| Function | Purpose                                | Status             |
-|----------|----------------------------------------|--------------------|
-| `ef_g()` | Soil heat flux with an explicit method | Planned; candidate |
+| Function | Purpose | Status |
+|----|----|----|
+| [`ef_g()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md) | Soil heat flux with an explicit method | Planned; candidate |
 
 Specification:
 [soil-heat-flux.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/soil-heat-flux.md).

@@ -134,6 +134,13 @@ Physics core of the METRIC surface energy balance.
 - [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md)
   : Net radiation at the land surface
 
+### Soil heat flux
+
+- [`ef_g()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)
+  [`ef_g_bastiaanssen()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)
+  [`ef_g_tasumi()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)
+  : Soil heat flux
+
 ### Latent heat and evapotranspiration
 
 - [`ef_latent_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat.md)
