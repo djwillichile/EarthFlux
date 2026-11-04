@@ -5,9 +5,15 @@
 
 <!-- badges: start -->
 
+[![GitHub
+release](https://img.shields.io/github/v/release/djwillichile/EarthFlux?label=release)](https://github.com/djwillichile/EarthFlux/releases/latest)
+[![Development
+version](https://img.shields.io/github/r-package/v/djwillichile/EarthFlux?label=devel)](https://github.com/djwillichile/EarthFlux/blob/main/DESCRIPTION)
+[![R-CMD-check](https://github.com/djwillichile/EarthFlux/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/djwillichile/EarthFlux/actions/workflows/R-CMD-check.yaml)
+[![License:
+MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![R-CMD-check](https://github.com/djwillichile/EarthFlux/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/djwillichile/EarthFlux/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ### Land-Surface Energy and Water Fluxes from Earth Observation Data

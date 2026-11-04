@@ -1,0 +1,65 @@
+name: release
+
+# Publishes a GitHub Release for a version tag (v*). It runs when the tag is
+# pushed, when a release is published from the GitHub interface (which
+# creates the tag), or manually from main (Actions > release > Run workflow),
+# in which case the tag v<Version> is created on the current commit. The tag must match the Version field of
+# DESCRIPTION; the release notes are the NEWS.md section of that version and
+# the source tarball is attached (an existing release is updated).
+
+on:
+  push:
+    tags: ['v*']
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+      - name: Tag matches DESCRIPTION version
+        run: |
+          tag="${{ github.event.release.tag_name || github.ref_name }}"
+          version=$(Rscript -e 'cat(read.dcf("DESCRIPTION", "Version"))')
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            test "${GITHUB_REF_NAME}" = "main" || {
+              echo "Manual releases run only from main"; exit 1; }
+            tag="v${version}"
+          fi
+          test "v${version}" = "${tag}" || {
+            echo "Tag ${tag} does not match Version ${version}"; exit 1; }
+          echo "TAG=${tag}" >> "$GITHUB_ENV"
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+      - name: Build and check the source package
+        run: |
+          R CMD build .
+          R CMD check --no-manual "EarthFlux_${VERSION}.tar.gz"
+      - name: Release notes from NEWS.md
+        run: |
+          awk -v v="# EarthFlux ${VERSION}" '
+            index($0, v) == 1 {on = 1; next}
+            on && /^# EarthFlux / {exit}
+            on {print}' NEWS.md > release-notes.md
+          test -s release-notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          name: EarthFlux ${{ env.VERSION }}
+          body_path: release-notes.md
+          files: EarthFlux_${{ env.VERSION }}.tar.gz
