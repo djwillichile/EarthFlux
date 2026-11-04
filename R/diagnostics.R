@@ -317,7 +317,8 @@ ef_flag_registry_build <- function() {
     ef_flags_et(),
     ef_flags_reference_et(),
     ef_flags_stations(),
-    ef_flags_gwr()
+    ef_flags_gwr(),
+    ef_flags_surface()
   )
   rownames(reg) <- NULL
 
