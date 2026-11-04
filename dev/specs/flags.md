@@ -622,14 +622,14 @@ división).
 |---|---|---|---|---|---|
 | `INPUT` | 1 | 0 | 0 | 1 | 1 |
 | `SURF` | 13 | 7 | 1 | 21 | 0 |
-| `WS` | 11 | 13 | 2 | 26 | 0 |
+| `WS` | 11 | 13 | 2 | 26 | 10 |
 | `GWR` | 14 | 4 | 1 | 19 | 10 |
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
 | `G` | 4 | 2 | 0 | 6 | 4 |
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
 | `H` | 11 | 2 | 0 | 13 | 8 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **73** | **35** | **4** | **112** | **38** |
+| **Total** | **73** | **35** | **4** | **112** | **48** |
 
 Registrados (actualizado con la armonización M2, 2026-11-04): 28 códigos,
 todos de clase I y ejercitados por un test de su módulo (R11, sin
