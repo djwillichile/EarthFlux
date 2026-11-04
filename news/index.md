@@ -500,6 +500,23 @@ result has been validated yet.
   can exclude and count them before the soil heat flux and the net
   radiation.
 
+- Explicit LAI for the non-vegetated MCD15A2H classes (codes 249-254:
+  unclassified, urban, wetland, snow and ice, barren, water): by default
+  their LAI stays `NA`, so the LAI-based emissivity (and the net
+  radiation and soil heat flux downstream) is `NA` there; the new option
+  `lai_nonveg` of the surface state assigns a declared LAI instead, one
+  value for all six classes or one per class code. The assigned value is
+  a candidate (practice of METRIC implementations), is recorded in the
+  provenance and is never applied silently: the assigned cells are
+  flagged in the LAI and emissivity layers, and QA conditions masked by
+  the user still win.
+
+- The MOD11A1/MYD11A1 band 31 and band 32 emissivities are read with the
+  LST and carried in the surface state, with their own flag words, in
+  preparation for a broadband emissivity from the LST product’s
+  emissivities; that method (split-window regression) is still not
+  implemented, pending its primary reference and coefficients.
+
 - Internal MODIS product table: one table holds the scale, offset and
   its convention, valid range, fill value, data type, HDF-EOS grid and
   QA layout of every supported layer of MOD11A1/MYD11A1,
@@ -546,16 +563,19 @@ result has been validated yet.
   reflectance) raise `earthflux_method_not_implemented`.
 
 - Diagnostic flags registered for the surface stage (cell scope, bits
-  1-14 of the surface flag word): `EF_SURF_FILL`, `EF_SURF_CLOUD`,
+  1-15 of the surface flag word): `EF_SURF_FILL`, `EF_SURF_CLOUD`,
   `EF_SURF_NOT_PRODUCED`, `EF_SURF_DN_OUT_OF_RANGE`,
   `EF_SURF_LAI_NONVEG` (causes of `NA`), `EF_SURF_QA_OTHER`,
   `EF_SURF_CLOUD_ADJACENT`, `EF_SURF_SNOW`, `EF_SURF_WATER`,
   `EF_SURF_SALT_PAN`, `EF_SURF_LAI_BACKUP`, `EF_SURF_ALBEDO_MAGNITUDE`
   (values kept), `EF_SURF_OVERPASS_MISSING` (view time missing where the
-  LST is valid; the solar geometry of the cell is `NA` downstream) and
+  LST is valid; the solar geometry of the cell is `NA` downstream),
   `EF_SURF_ALBEDO_GT1` (broadband albedo above 1, kept with severity
   `critical` and excluded before the METRIC core, which rejects it with
-  `earthflux_domain_error`).
+  `earthflux_domain_error`) and `EF_SURF_LAI_ASSIGNED` (the LAI of a
+  non-vegetated class was assigned by the option `lai_nonveg`, not
+  retrieved; informative). `EF_SURF_LAI_NONVEG` keeps its meaning (LAI
+  is `NA`) and is not raised where a value was assigned.
 
 - Example area of interest: the official boundary of the Cauquenes
   province (Maule Region, Chile; DPA 2023, SUBDERE, published through
@@ -564,8 +584,10 @@ result has been validated yet.
   with its provenance. A reproducible script
   (`data-raw/modis-example.R`, not part of the package) builds the
   example MODIS scene over it from NASA CMR and LP DAAC with an
-  Earthdata token read from the environment; the scene itself is not
-  included yet (its date is still to be chosen).
+  Earthdata token read from the environment, for 15 February 2019
+  (Terra) with LAI 0 assigned to the non-vegetated classes; the scene
+  itself is not included yet (the script must still be run with
+  Earthdata access).
 
 ### Changes
 
