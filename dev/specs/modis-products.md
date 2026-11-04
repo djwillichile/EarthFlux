@@ -1101,7 +1101,7 @@ resultado con distinto tamaño de bloque y en secuencial vs paralelo
 | MP-09 | Política QA por defecto | `"flag"` vs `"mask"` | `"flag"`; anclas con filtro estricto |
 | MP-10 | Formatos de entrada | Solo HDF4; HDF4 + convertidos | HDF4 + convertidos con declaración obligatoria |
 | MP-11 | Escala/offset | Automático GDAL vs ficha interna | Ficha interna (§11.3) |
-| MP-12 | Datos de ejemplo | AOI, fecha, productos | AOI agrícola chileno pequeño, fecha despejada pre-2020 (antes de la deriva), Terra |
+| MP-12 | Datos de ejemplo | AOI, fecha, productos | AOI: **provincia de Cauquenes, Región del Maule** (decisión del autor, 2026-11-04; área de estudio habitual, también en `thermify`). Fecha despejada pre-2020 (antes de la deriva) y Terra, por definir |
 | MP-13 | Migración a C7 de tierra | Esperar / soportar ambas | Fichas por colección; C6.1 hasta que C7 de tierra esté documentada |
 | MP-14 | Continuidad | VIIRS (VJ1/VJ2), Landsat, Sentinel-3 | Módulo de sensor separado; fuera de M4 |
 

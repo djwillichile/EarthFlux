@@ -43,8 +43,8 @@ referencia, decisión GW-22) · Tests: `tests/testthat/test-gwr-*.R`
 > siguiente); siguen pendientes el modo grueso (§6.2) y el I de Moran
 > (§7.3).
 >
-> Decisiones y desviaciones tomadas al implementar (para registrar en
-> `DECISIONS.md`):
+> Decisiones y desviaciones tomadas al implementar (registradas en
+> `DECISIONS.md` §1.3, M3-20 … M3-26):
 >
 > 1. `kernel` (GW-04) y `criterion` (GW-05) sin defecto; `search` es
 >    obligatorio en `ef_gwr_bandwidth()`. En `ef_gwr_search()` los
@@ -124,8 +124,8 @@ referencia, decisión GW-22) · Tests: `tests/testthat/test-gwr-*.R`
 > 60 × 60 celdas de 1 km en UTM 19S y 35 estaciones ficticias).
 > Dependencias: `terra`, `future` y `future.apply` en `Imports`.
 >
-> Decisiones y desviaciones tomadas al implementar (para registrar en
-> `DECISIONS.md`):
+> Decisiones y desviaciones tomadas al implementar (registradas en
+> `DECISIONS.md` §1.3, M3-27 … M3-36):
 >
 > 1. **Firma (GW-23).** `ef_regionalize(data, variable, covariates,
 >    method, use_qc, surface_covariates, grid = NULL, exclude = NULL,

@@ -31,9 +31,14 @@ Missing values propagate; the domain is that of \code{\link[=ef_es]{ef_es()}}.
 
 \code{VERIFICADA} (FAO-56, chapter 3, Eq. 13; case V14: 0.122 kPa degC-1 at
 16.9 degrees C). FAO-56 annex 3, Eq. 3-9 writes the same quantity with
-2504 and 237.2 in the exponent; the chapter 3 form is adopted. The
-coefficient 2503 attributed to ASCE-EWRI (2005) by secondary
-implementations is \code{CANDIDATA} and not used (weather-forcing.md 4.3).
+2504 and 237.2 in the exponent; the chapter 3 form is adopted.
+ASCE-EWRI (2005) Eqs. 5 and 36 (pp. 10, 28) write
+\eqn{\Delta = 2503 \exp(17.27 T / (T + 237.3)) / (T + 237.3)^2}{Delta
+= 2503 * exp(17.27 * T / (T + 237.3)) / (T + 237.3)^2}: 2503 is the
+product 4098 x 0.6108 = 2503.06 rounded, so the two forms differ by a
+constant factor of 2.3e-5 (relative), far below the precision of the
+published values; the FAO-56 form is used for both standards
+(dev/specs/weather-forcing.md 4.3).
 }
 
 \examples{
@@ -44,6 +49,14 @@ ef_es_slope((21.5 + 12.3) / 2)
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). \emph{Crop
 evapotranspiration: Guidelines for computing crop water requirements}
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+
+ASCE-EWRI (2005). \emph{The ASCE Standardized Reference Evapotranspiration
+Equation}. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 }
 \seealso{
 Other derived meteorological variables:

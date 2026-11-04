@@ -52,7 +52,10 @@ given in degrees), \code{doy} outside 1-366 or infinite values raise
 \section{Verification status}{
 
 \code{VERIFICADA} (FAO-56, chapter 3, Eqs. 21-25; cases V7 and V9: 20 degrees
-S on 3 September gives 32.2 MJ m-2 d-1). The limitation of the arc
+S on 3 September gives 32.2 MJ m-2 d-1). The same equations are
+ASCE-EWRI (2005) Eqs. 21-24 and 27-29 (pp. 23-25), written with
+\eqn{G_{sc}}{Gsc} = 4.92 MJ m-2 h-1 and the factor 24 / pi (identical
+to 0.0820 MJ m-2 min-1 and 24 * 60 / pi). The limitation of the arc
 cosine argument in polar conditions is an implementation choice
 (dev/specs/weather-forcing.md 13).
 }
@@ -69,6 +72,14 @@ range(ra)
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). \emph{Crop
 evapotranspiration: Guidelines for computing crop water requirements}
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
+
+ASCE-EWRI (2005). \emph{The ASCE Standardized Reference Evapotranspiration
+Equation}. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 }
 \seealso{
 Other derived meteorological variables:

@@ -153,7 +153,7 @@ códigos distintos).
 | 43 | `EF_WS_HEIGHT_NONSTANDARD` | QC-11 | Altura de T/HR ≠ 2 m | No | warning | forcing |
 | 44 | `EF_WS_SPATIAL_OUTLIER` | QC-12 | Residuo frente a vecinos o superficie regional | Sí `TODO` | warning | forcing |
 | 45 | `EF_STATION_CLOUDY` (ref.) | QC-13 | Rs/Rso a la hora de paso bajo un umbral | Sí `TODO` | warning | forcing |
-| 46 | `EF_WS_RS_RSO_LIMITED` | §4.8 | Rs/Rso > 1 limitado dentro del término de nubosidad (Ec. 39) | No (definición FAO-56) | info | forcing |
+| 46 | `EF_WS_RS_RSO_LIMITED` | §4.8 | Rs/Rso fuera del rango de la norma (> 1; con ASCE-EWRI también < 0,3) limitado dentro del término de nubosidad (FAO-56 Ec. 39; ASCE-EWRI 2005 Ec. 18 y 45) | No (definición de la norma) | info | forcing |
 | 47 | `EF_ETREF_NEGATIVE` | §5.4 | ETr/ETo < 0, conservada | No | info | forcing |
 | 48 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | §5.5 | Hora de paso fuera del rango de registros → `NA` | No | — | forcing |
 
@@ -430,9 +430,13 @@ códigos y de bits por etapa (R1, R7). Dueños: `ef_flags_core()`
 (`metric-radiation.R`, `EF_RAD_`), `ef_flags_soil_heat()`
 (`metric-soil-heat.R`, `EF_G_`), `ef_flags_anchors()`
 (`metric-anchors.R`, `EF_ANCHOR_`), `ef_flags_sensible_heat()`
-(`metric-sensible-heat.R`, `EF_H_`) y `ef_flags_et()` (`metric-et.R`,
-`EF_ET_`); `surface`, `forcing` y `spatial` agregan la suya con su primer
-código. Registrados: `EF_INPUT_NA` (`INPUT`, info, `cell,record`, bit 0) y
+(`metric-sensible-heat.R`, `EF_H_`), `ef_flags_et()` (`metric-et.R`,
+`EF_ET_`), `ef_flags_reference_et()` (`reference-et.R`, `EF_WS_`),
+`ef_flags_stations()` (`prep-qc.R`, `EF_WS_`) y `ef_flags_gwr()`
+(`gwr-diagnostics.R`, `EF_GWR_`); solo `surface` agregará la suya con su
+primer código. El registro es estático: `ef_flag_registry()` lo guarda la
+primera vez que se usa y `ef_flag_registry_build()` lo reconstruye sin
+caché para los tests de §8 (`DECISIONS.md` §1.3, M3-37). Registrados: `EF_INPUT_NA` (`INPUT`, info, `cell,record`, bit 0) y
 `EF_ET_NEGATIVE` (`ET`, warning, `cell`, bit 1), ambos con las columnas de
 §7, y los diez códigos de clase I de `EF_ANCHOR_` (ámbitos `object`/`record`,
 sin bit), registrados con `ef_select_anchors()`, `ef_anchors()` y
@@ -443,8 +447,10 @@ informativos, de ámbito `record` y sin bit (`weather-forcing.md` §13), y
 además `EF_WS_INCOMPLETE_DAY` y `EF_WS_OVERPASS_OUTSIDE_RECORDS` (I,
 levantados por `ef_station_ref_et()`, `weather-forcing.md` §13.4); el QC
 de estaciones (`ef_flags_stations()`, `prep-qc.R`) registra 9 códigos
-`EF_WS_` (incluido `EF_WS_RS_GT_RA`). Las demás filas de este catálogo
-siguen sin registrar y se registran según §7.
+`EF_WS_` (incluido `EF_WS_RS_GT_RA`). El núcleo GWR y la orquestación de
+la regionalización (`ef_flags_gwr()`, `gwr-diagnostics.R`) registran 13
+códigos `EF_GWR_`. Total registrado: 54 códigos (§4.4). Las demás filas de
+este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
 
@@ -492,7 +498,7 @@ siguen sin registrar y se registran según §7.
 | `EF_WS_INCOMPLETE_DAY` | `EF_WS_INCOMPLETE_DAY` | — | I (registrado en `ef_flags_reference_et()`; lo levanta `ef_station_ref_et()`, tabla `etr_24`) | warning | record | — | Política de huecos (WF-11): solo `day_completeness = "all_periods"`; no cambia la condición |
 | `EF_WS_HEIGHT_MISSING` | `EF_WS_HEIGHT_MISSING` | — | I (registrado; `ef_station_qc()`) | warning | record | — | – |
 | `EF_WS_HEIGHT_NONSTANDARD` | `EF_WS_HEIGHT_NONSTANDARD` | — | I (registrado; `ef_station_qc()`) | warning | record | — | Altura ≠ 2 m exacta |
-| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 (`VERIFICADA`) |
+| `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 y límites 0,3–1,0 de ASCE-EWRI 2005 Ec. 18 y 45 (`VERIFICADA`) |
 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | I (registrado en `ef_flags_reference_et()`; lo levanta `ef_station_ref_et()`, tabla `etr_inst`) | info* | record | — | Causa de `NA`; el soporte depende de la opción (O1: inicio del primer período a fin del último; O3: primer a último punto medio) |
 | `EF_WS_ETR_NEGATIVE` | `EF_ETREF_NEGATIVE` | prefijo + renombre | I (registrado; `ef_ref_et()`, `R/reference-et.R`) | info | record | — | Cubre ETr y ETo (tipo en la procedencia); ámbito `cell` si se adopta la opción C (FL-09) |
 | `EF_WS_IMPLAUSIBLE` | `EF_WS_IMPLAUSIBLE` | — | II | warning | record | — | Límites de `water` sin cita: no se adoptan |
@@ -632,17 +638,23 @@ división).
 | `ET` | 5 | 2 | 0 | 7 | 1 |
 | **Total** | **73** | **35** | **4** | **112** | **54** |
 
-Registrados (actualizado con la armonización M2, 2026-11-04): 28 códigos,
-todos de clase I y ejercitados por un test de su módulo (R11, sin
-excepciones): `EF_INPUT_NA` y `EF_ET_NEGATIVE` (registrados en M0 y
-levantados desde M2), los 4 `EF_RAD_*` de clase I, los 4 `EF_G_*` de clase
+Registrados (armonización M3, 2026-11-04; recuento de
+`ef_flag_registry()`): **54 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
+`ANCHOR` 10, `H` 8, `ET` 1 (los 28 de M2), `WS` 13 y `GWR` 13 (los 26 de
+M3); 51 de clase I y 3 de clase III (`EF_WS_OUT_OF_DOMAIN`,
+`EF_WS_TMIN_GT_TMAX`, `EF_GWR_OUT_OF_DOMAIN`), todos ejercitados por un
+test de su módulo (R11, sin excepciones); ningún código de clase II (los
+35 siguen en la guardia de `test-diagnostics.R`).
+
+M2 (armonización M2): 28 códigos, todos de clase I: `EF_INPUT_NA` y
+`EF_ET_NEGATIVE` (registrados en M0 y levantados desde M2), los 4 `EF_RAD_*` de clase I, los 4 `EF_G_*` de clase
 I (incluido el I-m `EF_G_LOW_LAI_BRANCH`, registrado con su método
 `CANDIDATA` como excepción a §7, punto 3; `DECISIONS.md` §1.2, M2-03), los
 10 `EF_ANCHOR_*` de clase I y 8 de los 11 `EF_H_*` de clase I. Sin
 registrar en M2: `EF_H_ZOM_FLOOR_APPLIED` (I-m, SH-02),
 `EF_H_ZOM_TERRAIN_ADJUSTED` (método de terreno no implementado),
 `EF_H_WIND_FLOOR_APPLIED` (SH-06) y los 4 `EF_ET_PERIOD_*` de clase I
-(`ef_et_period()` no implementada); ningún código de clase II ni III.
+(`ef_et_period()` no implementada).
 
 Estaciones y ET de referencia (M3, 2026-11-04): los 13 `EF_WS_*` de
 clase I y III están registrados: 9 en `ef_flags_stations()` (`ef_station_qc()`;
@@ -759,7 +771,19 @@ la vista de auditoría del ámbito `record` para estaciones; su columna
 
 ### 6.2 Registro `earthflux_flag` (extensión propuesta)
 
-Campos actuales: `code`, `severity`, `description`, `index`, `n_flagged`,
+**Estado de implementación (M3, 2026-11-04).** Implementados: `stage` y
+`scope` (en todo registro, desde M2, `ef_flag()`) y **`target`**, adoptado
+(`DECISIONS.md` §1.3, M3-18; `ARCHITECTURE.md` §3.5) para los objetos con
+varias tablas a las que puede referirse `index`: primer uso,
+`ef_station_ref_et()` (`"series"`, `"etr_inst"`, `"etr_24"`, con
+`provenance$flags_evaluated_by_target`). Los objetos de una sola tabla o
+vector no lo llevan, y las superficies regionalizadas no usan registros
+con índice de celda (los flags de celda viven en `flag_word`, §6.3). Sin
+implementar: `time` (una superficie lleva sus `target_time` en el objeto y
+en los nombres de capa) y `parameters` (ningún código con parámetro está
+registrado).
+
+Campos de M0: `code`, `severity`, `description`, `index`, `n_flagged`,
 `n_total`. Se proponen, para cuando se implemente la primera función
 espacial:
 

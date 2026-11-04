@@ -248,7 +248,7 @@ test_that("station_ra_window() is the sunlit integral of FAO-56 Eq. 28", {
   lon <- -71.5 * pi / 180
   mids <- as.POSIXct("2024-01-15 00:30", tz = "UTC") + 3600 * (0:23)
   ra <- station_ra_window(lat, lon, mids, 3600)
-  ra_mid <- ef_ra_period(lat, lon, 15, 0.5 + 0:23, 1)
+  ra_mid <- ef_ra_period(lat, lon, 15, 0.5 + 0:23, 1, standard = "fao56")
   # Away from sunrise and sunset it is ef_ra_period(); at the sunrise hour
   # (mid-point 09:30 UTC below the horizon) the window still has sun.
   inner <- 11:23
@@ -273,7 +273,8 @@ test_that("EF_WS_RS_GT_RA flags Rs above Ra of the record window", {
   # ST01 (35.4 S, 71.5 W), 15 January; hours ending 13:00-15:00 UTC.
   lat <- -35.4 * pi / 180
   lon <- -71.5 * pi / 180
-  ra_mean <- ef_ra_period(lat, lon, 15, c(12.5, 13.5, 14.5), 1) * 1e6 / 3600
+  ra_mean <- ef_ra_period(lat, lon, 15, c(12.5, 13.5, 14.5), 1,
+                          standard = "fao56") * 1e6 / 3600
   rs <- c(floor(ra_mean[1]), ceiling(ra_mean[2]), NA)
   qc <- ef_station_qc(syn_single(solar_radiation = rs))
   expect_identical(qc_rows(qc, "EF_WS_RS_GT_RA", "solar_radiation"), 2L)

@@ -23,14 +23,14 @@ reference, 0.12 m) or \code{"alfalfa"} (tall reference, about 0.5 m).}
 \item{timestep}{Character, no default. \code{"daily"} or \code{"hourly"}.}
 
 \item{standard}{Character, no default. \code{"fao56"} (FAO-56, grass only) or
-\code{"asce"} (ASCE-EWRI 2005 standardized equation, \code{CANDIDATA}).}
+\code{"asce"} (ASCE-EWRI 2005 standardized equation).}
 
 \item{daytime}{Logical or \code{NULL}. For \code{timestep = "hourly"}, \code{TRUE} for
 daytime and \code{FALSE} for night-time periods (required); must be \code{NULL}
-for \code{"daily"}. \code{NA} gives \code{NA}. The criterion (for example
-\eqn{R_n > 0}{Rn > 0} or \eqn{R_a > 0}{Ra > 0}) is the caller's
-choice: FAO-56 speaks of "daylight periods" without a threshold
-(decision WF-15).}
+for \code{"daily"}. \code{NA} gives \code{NA}. The criterion is the caller's choice
+(decision WF-15): FAO-56 speaks of "daylight periods" without a
+threshold; ASCE-EWRI (2005) defines daytime as a positive hourly net
+radiation, \code{daytime = net_radiation > 0} (see Details).}
 }
 \value{
 A numeric vector of soil heat flux of the reference surface
@@ -52,14 +52,27 @@ constants table of the reference equations
 (dev/specs/weather-forcing.md 5.3):\tabular{lllll}{
    Reference, standard \tab Daily \tab Hourly, day \tab Hourly, night \tab Status \cr
    grass, \code{"fao56"} \tab 0 (Eq. 42) \tab 0.1 (Eq. 45) \tab 0.5 (Eq. 46) \tab \code{VERIFICADA} \cr
-   grass, \code{"asce"} \tab 0 \tab 0.1 \tab 0.5 \tab \code{CANDIDATA} \cr
-   alfalfa, \code{"asce"} \tab 0 \tab 0.04 \tab 0.2 \tab \code{CANDIDATA} \cr
+   grass, \code{"asce"} \tab 0 (Eq. 30) \tab 0.1 (Eq. 65a) \tab 0.5 (Eq. 65b) \tab \code{VERIFICADA} \cr
+   alfalfa, \code{"asce"} \tab 0 (Eq. 30) \tab 0.04 (Eq. 66a) \tab 0.2 (Eq. 66b) \tab \code{VERIFICADA} \cr
 }
 
 
-FAO-56 (Eq. 42) states that the daily soil heat flux beneath the grass
-reference is small and may be ignored (G about 0). The monthly forms
-(FAO-56 Eqs. 43-44) are out of scope. \code{standard = "fao56"} with
+FAO-56 (Eq. 42) and ASCE-EWRI (2005, Eq. 30, p. 25) state that the daily
+soil heat flux beneath the reference surface is small and is ignored
+(G = 0). The monthly forms (FAO-56 Eqs. 43-44; ASCE-EWRI Eqs. 31-32) are
+out of scope.
+
+\strong{Day and night in ASCE-EWRI (2005).} The report defines daytime as a
+positive mean net radiation of the hourly period (text before Table 1,
+p. 5; Table 2, p. 5: daytime \eqn{R_n > 0}{Rn > 0}, night-time
+\eqn{R_n \le 0}{Rn <= 0}), which \code{daytime = net_radiation > 0} follows
+(option \code{"rn_positive"} of \code{\link[=ef_station_ref_et]{ef_station_ref_et()}}). The report is not
+consistent at \eqn{R_n = 0}{Rn = 0}: p. 44 (after Eqs. 65-66) and the
+glossary (p. 58) define night-time as \eqn{R_n < 0}{Rn < 0} and daytime
+as \eqn{R_n \ge 0}{Rn >= 0}. At \eqn{R_n = 0}{Rn = 0} G is 0 under
+both readings; only \eqn{C_d}{Cd} of \code{\link[=ef_ref_et]{ef_ref_et()}} depends on it.
+
+\code{standard = "fao56"} with
 \code{reference = "alfalfa"} raises \code{earthflux_undefined_reference} (also
 \code{earthflux_input_error}): FAO-56 does not define the tall reference.
 
@@ -72,9 +85,8 @@ infinite \code{net_radiation} raises \code{earthflux_domain_error}.
 \section{Verification status}{
 
 FAO-56 grass rows: \code{VERIFICADA} (FAO-56, chapter 4, Eqs. 42, 45, 46;
-cases V15 and V16). ASCE-EWRI rows: \code{CANDIDATA} (ASCE-EWRI, 2005, was not
-accessible; values from secondary implementations, implemented as
-\code{CANDIDATA} by direction of the author to advance milestone M3).
+cases V15 and V16). ASCE-EWRI rows: \code{VERIFICADA} (ASCE-EWRI, 2005,
+Eq. 30, p. 25; Eqs. 65a-b and 66a-b, p. 44).
 }
 
 \examples{
@@ -82,6 +94,11 @@ accessible; values from secondary implementations, implemented as
 ef_ref_soil_heat_flux(c(1.749, -0.100), reference = "grass",
                       timestep = "hourly", standard = "fao56",
                       daytime = c(TRUE, FALSE))
+
+# Tall reference, ASCE-EWRI daytime rule (Rn > 0)
+rn <- c(1.749, -0.100)
+ef_ref_soil_heat_flux(rn, reference = "alfalfa", timestep = "hourly",
+                      standard = "asce", daytime = rn > 0)
 
 # Daily step: G = 0
 ef_ref_soil_heat_flux(13.28, reference = "grass", timestep = "daily",
@@ -93,8 +110,12 @@ evapotranspiration: Guidelines for computing crop water requirements}
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
 
 ASCE-EWRI (2005). \emph{The ASCE Standardized Reference Evapotranspiration
-Equation}. American Society of Civil Engineers.
-\doi{10.1061/9780784408056}
+Equation}. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Final report, January 2005.
+Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 }
 \seealso{
 Other reference evapotranspiration functions:

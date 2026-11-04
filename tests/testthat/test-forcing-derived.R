@@ -154,6 +154,48 @@ test_that("ef_ea_daily() checks the domain, NA, recycling and dim", {
                class = "earthflux_input_error")
 })
 
+test_that("ASCE-EWRI daily ea: Eq. 13 (rhmin) and Eq. 14 (rhmean_tmean)", {
+  # Inputs of FAO-56 example 5 (Tmin = 18, Tmax = 25 degC, RHmax = 82,
+  # RHmin = 54 %). ASCE-EWRI (2005) Eq. 13: ea = e0(Tmax) RHmin / 100 =
+  # 3.1678 * 0.54 = 1.7106 kPa; Eq. 14: ea = RHmean / 100 e0(Tmean) with
+  # RHmean = 68 % and Tmean = 21.5 degC (Eq. 2): 0.68 * 2.5644 = 1.7438 kPa.
+  rhmin <- ef_ea_daily(tmax = 25, rh_min = 54, method = "rhmin")
+  expect_within(rhmin, 1.7106, half_unit(4))
+  expect_equal(rhmin, ef_es(25) * 0.54, tolerance = 1e-12)
+  tmean <- ef_ea_daily(tmin = 18, tmax = 25, rh_max = 82, rh_min = 54,
+                       method = "rhmean_tmean")
+  expect_within(tmean, 1.7438, half_unit(4))
+  expect_equal(tmean, 0.68 * ef_es(21.5), tolerance = 1e-12)
+  # Eq. 14 is not the FAO-56 Eq. 19 form ("not recommended in the
+  # standardized procedure", ASCE-EWRI p. 17): 1.7438 versus 1.7788 kPa.
+  fao <- ef_ea_daily(tmin = 18, tmax = 25, rh_max = 82, rh_min = 54,
+                     method = "rhmean")
+  expect_gt(fao - tmean, 0.03)
+  # The shared forms: ASCE-EWRI Eq. 11 = FAO-56 Eq. 17, Eq. 12 = Eq. 18.
+  expect_equal(ef_ea_daily(18, 25, 82, 54, method = "rhmax_rhmin"),
+               (ef_es(18) * 0.82 + ef_es(25) * 0.54) / 2, tolerance = 1e-12)
+})
+
+test_that("the ASCE-EWRI ea methods require their inputs only", {
+  expect_error(ef_ea_daily(tmin = 18, rh_min = 54, method = "rhmin"),
+               class = "earthflux_missing_input")
+  expect_error(ef_ea_daily(tmin = 18, tmax = 25, rh_max = 82,
+                           method = "rhmean_tmean"),
+               class = "earthflux_missing_input")
+  expect_error(ef_ea_daily(tmax = 25, rh_min = -1, method = "rhmin"),
+               class = "earthflux_domain_error")
+  expect_error(ef_ea_daily(26, 25, 82, 54, method = "rhmean_tmean"),
+               class = "earthflux_domain_error")
+  # Inputs not used by the method are not required.
+  expect_identical(
+    is.na(ef_ea_daily(tmax = c(25, NA), rh_min = 54, method = "rhmin")),
+    c(FALSE, TRUE)
+  )
+  m <- matrix(c(20, 22, 24, 26), 2)
+  expect_identical(dim(ef_ea_daily(tmax = m, rh_min = 50, method = "rhmin")),
+                   c(2L, 2L))
+})
+
 test_that("ef_ea_rh() reproduces FAO-56 example 19", {
   # 38 degC, 52 % -> 3.445 kPa; 28 degC, 90 % -> 3.402 kPa.
   ea <- ef_ea_rh(c(38, 28), c(52, 90))
@@ -283,7 +325,7 @@ test_that("V15: Ra of 14:00-15:00 local standard time (FAO-56 example 19)", {
   expect_within(omega + c(-1, 1) * pi / 24, c(0.5512, 0.8130),
                 half_unit(4) + 1e-6)
   ra <- ef_ra_period(ndiaye_lat, ndiaye_lon, doy, utc_mid = 15.5,
-                     period_hours = 1)
+                     period_hours = 1, standard = "fao56")
   expect_within(ra, 3.543, half_unit(3))
   expect_within(ra, 3.5434, half_unit(4))
 })
@@ -291,7 +333,8 @@ test_that("V15: Ra of 14:00-15:00 local standard time (FAO-56 example 19)", {
 test_that("V16: night period 02:00-03:00 has Ra = 0 (midpoint criterion)", {
   omega <- ef_hour_angle(274, 3.5, ndiaye_lon)
   expect_within(omega, -2.46, half_unit(2))
-  expect_identical(ef_ra_period(ndiaye_lat, ndiaye_lon, 274, 3.5, 1), 0)
+  expect_identical(ef_ra_period(ndiaye_lat, ndiaye_lon, 274, 3.5, 1,
+                                standard = "fao56"), 0)
 })
 
 test_that("Eq. 31 with Lz, Lm in local time equals the UTC form", {
@@ -326,7 +369,8 @@ test_that("sum of hourly Ra approximates the daily Ra", {
   # hours could not differ more at these latitudes).
   for (lat in c(-35, 0, 50)) {
     for (doy in c(15, 180)) {
-      hourly <- ef_ra_period(lat * deg, 0, doy, 0:23 + 0.5, 1)
+      hourly <- ef_ra_period(lat * deg, 0, doy, 0:23 + 0.5, 1,
+                             standard = "fao56")
       expect_equal(sum(hourly), ef_ra_daily(lat * deg, doy),
                    tolerance = 0.01, info = paste(lat, doy))
     }
@@ -334,21 +378,89 @@ test_that("sum of hourly Ra approximates the daily Ra", {
 })
 
 test_that("ef_ra_period() checks the domain, NA, recycling and dim", {
-  expect_error(ef_ra_period(0, 0, 100, 24, 1), class = "earthflux_domain_error")
-  expect_error(ef_ra_period(0, 0, 100, 12, 0), class = "earthflux_domain_error")
-  expect_error(ef_ra_period(0, 0, 100, 12, 2), class = "earthflux_domain_error")
-  expect_error(ef_ra_period(0, 200, 100, 12, 1),
+  expect_error(ef_ra_period(0, 0, 100, 24, 1, standard = "fao56"),
                class = "earthflux_domain_error")
-  expect_error(ef_ra_period(0, 0, 100.5, 12, 1),
+  expect_error(ef_ra_period(0, 0, 100, 12, 0, standard = "fao56"),
+               class = "earthflux_domain_error")
+  expect_error(ef_ra_period(0, 0, 100, 12, 2, standard = "fao56"),
+               class = "earthflux_domain_error")
+  expect_error(ef_ra_period(0, 200, 100, 12, 1, standard = "fao56"),
+               class = "earthflux_domain_error")
+  expect_error(ef_ra_period(0, 0, 100.5, 12, 1, standard = "fao56"),
                class = "earthflux_input_error")
-  out <- ef_ra_period(0, 0, 100, c(12, NA, 13), 1)
+  out <- ef_ra_period(0, 0, 100, c(12, NA, 13), 1, standard = "fao56")
   expect_identical(is.na(out), c(FALSE, TRUE, FALSE))
   m <- matrix(c(10.5, 11.5, 12.5, 13.5), 2)
-  expect_identical(dim(ef_ra_period(0.3, 0, 100, m, 1)), c(2L, 2L))
+  expect_identical(dim(ef_ra_period(0.3, 0, 100, m, 1, standard = "fao56")),
+                   c(2L, 2L))
   # Half-hour periods: about half of the hourly value at noon.
-  ra1 <- ef_ra_period(0, 0, 80, 12, 1)
-  ra05 <- ef_ra_period(0, 0, 80, 12, 0.5)
+  ra1 <- ef_ra_period(0, 0, 80, 12, 1, standard = "fao56")
+  ra05 <- ef_ra_period(0, 0, 80, 12, 0.5, standard = "fao56")
   expect_equal(ra05 / ra1, 0.5, tolerance = 0.01)
+})
+
+# ASCE-EWRI (2005) limits of integration of the hourly Ra (Eq. 56) ---------------
+
+test_that("ASCE-EWRI Eq. 56: Ra of the sunlit part of sunrise and sunset", {
+  # Greeley, Colorado (40.41 N, 104.78 W), 1 July (J = 183): the hourly
+  # periods with the limits of Eq. 56 cover the sunlit part of the day
+  # exactly, so their sum over 24 periods equals the daily Ra (Eq. 21) to
+  # rounding (the midpoint criterion of FAO-56 does not).
+  lat <- 40.41 * deg
+  lon <- -104.78 * deg
+  h <- 0:23 + 0.5
+  asce <- ef_ra_period(lat, lon, 183, h, 1, standard = "asce")
+  fao <- ef_ra_period(lat, lon, 183, h, 1, standard = "fao56")
+  daily <- ef_ra_daily(lat, 183)
+  expect_equal(sum(asce), daily, tolerance = 1e-10)
+  expect_gt(abs(sum(fao) - daily), 0.1)
+  # Away from sunrise and sunset both standards give the same integral.
+  omega <- ef_hour_angle(183, h, lon)
+  ws <- acos(-tan(lat) * tan(ef_declination(183)))
+  inside <- omega - pi / 24 >= -ws & omega + pi / 24 <= ws
+  outside <- omega + pi / 24 <= -ws | omega - pi / 24 >= ws
+  expect_equal(asce[inside], fao[inside], tolerance = 1e-12)
+  expect_identical(asce[outside], rep(0, sum(outside)))
+  # Sunrise period: Eq. 48 from -ws to the end of the period, by hand.
+  rise <- which(omega - pi / 24 < -ws & omega + pi / 24 > -ws)
+  expect_length(rise, 1L)
+  w2 <- omega[rise] + pi / 24
+  delta <- ef_declination(183)
+  by_hand <- 12 / pi * 4.92 * ef_inv_distance(183) *
+    ((w2 + ws) * sin(lat) * sin(delta) +
+       cos(lat) * cos(delta) * (sin(w2) - sin(-ws)))
+  expect_equal(asce[rise], by_hand, tolerance = 1e-12)
+  expect_gt(asce[rise], 0)
+})
+
+test_that("ASCE-EWRI Eq. 56 leaves polar day and half-hour periods intact", {
+  h <- 0:23 + 0.5
+  # Polar day (80 N, 21 June): no sunrise or sunset, no limits.
+  expect_equal(ef_ra_period(80 * deg, 0, 172, h, 1, standard = "asce"),
+               ef_ra_period(80 * deg, 0, 172, h, 1, standard = "fao56"),
+               tolerance = 1e-12)
+  # Polar night: zero everywhere.
+  expect_identical(ef_ra_period(80 * deg, 0, 355, h, 1, standard = "asce"),
+                   rep(0, 24L))
+  # 30-minute periods also add up to the daily value.
+  h30 <- seq(0.25, 23.75, by = 0.5)
+  expect_equal(sum(ef_ra_period(-35 * deg, -71 * deg, 15, h30, 0.5,
+                                standard = "asce")),
+               ef_ra_daily(-35 * deg, 15), tolerance = 1e-10)
+})
+
+test_that("ef_ra_period() requires an explicit standard", {
+  expect_error(ef_ra_period(0, 0, 100, 12, 1),
+               class = "earthflux_missing_input")
+  expect_error(ef_ra_period(0, 0, 100, 12, 1, standard = "asce-ewri"),
+               class = "earthflux_unknown_method")
+  m <- matrix(c(10.5, 11.5, 12.5, 13.5), 2)
+  expect_identical(dim(ef_ra_period(0.3, 0, 100, m, 1, standard = "asce")),
+                   c(2L, 2L))
+  expect_identical(
+    is.na(ef_ra_period(0, 0, 100, c(12, NA), 1, standard = "asce")),
+    c(FALSE, TRUE)
+  )
 })
 
 # Clear-sky radiation ------------------------------------------------------------

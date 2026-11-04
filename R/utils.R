@@ -31,9 +31,38 @@
 #                                  convergence criterion (SH-18); the result
 #                                  is returned and flagged, never hidden
 #
-# Module-specific subclasses (e.g. `earthflux_anchor_no_candidates`) are
-# introduced with the function that raises them and must inherit one of the
-# classes above.
+# Module-specific subclasses are introduced with the function that raises
+# them and must inherit one of the classes above (dev/ARCHITECTURE.md
+# section 3.3):
+#
+#   earthflux_anchor_error          parent of the anchor selection errors
+#                                   (R/metric-anchors.R):
+#                                   earthflux_anchor_no_candidates,
+#                                   earthflux_anchor_insufficient_domain,
+#                                   earthflux_anchor_inverted, and with
+#                                   earthflux_input_error
+#                                   earthflux_anchor_na_input,
+#                                   earthflux_anchor_outside_grid
+#   earthflux_station_field_error   station table (R/io-weather.R), all
+#   earthflux_station_time_error    subclasses of earthflux_input_error:
+#   earthflux_station_unknown_id    field, time, unknown station, duplicate
+#   earthflux_station_duplicate     and provenance errors
+#   earthflux_station_provenance_error
+#   earthflux_undefined_reference   reference ET not defined by the standard
+#                                   (FAO-56 with the alfalfa reference;
+#                                   R/reference-et.R), subclass of
+#                                   earthflux_input_error
+#   earthflux_gwr_error             parent of the GWR errors (R/gwr-fit.R,
+#                                   gwr_abort(); subclass of earthflux_error):
+#                                   earthflux_gwr_insufficient_stations
+#                                   (fields n, p),
+#                                   earthflux_gwr_no_feasible_bandwidth
+#                                   (field profile),
+#                                   earthflux_gwr_singular_error
+#                                   (field stations)
+#
+# Dimension mismatches are earthflux_input_error everywhere (no
+# earthflux_dimension_error class; DECISIONS.md section 1.3).
 
 #' Build a classed EarthFlux condition object
 #'

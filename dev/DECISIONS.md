@@ -129,6 +129,111 @@ dueños registran el detalle en sus secciones de estado de implementación.
 | M2-06 | **Auxiliares en un solo lugar**: `check_core_args()`, `check_whole()`, `check_doy()`, `check_angle()`, `check_condition()`, `check_scalar()` (con cotas y `whole` opcionales; reemplaza a `anchor_check_scalar()`), `common_dim()` y `ef_reshape()` en `R/utils.R`; `ef_input_na_flags()` en `R/diagnostics.R`; `EF_SECONDS_PER_HOUR` y `EF_MM_PER_M` en `R/constants.R`. `stats` (paquete base) en `Imports`: las anclas usan `stats::quantile(type = )`, `stats::median()` y `stats::sd()` en lugar de reimplementaciones (resultados idénticos). Una sola conversión LE ↔ ET: las anclas usan la inversa interna `ef_et_inst_to_latent_heat()` | Eliminar duplicación y notas `TODO(shared)` tras fusionar los cinco módulos desarrollados en paralelo | `R/utils.R`, `R/diagnostics.R`, `R/constants.R`, `R/metric-anchors.R` |
 | M2-07 | **Hallazgo SH-11** (no es una decisión): con el ancla fría estable de la especificación (H_target < 0), `stable_psi_m_height` = 200 m hace **divergir** la Fase A (rah del ancla fría sin cota → `earthflux_calibration_error`), mientras que 2 m converge. P0-2 sigue `ABIERTA` y ahora se sabe **decisiva** para cualquier escena con ancla fría estable (advección) | Observado en la escena de `sensible-heat.md` §14 (H_target = −50 y −5 W m⁻²) y en la variante estable del test de extremo a extremo (`tests/testthat/test-metric-chain.R`). Es un comportamiento de las formas `CANDIDATA`, no una validación | `sensible-heat.md` §21; P0-2 |
 
+### 1.3 Decisiones de implementación de M3 (2026-11-04)
+
+Tomadas al implementar los módulos de M3 (tabla de estaciones y QC,
+variables derivadas y ET de referencia, serie de referencia por estación,
+núcleo GWR y orquestación de la regionalización) y al armonizarlos tras
+fusionarlos en `main`. Estado de todas: **`DECIDIDA (provisional)`,
+2026-11-04**, revisables por el autor antes de `0.1.0`; ninguna cierra una
+decisión científica abierta: cuando la elección depende de una pregunta
+abierta (WF-09, WF-11, WF-15 para FAO-56, WF-16, GW-04, GW-05, GW-07,
+decisión 5.1), se expone como **argumento explícito sin defecto** (regla M2 de §1.0). Los
+documentos dueños registran el detalle en sus secciones de estado:
+`specs/weather-forcing.md` §2.7, §3.3, §13 y §13.4; `specs/gwr-forcing.md`
+(bloques de estado del núcleo y de la orquestación);
+`specs/parallel-processing.md` (nota de estado); `specs/flags.md` §4.4 y
+§6.2.
+
+**ET de referencia y variables derivadas** (`R/forcing-derived.R`,
+`R/reference-et.R`; `weather-forcing.md` §13.2)
+
+| ID | Decisión | Fundamento | Dónde |
+|---|---|---|---|
+| M3-01 | **Sustituida por M3-01a.** Constantes estandarizadas de ASCE-EWRI (2005) (referencia alta/alfalfa, Cn/Cd diarios y horarios, Cd día/noche, G/Rn 0,04/0,2 y 0,1/0,5) implementadas inicialmente como `CANDIDATA` antes de leer la norma, rotuladas en roxygen, en `provenance$constants` y en la tabla interna (`ef_reference_constants()`) con su fuente secundaria (`SPEI` 1.8.1; `water` 1.0), sin defectos ocultos | Indicación del autor de avanzar M3 con la regla M2 de §1.0; METRIC requiere ETr de la referencia alta | `weather-forcing.md` §13.2, punto 1 |
+| M3-01a | **Verificación ASCE-EWRI (2005)** (informe final de enero de 2005, pp. i–vii y 1–59; cambio separado): las seis filas de la Tabla 1 (p. 5) y G (Ecs. 30, 65a/b, 66a/b, p. 44) pasan a `VERIFICADA`. Sustituye a M3-01 | Lectura de la fuente primaria; el Apéndice C (ejemplos de Greeley) no estaba en el PDF leído, por lo que no hay caso numérico ASCE publicado reproducido | `weather-forcing.md` §13.5 |
+| M3-01b | Lo que difiere entre normas se elige con un argumento explícito **`standard`**: σ (4,901 × 10⁻⁹ diario, 2,042 × 10⁻¹⁰ horario), límites de Rs/Rso (0,3–1; Ecs. 18 y 45) y límites de integración de Ra horaria en la salida y puesta del sol (Ec. 56). `ef_ref_net_radiation()` y `ef_ra_period()` exigen ahora `standard` | Una sola función por magnitud, sin defecto oculto (T-15); WF-10 queda resuelta a través de `standard` | `weather-forcing.md` §13.5 |
+| M3-01c | Δ conserva la forma de FAO-56 para ambas normas (el coeficiente 2503 de ASCE difiere en 2,3 × 10⁻⁵ relativo) | Diferencia despreciable; una sola `ef_es_slope()` | `weather-forcing.md` §13.5 |
+| M3-01d | Opciones nuevas de ASCE: `night_cloudiness = "low_sun"` (Ecs. 46/62, β ≤ 0,3 rad); métodos `"rhmin"` (Ec. 13) y `"rhmean_tmean"` (Ec. 14) de `ef_ea_daily()`; `daytime_rule = "rn_positive"` pasa a `VERIFICADA` para ASCE (WF-15 resuelta solo para ASCE); con `"asce"` y `"fixed"`, `night_ratio` debe estar en [0,3; 1] (p. 36) | Contenido leído de la norma; las opciones siguen siendo argumentos sin defecto | `weather-forcing.md` §13.5 |
+| M3-01e | `EF_WS_RS_RSO_LIMITED` marca ambos límites del cociente Rs/Rso (inferior y superior) | Los límites de M3-01b dependen de la norma; el flag informa cuál se aplicó | `weather-forcing.md` §13.5; `flags.md` §4.2 |
+| M3-02 | `ef_ref_et()` devuelve un objeto con clase `earthflux_reference_et` (`et_ref`, `reference`, `timestep`, `standard`, `flags`, `provenance` con las filas de constantes usadas), no un `numeric` con atributos como proponía §5.4; `ef_ref_net_radiation()` devuelve `earthflux_reference_net_radiation` (`rn`, `rns`, `rnl`, `cloudiness`) | Convención de objetos de `ARCHITECTURE.md` §3.2 (M2-04): flags y procedencia viajan con el resultado | `weather-forcing.md` §13.2, punto 2; `R/classes.R` |
+| M3-03 | WF-13: `ef_ref_net_radiation()` y `ef_ref_soil_heat_flux()` se **exportan** (la especificación las preveía internas); `ef_etr_hourly()`/`ef_etr_daily()` no se crearon (no aportan sobre `ef_ref_et()`) | Sin ellas `ef_ref_et()` no era utilizable antes de existir `ef_station_ref_et()`; el tamaño de la API se revisa con T-16 antes de `0.1.0` | `weather-forcing.md` §13.2, punto 3; `NAMING.md` §3 |
+| M3-04 | Argumentos sin defecto y contratos de la ET de referencia: `ef_ea_tmin(tmin, k0)` sin defecto para `k0` (FAO-56 Anexo 6: 0 o 2 °C según el clima; T-15); `ef_ref_soil_heat_flux()` recibe `standard`; `daytime` obligatorio en paso horario (G de ambas normas y Cd de ASCE) y `NULL` en paso diario; `cloudiness` = término f = 1,35·Rs/Rso − 0,35; FAO-56 con `reference = "alfalfa"` → error nuevo `earthflux_undefined_reference` (subclase de `earthflux_input_error`) | Elecciones científicas explícitas (T-15); FAO-56 solo define la referencia de pasto | `weather-forcing.md` §13.2, puntos 4–8; `ARCHITECTURE.md` §3.3 |
+| M3-05 | Convenciones numéricas de las variables derivadas: argumento de arccos de la Ec. 25 limitado a [−1, 1] (ωs = π / 0 en día / noche polar); `ef_ra_period()` con `period_hours` ∈ (0, 1], criterio de punto medio y 1/15 h por grado exacto (WF-10; ahora elegido con `standard`, M3-01b); Gsc desde `EF_SOLAR_CONSTANT`; dominios de temperatura de cada ecuación; literales de la norma dentro de las funciones (WF-14); γ, e° y Δ en `R/forcing-derived.R` y no en `R/shared-physics.R` (WF-01) | Límites geométricos exactos en lugar del X = 0,00001 de FAO-56 Ec. 26–27; una sola fuente de Gsc (P0-5) | `weather-forcing.md` §13.2, puntos 9–12 y 14 |
+| M3-06 | Flags de la ET de referencia en `ef_flags_reference_et()` (prefijo `EF_WS_`, ámbito `record`, sin bit): `EF_WS_RS_RSO_LIMITED` (I-m, info; el método —límite de la Ec. 39— es `VERIFICADA`) y `EF_WS_ETR_NEGATIVE` (I, info; nombre normalizado de `EF_ETREF_NEGATIVE`, cubre ETo y ETr) | `specs/flags.md` §7 (I-m con método verificado); la ET negativa se conserva (principio 6) | `weather-forcing.md` §13.2, punto 13; `flags.md` §4.2 |
+
+**Tabla de estaciones y QC** (`R/io-weather.R`, `R/prep-qc.R`;
+`weather-forcing.md` §2.7, §3.3)
+
+| ID | Decisión | Fundamento | Dónde |
+|---|---|---|---|
+| M3-07 | **WF-03** adoptada: dos `data.frame` base (`stations`, `observations`) + clase S3 `earthflux_station_table` (con `qc`, `flags` y `provenance`); entradas que heredan de `data.frame` se convierten a `data.frame` base; `ef_validate_stations()` queda **interna** (`NAMING.md` la listaba como pública) | Recomendación de WF-03; el validador lo llaman el constructor y el QC, el usuario no lo necesita | `weather-forcing.md` §2.7 |
+| M3-08 | **WF-04** adoptada según `flags.md` (clase III): imposibles en `stations` → `earthflux_domain_error`; imposibles en `observations` → se conservan y `ef_station_qc()` los marca `critical`; infinitos en `observations` → error. Contrato: `provenance$crs` = `"EPSG:4326"` exacto; `timestamp` `POSIXct` con zona explícita (texto solo con `timestamp_format` y `tz` sin defecto); `timestamp_convention` e `interval` obligatorios; conversiones de unidades solo declaradas y registradas; columnas fuera del contrato → error; errores con clase `earthflux_station_*` | Recomendación de WF-04 (P0-11, T-13): un registro no detiene la serie; nada llega al núcleo en silencio | `weather-forcing.md` §2.7; `ARCHITECTURE.md` §3.3 |
+| M3-09 | QC: `ef_station_qc(x, qc_policy = "exclude_critical")` (defecto de `flags.md` §5.3; coincidencia exacta) devuelve estado por valor (`ok`/`warning`/`excluded`) sin modificar `observations`, más la tabla de auditoría `$qc` equivalente a los registros `earthflux_flag` (R16). Se evalúan QC-01a, 02, 03, 04 (Tdew > T y eₐ > e°(T)), 05b (`EF_WS_RS_GT_RA`: Rs media > Ra de la **misma ventana**, integral de la Ec. 28 sobre la parte con sol), 09 y 11; los de clase II no se evalúan ni exponen umbrales (listados en `provenance$qc$not_evaluated`); QC-10 (`EF_WS_INCOMPLETE_DAY`) lo levanta `ef_station_ref_et()` sobre las sumas diarias | QC-05b con el criterio de punto medio marcaría registros válidos en las horas de salida y puesta del sol; QC-10 depende de la definición del día (WF-11) | `weather-forcing.md` §3.3, §13.4 punto 11 |
+| M3-10 | **QC-01a extendido**: Rs < 0 y precipitación < 0 son imposibles (`EF_WS_OUT_OF_DOMAIN`, `critical`) | Sin ello una Rs nocturna negativa (desplazamiento del piranómetro) detiene `ef_station_ref_et()` con `earthflux_domain_error`; con la política por defecto se excluye y el período queda `NA` (ver abierta A-1) | `weather-forcing.md` §3.3, §13.4 punto 11 |
+
+**Serie de referencia por estación: `ef_station_ref_et()`**
+(`R/prep-weather.R`; las 12 decisiones de `weather-forcing.md` §13.4)
+
+| ID | Decisión | Fundamento | Dónde (§13.4) |
+|---|---|---|---|
+| M3-11 | Firma: `reference`, `timestep`, `standard`, `humidity`, `day_definition` (WF-11) y `day_completeness` (WF-11) **sin defecto**; `daytime_rule` (WF-15), `night_cloudiness` (+ `night_ratio`) e `inst_method` (WF-09, con `overpass`) con `NULL` como marcador, obligatorios cuando aplican (`earthflux_missing_input`) y prohibidos en paso diario; `utc_offset` solo con `"local_standard"`; todas las elecciones en `provenance$choices` | WF-09, WF-11, WF-15 y WF-16 siguen `ABIERTA`: la orquestación no elige por el autor | 1 |
+| M3-12 | Entrada `earthflux_station_qc` (se usa su política) o `earthflux_station_table` (se aplica `ef_station_qc()` con `"exclude_critical"`, registrado); los valores `"excluded"` entran como `NA` y se cuentan; con `"keep_all"`, un imposible llega al núcleo y da `earthflux_domain_error` | P0-11: la orquestación convierte en `NA` + flag lo marcado aguas arriba | 2 |
+| M3-13 | Paso horario: Ra por período con `ef_ra_period()` (punto medio; WF-10), Rso Ec. 37 (WF-12), P(z) Ec. 7 sin usar la P medida (WF-05), u₂ Ec. 47; paso diario: Ec. 9, 12, 21, G = 0, `etr_24` = valor del registro (opción D2 con datos diarios), sin `overpass`; Rso = 0 → `NA`. Verificación: Ejemplos 18 y 19 de FAO-56 reproducidos a través de la orquestación; A3 (alfalfa horaria) solo como aritmética | Recomendaciones de WF-05, WF-12; usa solo funciones existentes | 3, 4, 12 |
+| M3-14 | Nubosidad nocturna (Rso = 0): `"before_sunset"` = cociente del **último** registro de las 24 h previas con ω del punto medio en [ωs − 0,79; ωs − 0,52] (FAO-56 cap. 4; elegir el último es una elección de implementación), sin registro → `NA` + `EF_INPUT_NA`; `"fixed"` = `night_ratio` ∈ [0, 1]. La regla β de ASCE-EWRI se agregó después como `"low_sun"` (M3-01d) | FAO-56 cap. 4; la regla ASCE espera la lectura de la norma | 5 |
+| M3-15 | WF-15 como argumento: `daytime_rule` ∈ {`"ra_positive"` (Ra del período > 0, punto medio, FAO-56), `"rn_positive"` (Rn > 0, ASCE-EWRI; `VERIFICADA` para ASCE desde M3-01d)}; selecciona G/Rn y, con `"asce"`, Cd | WF-15 resuelta solo para ASCE (M3-01d); sigue abierta para FAO-56 | 6 |
+| M3-16 | WF-09 como argumento: `inst_method` ∈ {`"O1"` (período que contiene la hora de paso, [inicio, fin)), `"O3"` (interpolación lineal de la tasa entre puntos medios, con nodo `NA` tras un hueco)}; fuera del soporte → `NA` + `EF_WS_OVERPASS_OUTSIDE_RECORDS`. O2, O4 y O5 no se implementaron | WF-09 recomienda O3 por defecto y O2/O4 para sensibilidad; aquí no hay defecto | 7 |
+| M3-17 | WF-16 y WF-11: paso horario → D1 (suma de las 24 láminas del día); un período pertenece al día de su punto medio en `"utc"` o `"local_standard"` (`utc_offset` en horas, sin horario de verano); `day_completeness = "all_periods"` (única opción): día incompleto → `NA` + `EF_WS_INCOMPLETE_DAY`, sin relleno | Recomendación D1 de WF-16 (coherencia con ETr_inst); WF-11 recomienda "sin relleno" (ver abierta A-1) | 8 |
+| M3-18 | Objeto `earthflux_station_ref_et` (`series`, `etr_inst`, `etr_24`, `reference`, `timestep`, `standard`, `flags`, `provenance`); sus flags (ámbito `record`) llevan el campo **`target`** (`"series"`, `"etr_inst"`, `"etr_24"`) propuesto en `flags.md` §6.2, que se **adopta** para todo objeto con varias tablas a las que puede referirse `index`; `provenance$flags_evaluated_by_target` | Sin `target`, `index` sería ambiguo entre las tres tablas | 9; `ARCHITECTURE.md` §3.5; `flags.md` §6.2 |
+| M3-19 | `EF_WS_INCOMPLETE_DAY` (I, warning; QC-10) y `EF_WS_OVERPASS_OUTSIDE_RECORDS` (I, info) se registran en `ef_flags_reference_et()`, no en el QC | Dependen de la definición del día y de las horas de paso, que solo conoce la orquestación | 10 |
+
+**Núcleo GWR** (`R/gwr-*.R`; bloque de estado del núcleo en
+`gwr-forcing.md`, puntos 1–7)
+
+| ID | Decisión | Fundamento | Dónde |
+|---|---|---|---|
+| M3-20 | `kernel` (GW-04) y `criterion` (GW-05) sin defecto; `search` obligatorio en `ef_gwr_bandwidth()`; en `ef_gwr_search()` los parámetros numéricos valen `NULL` y se exigen solo cuando la búsqueda los usa (`n_grid`, `tol`, `lower_offset`, `upper_factor`); `method_adaptive` solo `"exhaustive"` (sección áurea entera sin implementar) | GW-04 y GW-05 abiertas; T-15 | Punto 1 |
+| M3-21 | Convenciones adoptadas: AICc de §4.1 (GW-02) con n estaciones, σ = √(RSS/n) y tr S (forma leída en Gollini et al., 2015; reproduce el AICc de `GWmodel`), **`NA` cuando n − 2 − tr S ≤ 0** (`GWmodel` reporta un valor); k incluye la propia estación y boxcar con soporte d ≤ b (GW-03); R² local de §3.8 (GW-13); distancia euclidiana proyectada (GW-09) | Recomendaciones de GW-02, GW-03, GW-09 y GW-13; verificación cruzada con `GWmodel` 2.4-1 a 10⁻¹⁰ | Puntos 7–8; `NEWS.md` |
+| M3-22 | Errores: **no** se creó `earthflux_dimension_error` (§9.3); las dimensiones son `earthflux_input_error` como en el resto del núcleo; k no entero → `earthflux_domain_error`; subclases nuevas `earthflux_gwr_error` (padre), `earthflux_gwr_insufficient_stations` (`n`, `p`), `earthflux_gwr_no_feasible_bandwidth` (`profile`), `earthflux_gwr_singular_error` (`stations`) | Una sola clase de error de argumentos en todo el paquete (`check_same_dim()`) | Punto 2; `ARCHITECTURE.md` §3.3 |
+| M3-23 | Argumentos añadidos a §9.1: `station_id` (`ef_gwr_fit()`, `ef_gwr_bandwidth()`), `scale_covariates`, `chunk_rows` (`ef_gwr_predict()`, solo memoria); `bandwidth` de `ef_gwr_fit()` acepta el objeto `earthflux_gwr_bandwidth`; `ef_gwr_predict()` devuelve también `bandwidth`. Se omitió `kappa_max` (su flag `EF_GWR_ILL_CONDITIONED` es de clase II): κ se reporta por estación | Auditabilidad; ningún umbral sin referencia | Punto 3 |
+| M3-24 | Convenciones numéricas (no constantes científicas, registradas en `conventions`): pivote de Cholesky ≤ 10⁻¹⁰ × diagonal → rango deficiente; LOO indefinido si 1 − s_ii ≤ 10⁻¹⁰; tolerancia de envolvente 10⁻⁹ × extensión; κ con columnas de norma 1. Sumas ponderadas con `colSums()` y no BLAS, y k-ésima distancia con `order(method = "radix")`, para que una fila no dependa del bloque (≈ 7× más lento en esa operación) | Test `identical()` por bloques (`ARCHITECTURE.md` §6.3) | Puntos 4–5 |
+| M3-25 | Evaluación de flags: `EF_GWR_EXTRAPOLATION_LOCAL` solo con kernels compactos (también en celdas singulares); `EF_GWR_AICC_UNDEFINED` en la búsqueda solo con criterio AICc y en `ef_gwr_fit()` con bandwidth del usuario; `EF_INPUT_NA` (bit 0) lo levanta `ef_gwr_predict()` | Un flag solo donde su condición está definida | Punto 6 |
+| M3-26 | GW-06 (provisional): con kernels continuos (gaussiano, exponencial) la regla de vecinos "dentro de un bandwidth" (§4.5) fija el **límite inferior automático** de la búsqueda. Consecuencia observada: en G7 gaussiano fijo el óptimo queda en ese límite (18 361 m, `EF_GWR_BW_AT_BOUND`) aunque b = 14 541 m tiene AICc menor; en el caso pequeño hace no factible todo b < 28,3 km. Se registra con el flag, sin cambiar la regla (ver abierta A-3) | GW-06 recomienda "mínimo matemático"; la regla de §4.5 se aplicó tal como está escrita | Punto 7(c) |
+
+**Orquestación de la regionalización** (`R/regionalize*.R`; bloque de
+estado de la orquestación en `gwr-forcing.md`, puntos 1–15)
+
+| ID | Decisión | Fundamento | Dónde |
+|---|---|---|---|
+| M3-27 | GW-23 (parcial): `ef_regionalize(data, variable, covariates, method, use_qc, surface_covariates, grid = NULL, exclude = NULL, station_covariates = NULL, prediction = ef_predict_control())`. **Una llamada = una variable** (todas sus `target_time`), de modo que `method` es por variable (enmienda A4) y la **decisión 5.1** (A frente a C) queda en quien llama (una llamada por variable; para `etr_*`, un único `reference`). **No se creó `ef_gwr_config()`**: la configuración por variable es `variable` + capas de `covariates`. `data` acepta la tabla de §7.2 o un `earthflux_station_qc` | Decisión 5.1 abierta; evita un objeto de configuración que duplica argumentos | Puntos 1, 5; `NAMING.md` §3 |
+| M3-28 | Sin defectos científicos: `method`, `use_qc` y `surface_covariates` obligatorios; constructores de método `ef_method_gwr()` (exige `kernel`, `adaptive` y exactamente uno de `bandwidth` o `criterion` + `search`; agrega `min_neighbours` y `scale_covariates`), `ef_method_station(station_id, lapse_rate = NULL)` (C1), `ef_method_ols()` y `ef_method_idw(power)` (C2; varias potencias = rejilla con selección LOOCV, empates a la menor), clase `earthflux_regionalization_method` | T-15; VP-2.1 (C1/C2/C3 con la misma interfaz) | Punto 2 |
+| M3-29 | **GW-07** (abierta) como argumento explícito: `surface_covariates` declara las covariables derivadas del estado de superficie (`character(0)` si ninguna); una capa con nombre de variable de superficie conocida (`lst`, `ndvi`, …) no declarada es `earthflux_input_error`; si hay alguna, `EF_GWR_SURFACE_COVARIATE` y registro en la procedencia. No hay defecto que decida si se permiten | GW-07 recomienda (a) por defecto hasta el experimento C3; el autor decide | Punto 3 |
+| M3-30 | **GW-08** (abierta): **sin modo grueso**. `ef_predict_control(mode = "exact")` solo admite `"exact"` (defecto de §6.1, no científico); `EF_GWR_COARSE_MODE` no se registra; sin `coarse_factor`, `check_every` ni `write_coefficients`; se agregaron `chunk_rows`, `flags_filename`, `overwrite` y `wopt` (P-08) | La predicción exacta es la referencia; el modo grueso necesita la decisión del autor | Punto 4 |
+| M3-31 | Salida `earthflux_surface`: el ráster de flags de §2.4 se llama **`flag_word`** (no `flags`, nombre que `new_ef_object()` reserva para la lista de `earthflux_flag`), con la tabla `flag_bits` (enmienda A1); los flags de celda viven solo en `flag_word` (conteos en `provenance$flags$counts`), no como registros con índice de celda; `uncertainty = NULL` (GW-19) | Contrato único de objetos (`ARCHITECTURE.md` §3.2); un registro por celda no escala | Punto 6; `ARCHITECTURE.md` §4 |
+| M3-32 | Dominios: celdas con alguna covariable `NA` → `NA` + `EF_INPUT_NA` para **todos** los métodos (C1, C2 y C3 cubren las mismas celdas); estaciones excluidas solo por `NA` en las covariables que usa el método, con motivo registrado. Dominio físico (§2.3): `EF_GWR_OUT_OF_DOMAIN` (III, `critical`, bit 6) marca Ta ≤ −273,15 °C, eₐ ≤ 0, `etr_inst` ≤ 0 y < 0 en u₂, `clearness`, Rs y `etr_24`; el valor se conserva y **el consumidor enmascara** antes del núcleo | P0-11, T-13; `flags.md` §6.6 | Puntos 7–9 |
+| M3-33 | C1/C2 (GW-21, GW-22): archivo propio (`R/regionalize-baselines.R`), clases internas `earthflux_ols`, `earthflux_idw`, `earthflux_station_forcing`; OLS por QR con n ≥ p + 1 y AICc con tr S = p (reproduce `global_reference` de `ef_gwr_fit()`); IDW con distancias normalizadas y media en ubicaciones coincidentes, n ≥ 2; C1 constante o con gradiente sobre la elevación del MDE (GW-10); OLS/IDW con pocas estaciones reutilizan `earthflux_gwr_insufficient_stations`. `ef_ols_fit()`, `ef_idw_fit()`, `ef_station_forcing()` y `ef_spatial_forcing()` no se crearon como funciones públicas | Recomendaciones de GW-21 y GW-22; una sola puerta de entrada (`ef_regionalize()`) | Punto 10; `NAMING.md` §3 |
+| M3-34 | Bloques: bucle propio `readStart()`/`writeStart()` con `block_rows` (no `max_cells`); con más de un worker y `block_rows = NULL`, al menos 4 bloques por worker; la superficie en disco usa el `datatype` de `wopt` (defecto de `terra`, `FLT4S`; **D-PP-05 sigue abierta**) y la palabra de flags `INT4S`; archivos de una llamada fallida eliminados | P-08, P-09 de `parallel-processing.md`; test `identical()` por bloques | Punto 11 |
+| M3-35 | Paralelismo (ARCH-6.3b / D-PP-01 para M3): `future.apply::future_lapply(future.seed = TRUE)` solo si `future::nbrOfWorkers() > 1` (si no, `lapply()`) sobre ajustes, bloques y pliegues; `future` y `future.apply` en `Imports`; el paquete nunca llama a `plan()` (P-04); tareas con matrices y modelos, nunca `SpatRaster` (P-06); plan registrado en la procedencia (P-11) | `ARCHITECTURE.md` §6.3; benchmark 2,2× / 1,6× con 2 workers | Punto 12; `parallel-processing.md` |
+| M3-36 | CV espacial (GW-20, parcial): `ef_spatial_folds()` con teselas cuadradas de lado dado (origen por defecto = mínimos de x e y; L lo elige el usuario) y `ef_regionalize_cv()` con `reselect_bandwidth = TRUE` por defecto (re-selección dentro de cada pliegue; con `FALSE` se registra `conditional_on_all_stations`); pliegues fallidos reportados, nunca descartados | Recomendación de GW-20 (teselas); evita fuga de información en la selección | Punto 13 |
+
+**Armonización M3**
+
+| ID | Decisión | Fundamento | Dónde |
+|---|---|---|---|
+| M3-37 | `ef_flag_registry()` guarda el registro en un entorno del paquete la primera vez que se usa; `ef_flag_registry_build()` lo reconstruye sin caché (tests del registro). `ef_regionalize()` en la grilla de prueba de 60 × 60 con `block_rows = 1`: 4,37 s → 0,44 s | El registro es estático; se reconstruía en cada `ef_flag()` (≈ 9 ms) | `R/diagnostics.R`; `ARCHITECTURE.md` §3.4, §6.3 |
+
+**Abiertas detectadas en M3 (requieren al autor).** No son decisiones
+nuevas: se registran para que el autor las resuelva en el documento dueño.
+
+| ID | Pregunta | Situación actual | Documento dueño |
+|---|---|---|---|
+| A-1 | Rs nocturna ligeramente negativa o positiva (QC-05d, clase II) y la regla `"all_periods"` | Rs < 0 se excluye (M3-10) y el día entero queda `NA` (`EF_WS_INCOMPLETE_DAY`); hace falta la tolerancia de QC-05d o otra política de huecos (WF-11) | `weather-forcing.md` §13.4 (pregunta a), §3.2, WF-11 |
+| A-2 | Dos definiciones de Ra horaria en las horas de salida y puesta del sol (WF-10) | **Resuelta para la ET de referencia** a través de `standard` (M3-01b; `weather-forcing.md` §13.5). Queda por confirmar que QC-05b (integral sobre la parte con sol) y la Ra de la ETr con `"fao56"` (punto medio) puedan diferir en esas horas | `weather-forcing.md` §13.4 (pregunta b), §13.5, WF-10 |
+| A-3 | GW-06: regla de vecinos y límite inferior de la búsqueda con kernels continuos | El óptimo gaussiano queda en el límite (`EF_GWR_BW_AT_BOUND`) aunque existe un AICc menor por debajo (M3-26) | `gwr-forcing.md` §4.5, GW-06 |
+| A-4 | WF-06: umbrales con intervalo publicado (δ ∈ [3, 5] % para QC-02; HRmax ∈ [80, 90] % para QC-08a) | Sin valor elegido: `EF_WS_RH_RECALIBRATE` y `EF_WS_RHMAX_LOW` siguen sin evaluar (guardia de clase II) | `weather-forcing.md` §3.2, WF-06 |
+| A-5 | WF-09, WF-11 (reloj del día de las sumas horarias), WF-15 (para FAO-56), WF-16, GW-04, GW-05, GW-07, GW-08 y decisión 5.1 | Expuestas como argumentos sin defecto (M3-11 … M3-17, M3-20, M3-27 … M3-30); `earthflux()` necesitará defectos documentados | Especificaciones respectivas |
+| A-6 | Otros pendientes: caso numérico ASCE publicado (Apéndice C de ASCE-EWRI, 2005, no disponible); elección del último período en `"before_sunset"` (M3-14); D-PP-05 (`datatype` en disco); traspaso de `etr_inst`, `etr_24`, u₂ y `clearness` de `ef_station_ref_et()` a la tabla de regionalización (`station_regionalization_input()`) | Sin implementar o provisional | `weather-forcing.md` §13.3, §13.4; `parallel-processing.md` |
+
 ### 1.1 Preguntas P0
 
 Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
@@ -254,8 +359,11 @@ cada documento y se agrupan en la sección 4.
 
 Recuento a la fecha de corte. La adopción provisional de §1.0 pasa
 **34 filas** de `ABIERTA` a `DECIDIDA (provisional)` (con ellas: 109
-`ABIERTA`, 50 `DECIDIDA`, 3 `CERRADA`); las tablas de esta sección y de §5
-conservan el recuento original salvo en la columna de estado.
+`ABIERTA`, 50 `DECIDIDA`, 3 `CERRADA`); las decisiones de implementación
+de M3 (§1.3) pasan **8 filas** más (WF-03, WF-04, WF-13, GW-02, GW-03,
+GW-22, GW-23 y ARCH-6.3b para M3): 101 `ABIERTA`, 58 `DECIDIDA`, 3
+`CERRADA`. Las tablas de esta sección y de §5 conservan el recuento
+original salvo en la columna de estado.
 
 Decisiones abiertas por prioridad:
 
@@ -295,7 +403,7 @@ Por documento:
 | BK-3 | `GWmodel` solo en `Suggests`, como referencia de tests (`skip_if_not_installed`) | DECIDIDA, 2026-11-04 | Ídem; GW-15 | Resuelve la pregunta 2 de `gwr-backend.md` §8 (tests en `tests/`) |
 | BK-4 | `mgwrsar` como opción futura **solo si** se requiere MGWR | DECIDIDA, 2026-11-04 | Ídem; GW-16 | Resuelve la pregunta 1 de `gwr-backend.md` §8 (MGWR fuera del alcance inicial) |
 | ARCH-6.2 | `terra` como backend ráster; `sf` solo si se justifica; `terra` en `Imports` con la primera función que lo use | DECIDIDA (ACEPTADA), 2026-11-04 | `ARCHITECTURE.md` §6.2; `DEVELOPMENT.md` §4 | — |
-| ARCH-6.3a | Procesamiento en paralelo como **requisito**, con reglas: secuencial por defecto, secuencial = paralelo (semillas), sin `mclapply()`, ≤ 2 núcleos en CRAN, dependencia con la primera función, medir antes de optimizar | DECIDIDA (ACEPTADO como requisito), fecha no registrada en el documento | `ARCHITECTURE.md` §6.3 (y §6.2 para el nivel intra-escena con `terra`); `DEVELOPMENT.md` §4 | Diseño y paquete (`future.apply` vs `furrr`): ARCH-6.3b, ABIERTA (§7) |
+| ARCH-6.3a | Procesamiento en paralelo como **requisito**, con reglas: secuencial por defecto, secuencial = paralelo (semillas), sin `mclapply()`, ≤ 2 núcleos en CRAN, dependencia con la primera función, medir antes de optimizar | DECIDIDA (ACEPTADO como requisito), fecha no registrada en el documento | `ARCHITECTURE.md` §6.3 (y §6.2 para el nivel intra-escena con `terra`); `DEVELOPMENT.md` §4 | Diseño y paquete (`future.apply` vs `furrr`): ARCH-6.3b, resuelta para M3 con `future.apply` (§1.3, M3-35); el resto del diseño sigue en `specs/parallel-processing.md` |
 | DEV-2.6 | roxygen2 **8.1.1** fijado; workflow `document.yaml` que regenera y falla si hay diferencias (sin commits); `pkgdown.yaml`; `about.yaml` con `ABOUT_TOKEN` | DECIDIDA, fecha no registrada | `DEVELOPMENT.md` §2.6 | Actualizar roxygen2 = cambiar la versión fijada y regenerar localmente |
 | ARCH-6.6a | `Language: en-GB` | DECIDIDA ("Adoptado"), fecha no registrada | `ARCHITECTURE.md` §6.6 | — |
 | DEV-1 | `dev/` en español con términos en inglés; documentación pública, código y commits en inglés | DECIDIDA, fecha no registrada | `DEVELOPMENT.md` §1 | — |
@@ -610,7 +718,7 @@ grupo**.
 | ARCH-5 | — | Paquete `units` | Adoptar / nombres + documentación + rangos | No adoptado por ahora | DECIDIDA (provisional) | — | ARCH §5 | Reevaluar en M2 |
 | ARCH-6.2 | — | Backend espacial | `terra`; `sf` | `terra`; `sf` solo si se justifica | DECIDIDA 2026-11-04 | — | ARCH §6.2; DEV §4 | — |
 | ARCH-6.3a | — | Paralelismo como requisito y reglas | — | Secuencial por defecto; secuencial = paralelo; sin `mclapply()`; ≤ 2 núcleos en CRAN | DECIDIDA (fecha no registrada) | — | ARCH §6.3 | T-22 |
-| ARCH-6.3b | — | Mecanismo entre tareas y tipo de dependencia | `future.apply` / `furrr`; `Imports` / `Suggests` | "a decidir"; "decisión de paquete en M1" | ABIERTA | P1 | ARCH §6.3; DEV §4 | §7 (`parallel-processing.md`); GW §6.5 |
+| ARCH-6.3b | — | Mecanismo entre tareas y tipo de dependencia | `future.apply` / `furrr`; `Imports` / `Suggests` | "a decidir"; "decisión de paquete en M1" | DECIDIDA (provisional, 2026-11-04) para M3: `future.apply` en `Imports` (§1.3, M3-35) | — | ARCH §6.3; DEV §4 | §7 (`parallel-processing.md`); GW §6.5 |
 | ARCH-6.5 | — | `renv` | En el paquete / en el repositorio de experimentos | No en el paquete; posible en experimentos ("no decidido") | ABIERTA | P2 | ARCH §6.5; DEV §4 | — |
 | ARCH-6.6a | — | Idioma del paquete | — | `Language: en-GB` (adoptado) | DECIDIDA (fecha no registrada) | — | ARCH §6.6 | DEV-1 |
 | ARCH-6.6b | — | Grupos de tests opcionales por variable de entorno | `EARTHFLUX_ONLINE_TESTS`, `EARTHFLUX_SLOW_TESTS` | "por definir" | ABIERTA | P1 | ARCH §6.6 | MP-12; GW tests lentos |
@@ -753,20 +861,20 @@ Todas `ABIERTA` a la fecha de corte; las adoptadas provisionalmente el
 |---|---|---|---|---|---|---|
 | WF-01 | Ubicación de funciones compartidas y tests | Archivo atmosférico compartido / `prep-weather.R` | Archivo compartido; test propio de ET de referencia → **DECIDIDA (provisional, 2026-11-04)**, tomada al implementar `ef_air_pressure()` (`R/shared-physics.R`) | — | §4, §11 | = RC-17; T-08 |
 | WF-02 | Unidad de temperatura del aire | °C en `forcing` y referencia, K en radiación / K en todo | °C en `forcing` y ET de referencia; conversión a K en la frontera → **DECIDIDA (provisional, 2026-11-04)** | — | §2, §4, §11 | = ARCH-4; T-09; P0-4 |
-| WF-03 | Representación de la tabla de estaciones | Dos tablas + clase / tabla ancha / `terra::vect` | Dos tablas + clase S3 | P1 | §2, §11 | — |
-| WF-04 | Valores imposibles en `observations` | Error / flag + exclusión | Flag; error solo en metadatos | P1 | §2.6, §3, §11 | T-13 |
+| WF-03 | Representación de la tabla de estaciones | Dos tablas + clase / tabla ancha / `terra::vect` | Dos tablas + clase S3 → **DECIDIDA (provisional, 2026-11-04)**, M3-07 | — | §2, §11 | — |
+| WF-04 | Valores imposibles en `observations` | Error / flag + exclusión | Flag; error solo en metadatos → **DECIDIDA (provisional, 2026-11-04)**, M3-08 | — | §2.6, §3, §11 | T-13 |
 | WF-05 | Origen de P | P(z) para ETr; P medida/GWR para τ_sw | P(z) en ETr; registrar mezcla | P1 | §4.1, §11 | RC-08; T-08 |
 | WF-06 | Umbrales con intervalo publicado | δ ∈ [3, 5] %; HRmax ∈ [80, 90] % | Parámetros sin defecto hasta decidir | P1 | §3, §11 | — |
 | WF-07 | Prefijos de flags | `EF_WS_*` / nombres de RC | Unificar antes de registrar | P1 | §3, §11 | T-14 |
 | WF-08 | Corrección por aridez (FAO-56 Anexo 6) | No aplicar / configuración explícita | No por defecto; sensibilidad | P1 | §3, §6, §9, §11 | — |
-| WF-09 | ETr instantánea a la hora de paso | O1–O5 | O3 por defecto; O2/O4 en sensibilidad | P1 | §5.5, §11 | T-02; T-01 |
-| WF-10 | Ra horaria en amanecer/atardecer; constante de longitud | Punto medio / recorte de ω; 0.06667 / 1/15 | 1/15 exacto; recorte solo si se verifica | P1 | §4.6, §11 | — |
-| WF-11 | Día de ETr24 y huecos | Local estándar / UTC | Argumento explícito; local estándar si se verifica; sin relleno | P1 | §5.6, §11 | = ET-D16; T-02 |
+| WF-09 | ETr instantánea a la hora de paso | O1–O5 | O3 por defecto; O2/O4 en sensibilidad (M3: O1 y O3 como argumento sin defecto, M3-16) | P1 | §5.5, §11 | T-02; T-01 |
+| WF-10 | Ra horaria en amanecer/atardecer; constante de longitud | Punto medio / recorte de ω; 0.06667 / 1/15 | 1/15 exacto; recorte solo si se verifica (M3: recorte de la Ec. 56 de ASCE verificado y elegido con `standard`, M3-01b) | P1 | §4.6, §11 | — |
+| WF-11 | Día de ETr24 y huecos | Local estándar / UTC | Argumento explícito; local estándar si se verifica; sin relleno (M3: ambos como argumento sin defecto, `"all_periods"`, M3-17; abierta A-1) | P1 | §5.6, §11 | = ET-D16; T-02 |
 | WF-12 | Rso de la referencia | Ec. 37 / Anexo 3 | Ec. 37; variantes solo para QC | P1 | §4.7, §11 | — |
-| WF-13 | API de ET de referencia | Una función / alias | Una función exportada | P1 | §5.4, §11 | T-16 |
+| WF-13 | API de ET de referencia | Una función / alias | Una función exportada → **DECIDIDA (provisional, 2026-11-04)**: `ef_ref_et()` más `ef_ref_net_radiation()` y `ef_ref_soil_heat_flux()` exportadas, M3-03 | — | §5.4, §11 | T-16 |
 | WF-14 | Constantes de la norma vs del paquete | Literales de la norma / constantes del paquete | Literales de la norma dentro de funciones de referencia → **DECIDIDA (provisional, 2026-11-04)** | — | §4.8, §11 | T-06; T-07 |
-| WF-15 | Criterio día/noche para G y Cd horarios | Rn > 0 / Ra > 0 / ángulo solar | Pendiente de ASCE-EWRI | P1 | §4.9, §5.3, §11 | — |
-| WF-16 | ETr24: suma horaria vs ecuación diaria | Opción D1 / opción D2 | D1 (coherencia con ETr_inst) | P1 | §5.6, §11 | T-02 |
+| WF-15 | Criterio día/noche para G y Cd horarios | Rn > 0 / Ra > 0 / ángulo solar | Pendiente de ASCE-EWRI (M3: Ra > 0 y Rn > 0 como argumento sin defecto, M3-15; Rn > 0 `VERIFICADA` para ASCE, M3-01d) | P1 | §4.9, §5.3, §11 | — |
+| WF-16 | ETr24: suma horaria vs ecuación diaria | Opción D1 / opción D2 | D1 (coherencia con ETr_inst) (M3: D1 con registros horarios, D2 solo con registros diarios, M3-13, M3-17) | P1 | §5.6, §11 | T-02 |
 | SPEC-5.1 | Interpolar-calcular vs calcular-interpolar | A / B / C | Soportar A y C; C candidata; decidir con CV | P1 | SPEC §5; WF §6, §11 | T-01; GW §2.1 |
 
 ### 5.9 `specs/gwr-forcing.md`
@@ -774,13 +882,13 @@ Todas `ABIERTA` a la fecha de corte; las adoptadas provisionalmente el
 | ID | Título | Opciones | Recomendación | Estado | Pr. | Dónde | Depende de / grupo |
 |---|---|---|---|---|---|---|---|
 | GW-01 | Backend de GWR | — | Núcleo interno; `GWmodel` en `Suggests`; `spgwr` descartado | CERRADA 2026-11-04 | — | §1.2, §13 | = BK-1…3 |
-| GW-02 | Expresión de AICc | §4.1 / otra tras V1–V2 | §4.1 | ABIERTA | P1 | §4.1, §13 | — |
-| GW-03 | Convenciones del kernel | k incluye el punto; boxcar d ≤ b | Incluye; d ≤ b | ABIERTA | P1 | §3.4–3.5, §13 | — |
+| GW-02 | Expresión de AICc | §4.1 / otra tras V1–V2 | §4.1 | DECIDIDA (provisional, 2026-11-04), M3-21 | — | §4.1, §13 | — |
+| GW-03 | Convenciones del kernel | k incluye el punto; boxcar d ≤ b | Incluye; d ≤ b | DECIDIDA (provisional, 2026-11-04), M3-21 | — | §3.4–3.5, §13 | — |
 | GW-04 | Kernel por defecto en `api` | Sin defecto / bicuadrado / gaussiano | Sin defecto en el núcleo; el de `api` con evidencia de CV | ABIERTA | P1 | §5.5, §13 | T-15 |
 | GW-05 | Criterio y búsqueda por defecto | AICc / CV | AICc; valores de búsqueda como convenciones | ABIERTA | P1 | §4.4, §13 | T-15 |
-| GW-06 | `min_neighbours`, `n_min`, `kappa_max` | Mínimo matemático / con referencia | Mínimo matemático; umbrales sin defecto | ABIERTA | P1 | §4.5, §13 | Pregunta 4 de `gwr-backend.md` §8 |
-| GW-07 | Covariables de superficie (LST, NDVI/EVI) | (a) excluir / (b) con flag y sensibilidad / (c) LST de otro instante | (b) disponible; defecto (a) hasta el experimento C3 con y sin LST | ABIERTA (evidencia del autor 2023 registrada) | P1 | §2.7, §13 | RC-12; T-01 |
-| GW-08 | Modo grueso | No / coeficientes interpolados / predicción remuestreada | Coeficientes interpolados, opcional | ABIERTA | P1 | §6.2, §13 | Pregunta 3 de `gwr-backend.md` §8 |
+| GW-06 | `min_neighbours`, `n_min`, `kappa_max` | Mínimo matemático / con referencia | Mínimo matemático; umbrales sin defecto | ABIERTA (hallazgo M3-26; abierta A-3) | P1 | §4.5, §13 | Pregunta 4 de `gwr-backend.md` §8 |
+| GW-07 | Covariables de superficie (LST, NDVI/EVI) | (a) excluir / (b) con flag y sensibilidad / (c) LST de otro instante | (b) disponible; defecto (a) hasta el experimento C3 con y sin LST | ABIERTA (evidencia del autor 2023 registrada; M3: argumento `surface_covariates` sin defecto, M3-29) | P1 | §2.7, §13 | RC-12; T-01 |
+| GW-08 | Modo grueso | No / coeficientes interpolados / predicción remuestreada | Coeficientes interpolados, opcional | ABIERTA (M3: no implementado, M3-30) | P1 | §6.2, §13 | Pregunta 3 de `gwr-backend.md` §8 |
 | GW-09 | Métrica de distancia | Euclidiana / gran círculo | Euclidiana proyectada | ABIERTA | P1 | §3.3, §13 | — |
 | GW-10 | Elevación en estaciones | Metadatos / MDE | MDE en ajuste y predicción | ABIERTA | P1 | §2.2, §13 | T-20 |
 | GW-11 | Bandwidth por ajuste o por variable | Por (variable, tiempo) / por variable / por período | Por ajuste; evaluar en M6 | ABIERTA | P1 | §5.5, §13 | — |
@@ -792,10 +900,10 @@ Todas `ABIERTA` a la fecha de corte; las adoptadas provisionalmente el
 | GW-17 | Atípicos entre estaciones | Sobre valores / sobre residuos | QC en `forcing` sobre residuos de la regresión global; parámetros sin defecto | ABIERTA | P1 | §1.4, §2.1, §13 | Antecedente (IQR) |
 | GW-18 | I de Moran | No / descriptivo / permutación | Descriptivo tras leer la fuente | ABIERTA | P2 | §7.3, §13 | — |
 | GW-19 | Incertidumbre de predicción | Omitida / varianza GWR / CV | Omitida en la primera versión | ABIERTA | P2 | §2.4, §13 | — |
-| GW-20 | CV por bloques | Teselas / pliegues del usuario / agrupamiento | Teselas; L justificado | ABIERTA | P1 | §8.2, §13 | VP-2.3 |
+| GW-20 | CV por bloques | Teselas / pliegues del usuario / agrupamiento | Teselas; L justificado | ABIERTA (M3: teselas implementadas, L del usuario, M3-36) | P1 | §8.2, §13 | VP-2.3 |
 | GW-21 | Alternativa C2 principal | OLS / IDW / KED / reanálisis | OLS e IDW requeridos | ABIERTA | P1 | §5, §13 | = VP-2.1 |
-| GW-22 | Ubicación de las alternativas | `gwr-*.R` / archivo propio | Archivo propio | ABIERTA | P1 | §9, §13 | — |
-| GW-23 | Nombres de la API | `ef_regionalize()` / `ef_spatial_forcing()` | A decidir; `ef_gwr_*()` para el núcleo | ABIERTA | P1 | §9, §13 | T-16 |
+| GW-22 | Ubicación de las alternativas | `gwr-*.R` / archivo propio | Archivo propio | DECIDIDA (provisional, 2026-11-04), M3-33 | — | §9, §13 | — |
+| GW-23 | Nombres de la API | `ef_regionalize()` / `ef_spatial_forcing()` | A decidir; `ef_gwr_*()` para el núcleo | DECIDIDA (provisional, 2026-11-04): `ef_regionalize()`, `ef_gwr_*()`, sin `ef_gwr_config()` ni `ef_spatial_forcing()`, M3-27 | — | §9, §13 | T-16 |
 
 ### 5.10 `specs/modis-products.md`
 
@@ -814,7 +922,7 @@ Todas `ABIERTA`.
 | MP-09 | Política QA por defecto | `"flag"` / `"mask"` | `"flag"`; anclas con filtro estricto | P1 | §10.3, §15 | D-AP-01 (QA de anclas `TODO`) |
 | MP-10 | Formatos de entrada | Solo HDF4 / HDF4 + convertidos | HDF4 + convertidos con declaración | P1 | §11, §15 | — |
 | MP-11 | Escala/offset | GDAL / ficha interna | Ficha interna | P1 | §11.3, §15 | — |
-| MP-12 | Datos de ejemplo | AOI, fecha, productos | AOI agrícola chileno pequeño, pre-2020, Terra | P1 | §12, §15 | ARCH-6.6b; DEV §6 |
+| MP-12 | Datos de ejemplo | AOI, fecha, productos | **AOI decidido por el autor (2026-11-04): provincia de Cauquenes, Región del Maule**, el área de estudio habitual del autor (también en `thermify`). Fecha despejada pre-2020 y productos (Terra) por definir | P1 | §12, §15 | ARCH-6.6b; DEV §6 |
 | MP-13 | Migración a C7 de tierra | Esperar / ambas | Fichas por colección; C6.1 por ahora | P2 | §3, §15 | — |
 | MP-14 | Continuidad | VIIRS / Landsat / Sentinel-3 | Módulo de sensor separado; fuera de M4 | P2 | §7.3, §15 | — |
 
@@ -873,6 +981,10 @@ Documento en redacción; no presente a la fecha de corte. Al incorporarse,
 registrar aquí sus decisiones (prefijo propuesto `PP-xx`) y revisar:
 
 - ARCH-6.3b (`future.apply` frente a `furrr`; `Imports` frente a `Suggests`).
+  *Nota M3 (2026-11-04):* el documento ya existe (IDs `P-01` … `P-12` y
+  `D-PP-xx`); ARCH-6.3b quedó resuelta para M3 (§1.3, M3-35) y D-PP-05
+  sigue abierta (M3-34). Su incorporación completa a este registro sigue
+  pendiente.
 - Coherencia con ARCH-6.3a (reglas ya decididas), `gwr-forcing.md` §6.5,
   `anchor-pixels.md` §5.4 (semillas), `sensible-heat.md` §12 (Fase B por
   bloques), `evapotranspiration.md` §8.3 y el grupo T-22.

@@ -181,15 +181,18 @@ station_regionalization_input <- function(x, variables) {
 #'   `interval = 3600` s; FAO-56 Eq. 53 form) or `"daily"` (records with
 #'   `interval = 86400` s; FAO-56 Eq. 6 form). The records must be period
 #'   means (`timestamp_convention` `"end"` or `"start"`).
-#' @param standard Character, no default. `"fao56"` (grass only,
-#'   `VERIFICADA`) or `"asce"` (ASCE-EWRI 2005 standardized constants,
-#'   `CANDIDATA`); see [ef_ref_et()].
+#' @param standard Character, no default. `"fao56"` (grass only) or
+#'   `"asce"` (ASCE-EWRI 2005 standardized equation), both `VERIFICADA`;
+#'   see [ef_ref_et()]. It also selects the constants and limits of the net
+#'   radiation ([ef_ref_net_radiation()]) and the treatment of sunrise and
+#'   sunset in the hourly extraterrestrial radiation ([ef_ra_period()]).
 #' @param humidity Character, no default. Source of the actual vapour
 #'   pressure: `"vapour_pressure"` (column `vapour_pressure`),
 #'   `"dewpoint_temperature"` (FAO-56 Eq. 14 on `dewpoint_temperature`) or
 #'   `"relative_humidity"` (hourly: FAO-56 Eq. 54 with `air_temperature` and
 #'   `relative_humidity`; daily: Eq. 17 with `tmin`, `tmax`, `rh_max` and
-#'   `rh_min`).
+#'   `rh_min`). The same forms are ASCE-EWRI (2005) Eqs. 8, 38, 41 and 11,
+#'   ranked first or second in its Tables 3 and 4.
 #' @param day_definition Character, no default (decision WF-11). Day of the
 #'   daily sums: `"utc"` (UTC calendar day) or `"local_standard"` (calendar
 #'   day in the local standard time given by `utc_offset`, without daylight
@@ -203,22 +206,37 @@ station_regionalization_input <- function(x, variables) {
 #'   (required; `NULL` for daily): criterion of the daytime periods, which
 #'   select the soil heat flux ratio and, with `standard = "asce"`, the
 #'   denominator constant: `"ra_positive"` (extraterrestrial radiation of
-#'   the period > 0, i.e. sun above the horizon at the mid-point, FAO-56
-#'   midpoint criterion) or `"rn_positive"` (net radiation of the reference
-#'   surface > 0, the criterion that secondary implementations attribute to
-#'   ASCE-EWRI, `CANDIDATA`).
+#'   the period > 0; with `standard = "fao56"`, sun above the horizon at the
+#'   mid-point, FAO-56 midpoint criterion) or `"rn_positive"` (net radiation
+#'   of the reference surface > 0, the definition of daytime of ASCE-EWRI
+#'   2005, text before Table 1 and Table 2, p. 5; see
+#'   [ef_ref_soil_heat_flux()] for the inconsistency of the report at
+#'   \eqn{R_n = 0}{Rn = 0}).
 #' @param night_cloudiness Character or `NULL`. Hourly only (required;
-#'   `NULL` for daily): the ratio \eqn{R_s/R_{so}}{Rs/Rso} of the night-time
-#'   periods (\eqn{R_{so} = 0}{Rso = 0}), where it is undefined (FAO-56,
-#'   chapter 4, hourly time step): `"before_sunset"` (the ratio of the last
-#'   period of the same station, in the previous 24 hours, whose mid-point
-#'   hour angle lies in \eqn{[\omega_s - 0.79, \omega_s - 0.52]}{[ws - 0.79,
-#'   ws - 0.52]}, i.e. 2-3 hours before sunset; `NA` if there is none or its
-#'   ratio is missing) or `"fixed"` (the constant `night_ratio`).
-#' @param night_ratio Numeric scalar in \[0, 1\] or `NULL`. The night-time
-#'   ratio \eqn{R_s/R_{so}}{Rs/Rso} for `night_cloudiness = "fixed"`
-#'   (FAO-56 suggests 0.4-0.6 in humid and sub-humid and 0.7-0.8 in arid and
-#'   semi-arid climates; 0.3 means complete cloud cover). `NULL` otherwise.
+#'   `NULL` for daily): the cloudiness term of the periods where the ratio
+#'   \eqn{R_s/R_{so}}{Rs/Rso} is not used:
+#'   * `"before_sunset"` (FAO-56, chapter 4, hourly time step): night-time
+#'     periods (\eqn{R_{so} = 0}{Rso = 0}) take the term of the last period
+#'     of the same station, in the previous 24 hours, whose mid-point hour
+#'     angle lies in \eqn{[\omega_s - 0.79, \omega_s - 0.52]}{[ws - 0.79, ws
+#'     - 0.52]}, i.e. 2-3 hours before sunset;
+#'   * `"low_sun"` (ASCE-EWRI 2005, Eq. 46, pp. 35-36): every period whose
+#'     sun angle above the horizon at the mid-point (Eq. 62) is at most
+#'     0.3 rad (night, dusk and dawn, including periods with
+#'     \eqn{R_{so} > 0}{Rso > 0}) takes the term of the last period of the
+#'     same station, in the previous 24 hours, with a sun angle above
+#'     0.3 rad;
+#'   * `"fixed"`: night-time periods take the constant ratio `night_ratio`.
+#'
+#'   With `"before_sunset"` and `"low_sun"` the result is `NA` if there is
+#'   no qualifying period or its term is missing (e.g. the first night of a
+#'   series, or a season without any period of sun angle above 0.3 rad).
+#' @param night_ratio Numeric scalar or `NULL`. The night-time ratio
+#'   \eqn{R_s/R_{so}}{Rs/Rso} for `night_cloudiness = "fixed"`, in \[0, 1\]
+#'   for `"fao56"` and in \[0.3, 1\] for `"asce"` (FAO-56 suggests 0.4-0.6
+#'   in humid and sub-humid and 0.7-0.8 in arid and semi-arid climates; 0.3
+#'   means complete cloud cover; ASCE-EWRI, p. 36, allows a ratio from 0.3
+#'   to 1 where no period has a sun angle of 0.3 rad). `NULL` otherwise.
 #' @param overpass POSIXct or `NULL`. Overpass times at which the
 #'   instantaneous reference ET is wanted (hourly only); converted to UTC.
 #'   Every station gets every time.
@@ -268,8 +286,9 @@ station_regionalization_input <- function(x, variables) {
 #'
 #' @details
 #' **Hourly records.** For each record, with \eqn{t} the mid-point of the
-#' period: \eqn{R_a}{Ra} of the period with [ef_ra_period()] (FAO-56 Eq. 28,
-#' midpoint criterion, day of year of \eqn{t} in UTC),
+#' period: \eqn{R_a}{Ra} of the period with [ef_ra_period()] (FAO-56 Eq. 28
+#' or ASCE-EWRI Eq. 48; the treatment of sunrise and sunset follows
+#' `standard`; day of year of \eqn{t} in UTC),
 #' \eqn{R_{so}}{Rso} with [ef_rso()] (Eq. 37, decision WF-12), the air
 #' pressure from the station elevation ([ef_air_pressure()], Eq. 7, decision
 #' WF-05; a measured `air_pressure` is not used), \eqn{\gamma}{gamma},
@@ -277,9 +296,11 @@ station_regionalization_input <- function(x, variables) {
 #' temperature, the wind at 2 m from `height_wind` (Eq. 47), the solar
 #' radiation converted from W m-2 to MJ m-2 h-1 (x 0.0036, FAO-56 Table 3),
 #' then [ef_ref_net_radiation()], [ef_ref_soil_heat_flux()] and
-#' [ef_ref_et()]. Periods with \eqn{R_{so} > 0}{Rso > 0} use their own
-#' ratio \eqn{R_s/R_{so}}{Rs/Rso} (limited to 1 inside the cloudiness term
-#' and flagged `EF_WS_RS_RSO_LIMITED`); the others use `night_cloudiness`.
+#' [ef_ref_et()]. Periods with \eqn{R_{so} > 0}{Rso > 0} (with
+#' `"low_sun"`: with a sun angle above 0.3 rad) use their own ratio
+#' \eqn{R_s/R_{so}}{Rs/Rso} (limited to the range of the standard inside
+#' the cloudiness term and flagged `EF_WS_RS_RSO_LIMITED`); the others use
+#' `night_cloudiness`.
 #'
 #' **Daily records.** Tmean = (Tmax + Tmin)/2 (Eq. 9), \eqn{e_s}{es} =
 #' mean of \eqn{e^\circ(T_{max})}{e0(Tmax)} and \eqn{e^\circ(T_{min})}{e0(Tmin)}
@@ -291,11 +312,14 @@ station_regionalization_input <- function(x, variables) {
 #'
 #' **Daily sums** (option D1 of the specification for hourly records,
 #' decision WF-16): `etr_24` is the sum of the 24 hourly depths of the day
-#' (rate in mm h-1 times 1 h); FAO-56 (chapter 4) states that hourly sums
-#' over 24 hours generally match the daily computation for the grass
-#' reference; for the alfalfa reference and METRIC this is `CANDIDATA`. For
-#' daily records `etr_24` is the daily value of the record (option D2 with
-#' daily data).
+#' (rate in mm h-1 times 1 h), negative values included; FAO-56 (chapter 4)
+#' states that hourly sums over 24 hours generally match the daily
+#' computation for the grass reference, and ASCE-EWRI (2005, p. 45) sums
+#' hourly ETos or ETrs over the 24-hour period and recommends retaining the
+#' negative values; neither source defines the clock of the day (UTC or
+#' local standard time, WF-11). Its use for METRIC (Allen et al., 2007) is
+#' `TODO`. For daily records `etr_24` is the daily value of the record
+#' (option D2 with daily data).
 #'
 #' **Instantaneous reference ET** (decision WF-09): `etr_inst` is a rate in
 #' mm h-1. An overpass time outside the time covered by the records of a
@@ -314,14 +338,16 @@ station_regionalization_input <- function(x, variables) {
 #' subclasses.
 #'
 #' @section Verification status:
-#' The physics is that of the functions called (FAO-56 grass:
-#' `VERIFICADA`; ASCE-EWRI constants: `CANDIDATA`), reproduced through this
-#' function for FAO-56 example 19. The orchestration choices are recorded
-#' in the provenance; `"before_sunset"` follows FAO-56 (chapter 4) with the
-#' selection of the last qualifying period as an implementation choice;
-#' `"rn_positive"` and the daily sum of hourly ETr for the alfalfa reference
-#' are `CANDIDATA`; the day definition and the completeness rule are open
-#' decisions (WF-11).
+#' The physics is that of the functions called (FAO-56 grass and ASCE-EWRI
+#' 2005 short and tall reference: `VERIFICADA`), reproduced through this
+#' function for FAO-56 examples 18 and 19. The orchestration choices are
+#' recorded in the provenance: `"before_sunset"` follows FAO-56 (chapter 4)
+#' with the selection of the last qualifying period as an implementation
+#' choice; `"low_sun"` (ASCE-EWRI Eq. 46) and `"rn_positive"` (ASCE-EWRI
+#' p. 5) are `VERIFICADA`; the day definition and the completeness rule are
+#' open decisions (WF-11); the daily sum is `TODO` for METRIC. The worked
+#' examples of ASCE-EWRI (2005), Appendix C, are not reproduced: the copy of
+#' the report that was read does not include the appendices.
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -329,8 +355,12 @@ station_regionalization_input <- function(x, variables) {
 #' (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.
 #'
 #' ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
-#' Equation*. American Society of Civil Engineers.
-#' \doi{10.1061/9780784408056}
+#' Equation*. Task Committee on Standardization of Reference
+#' Evapotranspiration, Environmental and Water Resources Institute of the
+#' American Society of Civil Engineers. Final report, January 2005.
+#' Published as Allen, R. G., Walter, I. A., Elliott, R. L., Howell, T. A.,
+#' Itenfisu, D., Jensen, M. E., & Snyder, R. L. (Eds.), American Society of
+#' Civil Engineers, Reston, VA. \doi{10.1061/9780784408056}
 #'
 #' @family reference evapotranspiration functions
 #' @seealso [ef_station_table()], [ef_station_qc()].
@@ -356,8 +386,8 @@ station_regionalization_input <- function(x, variables) {
 #' et <- ef_station_ref_et(
 #'   st, reference = "alfalfa", timestep = "hourly", standard = "asce",
 #'   humidity = "relative_humidity", day_definition = "utc",
-#'   day_completeness = "all_periods", daytime_rule = "ra_positive",
-#'   night_cloudiness = "before_sunset",
+#'   day_completeness = "all_periods", daytime_rule = "rn_positive",
+#'   night_cloudiness = "low_sun",
 #'   overpass = as.POSIXct("2024-01-15 14:48", tz = "UTC"),
 #'   inst_method = "O3"
 #' )
@@ -395,8 +425,9 @@ ef_station_ref_et <- function(x, reference, timestep, standard, humidity,
                call = call)
   check_method(if (missing(day_completeness)) NULL else day_completeness,
                "all_periods", arg = "day_completeness", call = call)
-  station_ref_check_choices(timestep, daytime_rule, night_cloudiness,
-                            night_ratio, overpass, inst_method, call)
+  station_ref_check_choices(timestep, standard, daytime_rule,
+                            night_cloudiness, night_ratio, overpass,
+                            inst_method, call)
   station_ref_check_records(x$provenance, timestep, call)
   offset <- station_ref_utc_offset(utc_offset, day_definition, x$stations,
                                    call)
@@ -459,8 +490,6 @@ ef_station_ref_et <- function(x, reference, timestep, standard, humidity,
     }, integer(1), USE.NAMES = FALSE),
     stringsAsFactors = FALSE
   )
-  status <- if (standard == "fao56") "VERIFICADA" else "CANDIDATA"
-
   new_ef_object(
     list(
       series = series,
@@ -475,7 +504,7 @@ ef_station_ref_et <- function(x, reference, timestep, standard, humidity,
         reference = reference,
         timestep = timestep,
         standard = standard,
-        status = status,
+        status = "VERIFICADA",
         constants = k,
         choices = list(
           humidity = humidity,
@@ -496,10 +525,17 @@ ef_station_ref_et <- function(x, reference, timestep, standard, humidity,
         derived = list(
           air_pressure = "FAO-56 Eq. 7 from the station elevation (WF-05)",
           clear_sky_radiation = "FAO-56 Eq. 37 (WF-12)",
-          extraterrestrial_radiation = if (timestep == "hourly") {
+          extraterrestrial_radiation = if (timestep == "daily") {
+            "FAO-56 Eq. 21 = ASCE-EWRI Eq. 21 (ef_ra_daily())"
+          } else if (standard == "fao56") {
             "FAO-56 Eq. 28, midpoint criterion (ef_ra_period())"
           } else {
-            "FAO-56 Eq. 21 (ef_ra_daily())"
+            "ASCE-EWRI Eq. 48 with the limits of Eq. 56 (ef_ra_period())"
+          },
+          net_radiation = if (standard == "fao56") {
+            "FAO-56 Eqs. 38-40 (ef_ref_net_radiation())"
+          } else {
+            "ASCE-EWRI Eqs. 15-18 and 42-45 (ef_ref_net_radiation())"
           },
           wind_speed_2m = "FAO-56 Eq. 47 from height_wind",
           vapour_pressure = inputs$ea_source
@@ -513,8 +549,9 @@ ef_station_ref_et <- function(x, reference, timestep, standard, humidity,
         references = c(
           "FAO-56 (Allen et al., 1998), chapters 3-4",
           if (standard == "asce") {
-            paste("ASCE-EWRI (2005), doi:10.1061/9780784408056",
-                  "(not accessible; constants CANDIDATA)")
+            paste("ASCE-EWRI (2005), Task Committee final report,",
+                  "January 2005, Eqs. 1-67 and Table 1",
+                  "(doi:10.1061/9780784408056)")
           }
         ),
         flags_evaluated = unique(unlist(evaluated_by_target,
@@ -533,7 +570,7 @@ ef_station_ref_et <- function(x, reference, timestep, standard, humidity,
 #' @param call The call to report.
 #' @return `NULL`, invisibly.
 #' @noRd
-station_ref_check_choices <- function(timestep, daytime_rule,
+station_ref_check_choices <- function(timestep, standard, daytime_rule,
                                       night_cloudiness, night_ratio,
                                       overpass, inst_method, call) {
   if (timestep == "daily") {
@@ -555,7 +592,7 @@ station_ref_check_choices <- function(timestep, daytime_rule,
   }
   check_method(daytime_rule, c("ra_positive", "rn_positive"),
                arg = "daytime_rule", call = call)
-  check_method(night_cloudiness, c("before_sunset", "fixed"),
+  check_method(night_cloudiness, c("before_sunset", "fixed", "low_sun"),
                arg = "night_cloudiness", call = call)
   if (night_cloudiness == "fixed") {
     if (is.null(night_ratio)) {
@@ -563,7 +600,10 @@ station_ref_check_choices <- function(timestep, daytime_rule,
                class = c("earthflux_missing_input", "earthflux_input_error"),
                call = call)
     }
-    check_scalar(night_ratio, "night_ratio", lower = 0, upper = 1,
+    # Range of Rs/Rso of the standard: FAO-56 Eq. 39 (<= 1); ASCE-EWRI
+    # (2005) Eqs. 18 and 45 ([0.3, 1]).
+    check_scalar(night_ratio, "night_ratio",
+                 lower = if (standard == "asce") 0.3 else 0, upper = 1,
                  call = call)
   } else if (!is.null(night_ratio)) {
     station_abort(
@@ -761,7 +801,7 @@ station_ref_hourly <- function(inputs, st, station_id, mid, reference,
   slope <- ef_es_slope(t_air)
   gamma <- ef_psychrometric(ef_air_pressure(st$elevation))
   u2 <- ef_wind_2m(inputs$wind_speed, st$height_wind)
-  ra <- ef_ra_period(lat, lon, doy, utc_hour, 1)
+  ra <- ef_ra_period(lat, lon, doy, utc_hour, 1, standard = standard)
   rso <- ef_rso(ra, st$elevation)
   # W m-2 (mean of the hour) to MJ m-2 h-1 (FAO-56 chapter 3, Table 3).
   rs <- inputs$solar_radiation * EF_SECONDS_PER_HOUR / 1e6
@@ -770,12 +810,19 @@ station_ref_hourly <- function(inputs, st, station_id, mid, reference,
   rn <- rep(NA_real_, n)
   f <- rep(NA_real_, n)
   source <- rep(NA_character_, n)
-  day <- which(rso > 0)
-  night <- which(rso == 0)
+  own <- rso > 0
+  if (night_cloudiness == "low_sun") {
+    # ASCE-EWRI (2005), Eqs. 46 and 62: own ratio only with a sun angle at
+    # the mid-point above 0.3 rad.
+    beta <- asin(ef_solar_geometry(doy, utc_hour, lat, lon)$cos_zenith)
+    own <- own & beta > 0.3
+  }
+  day <- which(own)
+  night <- which(!own)
   if (length(day) > 0L) {
     r <- ef_ref_net_radiation(rs[day], rso[day], ea[day],
                               air_temperature = t_air[day],
-                              timestep = "hourly")
+                              timestep = "hourly", standard = standard)
     rn[day] <- r$rn
     f[day] <- r$cloudiness
     source[day] <- "ratio"
@@ -786,16 +833,21 @@ station_ref_hourly <- function(inputs, st, station_id, mid, reference,
     if (night_cloudiness == "fixed") {
       f[night] <- 1.35 * night_ratio - 0.35
     } else {
-      omega <- ef_hour_angle(doy, utc_hour, lon)
-      ws <- ef_sunset_hour_angle(lat, ef_declination(doy))
-      qualifies <- rso > 0 & !is.na(f) & omega >= ws - 0.79 &
-        omega <= ws - 0.52
+      if (night_cloudiness == "low_sun") {
+        qualifies <- own & !is.na(f)
+      } else {
+        omega <- ef_hour_angle(doy, utc_hour, lon)
+        ws <- ef_sunset_hour_angle(lat, ef_declination(doy))
+        qualifies <- rso > 0 & !is.na(f) & omega >= ws - 0.79 &
+          omega <= ws - 0.52
+      }
       f[night] <- station_ref_carry(f, qualifies, station_id, mid, night)
     }
     source[night] <- night_cloudiness
     r <- ef_ref_net_radiation(rs[night], NULL, ea[night],
                               air_temperature = t_air[night],
-                              timestep = "hourly", cloudiness = f[night])
+                              timestep = "hourly", standard = standard,
+                              cloudiness = f[night])
     rn[night] <- r$rn
     masks <- station_ref_add_masks(masks, r$flags,
                                    r$provenance$flags_evaluated, night, n)
@@ -829,13 +881,14 @@ station_ref_hourly <- function(inputs, st, station_id, mid, reference,
   )
 }
 
-#' Night-time cloudiness carried from the period before sunset
+#' Night-time cloudiness carried from an earlier period
 #'
-#' For each night-time record, the cloudiness term of the last record of
-#' the same station whose mid-point is in the previous 24 hours and that
-#' qualifies (2-3 hours before sunset, FAO-56 chapter 4). Within 24 hours
-#' before a night-time instant there is a single sunset, so the qualifying
-#' records found belong to the last sunset.
+#' For each night-time (or low sun angle) record, the cloudiness term of the
+#' last record of the same station whose mid-point is in the previous 24
+#' hours and that qualifies (2-3 hours before sunset, FAO-56 chapter 4; or
+#' sun angle above 0.3 rad, ASCE-EWRI 2005 Eq. 46). Within 24 hours before
+#' a night-time instant there is a single sunset, so the qualifying records
+#' found belong to the last afternoon.
 #'
 #' @param f Numeric cloudiness term of every record.
 #' @param qualifies Logical, records that may be carried.
@@ -895,7 +948,7 @@ station_ref_daily <- function(inputs, st, date, reference, standard) {
   # W m-2 (24-hour mean) to MJ m-2 d-1 (FAO-56 chapter 3, Table 3).
   rs <- inputs$solar_radiation * 24 * EF_SECONDS_PER_HOUR / 1e6
   r <- ef_ref_net_radiation(rs, rso_used, ea, tmax = tmax, tmin = tmin,
-                            timestep = "daily")
+                            timestep = "daily", standard = standard)
   g <- ef_ref_soil_heat_flux(r$rn, reference = reference, timestep = "daily",
                              standard = standard)
   et <- ef_ref_et(r$rn, g, tmean, u2, es - ea, slope, gamma,

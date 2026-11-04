@@ -2,21 +2,31 @@
 #
 # Purpose: lightweight S3 classes for EarthFlux objects.
 #
-# Convention for M2 (dev/ARCHITECTURE.md section 3.2; DECISIONS.md P0-12,
-# T-17): numeric core functions return plain numeric values; only
-# procedures whose result describes a whole object (anchor selection, H
-# calibration, dispatchers that record method and provenance) return a
-# lightweight classed list built with new_ef_object(). Such lists always
-# carry a `flags` element (a list of `earthflux_flag`, possibly empty).
+# Convention (dev/ARCHITECTURE.md section 3.2; DECISIONS.md P0-12, T-17;
+# harmonised for M2 in DECISIONS.md section 1.2 and kept for M3 in section
+# 1.3): numeric core functions return plain numeric values; only procedures
+# whose result describes a whole object (anchor selection, H calibration,
+# station tables, reference ET series, GWR fits, regionalized surfaces,
+# dispatchers that record method and provenance) return a lightweight
+# classed list built with new_ef_object(). Such lists always carry a
+# `flags` element (a list of `earthflux_flag`, possibly empty).
 #
 # Every dispatcher of the METRIC core returns one of these objects with its
 # value element(s), `method`, `flags` (records only for codes flagged
 # somewhere) and `provenance` (including `flags_evaluated`, the codes
 # checked); the method functions return plain numeric values or plain lists.
 #
-# Classes created so far:
+# Specification objects (a choice of the user, not a result) are classed
+# lists without `flags`, built with structure() next to their constructor.
+#
+# Classes created so far (most specific first when an object has two):
+#
+# Diagnostics
 #   - earthflux_flag (R/diagnostics.R): one diagnostic flag record (a list,
-#     not built with new_ef_object()).
+#     not built with new_ef_object()); records of ef_station_ref_et() add
+#     the field `target` (dev/specs/flags.md section 6.2).
+#
+# METRIC core (M2)
 #   - earthflux_sw_transmissivity (R/metric-radiation.R): output of
 #     ef_tau_sw() (`total`, `beam`, `diffuse`).
 #   - earthflux_incoming_shortwave (R/metric-radiation.R): output of
@@ -27,8 +37,7 @@
 #   - earthflux_anchor_rule, earthflux_homogeneity, earthflux_anchor_pick
 #     and earthflux_anchor_criteria (R/metric-anchors.R): specification
 #     objects built by ef_anchor_rule(), ef_homogeneity(), ef_anchor_pick()
-#     and ef_anchor_criteria() (classed lists without `flags`; they describe
-#     a choice of the user, not a result).
+#     and ef_anchor_criteria().
 #   - earthflux_anchors (R/metric-anchors.R): anchor pixel selection and its
 #     audit trail (ef_select_anchors(), ef_anchors()), completed by
 #     ef_anchor_conditions().
@@ -38,21 +47,52 @@
 #     the sensible heat flux (ef_calibrate_h()).
 #   - earthflux_daily_et (R/metric-et.R): output of ef_et_daily()
 #     (`eta_24`).
+#
+# Meteorological forcing (M3)
+#   - earthflux_station_table (R/io-weather.R): standard station table of
+#     ef_station_table() (`stations`, `observations`, `qc`, `flags`,
+#     `provenance`).
+#   - c(earthflux_station_qc, earthflux_station_table) (R/prep-qc.R): the
+#     table after ef_station_qc() (adds `qc_status` and the audit table
+#     `qc`).
 #   - earthflux_reference_net_radiation (R/reference-et.R): output of
 #     ef_ref_net_radiation() (`rn`, `rns`, `rnl`, `cloudiness`).
 #   - earthflux_reference_et (R/reference-et.R): output of ef_ref_et()
 #     (`et_ref`, `reference`, `timestep`, `standard`).
-#   - earthflux_station_table and earthflux_station_qc (R/io-weather.R,
-#     R/prep-qc.R): standard station table and its quality control.
 #   - earthflux_station_ref_et (R/prep-weather.R): output of
 #     ef_station_ref_et() (`series`, `etr_inst`, `etr_24`).
+#
+# Spatial regionalization (M3)
+#   - earthflux_gwr_search (R/gwr-bandwidth.R): specification object of
+#     ef_gwr_search() (bandwidth search settings).
+#   - earthflux_gwr_bandwidth (R/gwr-bandwidth.R): bandwidth selection of
+#     ef_gwr_bandwidth() (selected value, criterion profile, flags).
+#   - c(earthflux_gwr, earthflux_regionalization) (R/gwr-fit.R): fitted GWR
+#     model of ef_gwr_fit() (station table, local coefficients, AICc, CV,
+#     global OLS reference, conventions).
+#   - earthflux_ols, earthflux_idw and earthflux_station_forcing
+#     (R/regionalize-baselines.R): fitted baselines C2 (global regression,
+#     inverse distance weighting) and C1 (representative station), internal
+#     constructors used by ef_regionalize().
+#   - earthflux_regionalization_method (R/regionalize-methods.R):
+#     specification objects of ef_method_gwr(), ef_method_station(),
+#     ef_method_ols() and ef_method_idw().
+#   - earthflux_predict_control (R/regionalize-methods.R): specification
+#     object of ef_predict_control() (blocks, files, write options).
+#   - earthflux_surface (R/regionalize.R): output of ef_regionalize()
+#     (`surface`, `flag_word`, `flag_bits`, `diagnostics`, `station_table`).
+#   - earthflux_regionalization_cv (R/regionalize-cv.R): output of
+#     ef_regionalize_cv() (long table of out-of-fold predictions).
+#
 # Planned classes (created with their first constructor, not before):
 #   - earthflux_result         : all intermediate layers + diagnostics +
-#                                provenance (M5);
-#   - earthflux_gwr            : fitted GWR model (M3).
+#                                provenance (M5).
 #
 # Avoid premature class hierarchies: one class per object kind, inheriting
-# only from "list".
+# only from "list". The two exceptions above add one parent: a QC result is
+# still a station table, and the GWR fit carries the class
+# `earthflux_regionalization` of dev/specs/gwr-forcing.md section 7 (no
+# method is defined for it yet; the baselines C1/C2 do not carry it).
 
 #' Construct a lightweight EarthFlux object
 #'

@@ -1,6 +1,6 @@
 # EarthFlux — Especificación: forzamiento meteorológico (estaciones, QC, variables derivadas y ET de referencia)
 
-Estado: **borrador M1**; §4–§5 implementadas en M3 (ver §13) · Módulo: `forcing` (`ARCHITECTURE.md` §2) ·
+Estado: **borrador M1**; §4–§5 implementadas en M3 y verificadas contra FAO-56 y ASCE-EWRI 2005 (ver §13, §13.5) · Módulo: `forcing` (`ARCHITECTURE.md` §2) ·
 Archivos de destino: `R/io-weather.R`, `R/prep-weather.R`, `R/prep-qc.R`
 (ubicación de las funciones compartidas: decisión WF-01) · Tests:
 `tests/testthat/test-weather.R` y, propuesto, `test-reference-et.R`.
@@ -15,7 +15,8 @@ Archivos de destino: `R/io-weather.R`, `R/prep-weather.R`, `R/prep-qc.R`
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`). En este documento, `VERIFICADA` significa
 **ecuación contrastada en esta redacción con la fuente primaria** (FAO-56,
-leída en línea; ver §1.2). La Definition of Done (`DEVELOPMENT.md` §3)
+leída en línea; y, desde 2026-11-04, el informe final de ASCE-EWRI de
+enero de 2005 para la ecuación estandarizada; ver §1.2 y §13.5). La Definition of Done (`DEVELOPMENT.md` §3)
 exige además referencia completa en `REFERENCES.md`, NA, dominio y tests
 diseñados: este documento los especifica, pero la integración en
 `SCIENTIFIC_SPEC.md` y `REFERENCES.md` queda pendiente (no se editan aquí).
@@ -42,15 +43,15 @@ Resumen de estados:
 
 | Bloque | Estado | Fuente |
 |---|---|---|
-| Presión atmosférica P(z), constante psicrométrica γ | `VERIFICADA` | FAO-56 Ec. 7, Ec. 8 |
-| e°(T), es, Δ, eₐ (Tdew, HR horaria, HRmax/HRmin, HRmax, HRmedia, Tmin), déficit | `VERIFICADA` | FAO-56 Ec. 11–14, 17–19, 48, 54 |
-| Viento a 2 m (perfil logarítmico sobre pasto) | `VERIFICADA` | FAO-56 Ec. 47 |
-| Ra diaria y por período (horaria o menor), dr, δ, ωs, ω, Sc | `VERIFICADA` | FAO-56 Ec. 21–33 |
-| Rso (simple por elevación); variantes con turbidez y vapor | `VERIFICADA` (forma FAO-56) | FAO-56 Ec. 36–37; Anexo 3 Ec. 3-13 a 3-20 |
-| Rns, Rnl, Rn de la superficie de referencia (diaria y horaria) | `VERIFICADA` | FAO-56 Ec. 38–40 y §"Hourly time step" |
-| G de la superficie de referencia (pasto): diario ≈ 0; horario 0.1/0.5 Rn | `VERIFICADA` | FAO-56 Ec. 42, 45, 46 |
+| Presión atmosférica P(z), constante psicrométrica γ | `VERIFICADA` | FAO-56 Ec. 7, Ec. 8; ASCE-EWRI (2005) Ec. 3–4, 34–35 |
+| e°(T), es, Δ, eₐ (Tdew, HR horaria, HRmax/HRmin, HRmax, HRmedia, Tmin), déficit | `VERIFICADA` | FAO-56 Ec. 11–14, 17–19, 48, 54; ASCE-EWRI Ec. 5–8, 11–14, 36–38, 41 (Δ con 2503: §4.3) |
+| Viento a 2 m (perfil logarítmico sobre pasto) | `VERIFICADA` | FAO-56 Ec. 47; ASCE-EWRI Ec. 33, 67 |
+| Ra diaria y por período (horaria o menor), dr, δ, ωs, ω, Sc | `VERIFICADA` | FAO-56 Ec. 21–33; ASCE-EWRI Ec. 21–29, 48–61 (límites de la Ec. 56 con `standard = "asce"`) |
+| Rso (simple por elevación); variantes con turbidez y vapor | `VERIFICADA` (forma FAO-56) | FAO-56 Ec. 36–37; Anexo 3 Ec. 3-13 a 3-20; ASCE-EWRI Ec. 19, 47 |
+| Rns, Rnl, Rn de la superficie de referencia (diaria y horaria) | `VERIFICADA` | FAO-56 Ec. 38–40 y §"Hourly time step"; ASCE-EWRI Ec. 15–18, 42–46 (σ y límites propios) |
+| G de la superficie de referencia (pasto y alfalfa): diario 0; horario 0.1/0.5 Rn y 0.04/0.2 Rn | `VERIFICADA` | FAO-56 Ec. 42, 45, 46; ASCE-EWRI Ec. 30, 65a–b, 66a–b |
 | ETo pasto FAO-56, diaria y horaria | `VERIFICADA` | FAO-56 Ec. 6, Ec. 53 |
-| ETr alfalfa ASCE-EWRI (Cn, Cd, G por paso y día/noche) | `CANDIDATA` | ASCE-EWRI (2005) no accesible; corroboración secundaria (§5.3) |
+| ETos/ETrs ASCE-EWRI (Cn, Cd, G por paso y día/noche) | `VERIFICADA` | ASCE-EWRI (2005) Ec. 1 y Tabla 1 (p. 4–5); ejemplos del Apéndice C no leídos (§8.2) |
 | ETr instantánea a la hora de paso | `TODO` (método: decisión WF-09) | – |
 | Umbrales numéricos de QC (rango, salto, persistencia) | `TODO` | Sin fuente primaria leída |
 
@@ -87,9 +88,9 @@ Distinción que atraviesa todo el documento:
 | Fuente | Tipo | Acceso en esta redacción | Uso |
 |---|---|---|---|
 | Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop evapotranspiration — Guidelines for computing crop water requirements*. FAO Irrigation and Drainage Paper 56. FAO, Roma. ISBN 92-5-104219-5 (datos de la portada de la versión HTML) | Primaria | **Leída** en `www.fao.org` (versión HTML, redirigida a `https://www.fao.org/4/x0490e/`): cap. 2 (`x0490e06.htm`), cap. 3 (`x0490e07.htm`), cap. 4 (`x0490e08.htm`), anexos 2, 3, 5 y 6 (`x0490e0j.htm`, `x0490e0k.htm`, `x0490e0m.htm`, `x0490e0n.htm`). Las ecuaciones están como imágenes y se leyeron una a una | Ecuaciones `VERIFICADA` y ejemplos numerados como casos de prueba |
-| ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration Equation*. American Society of Civil Engineers | Primaria | **No accesible** (ascelibrary.org bloqueado; no se encontró copia abierta accesible, §12). Metadatos verificados vía Crossref: DOI `10.1061/9780784408056`, monografía publicada 2005-08-03, editores Allen, Walter, Elliott, Howell, Itenfisu, Jensen y Snyder (Technical Committee on Standardization of Reference Evapotranspiration), ISBN 9780784408056 / 9780784475638 | Constantes de ETr: `CANDIDATA` |
-| `water` v1.0 (GPL ≥ 2), `R/water_ET.R` (`hourlyET()`, `asceHourly()`, `asceRa()`, `dailyET()`, `ET24h()`) y `R/water_WeatherStation.R` (`read.WSdata()`) | Secundaria (implementación) | Leído (clon de solo lectura) | Qué constantes y números de ecuación de ASCE-EWRI atribuye una implementación; diseño de manejo de estaciones. **No se copia código** |
-| `SPEI` 1.8.1 (CRAN, GPL-2), `R/penman.R` | Secundaria (implementación) | Leído (fuente descargada de `cran.r-project.org`) | Corroboración independiente de Cn/Cd diarios de referencia alta/baja. **No se copia código** |
+| ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration Equation*. Task Committee on Standardization of Reference Evapotranspiration, Environmental and Water Resources Institute of the American Society of Civil Engineers. Informe final, enero de 2005 | Primaria | **Leído (2026-11-04)**: copia PDF del informe final del Task Committee (70 páginas: i–vii y 1–59; metadatos del PDF: creado 2005-02-28) descargada por el integrador junto con su texto (`pdftotext -layout`); la URL de descarga no quedó registrada en esta rama. La copia **no incluye los apéndices A–F** (solo su lista, p. vii), por lo que el Apéndice C (ejemplos de Greeley, Colorado) no se leyó. Portada (p. i): editores principales Allen, Walter, Elliott, Howell, Itenfisu y Jensen (Snyder figura entre los miembros del comité). Edición publicada por ASCE (metadatos vía Crossref, M3 previo): DOI `10.1061/9780784408056`, 2005-08-03, editores Allen, Walter, Elliott, Howell, Itenfisu, Jensen y Snyder, ISBN 9780784408056 / 9780784475638 | Ecuación estandarizada, constantes de ETos/ETrs y reglas de §4–§5: `VERIFICADA` con ecuación, tabla y página (§13.5) |
+| `water` v1.0 (GPL ≥ 2), `R/water_ET.R` (`hourlyET()`, `asceHourly()`, `asceRa()`, `dailyET()`, `ET24h()`) y `R/water_WeatherStation.R` (`read.WSdata()`) | Secundaria (implementación) | Leído (clon de solo lectura) | Qué constantes y números de ecuación de ASCE-EWRI atribuye una implementación; diseño de manejo de estaciones. **No se copia código**. Sustituida por el informe primario (§13.5) |
+| `SPEI` 1.8.1 (CRAN, GPL-2), `R/penman.R` | Secundaria (implementación) | Leído (fuente descargada de `cran.r-project.org`) | Corroboración independiente de Cn/Cd diarios de referencia alta/baja. **No se copia código**. Sustituida por el informe primario (§13.5) |
 | `radiation-components.md`, `soil-heat-flux.md`, `ef_net_radiation.md` | Internas | Leídas | Coherencia de nombres, convenciones y decisiones (RC-xx, Dx) |
 
 Limitaciones registradas:
@@ -230,7 +231,7 @@ Implementado en `R/io-weather.R` (`ef_station_table()`, exportada;
 `ef_validate_stations()`, interna) con tests en
 `tests/testthat/test-weather.R` y datos sintéticos en
 `tests/testthat/helper-stations.R`. Decisiones tomadas al implementar
-(provisionales, para que el integrador las registre en `DECISIONS.md`):
+(provisionales, registradas en `DECISIONS.md` §1.3, M3-07 y M3-08):
 
 - **WF-03** adoptada: dos `data.frame` base + clase S3
   `earthflux_station_table` (`new_ef_object()`), con elementos `stations`,
@@ -429,7 +430,7 @@ P = 101.3 · ((293 − 0.0065·z) / 293)^5.26          [kPa], z en m    (FAO-56 
 
 | Aspecto | En `radiation-components.md` §6.2 | Resultado de esta verificación |
 |---|---|---|
-| Forma y constantes | `CANDIDATA`, "atribuida a FAO-56 / ASCE-EWRI" | **Idéntica a FAO-56 Ec. 7. Estado propuesto: `VERIFICADA` (FAO-56 Ec. 7)**. La atribución a ASCE-EWRI sigue `CANDIDATA` (water la cita como "Eq. 34") |
+| Forma y constantes | `CANDIDATA`, "atribuida a FAO-56 / ASCE-EWRI" | **Idéntica a FAO-56 Ec. 7. Estado propuesto: `VERIFICADA` (FAO-56 Ec. 7)**. También ASCE-EWRI (2005) Ec. 3 y 34 (p. 10 y 28), `VERIFICADA` (2026-11-04, §13.5) |
 | Supuestos (`TODO` allí) | "Atmósfera estándar 293 K, gradiente constante" | FAO-56 cap. 3: simplificación de la ley de gases ideales suponiendo 20 °C en atmósfera estándar. Anexo 3 Ec. 3-2 da la forma general P = P₀·[(T_K0 − α₁(z − z₀))/T_K0]^(g/(α₁R)) con P₀ = 101,3 kPa, g = 9,807 m s⁻², R = 287 J kg⁻¹ K⁻¹, α₁ = 0,0065 K m⁻¹; con z₀ = 0 y T_K0 = 293 K se obtiene Ec. 3-4 = Ec. 7. Comprobación propia: 9,807/(0,0065·287) = 5,2570 ≈ 5,26 |
 | Uso de un valor medio | – | FAO-56 cap. 3: el efecto de P en la ET es pequeño y "el valor medio para un lugar es suficiente" |
 | Caso numérico | z = 1000 m → 90,0246 kPa | Recalculado: 90,0246 kPa (coincide). Además FAO-56 Ejemplo 2: z = 1800 m → 81,8 kPa (propio: 81,7558) |
@@ -483,8 +484,15 @@ Inconsistencias internas de FAO-56 registradas (se adopta el capítulo 3):
 - Anexo 3 Ec. 3-8 usa 0,611 en lugar de 0,6108.
 - Anexo 3 Ec. 3-9 da Δ = 4098·e°(T)/(T + 237,3)² = 2504·exp(17,27T/(T +
   237,2))/(T + 237,3)²: el 237,2 del exponente y el 2504 difieren del
-  cap. 3 (4098 × 0,6108 = 2503,06). `water` v1.0 usa 2503 y lo atribuye a
-  ASCE-EWRI "Eq. 36" (secundario).
+  cap. 3 (4098 × 0,6108 = 2503,06).
+
+ASCE-EWRI (2005) (`VERIFICADA`, §13.5): e°(T) Ec. 7 y 37 (p. 11, 29), es
+diaria Ec. 6 (p. 11, media de e°(Tmax) y e°(Tmin)), es horaria = e°(T_hr)
+(Ec. 37), Tmedia Ec. 2 (p. 9): idénticas a FAO-56. Δ se escribe con 2503
+(Ec. 5 y 36, p. 10 y 28), el producto 4098 × 0,6108 = 2503,06 redondeado:
+factor constante de 2,3·10⁻⁵ (relativo) respecto de la Ec. 13 de FAO-56,
+muy por debajo de la precisión de cualquier valor publicado. Se usa la
+forma de FAO-56 para ambas normas (sin argumento `standard`).
 
 Advertencia (FAO-56 cap. 3 y Recuadro 7): para períodos de 24 h o más, es
 debe calcularse con Tmax y Tmin (Ec. 12), no con Tmedia; usar Tmedia
@@ -500,10 +508,17 @@ error (p. ej., 293) → flag `EF_WS_IMPLAUSIBLE` (umbral `TODO`, QC-01b).
 |---|---|---|---|
 | `ef_ea_dewpoint(dewpoint_temperature)` | eₐ = e°(Tdew) (Ec. 14) | Cualquier paso | `VERIFICADA` |
 | `ef_ea_rh(air_temperature, relative_humidity)` | eₐ = e°(T_hr)·HR_hr/100 (Ec. 54; Anexo 5 Ec. 5-3: T y HR del mismo período, preferentemente ≤ 1 h) | Horario / sub-horario | `VERIFICADA` |
-| `ef_ea_daily(tmin, tmax, rh_max, rh_min, method)` | `"rhmax_rhmin"`: eₐ = [e°(Tmin)·HRmax/100 + e°(Tmax)·HRmin/100]/2 (Ec. 17); `"rhmax"`: eₐ = e°(Tmin)·HRmax/100 (Ec. 18, cuando HRmin es dudosa); `"rhmean"`: eₐ = (HRmedia/100)·[e°(Tmax) + e°(Tmin)]/2 (Ec. 19, "menos deseable"), HRmedia = (HRmax + HRmin)/2 | Diario o mayor | `VERIFICADA` |
+| `ef_ea_daily(tmin, tmax, rh_max, rh_min, method)` | `"rhmax_rhmin"`: eₐ = [e°(Tmin)·HRmax/100 + e°(Tmax)·HRmin/100]/2 (Ec. 17; ASCE Ec. 11); `"rhmax"`: eₐ = e°(Tmin)·HRmax/100 (Ec. 18, cuando HRmin es dudosa; ASCE Ec. 12); `"rhmin"`: eₐ = e°(Tmax)·HRmin/100 (ASCE Ec. 13, p. 16); `"rhmean"`: eₐ = (HRmedia/100)·[e°(Tmax) + e°(Tmin)]/2 (Ec. 19, "menos deseable"; ASCE p. 17: "no recomendada en el procedimiento estandarizado"); `"rhmean_tmean"`: eₐ = (HRmedia/100)·e°(Tmedia) (ASCE Ec. 14 con Tmedia de la Ec. 2), HRmedia = (HRmax + HRmin)/2 | Diario o mayor | `VERIFICADA` (FAO-56; `"rhmin"` y `"rhmean_tmean"`: ASCE-EWRI 2005) |
 | `ef_ea_tmin(tmin, k0 = 0)` | eₐ = e°(Tmin − K₀) (Ec. 48; Anexo 6 Ec. 6-6: K₀ = 0 °C húmedo/subhúmedo, 2 °C árido/semiárido; cap. 3: restar 2–3 °C en zonas áridas) | Solo datos faltantes | `VERIFICADA` (uso solo explícito) |
 | `ef_dewpoint(vapour_pressure)` | Tdew = [116,91 + 237,3·ln eₐ] / [16,78 − ln eₐ] (Anexo 3 Ec. 3-11) | QC (QC-08b, QC-08c) | `VERIFICADA` (forma FAO-56) |
 | Psicrómetro: eₐ = e°(T_wet) − γ_psy·(T_dry − T_wet), γ_psy = a_psy·P (Ec. 15–16) | – | Fuera del contrato (§2.3) | `VERIFICADA`, no se implementa por ahora |
+
+ASCE-EWRI (2005) ordena los métodos por preferencia en la Tabla 3 (diaria,
+p. 12: eₐ promediada o Tdew = 1; psicrómetro, Tdew a las 7–8 h, Ec. 11 =
+2; Ec. 12 y 13 = 3; Tmin (Apéndice E) y Ec. 14 = 4) y la Tabla 4 (horaria,
+p. 30: eₐ promediada, Tdew (Ec. 38) y HR con T (Ec. 41) = 1; psicrómetro = 2;
+Tmin = 3). La estimación desde Tmin está en su Apéndice E (no leído):
+`ef_ea_tmin()` sigue siendo la forma de FAO-56.
 
 Notas: la Ec. 3-11 no es la inversa exacta de la Ec. 11 (comprobación
 propia: eₐ = e°(15 °C) = 1,70535 kPa → Tdew = 14,9926 °C; diferencia
@@ -521,8 +536,12 @@ no se recorta. eₐ ≤ 0 en la Ec. 3-11 → error (logaritmo).
 u₂ = u_z · 4.87 / ln(67.8·z − 5.42)            [m s⁻¹], z en m      (FAO-56 Ec. 47)
 ```
 
-Estado: `VERIFICADA`. Supuesto declarado por FAO-56: perfil logarítmico
-para mediciones **sobre una superficie de pasto corto**. Dominio:
+Estado: `VERIFICADA` (también ASCE-EWRI 2005 Ec. 33, p. 26, y Ec. 67,
+p. 44; el texto de la p. 44 la llama "Eq. 68", errata). Supuesto declarado
+por FAO-56 y ASCE-EWRI: perfil logarítmico para mediciones **sobre una
+superficie de pasto corto**; para viento medido sobre alfalfa u otra
+superficie, ASCE-EWRI remite a la Ec. B.14 de su Apéndice B (no leído, no
+implementado). Dominio:
 67,8·z − 5,42 > 1 ⇔ z > 0,0947 m (para z menor el logaritmo es ≤ 0) →
 `earthflux_domain_error`. Nota: en z = 2 m el factor es 1,00022, no
 exactamente 1 (FAO-56 Anexo 2 Tabla 2.9 lo redondea a 1,000); en z = 10 m
@@ -592,8 +611,20 @@ Coherencia con `radiation-components.md` §6.1 (sin duplicar):
   Ejemplo 19 (decisión WF-10).
 - **Bordes de amanecer/atardecer.** FAO-56 anula Ra solo según el punto
   medio. Un período que contiene la salida o la puesta del sol queda con Ra
-  completa o nula. `water` v1.0 recorta ω₁ y ω₂ a [−ωs, ωs] y atribuye ese
-  recorte a ASCE-EWRI ("Eqs. 56–58"): `CANDIDATA`. Decisión WF-10.
+  completa o nula. ASCE-EWRI (2005) Ec. 56 (p. 41, `VERIFICADA`): si
+  ω₁ < −ωs → ω₁ = −ωs; si ω₂ < −ωs → ω₂ = −ωs; si ω₁ > ωs → ω₁ = ωs; si
+  ω₂ > ωs → ω₂ = ωs; si ω₁ > ω₂ → ω₁ = ω₂; "puede aplicarse a todos los
+  pasos". Implementado como `ef_ra_period(..., standard = "asce")`
+  (decisión WF-10 resuelta como elección explícita por norma). La suma de
+  las 24 Ra horarias con la Ec. 56 es igual a la Ra diaria (Ec. 21)
+  (comprobado en los tests). **Inconsistencia del informe:** la misma
+  página dice que un punto medio fuera de [−ωs, ωs] implica Ra = 0 "por
+  definición"; para un período con el punto medio bajo el horizonte que
+  contiene la salida o la puesta, ambas frases difieren y se sigue la
+  Ec. 56. En día polar (ωs = π) no se aplican límites (no hay salida ni
+  puesta; el recorte literal a [−π, π] cortaría los períodos en torno a la
+  medianoche solar). ASCE-EWRI usa 0,06667 (Ec. 55); se mantiene 1/15
+  exacto (WF-10).
 
 ### 4.7 Radiación de cielo despejado Rso
 
@@ -603,7 +634,10 @@ Rso = (0.75 + 2×10⁻⁵·z)·Ra  (sin calibración), z en m                   
 ```
 
 Función propuesta: `ef_rso(extraterrestrial, elevation)`.
-Estado: `VERIFICADA`. FAO-56 Anexo 3 (con base en Allen, 1996): Ec. 3-13 es
+Estado: `VERIFICADA` (también ASCE-EWRI 2005 Ec. 19, p. 22, diaria, y
+Ec. 47, p. 37, horaria; el informe reserva las formas de su Apéndice D
+para evaluar la calidad de Rs y cita la Ec. 47 como "Eq. 48" en la p. 38,
+errata). FAO-56 Anexo 3 (con base en Allen, 1996): Ec. 3-13 es
 "una buena aproximación de Rso para períodos **diarios y horarios**",
 válida para z < 6000 m y baja turbidez; se obtuvo linealizando la ley de
 Beer con la elevación y suponiendo un ángulo solar medio de ≈ 50°.
@@ -662,7 +696,26 @@ Notas de coherencia:
   exige explícitamente). Aplicar ese límite no es una corrección silenciosa
   del dato: se aplica solo dentro del término de nubosidad y se registra
   con un flag informativo (`EF_WS_RS_RSO_LIMITED`); Rs no se modifica.
-  ASCE-EWRI, según `water` ("Eq. 45"), limita además a ≥ 0,3: `CANDIDATA`.
+  ASCE-EWRI (2005) limita a 0,3 ≤ Rs/Rso ≤ 1,0 (Ec. 18, p. 20; Ec. 45,
+  p. 35; `VERIFICADA`), con `standard = "asce"`; el mismo flag marca ambos
+  límites. **Inconsistencia del informe:** afirma que esos límites dan
+  0,05 ≤ f_cd ≤ 1,0, pero 1,35·0,3 − 0,35 = 0,055. Se aplica el límite del
+  cociente (f calculado ≥ 0,055) y un `cloudiness` entregado se acepta en
+  [0,05; 1] (rango declarado en las Ec. 17 y 44).
+- **ASCE-EWRI (2005), `standard = "asce"`** (`VERIFICADA`): α = 0,23 para
+  ambas referencias y ambos pasos (Ec. 16 y 43, p. 18 y 33); Rnl con
+  σ = 4,901·10⁻⁹ MJ K⁻⁴ m⁻² d⁻¹ (Ec. 17, p. 19) y 2,042·10⁻¹⁰
+  MJ K⁻⁴ m⁻² h⁻¹ (Ec. 44, p. 34; FAO-56 da 4,903·10⁻⁹ y 4,903/24·10⁻⁹ =
+  2,043·10⁻¹⁰); T_K = T + 273,16. `ef_ref_net_radiation()` recibe
+  `standard` sin defecto. Nubosidad con sol bajo y de noche (Ec. 46,
+  p. 35–36): todo período cuyo ángulo solar β en el punto medio (Ec. 62,
+  p. 43) sea menor que 0,3 rad usa el f_cd del último período con
+  β > 0,3 rad ("un solo valor por día" para el anochecer, la noche y el
+  amanecer); implementado como `night_cloudiness = "low_sun"` en
+  `ef_station_ref_et()`. Sin períodos con β > 0,3 rad (latitudes altas en
+  invierno) el informe admite Rs/Rso entre 0,3 y 1,0 (p. 36):
+  `night_cloudiness = "fixed"` con `night_ratio` ∈ [0,3; 1]. El informe da
+  "~17°" (p. 35) y "~15°" (p. 36) para 0,3 rad (= 17,2°): errata menor.
 - **σ y 273,16.** σ = 4,903·10⁻⁹ MJ m⁻² d⁻¹ K⁻⁴ equivale a 5,6748·10⁻⁸
   W m⁻² K⁻⁴ (0,08 % menor que el valor CODATA de `radiation-components.md`
   §5, RC-07). La conversión a K usa 273,16 (Ec. 39 y cap. 3), mientras el
@@ -685,12 +738,18 @@ horario, noche:    G_hr = 0.5·Rn                                           (Ec.
 mensual:           G = 0.07·(T_mes,i+1 − T_mes,i−1)  o  0.14·(T_mes,i − T_mes,i−1)   (Ec. 43, 44; fuera de alcance)
 ```
 
-Estado: `VERIFICADA` para **pasto** (FAO-56). Para alfalfa (ASCE-EWRI)
-`water` usa 0,04·Rn (día) y 0,2·Rn (noche): `CANDIDATA` (§5.3). Criterio
-día/noche: FAO-56 dice "daylight periods" sin definir el umbral; `water`
-usa Rn > 0 y lo atribuye a ASCE-EWRI (Tabla 1): `CANDIDATA`. En el
-Ejemplo 19 de FAO-56 ambos criterios coinciden (noche con Rn < 0; día con
-Ra > 0 y Rn > 0). Decisión WF-15. Función propuesta (interna):
+Estado: `VERIFICADA` para **pasto** (FAO-56) y para **pasto y alfalfa**
+de ASCE-EWRI (2005): G diario = 0 (Ec. 30, p. 25); G horario 0,1·Rn día /
+0,5·Rn noche (pasto, Ec. 65a–b) y 0,04·Rn / 0,2·Rn (alfalfa, Ec. 66a–b),
+p. 44. Criterio día/noche: FAO-56 dice "daylight periods" sin definir el
+umbral; ASCE-EWRI define el día como Rn horaria **positiva** (texto previo
+a la Tabla 1 y Tabla 2, p. 5: día Rn > 0, noche Rn ≤ 0) → opción
+`daytime_rule = "rn_positive"` (`VERIFICADA` para ASCE). **Inconsistencia
+del informe:** la p. 44 (tras las Ec. 65–66) y el glosario (p. 58) definen
+la noche como Rn < 0 y el día como Rn ≥ 0; en Rn = 0 exacto G = 0 en ambas
+lecturas y solo cambia Cd; se sigue la Tabla 2. En el Ejemplo 19 de FAO-56
+ambos criterios coinciden (noche con Rn < 0; día con Ra > 0 y Rn > 0).
+Decisión WF-15 (abierta solo para FAO-56). Función propuesta (interna):
 `ef_ref_soil_heat_flux(rn, reference, timestep, daytime)`.
 Referencia cruzada: `soil-heat-flux.md` §3.3 (no es un método de G del
 píxel). FAO-56 Anexo 5 Ec. 5-2 (Choudhury, 1989: G = 0,4·exp(−0,5·LAI)·Rn,
@@ -725,8 +784,16 @@ r_s constante puede subestimar la ETo horaria diurna y sobreestimarla al
 atardecer, y que las sumas horarias de 24 h son en general equivalentes al
 cálculo con paso de 24 h.
 
-Forma general con constantes Cn y Cd (`CANDIDATA` como forma ASCE-EWRI;
-coincide con Ec. 6/53 cuando Cn = 900/37 y Cd = 0,34):
+Forma general con constantes Cn y Cd (ASCE-EWRI 2005 Ec. 1, p. 4,
+`VERIFICADA`; coincide con Ec. 6/53 cuando Cn = 900/37 y Cd = 0,34).
+Unidades (p. 4): ETsz en mm d⁻¹ o mm h⁻¹; Rn y G en MJ m⁻² d⁻¹ o h⁻¹; T a
+1,5–2,5 m en °C; u₂ en m s⁻¹; Cn en K mm s³ Mg⁻¹ d⁻¹ o h⁻¹ (absorbe el
+K_time de 86 400 s d⁻¹ o 3600 s h⁻¹ de la forma completa, glosario
+p. 56); Cd en s m⁻¹; 0,408 en m² mm MJ⁻¹ (1/λ con λ = 2,45 MJ kg⁻¹ y
+ρ_w = 1 Mg m⁻³, p. 9 y 27). Tabla 2 (p. 5): alturas 0,12 m (corta) y
+0,50 m (alta), z_w = 2 m, d = 0,08 m en ambas (viento medido sobre pasto),
+r_s diaria 70 / 45 s m⁻¹, horaria diurna 50 / 30 s m⁻¹, nocturna
+200 s m⁻¹:
 
 ```text
 ET_ref = [0.408·Δ·(Rn − G) + γ·(Cn/(T + 273))·u₂·(es − eₐ)] / [Δ + γ·(1 + Cd·u₂)]
@@ -738,22 +805,30 @@ ET_ref = [0.408·Δ·(Rn − G) + γ·(Cn/(T + 273))·u₂·(es − eₐ)] / [Δ
 |---|---|---|---|---|---|---|
 | Pasto, FAO-56 | 24 h | 900 | 0,34 | ≈ 0 (Ec. 42) | `VERIFICADA` | FAO-56 Ec. 6 |
 | Pasto, FAO-56 | 1 h | 37 | 0,34 (día y noche) | 0,1·Rn día / 0,5·Rn noche | `VERIFICADA` | FAO-56 Ec. 53, 45, 46 |
-| Pasto (ETos), ASCE-EWRI | 24 h | 900 | 0,34 | ≈ 0 | `CANDIDATA` | Coincide con FAO-56 Ec. 6; `SPEI` 1.8.1 (`crop = "short"`) |
-| Alfalfa (ETrs), ASCE-EWRI | 24 h | 1600 | 0,38 | ≈ 0 | `CANDIDATA` | `SPEI` 1.8.1 (`crop = "tall"`, comentario "alfalfa, 0.5 m") |
-| Pasto (ETos), ASCE-EWRI | 1 h | 37 | 0,24 día / 0,96 noche | 0,1·Rn / 0,5·Rn | `CANDIDATA` | `water` v1.0, `asceHourly()` ("Table 1") |
-| Alfalfa (ETrs), ASCE-EWRI | 1 h | 66 | 0,25 día / 1,7 noche | 0,04·Rn / 0,2·Rn | `CANDIDATA` | `water` v1.0, `asceHourly()` ("Table 1") |
+| Pasto (ETos), ASCE-EWRI | 24 h | 900 | 0,34 | 0 (Ec. 30) | `VERIFICADA` | ASCE-EWRI (2005) Ec. 1 (p. 4), Tabla 1 (p. 5); G: Ec. 30 (p. 25). Coincide con FAO-56 Ec. 6 |
+| Alfalfa (ETrs), ASCE-EWRI | 24 h | 1600 | 0,38 | 0 (Ec. 30) | `VERIFICADA` | ASCE-EWRI (2005) Ec. 1 (p. 4), Tabla 1 (p. 5); G: Ec. 30 (p. 25) |
+| Pasto (ETos), ASCE-EWRI | 1 h | 37 | 0,24 día / 0,96 noche | 0,1·Rn / 0,5·Rn | `VERIFICADA` | ASCE-EWRI (2005) Tabla 1 (p. 5); G: Ec. 65a–b (p. 44) |
+| Alfalfa (ETrs), ASCE-EWRI | 1 h | 66 | 0,25 día / 1,7 noche | 0,04·Rn / 0,2·Rn | `VERIFICADA` | ASCE-EWRI (2005) Tabla 1 (p. 5); G: Ec. 66a–b (p. 44) |
 
-Otros elementos que `water` atribuye a ASCE-EWRI (todos `CANDIDATA`, números
-de ecuación no verificados): γ = 0,000665·P ("Eq. 35"); Δ con 2503 ("Eq. 36");
-Rs/Rso acotada a [0,3; 1] ("Eq. 45"); nubosidad nocturna arrastrada desde el
-último período con ángulo solar β > 0,3 rad ("Eq. 46"); Rso = (0,75 +
-2·10⁻⁵z)·Ra ("Eq. 47"); Ra horaria con recorte de ω a la salida/puesta
-("Eqs. 48, 56–58"); σ horaria 2,042·10⁻¹⁰ (FAO-56 da 2,043·10⁻¹⁰); α = 0,23
-para ambas referencias; día de 24 períodos horarios que terminan a la 01:00
-… 24:00. `TODO`: verificar cada uno en ASCE-EWRI (2005).
+Las seis filas ASCE se implementaron primero como `CANDIDATA` desde
+fuentes secundarias (`SPEI` 1.8.1; `water` 1.0, §13.2) y se verificaron el
+2026-11-04 contra el informe final de enero de 2005: los valores
+coinciden, no cambió ninguno. Día/noche: Rn > 0 (texto previo a la Tabla 1
+y Tabla 2, p. 5; ver la inconsistencia de §4.9).
 
-Diferencia relevante ya visible: para pasto horario, FAO-56 usa Cd = 0,34
-constante y ASCE-EWRI (candidata) Cd = 0,24/0,96. Con los datos del
+Elementos que `water` atribuía a ASCE-EWRI, ahora contrastados (detalle en
+§13.5): γ = 0,000665·P (Ec. 4 y 35) ✔; Δ con 2503 (Ec. 5 y 36) ✔,
+equivalente a FAO-56 (§4.3); Rs/Rso acotada a [0,3; 1] (Ec. 18 y 45) ✔;
+nubosidad de sol bajo y nocturna desde el último período con β > 0,3 rad
+(Ec. 46, con β de la Ec. 62) ✔; Rso = (0,75 + 2·10⁻⁵z)·Ra (Ec. 19 y 47) ✔;
+Ra horaria con límites de ω a la salida/puesta (Ec. 48 y 56; Sc y b son
+las Ec. 57–58) ✔; σ horaria 2,042·10⁻¹⁰ (Ec. 44) ✔; α = 0,23 para ambas
+referencias (Ec. 16 y 43) ✔; día de 24 períodos horarios que terminan a la
+01:00 … 24:00: **no verificado** (el texto principal solo habla de sumar
+"sobre el período de 24 horas", p. 45; el Apéndice C no se leyó).
+
+Diferencia relevante: para pasto horario, FAO-56 usa Cd = 0,34
+constante y ASCE-EWRI Cd = 0,24/0,96. Con los datos del
 Ejemplo 19 (14:00–15:00) da 0,627 vs 0,656 mm h⁻¹ (§8.2, aritmética). Por
 eso `standard` es un argumento explícito.
 
@@ -778,7 +853,9 @@ ef_ref_et(net_radiation, soil_heat_flux, air_temperature, wind_speed_2m,
 - Constantes desde una tabla interna única (`.ef_reference_constants`) con
   la fuente de cada fila (§5.3). Combinaciones `CANDIDATA` no pueden
   implementarse hasta su verificación (DoD): mientras tanto solo
-  `standard = "fao56"` + `reference = "grass"` es implementable.
+  `standard = "fao56"` + `reference = "grass"` es implementable
+  (superado: §13.2 punto 1 y, desde 2026-11-04, todas las filas
+  `VERIFICADA`, §13.5).
 - `standard = "fao56"` + `reference = "alfalfa"` → error clasificado (FAO-56
   no define alfalfa).
 - Orquestación para series de estación (en `prep-weather.R`):
@@ -819,12 +896,15 @@ fuera del rango de registros → `NA` + flag `EF_WS_OVERPASS_OUTSIDE_RECORDS`
 
 | Opción | Descripción | Estado |
 |---|---|---|
-| D1 | Suma de 24 ETr horarias | FAO-56 cap. 4: las sumas horarias son en general equivalentes al cálculo de 24 h (`VERIFICADA` como afirmación para pasto). Para alfalfa ASCE: `CANDIDATA`. Uso en METRIC: `TODO` (Allen et al., 2007) |
-| D2 | Ecuación diaria (Cn = 1600, Cd = 0,38) con agregados diarios (Tmax, Tmin, eₐ, u₂, Rs) | `CANDIDATA` |
+| D1 | Suma de 24 ETr horarias | FAO-56 cap. 4: las sumas horarias son en general equivalentes al cálculo de 24 h (`VERIFICADA` como afirmación para pasto). ASCE-EWRI (2005, p. 45): suma de ETos/ETrs horarias "sobre el período de 24 horas", conservando en general los valores negativos (`VERIFICADA` como procedimiento; EarthFlux conserva los negativos). Uso en METRIC: `TODO` (Allen et al., 2007) |
+| D2 | Ecuación diaria (Cn = 1600, Cd = 0,38) con agregados diarios (Tmax, Tmin, eₐ, u₂, Rs) | Constantes `VERIFICADA` (ASCE-EWRI Tabla 1); agregación de datos horarios a diarios no implementada |
 
 Definición del día (decisión WF-11): **día civil local** (24 períodos
 horarios que terminan 01:00…24:00 en la hora estándar local, como describe
-`water` para ASCE-EWRI, `CANDIDATA`) vs **día UTC**. Para estaciones en
+`water` para ASCE-EWRI; el texto principal del informe no lo define y el
+Apéndice C no se leyó: `CANDIDATA`) vs **día UTC**. El informe usa la hora
+estándar local (sin horario de verano) en el ángulo horario (Ec. 55,
+p. 41), no en la definición del día. Para estaciones en
 UTC−3/−4 el día UTC desplaza 3–4 h la ventana y cambia ETr24. EarthFlux
 almacena UTC (§2.4), por lo que la definición debe ser un argumento
 explícito (`day_definition = c("local_standard", "utc")`, con la zona
@@ -989,20 +1069,46 @@ completa de referencia). En V16 FAO-56 publica 0,00 por redondeo; el valor
 propio 0,0043 mm h⁻¹ debe usarse como regresión y el publicado con
 tolerancia 0,005.
 
-### 8.2 Casos aritméticos de constantes `CANDIDATA` (no verifican la física)
+### 8.2 Casos de la ecuación estandarizada ASCE-EWRI (2005)
 
-Con los insumos de V15/V16 (mismo Rn de FAO-56) y las constantes de §5.3:
+**Aritmética con las constantes de la Tabla 1** (constantes `VERIFICADA`;
+los casos verifican la aritmética, no reproducen un ejemplo publicado). Con
+los insumos de V15/V16 (mismo Rn de FAO-56) y las constantes de §5.3:
 
 | Caso | Constantes | 14:00–15:00 | 02:00–03:00 |
 |---|---|---|---|
 | A1 | FAO-56 Ec. 53 (37; 0,34; G 0,1/0,5) | 0,6269 | 0,0043 |
-| A2 | ASCE ETos horaria (37; 0,24/0,96; G 0,1/0,5), `CANDIDATA` | 0,6560 | 0,0035 |
-| A3 | ASCE ETrs horaria (66; 0,25/1,7; G 0,04/0,2), `CANDIDATA` | 0,8218 | 0,0067 |
-| A4 | ASCE ETrs diaria (1600; 0,38) con los insumos de V14, `CANDIDATA` | 4,6065 mm d⁻¹ | – |
+| A2 | ASCE ETos horaria (37; 0,24/0,96; G 0,1/0,5) | 0,6560 | 0,0035 |
+| A3 | ASCE ETrs horaria (66; 0,25/1,7; G 0,04/0,2) | 0,8218 | 0,0067 |
+| A4 | ASCE ETrs diaria (1600; 0,38) con los insumos de V14 | 4,6065 mm d⁻¹ | – |
 
-Estos valores solo verifican aritmética. Un caso de verificación de ETr
-alfalfa requiere los ejemplos de ASCE-EWRI (2005) (`TODO`; no se afirma que
-existan ni su contenido hasta leer el documento).
+A través de `ef_station_ref_et()` con `standard = "asce"`, A3 usa además
+el Rn de ASCE (σ = 2,042·10⁻¹⁰): la diferencia con 0,8218/0,0067 queda bajo
+2·10⁻⁴ mm h⁻¹ (test).
+
+**Reglas propias de ASCE-EWRI, casos calculados a mano** (tests en
+`test-forcing-derived.R`, `test-reference-et.R`, `test-station-ref-et.R`):
+
+| Caso | Regla | Entradas | Esperado |
+|---|---|---|---|
+| S1 | Ec. 13 (`"rhmin"`) | Tmax = 25 °C, HRmin = 54 % | eₐ = 3,1678·0,54 = 1,7106 kPa |
+| S2 | Ec. 14 (`"rhmean_tmean"`) | Tmin = 18, Tmax = 25 °C, HRmax = 82, HRmin = 54 % | eₐ = 0,68·e°(21,5) = 1,7438 kPa (Ec. 19 de FAO-56: 1,7788) |
+| S3 | Ec. 48 + 56 | Greeley (40,41° N, 104,78° O), J = 183, 24 períodos horarios UTC | Σ Ra horaria = Ra diaria (Ec. 21), tolerancia relativa 1e-10; período de salida del sol = integral de −ωs a ω₂ |
+| S4 | Ec. 56 en día polar | 80° N, J = 172 | Igual al criterio de punto medio (sin límites) |
+| S5 | σ de las Ec. 17 y 44 | Rs = 20, Rso = 25, eₐ = 1,5, Tmax = 25, Tmin = 15 (diario); Rs = 1, Rso = 2, T = 20 (horario) | Rnl con 4,901·10⁻⁹ y 2,042·10⁻¹⁰; cociente ASCE/FAO = 4,901/4,903 |
+| S6 | Ec. 18/45 | Rs/Rso = 0,2; 0,4; 1,2; 0,8 | f = 0,055; 0,19; 1; 0,73; flag en el 1.º y el 3.º |
+| S7 | Ec. 46 + 62 (`"low_sun"`) | Serie sintética horaria (35,4° S) | Todo período con β ≤ 0,3 rad lleva el f del último período con β > 0,3 rad en las 24 h previas; `NA` antes del primero |
+| S8 | Día Rn > 0 (Tabla 2) | Rn = 0,5; 0; −0,1 (alfalfa) | G = 0,02; 0; −0,02; Cd = 0,25; 1,7; 1,7 |
+
+**Ejemplos publicados (Apéndice C, Greeley, Colorado): no reproducidos.**
+El informe remite a su Apéndice C para ejemplos diarios (Tabla C-3, 1–10 de
+julio de 2000) y horarios (Tabla C-4, 1–2 de julio de 2000), con las
+características de la estación y las constantes en las Tablas C-1 y C-2
+(lista de tablas, p. vi). La copia leída (70 páginas, §1.2) no contiene
+los apéndices, por lo que no hay valores publicados de ETos/ETrs con los
+que contrastar EarthFlux: `TODO`, al obtener los apéndices (tolerancia
+prevista: media unidad del último dígito impreso más la propagación del
+redondeo de los insumos impresos, como en §8.1). No se inventan valores.
 
 ### 8.3 Erratas detectadas en los ejemplos de FAO-56 (versión HTML)
 
@@ -1059,9 +1165,12 @@ reproduzcan:
   `numeric` (`ARCHITECTURE.md` §6.2).
 - **Verificación cruzada con `water`** (fuera del tarball,
   `VALIDATION_PLAN.md` §1.3): `hourlyET()`/`dailyET()` vs
-  `ef_station_ref_et()`; diferencias esperadas: recorte de ω
-  (WF-10), σ horaria 2,042 vs 2,043·10⁻¹⁰, límite inferior 0,3 de Rs/Rso,
-  interpolación lineal de insumos (O2 vs O3), definición del día.
+  `ef_station_ref_et()`; con `standard = "asce"` ya coinciden el recorte de
+  ω (Ec. 56), σ horaria 2,042·10⁻¹⁰ y el límite inferior 0,3 de Rs/Rso;
+  diferencias esperadas: interpolación lineal de insumos (O2 vs O3),
+  definición del día, Δ con 2503.
+- **Apéndice C de ASCE-EWRI (2005)** (Tablas C-3 y C-4, Greeley): `TODO`
+  hasta obtener los apéndices (§8.2).
 
 ---
 
@@ -1106,7 +1215,7 @@ No se afirma ningún dato sobre las redes; todo es `TODO`.
 | `soil-heat-flux.md` §3.3, D9 | G de referencia verificado para pasto (Ec. 42, 45, 46); 273,16 en FAO-56 | Referenciar este documento; mantener D9 fuera de las funciones de referencia |
 | `SCIENTIFIC_SPEC.md` §3 (fila ETr), §5, §8 | Estados y ecuaciones de §4–§5; QC de §3 | Actualizar al fusionar |
 | `SCIENTIFIC_SPEC.md` §3 (fila ET_inst) | FAO-56 Anexo 3 Ec. 3-1: λ = 2,501 − 2,361·10⁻³·T (Harrison, 1963); `water` usa 0,00236 | Insumo para la especificación de `metric-et.R` |
-| `REFERENCES.md` | FAO-56: ISBN 92-5-104219-5 (portada HTML); ASCE-EWRI (2005): DOI `10.1061/9780784408056` y editores (Crossref) | Completar citas; FAO-56 sin DOI identificado |
+| `REFERENCES.md` | FAO-56: ISBN 92-5-104219-5 (portada HTML); ASCE-EWRI (2005): DOI `10.1061/9780784408056` y editores (Crossref); informe final de enero de 2005 leído (§1.2, §13.5) | Completado en esta rama (entrada ASCE-EWRI 2005) |
 
 ---
 
@@ -1123,12 +1232,12 @@ No se afirma ningún dato sobre las redes; todo es `TODO`.
 | WF-07 | Prefijos de flags | `EF_WS_*` / nombres de `radiation-components.md` | Unificar antes de registrar | §3 |
 | WF-08 | Corrección por aridez (FAO-56 Anexo 6) en ETr para METRIC | No aplicar / aplicar como configuración explícita | No aplicar por defecto; evaluar como sensibilidad; requiere revisar qué hace Allen et al. (2007) | §3, §6, §9 |
 | WF-09 | ETr instantánea a la hora de paso | O1–O5 (§5.5) | O3 por defecto; O2/O4 en sensibilidad | §5.5, H1 |
-| WF-10 | Ra horaria en amanecer/atardecer y constante de longitud | Criterio de punto medio (FAO-56) / recorte de ω (ASCE, `CANDIDATA`); 0,06667 / 1/15 | 1/15 exacto; recorte solo si se verifica en ASCE-EWRI | §4.6 |
-| WF-11 | Definición del día de ETr24 y huecos | Día local estándar / UTC; tolerancia de huecos | Argumento explícito; día local estándar para ETr24 si se verifica en ASCE-EWRI; sin relleno | §5.6 |
+| WF-10 | Ra horaria en amanecer/atardecer y constante de longitud | Criterio de punto medio (FAO-56) / límites de ω (ASCE-EWRI Ec. 56, `VERIFICADA`); 0,06667 / 1/15 | **Resuelta en el código** como argumento `standard` de `ef_ra_period()` (punto medio con `"fao56"`, Ec. 56 con `"asce"`); 1/15 exacto | §4.6 |
+| WF-11 | Definición del día de ETr24 y huecos | Día local estándar / UTC; tolerancia de huecos | Argumento explícito; sin relleno. El texto principal de ASCE-EWRI no define el reloj del día (Apéndice C no leído): sigue abierta | §5.6 |
 | WF-12 | Rso de la referencia | Ec. 37 / Anexo 3 Ec. 3-14 o 3-17 | Ec. 37 (definición estándar); variantes solo para QC | §4.7 |
 | WF-13 | API de ET de referencia | Una función con `reference`, `timestep`, `standard` / alias `ef_etr_hourly()`, `ef_etr_daily()`; exportar componentes | Una función exportada; componentes internos | §4.8, §5.4 |
-| WF-14 | Constantes de la norma vs del paquete | Literales FAO-56/ASCE (σ, 273,16, 273) / constantes del paquete | Literales de la norma dentro de funciones de referencia | §4.8 |
-| WF-15 | Criterio día/noche para G y Cd horarios | Rn > 0 / Ra > 0 / ángulo solar | Pendiente de ASCE-EWRI; documentar en procedencia | §4.9, §5.3 |
+| WF-14 | Constantes de la norma vs del paquete | Literales FAO-56/ASCE (σ, 273,16, 273) / constantes del paquete | Literales de cada norma dentro de funciones de referencia (σ = 4,903·10⁻⁹ FAO-56; 4,901·10⁻⁹ y 2,042·10⁻¹⁰ ASCE-EWRI) | §4.8 |
+| WF-15 | Criterio día/noche para G y Cd horarios | Rn > 0 / Ra > 0 / ángulo solar | ASCE-EWRI: Rn > 0 (Tabla 2, p. 5; `"rn_positive"`, `VERIFICADA`; inconsistencia en Rn = 0, §4.9). FAO-56: sin umbral, sigue abierta (`"ra_positive"` o `"rn_positive"` explícitos) | §4.9, §5.3 |
 | WF-16 | ETr24: suma horaria vs ecuación diaria | D1 / D2 | D1 (coherencia con ETr_inst) | §5.6 |
 | 5.1 (SPEC) | Interpolar-calcular vs calcular-interpolar | A / B / C | Soportar A y C; decidir con validación cruzada | §6 |
 
@@ -1145,7 +1254,8 @@ No se afirma ningún dato sobre las redes; todo es `TODO`.
 | `zenodo.org` | Accesible; búsquedas sin copia del informe ASCE-EWRI |
 | `ascelibrary.org` | Bloqueado (403, informado de antemano); no se intentó |
 | `github.com` | Bloqueado (informado de antemano); no se intentó |
-| `www.kimberly.uidaho.edu`, `www.mesonet.org` (posibles copias del informe ASCE-EWRI) | Bloqueados por el proxy (sin conexión); no se reintentó |
+| `www.kimberly.uidaho.edu`, `www.mesonet.org` (posibles copias del informe ASCE-EWRI) | Bloqueados por el proxy (sin conexión); no se reintentó. 2026-11-04: `www.kimberly.uidaho.edu` (posible copia de los apéndices) sigue sin conexión |
+| Informe final ASCE-EWRI, enero de 2005 (PDF de 70 páginas y su texto) | 2026-11-04: entregado por el integrador; leído completo (i–vii, 1–59). Sin apéndices A–F |
 | `www.fao.org/3/...` (ruta antigua) | Redirige a `/4/`; la ruta `/3/x0490e/x0490e.pdf` sin conexión |
 | `openknowledge.fao.org` | Sin conexión; no se reintentó |
 | `export.arxiv.org` (API de búsqueda) | No resuelve; no se reintentó |
@@ -1166,15 +1276,15 @@ derivadas) y §5 (ET de referencia). El contrato de estaciones y el QC
 |---|---|---|---|
 | `R/forcing-derived.R` | `ef_psychrometric(pressure)` | Sí | `VERIFICADA` (Ec. 8) |
 | | `ef_es(air_temperature)`, `ef_es_slope(air_temperature)` | Sí | `VERIFICADA` (Ec. 11–13) |
-| | `ef_ea_dewpoint(dewpoint_temperature)`, `ef_ea_rh(air_temperature, relative_humidity)`, `ef_ea_tmin(tmin, k0)`, `ef_ea_daily(tmin, tmax = NULL, rh_max, rh_min = NULL, method)` (un solo `.Rd`, tema `ef_ea`) | Sí | `VERIFICADA` (Ec. 14, 17–19, 48, 54) |
+| | `ef_ea_dewpoint(dewpoint_temperature)`, `ef_ea_rh(air_temperature, relative_humidity)`, `ef_ea_tmin(tmin, k0)`, `ef_ea_daily(tmin, tmax = NULL, rh_max, rh_min = NULL, method)` (un solo `.Rd`, tema `ef_ea`; `method` ∈ `"rhmax_rhmin"`, `"rhmax"`, `"rhmin"`, `"rhmean"`, `"rhmean_tmean"`) | Sí | `VERIFICADA` (Ec. 14, 17–19, 48, 54; ASCE-EWRI Ec. 13–14) |
 | | `ef_dewpoint(vapour_pressure)` | Sí | `VERIFICADA` (Anexo 3 Ec. 3-11) |
 | | `ef_wind_2m(wind_speed, height)` | Sí | `VERIFICADA` (Ec. 47) |
-| | `ef_ra_daily(lat, doy)`, `ef_ra_period(lat, lon, doy, utc_mid, period_hours)` | Sí | `VERIFICADA` (Ec. 21–33) |
+| | `ef_ra_daily(lat, doy)`, `ef_ra_period(lat, lon, doy, utc_mid, period_hours, standard)` | Sí | `VERIFICADA` (Ec. 21–33; ASCE-EWRI Ec. 21–29, 48–61) |
 | | `ef_rso(extraterrestrial, elevation)` | Sí | `VERIFICADA` (Ec. 37) |
 | | `sat_vp()`, `ef_sunset_hour_angle()`, `ef_daylight_hours()` (Ec. 11, 25, 34) | No | `VERIFICADA` |
-| `R/reference-et.R` | `ef_ref_net_radiation(solar_radiation, clear_sky_radiation, vapour_pressure, air_temperature = NULL, tmax = NULL, tmin = NULL, timestep, cloudiness = NULL)` → `earthflux_reference_net_radiation` (`rn`, `rns`, `rnl`, `cloudiness`, `timestep`, `flags`, `provenance`) | Sí | `VERIFICADA` (Ec. 38–40 y paso horario) |
-| | `ef_ref_soil_heat_flux(net_radiation, reference, timestep, standard, daytime = NULL)` → `numeric` | Sí | Pasto FAO-56 `VERIFICADA`; ASCE `CANDIDATA` |
-| | `ef_ref_et(net_radiation, soil_heat_flux, air_temperature, wind_speed_2m, vapour_pressure_deficit, slope, psychrometric, reference, timestep, standard, daytime = NULL)` → `earthflux_reference_et` (`et_ref`, `reference`, `timestep`, `standard`, `flags`, `provenance`) | Sí | Pasto FAO-56 `VERIFICADA`; ASCE `CANDIDATA` |
+| `R/reference-et.R` | `ef_ref_net_radiation(solar_radiation, clear_sky_radiation, vapour_pressure, air_temperature = NULL, tmax = NULL, tmin = NULL, timestep, standard, cloudiness = NULL)` → `earthflux_reference_net_radiation` (`rn`, `rns`, `rnl`, `cloudiness`, `timestep`, `standard`, `flags`, `provenance`) | Sí | `VERIFICADA` (Ec. 38–40 y paso horario; ASCE-EWRI Ec. 15–18, 42–45) |
+| | `ef_ref_soil_heat_flux(net_radiation, reference, timestep, standard, daytime = NULL)` → `numeric` | Sí | `VERIFICADA` (FAO-56 Ec. 42, 45, 46; ASCE-EWRI Ec. 30, 65–66) |
+| | `ef_ref_et(net_radiation, soil_heat_flux, air_temperature, wind_speed_2m, vapour_pressure_deficit, slope, psychrometric, reference, timestep, standard, daytime = NULL)` → `earthflux_reference_et` (`et_ref`, `reference`, `timestep`, `standard`, `flags`, `provenance`) | Sí | `VERIFICADA` (FAO-56 Ec. 6, 53; ASCE-EWRI Ec. 1, Tabla 1) |
 | | `ef_reference_constants()` (tabla única de §5.3), `check_reference_setup()`, `check_daytime()`, `ef_diagnose_reference_et()`, `ef_flags_reference_et()` | No | – |
 | | `ef_ref_et_inst_interp(et_ref, period_mid, overpass)` (opción O3, §5.5) y `ef_ref_et_daily_sum(et_ref, day, periods_per_day)` (opción D1, §5.6) | No | `TODO` (WF-09, WF-11, WF-16 abiertas); usadas por `ef_station_ref_et()` |
 | `R/prep-weather.R` | `ef_station_ref_et(x, reference, timestep, standard, humidity, day_definition, day_completeness, daytime_rule = NULL, night_cloudiness = NULL, night_ratio = NULL, overpass = NULL, inst_method = NULL, dates = NULL, utc_offset = NULL)` → `earthflux_station_ref_et` | Sí | Física: la de las funciones llamadas; elecciones de orquestación en §13.4 |
@@ -1187,7 +1297,9 @@ errores, flags, O3 y D1). `test-weather.R` queda para el contrato y el QC
 
 ### 13.2 Decisiones tomadas al implementar
 
-1. **Constantes ASCE-EWRI como `CANDIDATA` por indicación del autor.** Las
+1. **Constantes ASCE-EWRI como `CANDIDATA` por indicación del autor**
+   (superado el 2026-11-04: verificadas contra el informe final, §13.5;
+   texto conservado como registro). Las
    constantes estandarizadas de ASCE-EWRI (2005) (referencia alta/alfalfa,
    Cn/Cd diarios y horarios, Cd día/noche, G/Rn 0,04/0,2 y 0,1/0,5) se
    implementaron como `CANDIDATA`, por indicación del autor de avanzar M3,
@@ -1256,16 +1368,18 @@ errores, flags, O3 y D1). `test-weather.R` queda para el contrato y el QC
 ### 13.3 Pendiente
 
 - Opciones O2, O4 y O5 de ETr_inst (§5.5), D2 a partir de registros
-  horarios (agregados diarios de datos horarios, §5.6), tolerancias de
-  huecos distintas de `"all_periods"` (WF-11) y arrastre nocturno por
-  ángulo solar β > 0,3 rad atribuido a ASCE-EWRI ("Eq. 46", `CANDIDATA`).
+  horarios (agregados diarios de datos horarios, §5.6) y tolerancias de
+  huecos distintas de `"all_periods"` (WF-11). (El arrastre por ángulo
+  solar β > 0,3 rad de ASCE-EWRI Ec. 46 se implementó: §13.5.)
 - Interfaz `ef_station_ref_et()` → `station_regionalization_input()` para
   `etr_inst`, `etr_24`, `wind_speed_2m` y `clearness` (§7.2).
 - Relación de Ångström (Ec. 35; usada solo en el test de V14) y Rs desde
   horas de sol; variantes de Rso (Anexo 3 Ec. 3-14 a 3-20, solo QC);
   psicrómetro (Ec. 15–16, caso V5 opcional); inversa exacta de la Ec. 11.
-- Caso de verificación de ETr alfalfa con los ejemplos de ASCE-EWRI (2005);
-  A1–A4 solo verifican aritmética.
+- Caso de verificación de ETr alfalfa con los ejemplos publicados de
+  ASCE-EWRI (2005), Apéndice C (Tablas C-3 y C-4): la copia leída no
+  incluye los apéndices (§8.2); A1–A4 y S1–S8 verifican aritmética y
+  reglas.
 - Test sobre `SpatRaster` (§8.4): `terra` no es dependencia de este módulo.
 
 ### 13.4 Orquestación por estación: `ef_station_ref_et()` (M3, 2026-11-04)
@@ -1274,7 +1388,7 @@ Rama `feature/m3-station-ref-et`. Archivo `R/prep-weather.R` (exportada,
 clase `earthflux_station_ref_et`), tests en
 `tests/testthat/test-station-ref-et.R`. Usa solo funciones existentes
 (§4–§5); no agrega ecuaciones. Decisiones tomadas al implementar
-(provisionales, para que el integrador las registre en `DECISIONS.md`):
+(provisionales, registradas en `DECISIONS.md` §1.3, M3-11 … M3-19):
 
 1. **Firma y decisiones abiertas como argumentos sin defecto.**
    `reference`, `timestep`, `standard`, `humidity`, `day_definition` (WF-11)
@@ -1313,11 +1427,13 @@ clase `earthflux_station_ref_et`), tests en
    califique (p. ej., la primera noche de la serie) → `NA` +
    `EF_INPUT_NA`. Se arrastra el término ya limitado (Rs/Rso ≤ 1).
    `"fixed"` = cociente constante `night_ratio` ∈ [0, 1] (FAO-56: 0,4–0,6
-   húmedo, 0,7–0,8 árido, 0,3 cubierto). El β > 0,3 rad de ASCE-EWRI
-   (`CANDIDATA`) no se implementó.
-6. **Día/noche (WF-15):** `"ra_positive"` (Ra del período > 0, criterio de
-   punto medio de FAO-56) o `"rn_positive"` (Rn > 0, atribuido a
-   ASCE-EWRI, `CANDIDATA`). Selecciona G/Rn y, con `"asce"`, Cd.
+   húmedo, 0,7–0,8 árido, 0,3 cubierto; con `"asce"`, ∈ [0,3; 1]).
+   `"low_sun"` = regla de ASCE-EWRI Ec. 46 (agregada el 2026-11-04,
+   §13.5).
+6. **Día/noche (WF-15):** `"ra_positive"` (Ra del período > 0; con
+   `"fao56"`, criterio de punto medio) o `"rn_positive"` (Rn > 0,
+   definición de ASCE-EWRI, Tabla 2, p. 5, `VERIFICADA`). Selecciona G/Rn
+   y, con `"asce"`, Cd.
 7. **ETr_inst (WF-09):** opciones `"O1"` (período que contiene la hora de
    paso, intervalo [inicio, fin)) y `"O3"` (interpolación lineal de la tasa
    entre puntos medios con `ef_ref_et_inst_interp()`; se inserta un nodo
@@ -1367,4 +1483,65 @@ enteros; requiere la tolerancia de QC-05d o una política de huecos (WF-11);
 (b) definición de Ra horaria en los períodos de salida y puesta del sol
 para ETr (WF-10): la orquestación usa el criterio de punto medio de
 `ef_ra_period()`, mientras que QC-05b usa la integral sobre la parte con
-sol.
+sol. (Actualización 2026-11-04: con `standard = "asce"` la orquestación
+usa los límites de la Ec. 56, que coinciden con la integral de QC-05b
+para períodos de 1 h; con `"fao56"`, el punto medio.)
+
+### 13.5 Verificación contra ASCE-EWRI (2005) (M3, 2026-11-04)
+
+Rama `feature/m3-station-ref-et`. Fuente: informe final del Task Committee
+on Standardization of Reference Evapotranspiration (EWRI-ASCE), enero de
+2005, 70 páginas (i–vii, 1–59), **sin apéndices** (§1.2). Cada ítem se
+contrastó en el texto; "=" significa la misma forma y los mismos
+coeficientes que la implementación.
+
+| Ítem | ASCE-EWRI (2005) | EarthFlux | Resultado |
+|---|---|---|---|
+| Ecuación estandarizada | Ec. 1 (p. 4): forma Cn/Cd, 0,408 en m² mm MJ⁻¹, T + 273, unidades por paso | `ef_ref_et()` | = `VERIFICADA` |
+| Cn, Cd | Tabla 1 (p. 5): 900/0,34 y 1600/0,38 (diario); 37/0,24 y 66/0,25 (día); 37/0,96 y 66/1,7 (noche) | `ef_reference_constants()` | = `VERIFICADA` (sin cambios de valor) |
+| K_time | Glosario (p. 56): 86 400 s d⁻¹ / 3600 s h⁻¹; absorbido en Cn | – | = (sin uso explícito) |
+| λ, 0,408 | p. 9 y 27: λ = 2,45 MJ kg⁻¹, ρ_w = 1 Mg m⁻³ | literal 0,408 | = `VERIFICADA` |
+| T diaria | Ec. 2 (p. 9): (Tmax + Tmin)/2 | orquestación diaria | = `VERIFICADA` |
+| P | Ec. 3 y 34 (p. 10, 28) | `ef_air_pressure()` | = `VERIFICADA` |
+| γ | Ec. 4 y 35: 0,000665·P | `ef_psychrometric()` | = `VERIFICADA` |
+| Δ | Ec. 5 y 36: 2503·exp(17,27T/(T + 237,3))/(T + 237,3)² | `ef_es_slope()` (4098·e°(T)/(T + 237,3)²) | Diferencia de redondeo 2,3·10⁻⁵ relativa; se mantiene la forma FAO-56 (§4.3) |
+| e°, es | Ec. 6–7 (diaria, Tmax/Tmin), Ec. 37 (horaria) | `ef_es()`, orquestación | = `VERIFICADA` |
+| eₐ | Tablas 3 y 4 (p. 12, 30); Ec. 8, 11, 12, 38, 41 = FAO-56 14, 17, 18, 54; Ec. 13 y 14 nuevas; FAO-56 Ec. 19 "no recomendada" (p. 17) | `ef_ea_*()` | = para las comunes; **agregadas** `"rhmin"` (Ec. 13) y `"rhmean_tmean"` (Ec. 14). Psicrómetro (Ec. 9–10, 39–40) y Tmin (Apéndice E) no implementados |
+| Rn, Rns, α | Ec. 15–16, 42–43: α = 0,23 ambas referencias, ambos pasos | `ef_ref_net_radiation()` | = `VERIFICADA` |
+| Rnl, σ | Ec. 17 (σ = 4,901·10⁻⁹ d⁻¹), Ec. 44 (2,042·10⁻¹⁰ h⁻¹), T_K = T + 273,16 | `ef_ref_net_radiation(standard)` | **Diferencia con FAO-56** (4,903·10⁻⁹): elección de norma con `standard` (argumento nuevo, sin defecto) |
+| f_cd, límites | Ec. 18 y 45: 0,3 ≤ Rs/Rso ≤ 1; 0,05 ≤ f_cd ≤ 1 | `standard = "asce"` | **Diferencia con FAO-56** (sin límite inferior): elección de norma. **Inconsistencia del informe**: 1,35·0,3 − 0,35 = 0,055 ≠ 0,05 (§4.8) |
+| f_cd con sol bajo y de noche | Ec. 46 (p. 35–36) con β de la Ec. 62 (p. 43): β < 0,3 rad → f_cd del último período con β > 0,3 rad; un valor por día | `night_cloudiness = "low_sun"` | **Agregada** (`VERIFICADA`). "~17°" (p. 35) vs "~15°" (p. 36) para 0,3 rad: errata |
+| Rso | Ec. 19 (diaria), Ec. 47 (horaria) | `ef_rso()` | = `VERIFICADA` ("Eq. 48" en p. 38: errata) |
+| Ra diaria | Ec. 21–24, 27–29 (Gsc = 4,92 MJ m⁻² h⁻¹, 24/π) | `ef_ra_daily()` (0,0820 MJ m⁻² min⁻¹, 24·60/π) | = `VERIFICADA` (Gsc idéntica) |
+| Ra horaria | Ec. 48, 50–55, 57–61; límites Ec. 56 | `ef_ra_period(standard)` | = salvo la salida/puesta: **diferencia con FAO-56** (punto medio), elección de norma con `standard` (argumento nuevo). Inconsistencia de la p. 41 (punto medio vs Ec. 56) y día polar: §4.6 |
+| Ángulo horario | Ec. 55: 0,06667, hora estándar local, Lz y Lm al oeste | `ef_hour_angle()` (UTC, 1/15 exacto) | Equivalente (WF-10) |
+| G | Ec. 30 (diario 0), 65a–b, 66a–b (p. 44) | `ef_ref_soil_heat_flux()` | = `VERIFICADA` |
+| Día/noche | Texto previo a la Tabla 1 y Tabla 2 (p. 5): día Rn > 0, noche Rn ≤ 0; p. 44 y glosario (p. 58): noche Rn < 0, día Rn ≥ 0 | `daytime_rule = "rn_positive"` (Rn > 0) | `VERIFICADA` con la Tabla 2; **inconsistencia del informe** en Rn = 0 documentada |
+| Viento a 2 m | Ec. 33 (p. 26) y 67 (p. 44; "Eq. 68" en el texto: errata) | `ef_wind_2m()` | = `VERIFICADA`. Viento sobre alfalfa: Apéndice B, no implementado |
+| Pasos sub-horarios | p. 27: tasa en mm h⁻¹ × fracción de hora | `period_hours` ∈ (0, 1] en Ra; la orquestación solo acepta 1 h | Coherente |
+| ET negativa | p. 45: conservar en general los negativos en la suma de 24 h | flag `EF_WS_ETR_NEGATIVE`, sin truncar | = `VERIFICADA` |
+| Día de la suma horaria | p. 45: suma "sobre el período de 24 horas" | D1, 24 períodos, día UTC o local estándar (WF-11) | Reloj del día **no definido** en el texto principal: WF-11 abierta |
+| Ejemplos | Apéndice C, Tablas C-1 a C-4 (Greeley, Colorado, julio de 2000) | – | **No reproducidos**: apéndices ausentes de la copia (§8.2) |
+
+Decisiones tomadas (para que el integrador las registre en `DECISIONS.md`):
+
+1. Las diferencias FAO-56 vs ASCE-EWRI de σ, límites de Rs/Rso y límites
+   de integración de Ra son **elecciones de norma** controladas por
+   `standard`, sin defecto, en `ef_ref_net_radiation()` y
+   `ef_ra_period()` (cambio de firma: ambos reciben `standard`).
+   `ef_station_ref_et()` pasa su `standard`. El comportamiento con
+   `"fao56"` y sus tests no cambian.
+2. Δ: se mantiene la Ec. 13 de FAO-56 también para `"asce"` (diferencia
+   de redondeo documentada, sin argumento nuevo).
+3. Las reglas propias de ASCE-EWRI se agregan como opciones explícitas:
+   `night_cloudiness = "low_sun"` (Ec. 46), `ef_ea_daily(method =
+   "rhmin" | "rhmean_tmean")` (Ec. 13–14); `daytime_rule = "rn_positive"`
+   pasa a `VERIFICADA` para ASCE.
+4. `EF_WS_RS_RSO_LIMITED` cubre ambos límites del cociente (> 1 en
+   ambas normas; < 0,3 en ASCE-EWRI); descripción del registro
+   actualizada, sin código nuevo.
+5. Con `standard = "asce"` y `night_cloudiness = "fixed"`, `night_ratio`
+   debe estar en [0,3; 1] (ASCE-EWRI p. 36).
+
+No se encontró ningún error de implementación (bug) en la cadena: todas
+las diferencias son de norma o reglas ausentes, agregadas como opciones.
