@@ -12,6 +12,7 @@
 # Classes created so far:
 #   - earthflux_flag (R/diagnostics.R).
 # Planned classes (created with their first constructor, not before):
+#   - earthflux_soil_heat_flux : soil heat flux dispatcher output (ef_g());
 #   - earthflux_anchors        : anchor pixel selection and its audit trail;
 #   - earthflux_h_calibration  : dT calibration of the sensible heat flux;
 #   - earthflux_result         : all intermediate layers + diagnostics +
