@@ -16,11 +16,11 @@ chain
 **MODIS + METRIC + GWR → ETa**
 
 This vignette describes the planned workflow. EarthFlux is in early
-development: the first METRIC component,
-[`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md),
-is available, and the remaining components are being specified. No
-result shown in the package documentation should be interpreted as
-validated.
+development: the METRIC core physics (net radiation, soil heat flux,
+anchor pixels, sensible and latent heat flux, instantaneous and daily
+ET) is available as numeric functions, mostly as candidate formulations,
+and the remaining modules are being specified. No result shown in the
+package documentation should be interpreted as validated.
 
 ## Conceptual workflow
 

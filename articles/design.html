@@ -140,39 +140,54 @@ against the primary source.</td>
 <td><code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code></td>
 <td>Surface net radiation</td>
 <td>
-<strong>Available</strong>; equation candidate (corroborated)</td>
+<strong>Available</strong>; candidate (corroborated)</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_solar_geometry.html">ef_solar_geometry()</a></code></td>
 <td>Solar angles and incidence on sloping terrain</td>
-<td>Planned; candidate</td>
+<td>
+<strong>Available</strong>; calendar terms and hour angle verified
+(FAO-56), incidence on a tilted plane candidate</td>
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/ef_air_pressure.html">ef_air_pressure()</a></code></td>
 <td>Atmospheric pressure from elevation</td>
-<td>Planned; equation verified (FAO-56, Eq. 7)</td>
+<td>
+<strong>Available</strong>; verified (FAO-56, Eq. 7)</td>
 </tr>
 <tr class="even">
-<td><code><a href="../reference/ef_tau_sw.html">ef_tau_sw()</a></code></td>
-<td>Broadband shortwave transmissivity with beam/diffuse partition</td>
-<td>Planned; candidate</td>
+<td>
+<code><a href="../reference/ef_tau_sw.html">ef_tau_sw()</a></code>, <code><a href="../reference/ef_tau_sw.html">ef_tau_sw_allen()</a></code>,
+<code><a href="../reference/ef_tau_sw.html">ef_tau_sw_elevation()</a></code>
+</td>
+<td>Broadband shortwave transmissivity, with beam/diffuse partition
+(<code>"allen"</code>) or from elevation</td>
+<td>
+<strong>Available</strong>; candidate</td>
 </tr>
 <tr class="odd">
-<td><code><a href="../reference/ef_rs_in.html">ef_rs_in()</a></code></td>
-<td>Incoming shortwave radiation, including slope and aspect</td>
-<td>Planned; candidate</td>
+<td>
+<code><a href="../reference/ef_rs_in.html">ef_rs_in()</a></code>, <code><a href="../reference/ef_rs_in.html">ef_rs_in_modelled()</a></code>,
+<code><a href="../reference/ef_rs_in.html">ef_rs_in_measured()</a></code>
+</td>
+<td>Incoming shortwave radiation on the pixel plane (slope and aspect),
+clear-sky or measured</td>
+<td>
+<strong>Available</strong>; candidate</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_atm_emissivity.html">ef_atm_emissivity()</a></code></td>
 <td>Clear-sky atmospheric emissivity</td>
-<td>Planned; candidate</td>
+<td>
+<strong>Available</strong>; candidate</td>
 </tr>
 <tr class="odd">
 <td>
 <code><a href="../reference/ef_rl_in.html">ef_rl_in()</a></code>, <code><a href="../reference/ef_rl_out.html">ef_rl_out()</a></code>
 </td>
 <td>Incoming and emitted longwave radiation</td>
-<td>Planned; candidate</td>
+<td>
+<strong>Available</strong>; candidate</td>
 </tr>
 </tbody>
 </table>
@@ -194,9 +209,13 @@ against the primary source.</td>
 <th>Status</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td><code><a href="../reference/ef_g.html">ef_g()</a></code></td>
+<td>
+<code><a href="../reference/ef_g.html">ef_g()</a></code>, <code><a href="../reference/ef_g.html">ef_g_bastiaanssen()</a></code>,
+<code><a href="../reference/ef_g.html">ef_g_tasumi()</a></code>
+</td>
 <td>Soil heat flux with an explicit method</td>
-<td>Planned; candidate</td>
+<td>
+<strong>Available</strong>; candidate</td>
 </tr></tbody>
 </table>
 <p>Specification: <a href="https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/soil-heat-flux.md" class="external-link">soil-heat-flux.md</a>.</p>
@@ -217,20 +236,32 @@ against the primary source.</td>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code><a href="../reference/ef_anchor_criteria.html">ef_anchor_criteria()</a></code></td>
-<td>Explicit, documented selection criteria</td>
-<td>Planned</td>
+<td>
+<code><a href="../reference/ef_anchor_criteria.html">ef_anchor_criteria()</a></code>, <code><a href="../reference/ef_anchor_rule.html">ef_anchor_rule()</a></code>,
+<code><a href="../reference/ef_homogeneity.html">ef_homogeneity()</a></code>, <code><a href="../reference/ef_anchor_pick.html">ef_anchor_pick()</a></code>
+</td>
+<td>Explicit, documented selection criteria (no default thresholds)</td>
+<td>
+<strong>Available</strong>; every value is a user choice</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_select_anchors.html">ef_select_anchors()</a></code></td>
 <td>Automatic, deterministic and auditable selection of hot and cold
 pixels</td>
-<td>Planned; candidate</td>
+<td>
+<strong>Available</strong>; candidate</td>
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/ef_anchors.html">ef_anchors()</a></code></td>
 <td>Anchors chosen explicitly by the user</td>
-<td>Planned</td>
+<td><strong>Available</strong></td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/ef_anchor_conditions.html">ef_anchor_conditions()</a></code></td>
+<td>Boundary conditions (target LE and H) at the anchors</td>
+<td>
+<strong>Available</strong>; candidate (unit conversion
+verified)</td>
 </tr>
 </tbody>
 </table>
@@ -252,33 +283,62 @@ pixels</td>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code><a href="../reference/ef_zom.html">ef_zom()</a></code></td>
+<td>
+<code><a href="../reference/ef_zom.html">ef_zom()</a></code>, <code><a href="../reference/ef_zom.html">ef_zom_lai()</a></code>,
+<code><a href="../reference/ef_zom.html">ef_zom_ndvi()</a></code>, <code><a href="../reference/ef_zom.html">ef_zom_perrier()</a></code>,
+<code><a href="../reference/ef_zom.html">ef_zom_height()</a></code>
+</td>
 <td>Momentum roughness length</td>
-<td>Planned; candidate</td>
+<td>
+<strong>Available</strong>; candidate (<code><a href="../reference/ef_zom.html">ef_zom_height()</a></code>
+verified as FAO-56 content)</td>
 </tr>
 <tr class="even">
+<td><code><a href="../reference/ef_blending_wind.html">ef_blending_wind()</a></code></td>
+<td>Wind speed at the blending height</td>
+<td>
+<strong>Available</strong>; candidate</td>
+</tr>
+<tr class="odd">
 <td>
 <code><a href="../reference/ef_ustar.html">ef_ustar()</a></code>, <code><a href="../reference/ef_rah.html">ef_rah()</a></code>
 </td>
 <td>Friction velocity and aerodynamic resistance with stability
 correction</td>
-<td>Planned; candidate</td>
-</tr>
-<tr class="odd">
-<td><code><a href="../reference/ef_air_density.html">ef_air_density()</a></code></td>
-<td>Air density</td>
-<td>Planned; candidate</td>
+<td>
+<strong>Available</strong>; candidate (neutral profile verified as
+FAO-56 content)</td>
 </tr>
 <tr class="even">
-<td><code><a href="../reference/ef_dt_coef.html">ef_dt_coef()</a></code></td>
-<td>Calibration of the near-surface temperature difference from the
-anchors</td>
-<td>Planned; candidate</td>
+<td><code><a href="../reference/ef_air_density.html">ef_air_density()</a></code></td>
+<td>Air density</td>
+<td>
+<strong>Available</strong>; FAO-56 form verified, use in METRIC
+candidate</td>
 </tr>
 <tr class="odd">
+<td>
+<code><a href="../reference/ef_ts_datum.html">ef_ts_datum()</a></code>, <code><a href="../reference/ef_dt_coef.html">ef_dt_coef()</a></code>
+</td>
+<td>Datum surface temperature and coefficients of dT from the
+anchors</td>
+<td>
+<strong>Available</strong>; candidate</td>
+</tr>
+<tr class="even">
 <td><code><a href="../reference/ef_sensible_heat.html">ef_sensible_heat()</a></code></td>
 <td>Sensible heat flux</td>
-<td>Planned; candidate</td>
+<td>
+<strong>Available</strong>; candidate</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/ef_h_control.html">ef_h_control()</a></code>, <code><a href="../reference/ef_calibrate_h.html">ef_calibrate_h()</a></code>
+</td>
+<td>Iterative calibration of dT and H with stability correction</td>
+<td>
+<strong>Available</strong>; candidate (open decision SH-11 is an
+explicit argument)</td>
 </tr>
 </tbody>
 </table>
@@ -300,29 +360,45 @@ anchors</td>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td><code><a href="../reference/ef_lambda.html">ef_lambda()</a></code></td>
+<td>Latent heat of vaporization with an explicit method</td>
+<td>
+<strong>Available</strong>; verified (FAO-56)</td>
+</tr>
+<tr class="even">
 <td><code><a href="../reference/ef_latent_heat.html">ef_latent_heat()</a></code></td>
 <td>Latent heat flux as the energy balance residual</td>
-<td>Planned; balance verified (FAO-56)</td>
-</tr>
-<tr class="even">
-<td><code><a href="../reference/ef_et_inst.html">ef_et_inst()</a></code></td>
-<td>Instantaneous ET from latent heat flux</td>
-<td>Planned; unit conversion verified (FAO-56)</td>
+<td>
+<strong>Available</strong>; balance verified (FAO-56)</td>
 </tr>
 <tr class="odd">
+<td><code><a href="../reference/ef_et_inst.html">ef_et_inst()</a></code></td>
+<td>Instantaneous ET from latent heat flux</td>
 <td>
-<code><a href="../reference/ef_etrf.html">ef_etrf()</a></code>, <code><a href="../reference/ef_et_daily.html">ef_et_daily()</a></code>
-</td>
-<td>Reference ET fraction and daily actual ET</td>
-<td>Planned; candidate</td>
+<strong>Available</strong>; unit conversion verified (FAO-56)</td>
 </tr>
 <tr class="even">
+<td>
+<code><a href="../reference/ef_etrf.html">ef_etrf()</a></code>, <code><a href="../reference/ef_et_daily.html">ef_et_daily()</a></code>,
+<code><a href="../reference/ef_et_daily.html">ef_et_daily_etrf()</a></code>
+</td>
+<td>Reference ET fraction and daily actual ET</td>
+<td>
+<strong>Available</strong>; candidate (corroborated)</td>
+</tr>
+<tr class="odd">
 <td><code>ef_et_period()</code></td>
 <td>ET between image dates</td>
 <td>Planned (later)</td>
 </tr>
 </tbody>
 </table>
+<p>Dispatchers (<code><a href="../reference/ef_tau_sw.html">ef_tau_sw()</a></code>, <code><a href="../reference/ef_rs_in.html">ef_rs_in()</a></code>,
+<code><a href="../reference/ef_g.html">ef_g()</a></code>, <code><a href="../reference/ef_zom.html">ef_zom()</a></code>, <code><a href="../reference/ef_et_daily.html">ef_et_daily()</a></code>)
+take the method as their last argument, with no default, and return a
+classed list with the values, the method, diagnostic flags and
+provenance; the method functions return plain numeric values. An
+end-to-end test runs a synthetic scene through the whole chain.</p>
 <p>Specification: <a href="https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/evapotranspiration.md" class="external-link">evapotranspiration.md</a>.</p>
 </div>
 <div class="section level3">

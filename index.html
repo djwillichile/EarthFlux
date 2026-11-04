@@ -80,8 +80,8 @@
 </h2>
 <p>EarthFlux is in <strong>active early development</strong> and is <strong>not on CRAN</strong>.</p>
 <ul>
-<li>The first METRIC component is available: <code><a href="reference/ef_net_radiation.html">ef_net_radiation()</a></code>, the instantaneous surface net radiation. Its equation form is corroborated by secondary sources; verification against the primary reference (Allen et al., 2007) is pending.</li>
-<li>Soil heat flux, anchor pixel selection, sensible heat flux, the evapotranspiration chain, the spatial forcing module (GWR) and MODIS preprocessing are being specified before implementation.</li>
+<li>The METRIC core physics is available as numeric functions, from net radiation (<code><a href="reference/ef_net_radiation.html">ef_net_radiation()</a></code> and its radiation components) through soil heat flux (<code><a href="reference/ef_g.html">ef_g()</a></code>), anchor pixel selection (<code><a href="reference/ef_select_anchors.html">ef_select_anchors()</a></code>), the iterative calibration of the sensible heat flux (<code><a href="reference/ef_calibrate_h.html">ef_calibrate_h()</a></code>) and the latent heat flux, to daily actual evapotranspiration (<code><a href="reference/ef_et_daily.html">ef_et_daily()</a></code>). Most formulations are candidates: corroborated by secondary sources, with verification against the primary reference (Allen et al., 2007) pending.</li>
+<li>The spatial forcing module (GWR), MODIS preprocessing and the <code>earthflux()</code> workflow are being specified before implementation.</li>
 <li>Equations are implemented only after their reference, units, assumptions, domain of validity and a verifiable test case are documented.</li>
 <li>No validation results exist yet. Do not use EarthFlux for operational or decision-making purposes.</li>
 </ul>

@@ -104,7 +104,8 @@ elements:
 
   A list with the method, the method function, the verification status,
   the references, the Kelvin offset, the coefficients of the equation,
-  the inputs used and the EarthFlux version.
+  the inputs used, the flag codes evaluated (`flags_evaluated`) and the
+  EarthFlux version.
 
 ## Details
 

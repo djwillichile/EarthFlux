@@ -35,14 +35,22 @@ this package.
 
 EarthFlux is in **active early development** and is **not on CRAN**.
 
-- The first METRIC component is available:
-  [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md),
-  the instantaneous surface net radiation. Its equation form is
-  corroborated by secondary sources; verification against the primary
-  reference (Allen et al., 2007) is pending.
-- Soil heat flux, anchor pixel selection, sensible heat flux, the
-  evapotranspiration chain, the spatial forcing module (GWR) and MODIS
-  preprocessing are being specified before implementation.
+- The METRIC core physics is available as numeric functions, from net
+  radiation
+  ([`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md)
+  and its radiation components) through soil heat flux
+  ([`ef_g()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)),
+  anchor pixel selection
+  ([`ef_select_anchors()`](https://djwillichile.github.io/EarthFlux/reference/ef_select_anchors.md)),
+  the iterative calibration of the sensible heat flux
+  ([`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md))
+  and the latent heat flux, to daily actual evapotranspiration
+  ([`ef_et_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md)).
+  Most formulations are candidates: corroborated by secondary sources,
+  with verification against the primary reference (Allen et al., 2007)
+  pending.
+- The spatial forcing module (GWR), MODIS preprocessing and the
+  `earthflux()` workflow are being specified before implementation.
 - Equations are implemented only after their reference, units,
   assumptions, domain of validity and a verifiable test case are
   documented.

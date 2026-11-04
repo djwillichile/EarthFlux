@@ -105,13 +105,14 @@ An object of class `earthflux_h_calibration`, a list with:
 - `control`, `datum` (`lapse_rate`, `datum_elevation`), `constants`
   (`von_karman`, `gravity`, `cp` and their status) and `provenance`;
 
-- `flags`: list of `earthflux_flag` records: the object flags
-  `EF_H_CALIBRATION_NOT_CONVERGED` and `EF_H_DT_SLOPE_NONPOSITIVE` (both
-  `critical`), and, with `pixels`, the cell flags `EF_H_USTAR_INVALID`,
-  `EF_H_PIXEL_NOT_CONVERGED`, `EF_H_DT_EXTRAPOLATED_HOT`,
-  `EF_H_DT_EXTRAPOLATED_COLD`, `EF_H_NEGATIVE` and (with `rn` and `g`)
-  `EF_H_GT_AVAILABLE`. Every evaluated code is present, with
-  `n_flagged = 0` when absent.
+- `flags`: list of `earthflux_flag` records, one per code that holds
+  somewhere: the object flags `EF_H_CALIBRATION_NOT_CONVERGED` and
+  `EF_H_DT_SLOPE_NONPOSITIVE` (both `critical`), and, with `pixels`, the
+  cell flags `EF_H_USTAR_INVALID`, `EF_H_PIXEL_NOT_CONVERGED`,
+  `EF_H_DT_EXTRAPOLATED_HOT`, `EF_H_DT_EXTRAPOLATED_COLD`,
+  `EF_H_NEGATIVE` and (with `rn` and `g`) `EF_H_GT_AVAILABLE`. A code
+  evaluated but absent has no record; the codes evaluated are listed in
+  `provenance$flags_evaluated`.
 
 ## Details
 

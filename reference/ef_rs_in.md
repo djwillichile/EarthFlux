@@ -7,8 +7,9 @@ radiation and the radiation reflected by the surrounding ground. The
 `total` element is the `rs_in` argument of
 [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md).
 
-`ef_rs_in()` is the dispatcher of the family; it only forwards its
-arguments to the method chosen with `method`, which has no default:
+`ef_rs_in()` is the dispatcher of the family: it checks `method` (no
+default), forwards the other arguments to the method function, builds
+the diagnostic flags and records the provenance. The methods are:
 
 - `ef_rs_in_modelled()` (`method = "modelled"`): clear-sky radiation
   from the extraterrestrial irradiance and the partitioned
@@ -118,7 +119,14 @@ A plain list (no class) of numeric vectors with the common length and
   the clear-sky radiation on the horizontal, \\\tau_d / (\tau_b +
   \tau_d)\\ \[-\].
 
-`ef_rs_in()` returns exactly the value of the selected method.
+`ef_rs_in()` returns a list of class `earthflux_incoming_shortwave` with
+the same elements for both methods (type-stable): `total`, `beam`,
+`diffuse` and `reflected` (identical to those of the method function),
+`diffuse_fraction` (`NULL` for `"measured"`, where it is an input),
+`method`, `flags` (one record per code that holds somewhere:
+`EF_INPUT_NA` and `EF_RAD_SELF_SHADED`; see Details) and `provenance`
+(method, method function, verification status, inputs used, flag codes
+evaluated in `flags_evaluated`, EarthFlux version).
 
 ## Details
 
@@ -146,8 +154,15 @@ d_r \max(\cos\theta\_{rel}, 0)\\. On flat terrain (\\s = 0\\,
 A plane facing away from the sun (\\\cos\theta\_{rel} \le 0\\) receives
 no direct beam: \\\max(\cos\theta\_{rel}, 0)\\ is the physical
 definition of the beam irradiance on that plane, not a correction, and
-is reported by the diagnostics of the stage (`EF_RAD_SELF_SHADED`). The
+is reported by `ef_rs_in()` with the flag `EF_RAD_SELF_SHADED`. The
 resulting radiation is never truncated.
+
+**Diagnostics** (`ef_rs_in()` only; the method functions return values
+without flags). `EF_INPUT_NA`: a required input is missing at the
+position; `EF_RAD_SELF_SHADED`: the sun is above the horizon but the
+pixel plane faces away from it. A record is present only for a code that
+holds somewhere; the codes evaluated are in
+`provenance$flags_evaluated`.
 
 Unlike a common simplified form, \\G\_{sc} d_r \cos\theta\_{rel}
 \tau\_{sw}\\, the diffuse component is not projected as if it were
@@ -166,9 +181,12 @@ arguments are recycled, matrix or array arguments must share their
 sun below the horizon) or infinite values raise `earthflux_domain_error`
 (also `earthflux_input_error`). `ground_albedo = NULL` with a positive
 slope raises `earthflux_missing_input`. A missing or unknown `method`
-raises `earthflux_missing_input` or `earthflux_unknown_method`. Missing
-values propagate arithmetically to the outputs that depend on them, and
-always to `total`.
+raises `earthflux_missing_input` or `earthflux_unknown_method`; an
+argument required by the chosen method but not supplied to the
+dispatcher raises `earthflux_missing_input`, and one the method does not
+accept raises `earthflux_input_error`. Missing values propagate
+arithmetically to the outputs that depend on them, and always to
+`total`.
 
 ## Verification status
 
@@ -223,6 +241,8 @@ rs <- ef_rs_in(
 )
 rs$total
 #> [1] 1001.852 1016.459
+rs$provenance$flags_evaluated
+#> [1] "EF_INPUT_NA"        "EF_RAD_SELF_SHADED"
 
 # Measured global radiation on the horizontal, projected to the slopes
 ef_rs_in_measured(

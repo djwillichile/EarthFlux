@@ -3,8 +3,9 @@
 Computes the surface roughness length for momentum transport \\z\_{om}\\
 \[m\], which controls the friction velocity and the aerodynamic
 resistance to heat transport of the METRIC energy balance. `ef_zom()` is
-a thin dispatcher: it checks `method` and forwards the arguments to one
-of the method functions, which can also be called directly.
+the dispatcher of the family: it checks `method` (no default), forwards
+the arguments to one of the method functions (which can also be called
+directly), builds the diagnostic flags and records the provenance.
 
 - `ef_zom_lai()`: linear function of the leaf area index, for short
   (agricultural) crops.
@@ -24,14 +25,14 @@ of the method functions, which can also be called directly.
 
 ``` r
 ef_zom(
-  method,
   lai = NULL,
   ndvi = NULL,
   albedo = NULL,
   coef_1 = NULL,
   coef_2 = NULL,
   f_lai = NULL,
-  height = NULL
+  height = NULL,
+  method
 )
 
 ef_zom_lai(lai)
@@ -44,12 +45,6 @@ ef_zom_height(height)
 ```
 
 ## Arguments
-
-- method:
-
-  Character. The formulation, with no default (the choice is a
-  scientific decision; decision SH-01 is open). One of `"lai"`,
-  `"ndvi"`, `"perrier"` or `"height"`. Matched exactly.
 
 - lai:
 
@@ -81,14 +76,28 @@ ef_zom_height(height)
   Numeric. Canopy (vegetation) height \[m\]. Must be finite and `>= 0`.
   Used by `"perrier"` and `"height"`.
 
+- method:
+
+  Character. The formulation, with no default (the choice is a
+  scientific decision; decision SH-01 is open). One of `"lai"`,
+  `"ndvi"`, `"perrier"` or `"height"`. Matched exactly.
+
 ## Value
 
-A numeric vector of momentum roughness length \\z\_{om}\\ \[m\] with the
-common length of the inputs, keeping their `dim` if they are matrices or
-arrays. Zero values (e.g. `lai = 0` or `height = 0`) are returned
-unchanged: no minimum roughness is applied (see Details) and such values
-are rejected by
+The method functions return a numeric vector of momentum roughness
+length \\z\_{om}\\ \[m\] with the common length of the inputs, keeping
+their `dim` if they are matrices or arrays. Zero values (e.g. `lai = 0`
+or `height = 0`) are returned unchanged: no minimum roughness is applied
+(see Details) and such values are rejected by
 [`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md).
+
+`ef_zom()` returns a list of class `earthflux_roughness_length` with
+elements `zom` (identical to the method function), `method`, `flags`
+(one record per code that holds somewhere: `EF_INPUT_NA`, a required
+input is missing; no `EF_H_` code applies to \\z\_{om}\\ while no
+minimum roughness or terrain factor is implemented) and `provenance`
+(method, method function, verification status, inputs used, flag codes
+evaluated in `flags_evaluated`, EarthFlux version).
 
 ## Details
 
@@ -174,7 +183,7 @@ Other aerodynamics and sensible heat functions:
 
 ``` r
 # Short crops: z_om = 0.018 * LAI (m)
-ef_zom(lai = c(0.5, 2, 4), method = "lai")
+ef_zom(lai = c(0.5, 2, 4), method = "lai")$zom
 #> [1] 0.009 0.036 0.072
 ef_zom_lai(c(0.5, 2, 4))
 #> [1] 0.009 0.036 0.072

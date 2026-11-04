@@ -4,8 +4,9 @@
 tilted) at the overpass time, separating the direct beam, the diffuse sky
 radiation and the radiation reflected by the surrounding ground. The
 total element is the rs_in argument of ef_net_radiation().
-ef_rs_in() is the dispatcher of the family; it only forwards its
-arguments to the method chosen with method, which has no default:
+ef_rs_in() is the dispatcher of the family: it checks method (no
+default), forwards the other arguments to the method function, builds the
+diagnostic flags and records the provenance. The methods are:
 ef_rs_in_modelled() (method = &quot;modelled&quot;): clear-sky radiation from
 the extraterrestrial irradiance and the partitioned transmissivity of
 ef_tau_sw_allen();
@@ -20,8 +21,9 @@ the same way."><meta property="og:description" content="Computes the instantaneo
 tilted) at the overpass time, separating the direct beam, the diffuse sky
 radiation and the radiation reflected by the surrounding ground. The
 total element is the rs_in argument of ef_net_radiation().
-ef_rs_in() is the dispatcher of the family; it only forwards its
-arguments to the method chosen with method, which has no default:
+ef_rs_in() is the dispatcher of the family: it checks method (no
+default), forwards the other arguments to the method function, builds the
+diagnostic flags and records the provenance. The methods are:
 ef_rs_in_modelled() (method = &quot;modelled&quot;): clear-sky radiation from
 the extraterrestrial irradiance and the partitioned transmissivity of
 ef_tau_sw_allen();
@@ -71,8 +73,9 @@ the same way."><meta property="og:image" content="https://djwillichile.github.io
 tilted) at the overpass time, separating the direct beam, the diffuse sky
 radiation and the radiation reflected by the surrounding ground. The
 <code>total</code> element is the <code>rs_in</code> argument of <code><a href="ef_net_radiation.html">ef_net_radiation()</a></code>.</p>
-<p><code>ef_rs_in()</code> is the dispatcher of the family; it only forwards its
-arguments to the method chosen with <code>method</code>, which has no default:</p><ul><li><p><code>ef_rs_in_modelled()</code> (<code>method = "modelled"</code>): clear-sky radiation from
+<p><code>ef_rs_in()</code> is the dispatcher of the family: it checks <code>method</code> (no
+default), forwards the other arguments to the method function, builds the
+diagnostic flags and records the provenance. The methods are:</p><ul><li><p><code>ef_rs_in_modelled()</code> (<code>method = "modelled"</code>): clear-sky radiation from
 the extraterrestrial irradiance and the partitioned transmissivity of
 <code><a href="ef_tau_sw.html">ef_tau_sw_allen()</a></code>;</p></li>
 <li><p><code>ef_rs_in_measured()</code> (<code>method = "measured"</code>): measured (or
@@ -177,7 +180,14 @@ ground-reflected components [W m-2];</p></li>
 <li><p><code>diffuse_fraction</code> (<code>ef_rs_in_modelled()</code> only): diffuse fraction of
 the clear-sky radiation on the horizontal,
 \(\tau_d / (\tau_b + \tau_d)\) [-].</p></li>
-</ul><p><code>ef_rs_in()</code> returns exactly the value of the selected method.</p>
+</ul><p><code>ef_rs_in()</code> returns a list of class <code>earthflux_incoming_shortwave</code>
+with the same elements for both methods (type-stable): <code>total</code>, <code>beam</code>,
+<code>diffuse</code> and <code>reflected</code> (identical to those of the method function),
+<code>diffuse_fraction</code> (<code>NULL</code> for <code>"measured"</code>, where it is an input),
+<code>method</code>, <code>flags</code> (one record per code that holds somewhere:
+<code>EF_INPUT_NA</code> and <code>EF_RAD_SELF_SHADED</code>; see Details) and <code>provenance</code>
+(method, method function, verification status, inputs used, flag codes
+evaluated in <code>flags_evaluated</code>, EarthFlux version).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -195,8 +205,14 @@ and \(R_{s\downarrow} = R_{b,s} + R_{d,s} + R_{r,s}\). In the modelled path \(R_
 \cos\theta_h\)) the modelled radiation
 reduces to \(G_{sc} d_r \cos\theta_h \tau_{sw}\).</p>
 <p>A plane facing away from the sun (\(\cos\theta_{rel} \le 0\)) receives no direct beam: \(\max(\cos\theta_{rel}, 0)\) is the physical definition of the beam irradiance on that plane, not
-a correction, and is reported by the diagnostics of the stage
-(<code>EF_RAD_SELF_SHADED</code>). The resulting radiation is never truncated.</p>
+a correction, and is reported by <code>ef_rs_in()</code> with the flag
+<code>EF_RAD_SELF_SHADED</code>. The resulting radiation is never truncated.</p>
+<p><strong>Diagnostics</strong> (<code>ef_rs_in()</code> only; the method functions return values
+without flags). <code>EF_INPUT_NA</code>: a required input is missing at the
+position; <code>EF_RAD_SELF_SHADED</code>: the sun is above the horizon but the
+pixel plane faces away from it. A record is present only for a code that
+holds somewhere; the codes evaluated are in
+<code>provenance$flags_evaluated</code>.</p>
 <p>Unlike a common simplified form, \(G_{sc} d_r \cos\theta_{rel}
 \tau_{sw}\), the diffuse component is
 not projected as if it were direct beam; on slopes the two forms differ by
@@ -212,9 +228,11 @@ Values outside the domains above (including <code>cos_zenith &lt;= 0</code>, sun
 the horizon) or infinite values raise <code>earthflux_domain_error</code> (also
 <code>earthflux_input_error</code>). <code>ground_albedo = NULL</code> with a positive slope
 raises <code>earthflux_missing_input</code>. A missing or unknown <code>method</code> raises
-<code>earthflux_missing_input</code> or <code>earthflux_unknown_method</code>. Missing values
-propagate arithmetically to the outputs that depend on them, and always to
-<code>total</code>.</p>
+<code>earthflux_missing_input</code> or <code>earthflux_unknown_method</code>; an argument
+required by the chosen method but not supplied to the dispatcher raises
+<code>earthflux_missing_input</code>, and one the method does not accept raises
+<code>earthflux_input_error</code>. Missing values propagate arithmetically to the
+outputs that depend on them, and always to <code>total</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="verification-status">Verification status<a class="anchor" aria-label="anchor" href="#verification-status"></a></h2>
@@ -269,6 +287,8 @@ balance for mapping evapotranspiration with internalized calibration
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">rs</span><span class="op">$</span><span class="va">total</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1001.852 1016.459</span>
+<span class="r-in"><span><span class="va">rs</span><span class="op">$</span><span class="va">provenance</span><span class="op">$</span><span class="va">flags_evaluated</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "EF_INPUT_NA"        "EF_RAD_SELF_SHADED"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Measured global radiation on the horizontal, projected to the slopes</span></span></span>
 <span class="r-in"><span><span class="fu">ef_rs_in_measured</span><span class="op">(</span></span></span>

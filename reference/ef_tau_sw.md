@@ -3,8 +3,9 @@
 Computes the broadband transmissivity of a clear-sky atmosphere to
 shortwave radiation on a horizontal surface, \\\tau\_{sw}\\: the
 fraction of the extraterrestrial irradiance that reaches the surface.
-`ef_tau_sw()` is the dispatcher of the family; it only forwards its
-arguments to the method chosen with `method`, which has no default:
+`ef_tau_sw()` is the dispatcher of the family: it checks `method` (no
+default), forwards the other arguments to the method function, builds
+the diagnostic flags and records the provenance. The methods are:
 
 - `ef_tau_sw_allen()` (`method = "allen"`): partitioned form, function
   of the solar zenith angle, the air pressure, the vapour pressure and
@@ -77,8 +78,25 @@ ef_tau_sw_elevation(elevation)
 - `ef_tau_sw_elevation()`: a numeric vector of \\\tau\_{sw}\\ \[-\] with
   the length and `dim` of `elevation`.
 
-- `ef_tau_sw()`: exactly the value of the selected method (the two
-  methods return different types).
+- `ef_tau_sw()`: a list of class `earthflux_sw_transmissivity` with the
+  same elements for both methods (type-stable):
+
+  - `total`: \\\tau\_{sw}\\ \[-\], identical to `$total` of
+    `ef_tau_sw_allen()` or to the value of `ef_tau_sw_elevation()`;
+
+  - `beam`, `diffuse`: \\\tau_b\\ and \\\tau_d\\ \[-\] when the method
+    partitions the transmissivity (`"allen"`), and `NULL` otherwise
+    (`"elevation"`); the names are always present;
+
+  - `method`: the method name;
+
+  - `flags`: list of diagnostic flag records, one per code that holds
+    somewhere: `EF_INPUT_NA` (a required input is missing; no `EF_RAD_`
+    code applies to the transmissivity);
+
+  - `provenance`: list with the method, the method function, its
+    verification status, the inputs used, the flag codes evaluated
+    (`flags_evaluated`) and the EarthFlux version.
 
 ## Details
 
@@ -113,8 +131,11 @@ arguments are recycled, matrix or array arguments must share their
 where the partitioned form is undefined: the sun is below the horizon)
 or infinite values raise `earthflux_domain_error` (also
 `earthflux_input_error`); they are never corrected. A missing or unknown
-`method` raises `earthflux_missing_input` or `earthflux_unknown_method`.
-Missing values propagate to every output.
+`method` raises `earthflux_missing_input` or `earthflux_unknown_method`;
+an argument required by the chosen method but not supplied to the
+dispatcher raises `earthflux_missing_input`, and one the method does not
+accept raises `earthflux_input_error`. Missing values propagate to every
+output; the dispatcher reports them with the flag `EF_INPUT_NA`.
 
 ## Verification status
 
@@ -165,12 +186,17 @@ tau <- ef_tau_sw(
 )
 tau$total
 #> [1] 0.7431396
+tau$beam
+#> [1] 0.6142806
 
-# Same call through the method function
+# Same values through the method function
 ef_tau_sw_allen(cos(35 * pi / 180), ef_air_pressure(0), 1.5, 1)$beam
 #> [1] 0.6142806
 
-# Elevation form (total only)
-ef_tau_sw(elevation = c(0, 1000, 3000), method = "elevation")
+# Elevation form (total only; `beam` and `diffuse` are NULL)
+tau_z <- ef_tau_sw(elevation = c(0, 1000, 3000), method = "elevation")
+tau_z$total
 #> [1] 0.75 0.77 0.81
+is.null(tau_z$beam)
+#> [1] TRUE
 ```

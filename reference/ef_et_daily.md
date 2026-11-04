@@ -3,9 +3,10 @@
 Extrapolates the instantaneous estimate at the satellite overpass time
 to the daily actual evapotranspiration \\ETa\_{24}\\ of the image day.
 
-`ef_et_daily()` is the dispatcher of the family: it checks `method` and
-forwards the arguments to the function of that method, without any
-computation of its own. The methods are:
+`ef_et_daily()` is the dispatcher of the family: it checks `method` (no
+default), forwards the arguments to the function of that method, builds
+the diagnostic flags and records the provenance, without any computation
+of its own. The methods are:
 
 - `"etrf"`: `ef_et_daily_etrf()`, the reference evapotranspiration
   fraction (ETrF) of the overpass time multiplied by the daily reference
@@ -54,8 +55,15 @@ ef_et_daily_etrf(etrf, etr_24, reference)
 A numeric vector of daily actual evapotranspiration \\ETa\_{24}\\ \[mm
 d-1\] with the common length of the inputs. If the inputs include
 matrices or arrays (all with the same `dim`), the result keeps that
-`dim`. Negative values are returned unchanged. `ef_et_daily()` returns
-exactly the value of the method function.
+`dim`. Negative values are returned unchanged (`ef_et_daily_etrf()`).
+
+`ef_et_daily()` returns a list of class `earthflux_daily_et` with
+elements `eta_24` (identical to the value of the method function),
+`method`, `reference`, `flags` (one record per code that holds
+somewhere: `EF_INPUT_NA`, a required input is missing, and
+`EF_ET_NEGATIVE`, negative daily ET) and `provenance` (method, method
+function, verification status, reference, inputs used, flag codes
+evaluated in `flags_evaluated`, EarthFlux version).
 
 ## Details
 
@@ -86,8 +94,8 @@ form and source are pending verification.
 Negative values of `etrf` give a negative daily evapotranspiration,
 returned unchanged and without a warning (never set to zero). With
 `etr_24 = 0` the result is zero whatever the sign of `etrf`. The
-diagnostic flag `EF_ET_NEGATIVE` is assembled by the orchestration layer
-on this layer.
+diagnostic flag `EF_ET_NEGATIVE` is set by `ef_et_daily()` on this
+layer.
 
 Missing values (`NA`, `NaN`) in any input propagate to the corresponding
 output element, without errors or warnings. Arguments must be numeric
@@ -129,19 +137,22 @@ Other latent heat and evapotranspiration functions:
 
 ``` r
 # ETrF 0.9 and 8 mm d-1 of alfalfa reference ET: 7.2 mm d-1
-ef_et_daily(etrf = 0.9, etr_24 = 8, reference = "alfalfa",
-            method = "etrf")
-#> [1] 7.2
+eta <- ef_et_daily(etrf = c(0.9, -0.05), etr_24 = 8,
+                   reference = "alfalfa", method = "etrf")
+eta$eta_24
+#> [1]  7.2 -0.4
+vapply(eta$flags, `[[`, character(1), "code")
+#> [1] "EF_ET_NEGATIVE"
 
-# Same result calling the method directly
-ef_et_daily_etrf(etrf = 0.9, etr_24 = 8, reference = "alfalfa")
-#> [1] 7.2
+# Same values calling the method directly
+ef_et_daily_etrf(etrf = c(0.9, -0.05), etr_24 = 8, reference = "alfalfa")
+#> [1]  7.2 -0.4
 
 # Full chain from the energy balance (one pixel)
 lambda <- ef_lambda(method = "constant")
 le <- ef_latent_heat(rn = 600, g = 60, h = 50)
 et_inst <- ef_et_inst(le, lambda)
 etrf <- ef_etrf(et_inst, etr_inst = 0.80, reference = "alfalfa")
-ef_et_daily(etrf, etr_24 = 8, reference = "alfalfa", method = "etrf")
+ef_et_daily(etrf, etr_24 = 8, reference = "alfalfa", method = "etrf")$eta_24
 #> [1] 7.2
 ```

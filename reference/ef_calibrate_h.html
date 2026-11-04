@@ -130,13 +130,14 @@ and <code>rah</code>;</p></li>
 <code>iterations</code> (integer), each with the shape of the pixel inputs;</p></li>
 <li><p><code>control</code>, <code>datum</code> (<code>lapse_rate</code>, <code>datum_elevation</code>), <code>constants</code>
 (<code>von_karman</code>, <code>gravity</code>, <code>cp</code> and their status) and <code>provenance</code>;</p></li>
-<li><p><code>flags</code>: list of <code>earthflux_flag</code> records: the object flags
-<code>EF_H_CALIBRATION_NOT_CONVERGED</code> and <code>EF_H_DT_SLOPE_NONPOSITIVE</code>
-(both <code>critical</code>), and, with <code>pixels</code>, the cell flags
-<code>EF_H_USTAR_INVALID</code>, <code>EF_H_PIXEL_NOT_CONVERGED</code>,
+<li><p><code>flags</code>: list of <code>earthflux_flag</code> records, one per code that holds
+somewhere: the object flags <code>EF_H_CALIBRATION_NOT_CONVERGED</code> and
+<code>EF_H_DT_SLOPE_NONPOSITIVE</code> (both <code>critical</code>), and, with <code>pixels</code>,
+the cell flags <code>EF_H_USTAR_INVALID</code>, <code>EF_H_PIXEL_NOT_CONVERGED</code>,
 <code>EF_H_DT_EXTRAPOLATED_HOT</code>, <code>EF_H_DT_EXTRAPOLATED_COLD</code>,
-<code>EF_H_NEGATIVE</code> and (with <code>rn</code> and <code>g</code>) <code>EF_H_GT_AVAILABLE</code>. Every
-evaluated code is present, with <code>n_flagged = 0</code> when absent.</p></li>
+<code>EF_H_NEGATIVE</code> and (with <code>rn</code> and <code>g</code>) <code>EF_H_GT_AVAILABLE</code>. A code
+evaluated but absent has no record; the codes evaluated are listed
+in <code>provenance$flags_evaluated</code>.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

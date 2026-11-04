@@ -163,10 +163,12 @@ An object of class `c("earthflux_anchors", "list")` with elements:
   `search` (domains and where each class was found), `funnel` (cells
   left after each filter, per class, search stage and criteria step),
   `relaxation` (relaxation steps used), `flags` (list of
-  `earthflux_flag`), `method` (`"criteria"`), `origin` (`"automatic"`),
-  `grid`, `conditions` (`NULL` until
+  `earthflux_flag`, one per code that holds), `method` (`"criteria"`),
+  `origin` (`"automatic"`), `grid`, `conditions` (`NULL` until
   [`ef_anchor_conditions()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_conditions.md)),
-  `note` and `provenance`.
+  `note` and `provenance` (including `flags`, the flag provenance of
+  dev/specs/flags.md section 6.7, and `flags_evaluated`, the codes
+  evaluated).
 
 ## Details
 
