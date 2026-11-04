@@ -164,6 +164,23 @@ inputs of the net radiation.
   [`ef_g_tasumi()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)
   : Soil heat flux
 
+### Anchor pixels
+
+- [`ef_select_anchors()`](https://djwillichile.github.io/EarthFlux/reference/ef_select_anchors.md)
+  : Automatic selection of the cold and hot anchor pixels
+- [`ef_anchors()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchors.md)
+  : Explicit (user-supplied) anchor pixels
+- [`ef_anchor_criteria()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_criteria.md)
+  : Selection criteria of anchor pixels
+- [`ef_anchor_rule()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_rule.md)
+  : Rule of an anchor pixel selection criterion
+- [`ef_homogeneity()`](https://djwillichile.github.io/EarthFlux/reference/ef_homogeneity.md)
+  : Homogeneity criterion of anchor pixels
+- [`ef_anchor_pick()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_pick.md)
+  : Final pick of anchor pixels among the candidates
+- [`ef_anchor_conditions()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_conditions.md)
+  : Boundary conditions at the anchor pixels
+
 ### Aerodynamics and sensible heat
 
 Momentum roughness, wind at the blending height, friction velocity,

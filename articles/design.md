@@ -70,9 +70,9 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| `ef_anchor_criteria()` | Explicit, documented selection criteria | Planned |
-| `ef_select_anchors()` | Automatic, deterministic and auditable selection of hot and cold pixels | Planned; candidate |
-| `ef_anchors()` | Anchors chosen explicitly by the user | Planned |
+| [`ef_anchor_criteria()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_criteria.md) | Explicit, documented selection criteria | Planned |
+| [`ef_select_anchors()`](https://djwillichile.github.io/EarthFlux/reference/ef_select_anchors.md) | Automatic, deterministic and auditable selection of hot and cold pixels | Planned; candidate |
+| [`ef_anchors()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchors.md) | Anchors chosen explicitly by the user | Planned |
 
 Specification:
 [anchor-pixels.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/anchor-pixels.md).

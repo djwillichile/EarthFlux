@@ -11,6 +11,11 @@
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/EarthFlux-package.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_air_density.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_anchor_conditions.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_anchor_criteria.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_anchor_pick.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_anchor_rule.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_anchors.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_atm_emissivity.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_blending_wind.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.html</loc></url>
@@ -20,6 +25,7 @@
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_etrf.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_g.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_h_control.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_homogeneity.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_lambda.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.html</loc></url>
@@ -27,6 +33,7 @@
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_rl_in.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_rl_out.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.html</loc></url>
+<url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_select_anchors.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_sensible_heat.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_solar_geometry.html</loc></url>
 <url><loc>https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.html</loc></url>
