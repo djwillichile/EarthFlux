@@ -369,18 +369,6 @@ primary references; no scientific result has been validated yet.
   `EF_GWR_GLOBAL_PREFERRED`, `EF_GWR_SURFACE_COVARIATE`,
   `EF_GWR_SINGLE_STATION` (object) and `EF_GWR_STATION_EXCLUDED` (record).
 
-### Surface state (MODIS, in progress)
-
-* Internal MODIS preparation steps (not exported yet): conversion of the
-  MOD11A1/MYD11A1 day view time (local solar time) to UTC day of year and
-  hour per pixel, with the equation of time left to the solar geometry so
-  that it is applied exactly once; blue-, white- and black-sky albedo from
-  MCD43A3 with an explicit diffuse fraction; broadband emissivity from LAI;
-  NDVI from surface reflectance; matching of 8- and 16-day composites to
-  the LST date with the lag in days; and integer-factor aggregation to the
-  working grid with an explicit minimum valid fraction. Options whose
-  formulas are not verified in the specification raise
-  `earthflux_method_not_implemented`.
 ### Surface state (MODIS)
 
 * Internal MODIS product table: one table holds the scale, offset and its
@@ -418,6 +406,17 @@ primary references; no scientific result has been validated yet.
   (causes of `NA`), `EF_SURF_QA_OTHER`, `EF_SURF_CLOUD_ADJACENT`,
   `EF_SURF_SNOW`, `EF_SURF_WATER`, `EF_SURF_SALT_PAN`, `EF_SURF_LAI_BACKUP`
   and `EF_SURF_ALBEDO_MAGNITUDE` (values kept).
+
+* Internal MODIS preparation steps (not exported yet): conversion of the
+  MOD11A1/MYD11A1 day view time (local solar time) to UTC day of year and
+  hour per pixel, with the equation of time left to the solar geometry so
+  that it is applied exactly once; blue-, white- and black-sky albedo from
+  MCD43A3 with an explicit diffuse fraction; broadband emissivity from LAI;
+  NDVI from surface reflectance; matching of 8- and 16-day composites to
+  the LST date with the lag in days; and integer-factor aggregation to the
+  working grid with an explicit minimum valid fraction. Options whose
+  formulas are not verified in the specification raise
+  `earthflux_method_not_implemented`.
 
 ## Changes
 
