@@ -40,6 +40,8 @@ Useful links:
 
 - <https://github.com/djwillichile/EarthFlux>
 
+- <https://djwillichile.github.io/EarthFlux/>
+
 - Report bugs at <https://github.com/djwillichile/EarthFlux/issues>
 
 ## Author
@@ -47,3 +49,8 @@ Useful links:
 **Maintainer**: Guillermo Servando Fuentes-Jaque
 <gfuentesj@correo.uss.cl>
 ([ORCID](https://orcid.org/0000-0002-7864-4899)) \[copyright holder\]
+
+Authors:
+
+- Guillermo Servando Fuentes-Jaque <gfuentesj@correo.uss.cl>
+  ([ORCID](https://orcid.org/0000-0002-7864-4899)) \[copyright holder\]
