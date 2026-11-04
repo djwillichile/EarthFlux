@@ -4,7 +4,9 @@
 #   core consumes (dev/ARCHITECTURE.md section 4, surface contract): `lst`
 #   [K], `albedo`, `ndvi`, `lai` [m2 m-2], `emissivity`, `overpass_time`
 #   (numeric `doy` and `utc_hour` plus the POSIXct instant), `qa` (flag word
-#   per layer and flag records) and the provenance. Together with
+#   per layer and flag records) and the provenance; plus the band 31/32
+#   emissivities of MOD11A1/MYD11A1 (`band_emissivity`), carried for the
+#   split-window broadband emissivity (E1), which is not implemented. Together with
 #   R/io-modis.R, R/modis-qa.R and R/prep-modis.R, the only place that knows
 #   MODIS conventions (dev/specs/modis-products.md section 1; ARCHITECTURE
 #   principle 2): everything below is built from the product table, the QA
@@ -36,14 +38,36 @@
 #
 # Flags (dev/specs/flags.md 4.2, 6.3): one integer flag word per output
 #   layer (`flags_lst`, `flags_overpass_time`, `flags_albedo`, `flags_ndvi`,
-#   `flags_lai`, `flags_emissivity`) with the bits of the SURF stage, and one
-#   `earthflux_flag` record per code flagged in a layer, with the field
+#   `flags_lai`, `flags_emissivity` and, with the band emissivities,
+#   `flags_emis_31`, `flags_emis_32`) with the bits of the SURF stage, and
+#   one `earthflux_flag` record per code flagged in a layer, with the field
 #   `target` naming the layer. Raised here: EF_SURF_OVERPASS_MISSING (view
-#   time missing where the LST is valid) and EF_SURF_ALBEDO_GT1 (broadband
-#   albedo above 1, class III, critical); the other codes come from the
+#   time missing where the LST is valid), EF_SURF_ALBEDO_GT1 (broadband
+#   albedo above 1, class III, critical) and EF_SURF_LAI_ASSIGNED in the
+#   emissivity computed from an assigned LAI; the other codes come from the
 #   converters of R/modis-qa.R.
 
 # Product roles -----------------------------------------------------------------
+
+#' Band emissivity layers carried with the LST
+#'
+#' The band 31 and 32 emissivities of MOD11A1/MYD11A1 (`Emis_31`,
+#' `Emis_32`; product table, dev/specs/modis-products.md 5.1 b,
+#' `VERIFICADA`), the inputs of the split-window broadband emissivity
+#' (option E1 of section 8.2, not implemented). They are carried in the
+#' surface state (`band_emissivity`) so that E1 can be added without
+#' changing the reading; no broadband value is computed from them.
+#'
+#' @param lst_product Character. LST product of the options.
+#' @return Character vector of SDS names (empty for other products).
+#' @noRd
+modis_band_emissivity_layers <- function(lst_product) {
+  if (lst_product %in% c("MOD11A1", "MYD11A1")) {
+    c("Emis_31", "Emis_32")
+  } else {
+    character(0)
+  }
+}
 
 #' Products accepted for the LST of the surface state
 #'
@@ -99,7 +123,7 @@ modis_surface_layers <- function(role, options) {
   switch(role,
     lst = list(product = options$lst_product,
                required = c("LST_Day_1km", "QC_Day", "Day_view_time"),
-               optional = character(0)),
+               optional = modis_band_emissivity_layers(options$lst_product)),
     albedo = list(
       product = "MCD43A3",
       required = c(
@@ -324,6 +348,8 @@ modis_read_source_layers <- function(src, layers, aoi, call) {
 #' Collects and checks the choices of `modis_surface_state()`. Every
 #' scientific choice is explicit and has no default (T-15; decisions MP-01,
 #' MP-03, MP-04, MP-05, MP-07, MP-08 and MP-09 are open or provisional).
+#' The only argument with a default, `lai_nonveg = NULL`, keeps the
+#' documented behaviour (no value is assigned; MP-06).
 #'
 #' @param lst_product Character. `"MOD11A1"` (Terra) or `"MYD11A1"` (Aqua)
 #'   (MP-01, MP-02). `"MOD21A1D"`/`"MYD21A1D"` raise
@@ -351,14 +377,25 @@ modis_read_source_layers <- function(src, layers, aoi, call) {
 #'   sub-cells (threshold `TODO`, no default).
 #' @param qa_policy,mask_codes QA policy (`"flag"` or `"mask"`) and, with
 #'   `"mask"`, the codes to mask (MP-09; see `modis_qa_flags()`).
+#' @param lai_nonveg Explicit LAI \[m2 m-2\] of the non-vegetated MCD15A2H
+#'   classes 249-254 (MP-06; A-M4-6). `NULL` (default) keeps them `NA`
+#'   with `EF_SURF_LAI_NONVEG`, so the E3 emissivity (and Rn, G downstream)
+#'   is `NA` there; a single number (e.g. `0`) is assigned to the six
+#'   classes; a vector named by class code (e.g. `c("253" = 0, "250" =
+#'   0)`) assigns per class and leaves the others `NA`. Assigned cells
+#'   carry `EF_SURF_LAI_ASSIGNED` in `flags_lai` and `flags_emissivity`;
+#'   the value is recorded in the provenance (`methods$lai_nonveg`,
+#'   `CANDIDATA`). See `modis_lai()`.
 #' @return A specification object of class
-#'   `earthflux_modis_surface_options` (a list of the checked choices).
+#'   `earthflux_modis_surface_options` (a list of the checked choices;
+#'   `lai_nonveg` as a vector named by class code, or `NULL`).
 #' @noRd
 modis_surface_options <- function(lst_product, albedo_method,
                                   diffuse_fraction = NULL, emissivity_method,
                                   ndvi_source, composite_method,
                                   resampling_method, min_valid_fraction,
-                                  qa_policy, mask_codes = NULL) {
+                                  qa_policy, mask_codes = NULL,
+                                  lai_nonveg = NULL) {
   call <- sys.call()
   m <- modis_lst_products()
   modis_check_method(lst_product, m$available, m$planned, call = call,
@@ -470,6 +507,7 @@ modis_surface_options <- function(lst_product, albedo_method,
   check_scalar(min_valid_fraction, "min_valid_fraction", lower = 0,
                upper = 1, lower_inclusive = FALSE, call = call)
   mask_codes <- check_qa_policy(qa_policy, mask_codes, call = call)
+  lai_nonveg <- check_lai_nonveg(lai_nonveg, call = call)
 
   structure(
     list(lst_product = lst_product, albedo_method = albedo_method,
@@ -478,7 +516,7 @@ modis_surface_options <- function(lst_product, albedo_method,
          composite_method = composite_method,
          resampling_method = resampling_method,
          min_valid_fraction = min_valid_fraction, qa_policy = qa_policy,
-         mask_codes = mask_codes),
+         mask_codes = mask_codes, lai_nonveg = lai_nonveg),
     class = "earthflux_modis_surface_options"
   )
 }
@@ -582,7 +620,12 @@ surface_flags <- function(masks, target) {
 #' steps of R/io-modis.R, R/modis-qa.R and R/prep-modis.R:
 #'
 #' 1. LST (MOD11A1/MYD11A1 `LST_Day_1km`, `QC_Day`) read on the area of
-#'    interest; its 1 km sinusoidal grid is the working grid (MP-08).
+#'    interest; its 1 km sinusoidal grid is the working grid (MP-08). The
+#'    band 31/32 emissivities (`Emis_31`, `Emis_32`,
+#'    `modis_band_emissivity()`) are read with it (always from an HDF4
+#'    file; from converted files when declared) and carried as
+#'    `band_emissivity`: no broadband value is computed from them (E1 is
+#'    not implemented, dev/specs/modis-products.md 8.2).
 #' 2. Overpass instant from `Day_view_time` and the longitude of the cell
 #'    centres (`modis_overpass_time()`, local mean solar time -> UTC, no
 #'    equation of time).
@@ -593,7 +636,9 @@ surface_flags <- function(masks, target) {
 #' 4. NDVI: MOD13A2 with `VI Quality` (and the composite day of the year
 #'    for the per-pixel lag).
 #' 5. LAI: MCD15A2H with `FparLai_QC` (and `FparExtra_QC` when available),
-#'    non-vegetated classes `NA` (MP-06), aggregated to the working grid.
+#'    non-vegetated classes `NA` or, with the option `lai_nonveg`, the
+#'    explicit LAI assigned to them at 500 m (MP-06, `modis_lai()`),
+#'    aggregated to the working grid.
 #' 6. Broadband emissivity from the LAI on the working grid
 #'    (`modis_broadband_emissivity()`).
 #' 7. Composites matched to the LST date (`modis_match_composite()`).
@@ -610,6 +655,10 @@ surface_flags <- function(masks, target) {
 #'   `new_ef_object()`), a list:
 #'   * `lst` \[K\], `albedo` \[-\], `ndvi` \[-\], `lai` \[m2 m-2\],
 #'     `emissivity` \[-\]: single-layer `SpatRaster`s on the working grid;
+#'   * `band_emissivity`: two-layer `SpatRaster` (`emis_31`, `emis_32`)
+#'     \[-\] of the MOD11A1/MYD11A1 band emissivities on the working grid,
+#'     or `NULL` when a converted LST source does not declare them (not an
+#'     input of the METRIC core: reserved for option E1);
 #'   * `overpass_time`: list with `doy` and `utc_hour` (single-layer
 #'     `SpatRaster`s; day of year of the UTC date and UTC hour, the time
 #'     inputs of the core) and `time` (`POSIXct`, UTC, terra cell order);
@@ -617,7 +666,8 @@ surface_flags <- function(masks, target) {
 #'     centres (WGS84);
 #'   * `qa`: list with `flag_word` (`SpatRaster`, one integer layer per
 #'     output: `flags_lst`, `flags_overpass_time`, `flags_albedo`,
-#'     `flags_ndvi`, `flags_lai`, `flags_emissivity`), `flag_bits` (bit,
+#'     `flags_ndvi`, `flags_lai`, `flags_emissivity` and, with
+#'     `band_emissivity`, `flags_emis_31`, `flags_emis_32`), `flag_bits` (bit,
 #'     code, severity, description of the INPUT/SURF cell codes, a view of
 #'     the registry), `valid_fraction` (`SpatRaster` of the fraction of
 #'     valid sub-cells of each aggregated input), `composite` (per product:
@@ -639,8 +689,12 @@ surface_flags <- function(masks, target) {
 #' valid and the view time is missing (fill, out of range or missing DN),
 #' and `EF_SURF_ALBEDO_GT1` (class III, `critical`) in `flags_albedo` where
 #' the broadband albedo is above 1 (value kept). The emissivity carries
-#' `EF_INPUT_NA` where the LAI is `NA`. For aggregated layers, the masks of
-#' the sub-cells are combined as described in `surface_to_grid()`.
+#' `EF_INPUT_NA` where the LAI is `NA` and `EF_SURF_LAI_ASSIGNED` where it
+#' is computed from an assigned LAI (option `lai_nonveg`; the LAI carries it
+#' where any of its sub-cells was assigned). The band emissivities carry
+#' the codes of their scaling (`EF_INPUT_NA`, `EF_SURF_FILL`,
+#' `EF_SURF_DN_OUT_OF_RANGE`). For aggregated layers, the masks of the
+#' sub-cells are combined as described in `surface_to_grid()`.
 #'
 #' **Handing the state to the METRIC core** (M5): see
 #' dev/ARCHITECTURE.md section 4 and `surface_exclusion()`.
@@ -654,9 +708,11 @@ surface_flags <- function(masks, target) {
 #' @section Verification status:
 #' Assembly only; the status of each step is that of the function used:
 #' product facts `VERIFICADA` (product table), view time conversion,
-#' broadband albedo and emissivity `CANDIDATA`, NDVI `VERIFICADA` (product
-#' layer), temporal matching and aggregation provisional decisions (MP-07,
-#' MP-08). Not contrasted with a real granule yet (A-M4-3).
+#' broadband albedo and emissivity `CANDIDATA`, the assigned LAI of the
+#' non-vegetated classes `CANDIDATA` (MP-06), NDVI and band emissivities
+#' `VERIFICADA` (product layers), temporal matching and aggregation
+#' provisional decisions (MP-07, MP-08). Not contrasted with a real granule
+#' yet (A-M4-3).
 #' @noRd
 modis_surface_state <- function(files, aoi, options) {
   call <- sys.call()
@@ -719,6 +775,16 @@ modis_surface_state <- function(files, aoi, options) {
   ov_masks <- modis_order_masks(ov_masks)
   names(ov$doy) <- "doy"
   names(ov$utc_hour) <- "utc_hour"
+
+  # Band emissivities (inputs of option E1, carried only) -----------------
+  band_emis <- list()
+  for (layer in intersect(layers$lst$optional, names(dn))) {
+    be <- modis_band_emissivity(dn[[layer]], src$product,
+                                sub("^Emis_", "", layer),
+                                collection = src$collection)
+    rows <- c(rows, list(be$source))
+    band_emis[[tolower(layer)]] <- be
+  }
 
   # Inputs on other grids are read on the extent of the working grid.
   grid_ext <- terra::ext(template)
@@ -802,7 +868,8 @@ modis_surface_state <- function(files, aoi, options) {
   dn <- modis_read_source_layers(src, layers$lai, grid_ext, call)
   extra <- if ("FparExtra_QC" %in% names(dn)) dn[["FparExtra_QC"]] else NULL
   la <- modis_lai(dn[["Lai_500m"]], dn[["FparLai_QC"]], extra, qa_policy,
-                  mask_codes, collection = src$collection)
+                  mask_codes, collection = src$collection,
+                  lai_nonveg = options$lai_nonveg)
   rows <- c(rows, list(la$source))
   n_masked$lai <- la$policy$n_masked
   lai_g <- surface_to_grid(la, dn, template,
@@ -815,11 +882,17 @@ modis_surface_state <- function(files, aoi, options) {
                                            method = options$emissivity_method)
   names(emissivity) <- "emissivity"
   emis_masks <- list(EF_INPUT_NA = is.na(lai_g$value))
+  if (!is.null(lai_g$masks$EF_SURF_LAI_ASSIGNED)) {
+    emis_masks$EF_SURF_LAI_ASSIGNED <- lai_g$masks$EF_SURF_LAI_ASSIGNED &
+      !is.na(lai_g$value)
+  }
+  emis_masks <- modis_order_masks(emis_masks)
 
   # Flags -------------------------------------------------------------------
-  masks <- list(lst = lst$masks, overpass_time = ov_masks,
-                albedo = alb_masks, ndvi = ndvi_g$masks, lai = lai_g$masks,
-                emissivity = emis_masks)
+  masks <- c(list(lst = lst$masks, overpass_time = ov_masks,
+                  albedo = alb_masks, ndvi = ndvi_g$masks, lai = lai_g$masks,
+                  emissivity = emis_masks),
+             lapply(band_emis, `[[`, "masks"))
   words <- terra::rast(lapply(names(masks), function(l) {
     modis_as_raster(modis_flag_word(masks[[l]]), template, paste0("flags_", l))
   }))
@@ -867,6 +940,11 @@ modis_surface_state <- function(files, aoi, options) {
   albedo_r <- alb$albedo
   names(albedo_r) <- "albedo"
   ndvi_r <- modis_as_raster(ndvi_g$value, template, "ndvi")
+  band_emis_r <- if (length(band_emis) > 0L) {
+    terra::rast(lapply(names(band_emis), function(l) {
+      modis_as_raster(band_emis[[l]]$value, template, l)
+    }))
+  }
 
   new_ef_object(
     list(
@@ -875,6 +953,7 @@ modis_surface_state <- function(files, aoi, options) {
       ndvi = ndvi_r,
       lai = lai_r,
       emissivity = emissivity,
+      band_emissivity = band_emis_r,
       overpass_time = list(doy = ov$doy, utc_hour = ov$utc_hour,
                            time = ov$time),
       lonlat = lonlat,
@@ -886,7 +965,8 @@ modis_surface_state <- function(files, aoi, options) {
         policy = policy
       ),
       units = c(lst = "K", albedo = "1", ndvi = "1", lai = "m2 m-2",
-                emissivity = "1", doy = "1", utc_hour = "h",
+                emissivity = "1", emis_31 = "1", emis_32 = "1",
+                doy = "1", utc_hour = "h",
                 time = "POSIXct (UTC)", lon = "degree", lat = "degree"),
       flags = flags,
       provenance = provenance
@@ -909,7 +989,8 @@ modis_surface_state <- function(files, aoi, options) {
 #'   converted layers), `input` (`"hdf4"`, `"converted_dn"`,
 #'   `"converted_scaled"`), `production` (UTC, from the HDF4 name),
 #'   `doi`, `doi_status`), `products`, `collection`, `methods` (the options,
-#'   with the diffuse fraction recorded as a number or as `"SpatRaster"`),
+#'   with the diffuse fraction recorded as a number or as `"SpatRaster"` and
+#'   `lai_nonveg` as the LAI assigned per class code or `NULL`),
 #'   `status` (verification status of each step), `product_rows`, `versions`
 #'   (EarthFlux, terra, GDAL, PROJ, GEOS, R) and `spec`.
 #' @noRd
@@ -953,6 +1034,11 @@ modis_provenance <- function(sources, options, rows) {
       overpass_time = "CANDIDATA",
       albedo = "CANDIDATA",
       emissivity = "CANDIDATA",
+      lai_nonveg = if (is.null(options$lai_nonveg))
+        "not used: non-vegetated classes NA (MP-06)" else
+        "CANDIDATA (explicit LAI of the non-vegetated classes, MP-06)",
+      band_emissivity = paste0("VERIFICADA (product layers); broadband ",
+                               "conversion E1 not implemented (MP-04)"),
       ndvi = "VERIFICADA",
       composite_matching = "DECIDIDA (provisional), MP-07",
       resampling = "DECIDIDA (provisional), MP-08",

@@ -30,7 +30,10 @@ esa fecha.
 > vector = ráster), `test-modis-surface.R` (estado de superficie, flags
 > positivos y negativos, política, AOI, procedencia) y
 > `test-surface-chain.R` (de extremo a extremo hasta Rn y G). Decisiones:
-> M4-01 … M4-26 de `DECISIONS.md` §1.4; abiertas A-M4-1 … A-M4-7.
+> M4-01 … M4-30 de `DECISIONS.md` §1.4 (M4-27 … M4-30: decisiones del
+> autor del 2026-11-04 sobre la escena de ejemplo, el LAI de las clases no
+> vegetadas y la preparación de E1); abiertas A-M4-1 … A-M4-7 (A-M4-6
+> actualizada).
 >
 > 1. **Tabla única** (§13.1; M4-01): `modis_product_spec(product,
 >    collection = "061")` y `modis_layer_spec(product, layer, collection =
@@ -54,11 +57,12 @@ esa fecha.
 >    decodifican sin flag; bits 3–2 de `QC_Day` sin decodificar (d2).
 > 4. **Política** (§10.3, MP-09 abierta; M4-05): `qa_policy` = `"flag"` o
 >    `"mask"` sin defecto; `NA` obligatorio solo por relleno, rango,
->    MODLAND 10/11 y LAI 249–254; `"mask"` con `mask_codes` explícitos y
->    conteo.
+>    MODLAND 10/11 y LAI 249–254 (salvo LAI asignado explícitamente con
+>    `lai_nonveg`, M4-28); `"mask"` con `mask_codes` explícitos y conteo.
 > 5. **Conversores** (§13.2; M4-09): `modis_variable()` (motor común),
 >    `modis_lst()`, `modis_view_zenith()`, `modis_band_emissivity()`,
->    `modis_lai()`, `modis_land_cover()`.
+>    `modis_lai()` (con la opción `lai_nonveg`, M4-28; `check_lai_nonveg()`),
+>    `modis_land_cover()`.
 > 6. **I/O** (§11; M4-06, M4-07): `modis_parse_filename()`,
 >    `modis_list_layers()`, `modis_read_raw(path, layers, aoi)`,
 >    `modis_read_converted(path, product, layer, scaled, aoi)` (MP-10),
@@ -75,26 +79,38 @@ esa fecha.
 > 8. **Estado de superficie** (§1, §13.2; M4-19 … M4-24):
 >    `modis_surface_state(files, aoi, options)` con `modis_source()`
 >    (HDF4 oficial o convertidos declarados, período del compuesto) y
->    `modis_surface_options()` (todas las elecciones sin defecto) devuelve
+>    `modis_surface_options()` (todas las elecciones científicas sin
+>    defecto; `lai_nonveg = NULL` conserva el `NA` documentado) devuelve
 >    `earthflux_surface_state` en la grilla de 1 km de la LST: `lst`,
->    `albedo`, `ndvi`, `lai`, `emissivity`, `overpass_time` (`doy`,
->    `utc_hour`, `time`), `lonlat`, `qa` (palabra de flags por capa,
+>    `albedo`, `ndvi`, `lai`, `emissivity`, `band_emissivity` (`Emis_31`,
+>    `Emis_32` de MOD11A1/MYD11A1, llevadas para E1 sin usarse, M4-30),
+>    `overpass_time` (`doy`, `utc_hour`, `time`), `lonlat`, `qa` (palabra
+>    de flags por capa,
 >    fracciones válidas, desfases, política), `units`, `flags` (con
 >    `target`) y `provenance` (`modis_provenance()`, M4-25). Traspaso al
 >    núcleo y exclusiones: `ARCHITECTURE.md` §4 y `surface_exclusion()`.
 > 9. **Flags** (`flags.md` §4.2, §6.4; M4-08, M4-22): `ef_flags_surface()`
->    registra 14 códigos (bits 1–14): los 12 de clase I de los
+>    registra 15 códigos (bits 1–15): los 12 de clase I de los
 >    decodificadores, `EF_SURF_OVERPASS_MISSING` (clase I, donde falta la
->    hora de paso y la LST es válida) y `EF_SURF_ALBEDO_GT1` (clase III,
+>    hora de paso y la LST es válida), `EF_SURF_ALBEDO_GT1` (clase III,
 >    `critical`, contraparte `earthflux_domain_error`, valor conservado y
->    excluido antes de G y Rn). Los 7 de clase II siguen sin registrar.
+>    excluido antes de G y Rn) y `EF_SURF_LAI_ASSIGNED` (clase I, `info`,
+>    bit 15: LAI de clase no vegetada asignado con `lai_nonveg`, en
+>    `flags_lai` y `flags_emissivity`; M4-29). Los 7 de clase II siguen sin
+>    registrar.
 > 10. **Datos de ejemplo** (§12, MP-12; M4-26): límite de la provincia de
 >    Cauquenes en `inst/extdata/cauquenes-province.gpkg` (DPA 2023, desde
 >    `thermify`) con `aoi_cauquenes()`; script reproducible
 >    `data-raw/modis-example.R` (CMR + LP DAAC con `EARTHDATA_TOKEN` del
->    entorno). **Pendiente**: elegir la fecha y generar la escena
->    `inst/extdata/modis-example/`; contraste con granulos reales (§16;
->    A-M4-3); fixtures de DN crudos reales (`tests/testthat/fixtures/`).
+>    entorno), con la fecha **2019-02-15** (Terra, decisión del autor,
+>    M4-27) y `lai_nonveg = 0` (M4-28). **Pendiente**: ejecutar el script en
+>    un entorno con `EARTHDATA_TOKEN` y acceso a los dominios de Earthdata y
+>    versionar `inst/extdata/modis-example/` (comando y salidas esperadas en
+>    §12); contraste con granulos reales (§16; A-M4-3); fixtures de DN
+>    crudos reales (`tests/testthat/fixtures/`).
+> 11. **E1/E2** (`"split_window_regression"`, `"tes_regression"`): siguen
+>    `earthflux_method_not_implemented`; lo que falta para implementarlas
+>    está en la lista de §8.2 (M4-30).
 
 ---
 
@@ -672,6 +688,22 @@ recuperación (p. 9).
 **(d) Uso en EarthFlux:** `lai` por defecto candidato (MP-06), necesario
 para G (Tasumi/METRIC, `soil-heat-flux.md`) y ε₀ empírica (RC-14).
 
+**Clases no vegetadas — decisión MP-06 (autor, 2026-11-04; M4-28, M4-29).**
+Por defecto (`lai_nonveg = NULL`), las clases 249–254 dan LAI `NA` con
+`EF_SURF_LAI_NONVEG` y la clase se conserva. Con la opción explícita
+`lai_nonveg` de `modis_surface_options()`/`modis_lai()` se asigna un LAI
+declarado: un número para las seis clases, o un vector con nombre por
+código de clase (`c("253" = 0, "250" = 0)`; las clases no nombradas siguen
+`NA`). Valores en [0, 10] m² m⁻² (rango físico `DERIVADA`). La celda
+asignada lleva `EF_SURF_LAI_ASSIGNED` (clase I, `info`, bit 15) y no
+`EF_SURF_LAI_NONVEG`, que sigue significando LAI `NA`; los códigos
+enmascarados por el usuario prevalecen; el valor queda en la procedencia.
+Estado del valor asignado: `CANDIDATA` (práctica de implementaciones
+METRIC: con E3, LAI 0 da ε₀ = 0,95; forma observada en `water`,
+`radiation-components.md` §6.6). Nunca se asigna en silencio. Con LAI 0,
+agua (254) y nieve (252) también entran en la rama de suelo desnudo de G de
+Tasumi: la asignación por clase permite excluirlas (A-M4-6).
+
 ### 5.8 MCD12Q1 — cobertura de suelo anual
 
 | Elemento | Valor | Estado | Fuente |
@@ -884,6 +916,72 @@ los bits 5–4 de `QC_Day` dan una cota del error medio de emisividad (≤ 0.01
 Rn (cálculo de `radiation-components.md` §6.6). Decisión MP-04 (vinculada a
 RC-14).
 
+**Estado de implementación (2026-11-04).** Implementada solo E3
+(`"lai_empirical"`, `CANDIDATA`), con la opción `lai_nonveg` para las
+clases no vegetadas (§5.7; M4-28): con `lai_nonveg = 0`, ε₀ = 0,95 en esas
+clases y `EF_SURF_LAI_ASSIGNED` en `flags_emissivity`; sin la opción, ε₀
+`NA` con `EF_INPUT_NA`. E1 (`"split_window_regression"`), E2
+(`"tes_regression"`) y E4 (`"camel"`) dan
+`earthflux_method_not_implemented`. Para preparar E1, el estado de
+superficie ya lee y lleva `Emis_31` y `Emis_32` de MOD11A1/MYD11A1
+(`band_emissivity`, capas `emis_31`, `emis_32`, con sus palabras de flags;
+siempre desde HDF4, desde convertidos si se declaran; M4-30). Ningún
+coeficiente de E1/E2 se propone aquí.
+
+**Qué falta para implementar E1 (`"split_window_regression"`)** — todo
+`TODO`; cada punto debe cumplirse desde la **fuente primaria** antes de
+escribir código (`DEVELOPMENT.md` §3; regla de §0.1):
+
+1. **Fuente primaria leída.** Wang et al. (2005), *J. Geophys. Res.
+   Atmos.* 110, D11, DOI `10.1029/2004JD005566` (§2.2: hoy solo metadatos
+   verificados, contenido no leído). Agregar la cita completa a
+   `REFERENCES.md` y el ítem 9 de §16.
+2. **Forma funcional.** Transcribir la ecuación exacta ε_bb = f(ε31, ε32)
+   con su número de ecuación, página y tabla: términos (lineal, con o sin
+   intercepto, otros), variables de entrada (emisividades de banda ya
+   escaladas, §5.1) y sin reordenar ni redondear.
+3. **Coeficientes.** Valores y número de cifras tal como se publican, con
+   la tabla de origen; si hay varios juegos (por superficie, por
+   colección de MOD11 o por sensor), cuál aplica a la colección 6.1 de
+   Terra y Aqua. Ninguno se infiere de fuentes secundarias.
+4. **Definición de "banda ancha".** Intervalo espectral de la ε_bb del
+   artículo y su coherencia con `ef_rl_out()` y `ef_net_radiation()`, que
+   usan σ·ε₀·T⁴ sobre todo el espectro (RC-14, requisito C2: la misma ε₀
+   en ambas).
+5. **Rango de validez.** Dominio de ε31/ε32 y tipos de superficie del
+   ajuste (biblioteca espectral o sitios), colección de MOD11 usada en el
+   ajuste frente a C6.1 (emisividades por clasificación y ajuste de zonas
+   áridas de Wan, 2014; D1 p. 9), error del ajuste, y qué hacer fuera del
+   dominio (`earthflux_domain_error` en el núcleo numérico; flag de clase I
+   o II en `surface` según tenga umbral con referencia).
+6. **Casos de prueba.** (a) Un caso numérico publicado (entrada ε31, ε32
+   → ε_bb) o, si el artículo no lo da, un cálculo a mano desde los
+   coeficientes transcritos, con tolerancia de `VALIDATION_PLAN.md`;
+   (b) bordes: `NA`, relleno (`EF_SURF_FILL` de `Emis_31/32`), DN fuera de
+   rango, ε fuera del dominio de validez (error con clase); (c) vector =
+   ráster; (d) estado de superficie con `emissivity_method =
+   "split_window_regression"`: ε₀ desde `band_emissivity` y flags de
+   `flags_emis_31`/`flags_emis_32` propagados a `flags_emissivity`.
+7. **Integración.** Con E1, `Emis_31`/`Emis_32` pasan a ser obligatorias
+   también en fuentes convertidas; `e31`/`e32` dejan de ser `NULL` en
+   `modis_broadband_emissivity()`; el estado de verificación de la
+   procedencia pasa a `VERIFICADA` solo con los puntos 1–6; actualizar
+   RC-14 (`radiation-components.md` §6.6), MP-04, `SCIENTIFIC_SPEC.md` y
+   `NEWS.md`. El flag de error de emisividad de los bits 5–4 de `QC_Day`
+   (`EF_SURF_EMIS_ERROR`, clase II) sigue sin registrar hasta tener umbral
+   con referencia.
+
+**Qué falta para implementar E2 (`"tes_regression"`)** — `TODO`: los
+puntos 1–7 de E1 aplicados a ε29/ε31/ε32 de MOD21A1D/MYD21A1D (las filas
+`Emis_29/31/32` ya están en la tabla de producto, §5.2, `VERIFICADA`),
+más: (a) **identificar** la referencia primaria (hoy no hay ninguna
+candidata, tabla de arriba); (b) resolver la semántica de `View_Time` de
+MOD21 (§6.4, MP-01), sin la cual MOD21A1D no puede ser producto LST del
+estado de superficie; (c) evaluar la anomalía de MYD21 (§5.2, §16 punto
+17).
+
+Decisión abierta asociada: MP-04 (E1–E4) y A-M4-6 de `DECISIONS.md` §1.4.
+
 ---
 
 ## 9. Desfase temporal y remuestreo espacial
@@ -1091,6 +1189,64 @@ de magnitud, nieve, agua. Si un caso no aparece en el recorte real, se
 agrega un fixture **sintético** marcado como tal (nunca presentado como
 dato real). AOI y fecha: decisión MP-12.
 
+**Escena de ejemplo (MP-12, decidida por el autor el 2026-11-04; M4-26,
+M4-27).** Provincia de Cauquenes; **2019-02-15** (UTC), Terra, tesela
+h12v12 (3 % de nubosidad de tesela), colección 061; opciones explícitas de
+`data-raw/modis-example.R` (MOD11A1, albedo `"white_sky"`, E3 con
+`lai_nonveg = 0`, MOD13A2 con `"period_pixel_lag"`, MCD43A3 con
+`"same_day"`, MCD15A2H con `"period"`, `"mean"`, `min_valid_fraction = 1`,
+`qa_policy = "flag"`).
+
+**Paso pendiente: generar y versionar la escena** (no se puede hacer sin
+credenciales ni red; ejecutable más tarde sin más contexto):
+
+1. Requisitos: R con `EarthFlux` en desarrollo (fuentes de este
+   repositorio), `pkgload`, `jsonlite` y `terra` con el driver GDAL HDF4
+   (el script lo comprueba); un token de usuario de NASA Earthdata Login
+   (https://urs.earthdata.nasa.gov, *Generate Token*); salida HTTPS
+   permitida a `cmr.earthdata.nasa.gov` (búsqueda),
+   `data.lpdaac.earthdatacloud.nasa.gov` (descarga), `urs.earthdata.nasa.gov`
+   (autenticación) y al almacenamiento al que LP DAAC redirige las
+   descargas (URL firmadas).
+2. Comando, desde la raíz de las fuentes, en una rama nueva desde `main`:
+
+   ```bash
+   EARTHDATA_TOKEN=<token> Rscript data-raw/modis-example.R
+   ```
+
+   El token solo se lee del entorno (nunca se escribe ni se imprime); no
+   guardarlo en `.Renviron` del repositorio.
+3. Salida esperada en consola: la tabla de los 4 granulos (`role`,
+   `file`, `period_start`, `period_end`), uno por producto:
+   `MOD11A1.A2019046.h12v12.061.*.hdf` y `MCD43A3.A2019046.h12v12.061.*.hdf`
+   (día 46 = 2019-02-15) y los compuestos MOD13A2 y MCD15A2H cuyo período
+   contiene esa fecha (su período lo dan los metadatos CMR, A-M4-5); y el
+   mensaje `Example scene: 14 files, <n> KB.` con `<n>` < 500. El script
+   se detiene con un error claro si falta el token, si CMR no devuelve
+   exactamente un granulo por producto, si una descarga no es HDF4, si no
+   hay driver HDF4 o si la escena supera 500 KB. Las descargas quedan en
+   `data-raw/private/modis/` (ignorado por git).
+4. Archivos esperados en `inst/extdata/modis-example/` (14): `lst.tif`,
+   `albedo.tif`, `ndvi.tif`, `lai.tif`, `emissivity.tif`,
+   `band_emissivity.tif` (capas `emis_31`, `emis_32`), `overpass_doy.tif`,
+   `overpass_utc_hour.tif`, `flags.tif` (8 capas `INT4S`: `flags_lst`,
+   `flags_overpass_time`, `flags_albedo`, `flags_ndvi`, `flags_lai`,
+   `flags_emissivity`, `flags_emis_31`, `flags_emis_32`; `NA` fuera de la
+   provincia), `valid_fraction.tif`, `ndvi_lag_days.tif`, `flag_bits.csv`,
+   `provenance.csv` y `provenance.yml` (granulos con `LocalGranuleID`,
+   concept ID de CMR, DOI, fechas, producción y descarga; opciones,
+   incluido `lai_nonveg_249` … `lai_nonveg_254: 0`; estados; versiones).
+5. Revisar `provenance.yml` y el conteo de `EF_SURF_LAI_ASSIGNED`, luego
+   `devtools::check()` (tamaño del tarball) y versionar:
+
+   ```bash
+   git add inst/extdata/modis-example
+   git commit -m "data: add the modis example scene of cauquenes"
+   ```
+
+   Después: contraste con el granulo real (§16, A-M4-3), fixtures de DN
+   crudos y documentación de la escena (`@source`).
+
 Los HDF completos nunca se versionan (`DEVELOPMENT.md` §6).
 
 ---
@@ -1124,19 +1280,19 @@ bajo nivel, `DEVELOPMENT.md` §1). El paralelismo sigue `ARCHITECTURE.md`
 | `modis_overpass_time(view_time_h, lon_deg, date_utc)` | h (solar local), grados, `Date` | Lista `doy` (–), `utc_hour` [h]; envoltorio a `POSIXct` UTC para el contrato. Solo MOD11A1/MYD11A1 hasta resolver §6.4 |
 | `modis_view_zenith(view_angl)` | DN | grados (con signo este/oeste) |
 | `modis_band_emissivity(raw)` | DN `Emis_*` | ε por banda [–] |
-| `modis_broadband_emissivity(e31, e32, method)` | [–] | ε₀ [–] (método `TODO`, MP-04) |
+| `modis_broadband_emissivity(e31, e32, lai, method)` | [–] | ε₀ [–] (E3 `CANDIDATA`; E1/E2/E4 `earthflux_method_not_implemented`, lista de §8.2; MP-04) |
 | `modis_ndvi_from_reflectance(red, nir)` | Reflectancia [–] | NDVI [–] (D4 ec. 1) |
 | `modis_ndvi_composite(raw, lst_date)` | DN MOD13 | NDVI [–] + desfase [días] |
-| `modis_lai(raw)` | DN MCD15A2H | LAI [m² m⁻²] + clase no vegetada + QA |
+| `modis_lai(raw, …, lai_nonveg = NULL)` | DN MCD15A2H | LAI [m² m⁻²] + clase no vegetada + QA; con `lai_nonveg`, LAI asignado a las clases no vegetadas y `EF_SURF_LAI_ASSIGNED` (MP-06, M4-28) |
 | `modis_albedo(bsa, wsa, diffuse_fraction = NULL, method)` | [–] | α [–] (MP-03) |
 | `modis_land_cover(raw)` | DN MCD12Q1 | Clase IGBP + QC |
 | `modis_to_grid(x, template, method, min_valid_fraction)` | `SpatRaster` | `SpatRaster` en la grilla de trabajo + fracción válida |
 | `modis_match_composite(lst_date, composite_dates)` | `Date` | Índice del compuesto y desfase [días] |
-| `modis_surface_state(files, aoi, options)` (`R/modis-surface.R`) | Fuentes `modis_source()` o rutas HDF4, AOI, `modis_surface_options()` (producto LST, métodos, `qa_policy`) | `earthflux_surface_state` con el contrato de `surface` (`lst`, `albedo`, `ndvi`, `lai`, `emissivity`, `overpass_time`, `qa`) + procedencia (`ARCHITECTURE.md` §4) |
+| `modis_surface_state(files, aoi, options)` (`R/modis-surface.R`) | Fuentes `modis_source()` o rutas HDF4, AOI, `modis_surface_options()` (producto LST, métodos, `qa_policy`, `lai_nonveg`) | `earthflux_surface_state` con el contrato de `surface` (`lst`, `albedo`, `ndvi`, `lai`, `emissivity`, `overpass_time`, `qa`), `band_emissivity` (E1 en preparación) + procedencia (`ARCHITECTURE.md` §4) |
 | `modis_provenance(sources, options, rows)` (`R/modis-surface.R`) | Fuentes, opciones, filas de la tabla | Lista: granulos, colecciones, DOI, métodos, estados, filas de la tabla, versiones de GDAL/`terra`/PROJ/GEOS/R |
 
 Estado de implementación: bloque único al inicio de este documento; las
-decisiones de implementación de esta sección son M4-11 … M4-26 de
+decisiones de implementación de esta sección son M4-11 … M4-30 de
 `DECISIONS.md` §1.4.
 
 ---
@@ -1180,15 +1336,15 @@ resultado con distinto tamaño de bloque y en secuencial vs paralelo
 | MP-01 | Producto LST | MOD11A1/MYD11A1 vs MOD21A1D/MYD21A1D | MOD11A1 por defecto (view time documentado); MOD21A1D como alternativa cuando se resuelva §6.4 |
 | MP-02 | Plataforma | Terra, Aqua o ambas (dos escenas por día) | Configurable; registrar plataforma; considerar deriva (§7) |
 | MP-03 | Albedo | A1–A6 (§8.1) | A1 si se resuelve la circularidad con Rs↓; si no, A2/A3 explícitas |
-| MP-04 | Emisividad de banda ancha | E1–E4 (§8.2) | Vinculada a RC-14; preferir E1/E2 por coherencia con LST, con referencia primaria verificada |
+| MP-04 | Emisividad de banda ancha | E1–E4 (§8.2) | Vinculada a RC-14; preferir E1/E2 por coherencia con LST, con referencia primaria verificada. Sigue abierta: E3 implementada; para E1 las bandas 31/32 ya viajan en el estado y lo que falta está en la lista de §8.2 (M4-30) |
 | MP-05 | Fuente de NDVI | MOD13A2, MOD13Q1 agregado, MOD09GA/GQ diario | MOD13A2 + desfase por píxel (T2) |
-| MP-06 | LAI y clases no vegetadas | `NA` + flag; asignación explícita por el usuario (p. ej., 0 para clase 253) con flag; LAI empírico | `NA` + flag por defecto; asignación solo como opción declarada |
+| MP-06 | LAI y clases no vegetadas | `NA` + flag; asignación explícita por el usuario (p. ej., 0 para clase 253) con flag; LAI empírico | `NA` + flag por defecto; asignación solo como opción declarada. **DECIDIDA (autor, 2026-11-04)**: opción `lai_nonveg` (un valor o uno por clase) con `EF_SURF_LAI_ASSIGNED`; valor `CANDIDATA`; la escena de ejemplo usa 0 (§5.7; M4-28, M4-29) |
 | MP-07 | Desfase temporal | T1–T5 (§9.1) | T2 (NDVI/LAI), T5 (albedo) |
 | MP-08 | Grilla y remuestreo | Grilla LST 1 km sinusoidal vs otra grilla/CRS | Grilla LST nativa; agregación por factor entero |
 | MP-09 | Política QA por defecto | `"flag"` vs `"mask"` | `"flag"`; anclas con filtro estricto |
 | MP-10 | Formatos de entrada | Solo HDF4; HDF4 + convertidos | HDF4 + convertidos con declaración obligatoria |
 | MP-11 | Escala/offset | Automático GDAL vs ficha interna | Ficha interna (§11.3) |
-| MP-12 | Datos de ejemplo | AOI, fecha, productos | AOI: **provincia de Cauquenes, Región del Maule** (decisión del autor, 2026-11-04; área de estudio habitual, también en `thermify`). Fecha despejada pre-2020 (antes de la deriva) y Terra, por definir |
+| MP-12 | Datos de ejemplo | AOI, fecha, productos | AOI: **provincia de Cauquenes, Región del Maule** (decisión del autor, 2026-11-04; área de estudio habitual, también en `thermify`). Fecha: **2019-02-15**, Terra, tesela h12v12, 3 % de nubosidad de tesela (**decisión del autor, 2026-11-04**; M4-27). Pendiente: ejecutar el script y versionar la escena (§12) |
 | MP-13 | Migración a C7 de tierra | Esperar / soportar ambas | Fichas por colección; C6.1 hasta que C7 de tierra esté documentada |
 | MP-14 | Continuidad | VIIRS (VJ1/VJ2), Landsat, Sentinel-3 | Módulo de sensor separado; fuera de M4 |
 

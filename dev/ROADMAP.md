@@ -85,10 +85,32 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       contrato de `ARCHITECTURE.md` §4) con flags por capa y procedencia;
       armonización de M4 y test de extremo a extremo superficie → núcleo
       METRIC (`tests/testthat/test-surface-chain.R`; M4-19 … M4-25).
+- [x] Decisiones del autor del 2026-11-04 (`DECISIONS.md` §1.4, M4-27 …
+      M4-30): fecha de la escena **2019-02-15** (Terra, MP-12); LAI
+      explícito en las clases no vegetadas (`lai_nonveg`, MP-06) con el
+      flag `EF_SURF_LAI_ASSIGNED`; emisividades de banda 31/32 llevadas en
+      el estado de superficie para E1 (lo que falta para E1/E2:
+      `specs/modis-products.md` §8.2).
 - [ ] Dataset de ejemplo compatible con CRAN: límite de la provincia de
-      Cauquenes y script reproducible listos (`data-raw/modis-example.R`,
-      M4-26); falta elegir la fecha (MP-12), descargar con un token
-      Earthdata y generar `inst/extdata/modis-example/`.
+      Cauquenes, script reproducible, fecha y opciones listos
+      (`data-raw/modis-example.R`, M4-26, M4-27). **Paso restante**:
+      ejecutar el script en un entorno con la variable `EARTHDATA_TOKEN`
+      y salida HTTPS permitida a los dominios de Earthdata
+      (`cmr.earthdata.nasa.gov`, `data.lpdaac.earthdatacloud.nasa.gov`,
+      `urs.earthdata.nasa.gov` y el almacenamiento al que LP DAAC
+      redirige), desde la raíz de las fuentes y en una rama nueva:
+      `EARTHDATA_TOKEN=<token> Rscript data-raw/modis-example.R`.
+      Salida esperada: la tabla de 4 granulos (MOD11A1 y MCD43A3 del
+      día `A2019046`, compuestos MOD13A2 y MCD15A2H que contienen
+      2019-02-15) y `Example scene: 14 files, <n> KB.` con `<n>` < 500;
+      14 archivos en `inst/extdata/modis-example/` (`lst.tif`,
+      `albedo.tif`, `ndvi.tif`, `lai.tif`, `emissivity.tif`,
+      `band_emissivity.tif`, `overpass_doy.tif`, `overpass_utc_hour.tif`,
+      `flags.tif`, `valid_fraction.tif`, `ndvi_lag_days.tif`,
+      `flag_bits.csv`, `provenance.csv`, `provenance.yml`). Luego
+      `devtools::check()` y versionar `inst/extdata/modis-example/`
+      (`data: add the modis example scene of cauquenes`). Detalle en
+      `specs/modis-products.md` §12.
 - [ ] Primer release experimental `0.1.0` al cierre de M4, con la escena de
       ejemplo de Cauquenes (opción B, decisión del autor del 2026-11-04;
       `DECISIONS.md` §1.4, M4-00); antes previsto al cierre de M2 con el
