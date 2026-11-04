@@ -225,6 +225,85 @@ test_that("S8: LAI uses DN * 0.1; classes 249-254 are NA, kept and flagged", {
   expect_identical(nonveg$severity, "info")
 })
 
+test_that("lai_nonveg is checked: NULL, one number or a value per class", {
+  expect_null(check_lai_nonveg(NULL))
+  all6 <- check_lai_nonveg(0)
+  expect_identical(all6, stats::setNames(rep(0, 6), as.character(249:254)))
+  expect_identical(check_lai_nonveg(c("253" = 0.1, "250" = 0)),
+                   c("250" = 0, "253" = 0.1))
+  err <- "earthflux_input_error"
+  expect_error(check_lai_nonveg(c(0, 1)), class = err)
+  expect_error(check_lai_nonveg(c("248" = 0)), class = err)
+  expect_error(check_lai_nonveg(c("253" = 0, "253" = 1)), class = err)
+  expect_error(check_lai_nonveg(NA_real_), class = err)
+  expect_error(check_lai_nonveg("0"), class = err)
+  expect_error(check_lai_nonveg(numeric(0)), class = err)
+  # physical range of Lai_500m (product table, DERIVADA): 0-10 m2 m-2
+  expect_error(check_lai_nonveg(-0.1), class = "earthflux_domain_error")
+  expect_error(check_lai_nonveg(c("253" = 10.5)),
+               class = "earthflux_domain_error")
+})
+
+test_that("lai_nonveg assigns the non-vegetated classes with their own flag", {
+  dn <- c(35, 253, 249, 254, 255, 100, 101)
+  # positive: one value for every class; the classes are kept
+  l <- modis_lai(dn, rep(0, 7), NULL, qa_policy = "flag", lai_nonveg = 0)
+  expect_equal(l$value, c(3.5, 0, 0, 0, NA, 10, NA), tolerance = tol)
+  expect_identical(l$class, c(NA, 253L, 249L, 254L, NA, NA, NA))
+  expect_identical(l$masks$EF_SURF_LAI_ASSIGNED,
+                   c(FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE))
+  # EF_SURF_LAI_NONVEG keeps its meaning (LAI is NA): not raised where
+  # the LAI was assigned
+  expect_false(any(l$masks$EF_SURF_LAI_NONVEG))
+  expect_identical(l$na, c(FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE))
+  codes <- vapply(l$flags, `[[`, character(1), "code")
+  rec <- l$flags[[match("EF_SURF_LAI_ASSIGNED", codes)]]
+  expect_identical(rec$index, 2:4)
+  expect_identical(rec$severity, "info")
+  expect_identical(l$lai_nonveg[["253"]], 0)
+  # per class: only the named classes are assigned, the others stay NA
+  p <- modis_lai(dn, rep(0, 7), NULL, qa_policy = "flag",
+                 lai_nonveg = c("253" = 0.2))
+  expect_equal(p$value, c(3.5, 0.2, NA, NA, NA, 10, NA), tolerance = tol)
+  expect_identical(which(p$masks$EF_SURF_LAI_ASSIGNED), 2L)
+  expect_identical(which(p$masks$EF_SURF_LAI_NONVEG), 3:4)
+  # negative: without the option nothing is assigned and the code is not
+  # evaluated
+  n <- modis_lai(dn, rep(0, 7), NULL, qa_policy = "flag")
+  expect_null(n$masks$EF_SURF_LAI_ASSIGNED)
+  expect_null(n$lai_nonveg)
+  expect_false("EF_SURF_LAI_ASSIGNED" %in% ef_flags_evaluated(n$flags))
+  expect_true("EF_SURF_LAI_ASSIGNED" %in% ef_flags_evaluated(l$flags))
+  # the flag word uses bit 15 of the registry
+  w <- modis_flag_word(l$masks)
+  expect_identical(w[2], as.integer(2^15))
+})
+
+test_that("lai_nonveg: QA of the absent retrieval and masked codes", {
+  # synthetic QA: SCF_QC 100 (not produced, DN 128) in a class cell and in
+  # a vegetated cell; FparExtra_QC land/sea 10 (inland water, DN 2) in a
+  # class cell
+  dn <- c(253, 35, 254, 253)
+  qc <- c(128, 128, 0, 0)
+  ex <- c(0, 0, 2, 0)
+  l <- modis_lai(dn, qc, ex, qa_policy = "flag", lai_nonveg = 0)
+  # the class code, not a retrieval, is the source of the assigned LAI: the
+  # cause of NA of the absent retrieval is not raised there (M4-21)
+  expect_equal(l$value, c(0, NA, 0, 0))
+  expect_identical(l$masks$EF_SURF_NOT_PRODUCED, c(FALSE, TRUE, FALSE, FALSE))
+  expect_identical(l$masks$EF_SURF_WATER, c(FALSE, FALSE, TRUE, FALSE))
+  expect_identical(which(l$masks$EF_SURF_LAI_ASSIGNED), c(1L, 3L, 4L))
+  # a code masked by the user wins over the assignment and is counted
+  m <- modis_lai(dn, qc, ex, qa_policy = "mask", mask_codes = "EF_SURF_WATER",
+                 lai_nonveg = 0)
+  expect_equal(m$value, c(0, NA, NA, 0))
+  expect_identical(which(m$masks$EF_SURF_LAI_ASSIGNED), c(1L, 4L))
+  expect_identical(which(m$masks$EF_SURF_LAI_NONVEG), 3L)
+  expect_identical(m$policy$n_masked, c(EF_SURF_WATER = 1L))
+  u <- modis_lai(dn, qc, ex, qa_policy = "mask", mask_codes = "EF_SURF_WATER")
+  expect_identical(u$policy$n_masked, c(EF_SURF_WATER = 0L))
+})
+
 test_that("S9: albedo uses (DN - 0) * 0.001; values above 1 are kept", {
   s <- modis_apply_scale(c(180, 32767, 1500, 32766),
                          row_of("MCD43A3", "Albedo_WSA_shortwave"))
@@ -437,11 +516,11 @@ test_that("the surface stage registers its codes with the bits of 6.4", {
       EF_SURF_QA_OTHER = 6L, EF_SURF_CLOUD_ADJACENT = 7L, EF_SURF_SNOW = 8L,
       EF_SURF_WATER = 9L, EF_SURF_SALT_PAN = 10L, EF_SURF_LAI_BACKUP = 11L,
       EF_SURF_ALBEDO_MAGNITUDE = 12L, EF_SURF_OVERPASS_MISSING = 13L,
-      EF_SURF_ALBEDO_GT1 = 14L)
+      EF_SURF_ALBEDO_GT1 = 14L, EF_SURF_LAI_ASSIGNED = 15L)
   )
   expect_true(all(surf$scope == "cell"))
   expect_identical(surf$severity,
-                   c(rep("info", 5), rep("warning", 8), "critical"))
+                   c(rep("info", 5), rep("warning", 8), "critical", "info"))
   expect_true(all(modis_na_codes() %in% surf$code[surf$severity == "info"]))
   expect_true(all(modis_maskable_codes() %in%
                     surf$code[surf$severity == "warning"]))
@@ -450,8 +529,10 @@ test_that("the surface stage registers its codes with the bits of 6.4", {
   expect_identical(surf$error_class[surf$code == "EF_SURF_ALBEDO_GT1"],
                    "earthflux_domain_error")
   expect_true(all(is.na(surf$error_class[surf$code != "EF_SURF_ALBEDO_GT1"])))
-  expect_false(any(c("EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1") %in%
-                     modis_maskable_codes()))
+  expect_false(any(c("EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1",
+                     "EF_SURF_LAI_ASSIGNED") %in% modis_maskable_codes()))
+  # the assigned LAI is a kept value, never a cause of NA
+  expect_false("EF_SURF_LAI_ASSIGNED" %in% modis_na_codes())
   # every code that a QA rule raises is registered
   rule_codes <- unique(unlist(lapply(modis_qa_rules(), function(rs) {
     vapply(rs, `[[`, character(1), "code")

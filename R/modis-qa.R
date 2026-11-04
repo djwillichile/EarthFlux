@@ -23,21 +23,25 @@
 #   modis_na_codes(), modis_maskable_codes(), modis_policy_na()
 #   ef_flags_surface()     registry rows of the stage (EF_SURF_*, including
 #                          the view time and broadband albedo codes raised
-#                          by modis_surface_state(), R/modis-surface.R)
+#                          by modis_surface_state(), R/modis-surface.R,
+#                          and the assigned LAI code of modis_lai())
 #   ef_diagnose_surface()  masks -> earthflux_flag records (cell scope)
 #   modis_flag_word()      masks -> integer flag word (bits of the registry)
 #   modis_variable()       DN of one layer + its QA layers -> value, masks,
 #                          flags, decoded QA and policy (the common engine)
 #   modis_lst(), modis_view_zenith(), modis_band_emissivity(), modis_lai(),
 #   modis_land_cover()     converters of section 13.2 built on it
+#   check_lai_nonveg()     the explicit LAI of the non-vegetated classes
+#                          (option `lai_nonveg`, decision MP-06)
 #
 # QA policy (section 10.3; decision MP-09 open): `qa_policy` is an explicit
 #   argument without default, "flag" or "mask". The documented causes of NA
 #   (section 10.2, mandatory rows) are applied under both: fill, DN outside
 #   the valid range, MODLAND "not produced" (cloud / other reasons) and the
-#   non-vegetated LAI classes. "mask" additionally sets to NA the conditions
-#   listed in `mask_codes`; every masked cell keeps its flag and is counted.
-#   QA never changes a value otherwise.
+#   non-vegetated LAI classes (unless the user assigns them an explicit LAI
+#   with `lai_nonveg`, flagged EF_SURF_LAI_ASSIGNED). "mask" additionally
+#   sets to NA the conditions listed in `mask_codes`; every masked cell
+#   keeps its flag and is counted. QA never changes a value otherwise.
 
 # Bit fields --------------------------------------------------------------------
 
@@ -436,7 +440,10 @@ modis_qa_flags <- function(decoded, qa_policy, mask_codes = NULL) {
 #' `EF_SURF_ALBEDO_GT1` (bit 14, `critical`, error counterpart
 #' `earthflux_domain_error`: the broadband albedo is above 1 and kept; mask
 #' `gt1` of `modis_albedo()`), both raised by `modis_surface_state()`
-#' (R/modis-surface.R). Not registered: the class II codes
+#' (R/modis-surface.R), and `EF_SURF_LAI_ASSIGNED` (bit 15, class I,
+#' `info`: the LAI of a non-vegetated class was assigned by the explicit
+#' option `lai_nonveg` of `modis_lai()`; decision MP-06). Not registered:
+#' the class II codes
 #' (`EF_SURF_LST_ERROR`, `EF_SURF_EMIS_ERROR`, `EF_SURF_VIEW_ANGLE_HIGH`,
 #' `EF_SURF_COMPOSITE_LAG`, `EF_SURF_AGG_INCOMPLETE`,
 #' `EF_SURF_OVERPASS_OUTSIDE_WINDOW`, `EF_SURF_LST_IMPLAUSIBLE`), which need
@@ -450,16 +457,17 @@ ef_flags_surface <- function() {
     "EF_SURF_DN_OUT_OF_RANGE", "EF_SURF_LAI_NONVEG", "EF_SURF_QA_OTHER",
     "EF_SURF_CLOUD_ADJACENT", "EF_SURF_SNOW", "EF_SURF_WATER",
     "EF_SURF_SALT_PAN", "EF_SURF_LAI_BACKUP", "EF_SURF_ALBEDO_MAGNITUDE",
-    "EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1"
+    "EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1", "EF_SURF_LAI_ASSIGNED"
   )
   n <- length(codes)
   ef_flag_rows(
     code = codes,
     stage = rep("SURF", n),
-    severity = c(rep("info", 5L), rep("warning", 8L), "critical"),
+    severity = c(rep("info", 5L), rep("warning", 8L), "critical", "info"),
     scope = rep("cell", n),
     bit = seq_len(n),
-    error_class = c(rep(NA_character_, n - 1L), "earthflux_domain_error"),
+    error_class = c(rep(NA_character_, 13L), "earthflux_domain_error",
+                    NA_character_),
     description = c(
       "The product value is the fill value of its layer; the output is NA.",
       paste0("The product QA reports the value as not produced (or most ",
@@ -485,12 +493,17 @@ ef_flags_surface <- function() {
       paste0("The view time is missing where the LST is valid; the LST is ",
              "kept and the solar geometry of the cell is NA downstream."),
       paste0("The broadband albedo is above 1; the value is kept and must ",
-             "be excluded before the soil heat flux and the net radiation.")
+             "be excluded before the soil heat flux and the net radiation."),
+      paste0("The LAI value is a non-vegetated land class code (249-254) ",
+             "and the LAI was assigned by the user option lai_nonveg (not ",
+             "retrieved); the value and the layers computed from it are ",
+             "kept.")
     ),
     spec = c(
-      rep("dev/specs/flags.md 4.2; dev/specs/modis-products.md 10.2", n - 2L),
+      rep("dev/specs/flags.md 4.2; dev/specs/modis-products.md 10.2", 12L),
       "dev/specs/flags.md 4.2; dev/specs/modis-products.md 6.2",
-      "dev/specs/flags.md 4.2 (C12); dev/specs/modis-products.md 8.1"
+      "dev/specs/flags.md 4.2 (C12); dev/specs/modis-products.md 8.1",
+      "dev/specs/flags.md 4.2; dev/specs/modis-products.md 5.7, 15 (MP-06)"
     ),
     since = rep("0.0.0.9000", n)
   )
@@ -717,22 +730,100 @@ modis_lai_classes <- function() {
     "254" = "perennial salt or inland fresh water")
 }
 
+#' Check the explicit LAI of the non-vegetated MCD15A2H classes
+#'
+#' Option `lai_nonveg` (decision MP-06, author's decision of 2026-11-04;
+#' open question A-M4-6): `NULL` keeps the non-vegetated class codes
+#' 249-254 as `NA`; a single unnamed number assigns that LAI to the six
+#' classes; a named vector assigns a LAI per class, named by class code
+#' (`"249"` ... `"254"`, `modis_lai_classes()`), and the classes not named
+#' stay `NA`.
+#'
+#' @param lai_nonveg `NULL`, a single number, or a named numeric vector.
+#'   Values in \[0, maximum physical LAI of `Lai_500m`\] \[m2 m-2\]
+#'   (product table, `DERIVADA`), no `NA`.
+#' @return `NULL`, or a named numeric vector (names: class codes, in
+#'   increasing order). Errors: malformed values or names ->
+#'   `earthflux_input_error`; values outside the range ->
+#'   `earthflux_domain_error`.
+#' @noRd
+check_lai_nonveg <- function(lai_nonveg, call = sys.call(-1)) {
+  if (is.null(lai_nonveg)) {
+    return(NULL)
+  }
+  classes <- names(modis_lai_classes())
+  nms <- names(lai_nonveg)
+  if (!is.numeric(lai_nonveg) || length(lai_nonveg) == 0L ||
+      anyNA(lai_nonveg)) {
+    ef_abort(
+      paste0("`lai_nonveg` must be NULL, one number or a numeric vector ",
+             "named by class code (249-254), without NA."),
+      class = "earthflux_input_error", call = call
+    )
+  }
+  if (is.null(nms)) {
+    if (length(lai_nonveg) != 1L) {
+      ef_abort(
+        paste0("An unnamed `lai_nonveg` must be one number (all the ",
+               "non-vegetated classes); name the values by class code to ",
+               "assign them per class."),
+        class = "earthflux_input_error", call = call
+      )
+    }
+    lai_nonveg <- stats::setNames(rep(as.numeric(lai_nonveg),
+                                      length(classes)), classes)
+  } else if (any(is.na(nms) | !nms %in% classes) || anyDuplicated(nms) > 0L) {
+    ef_abort(
+      sprintf(paste0("The names of `lai_nonveg` must be distinct class codes ",
+                     "among %s."), paste(classes, collapse = ", ")),
+      class = "earthflux_input_error", call = call
+    )
+  }
+  row <- modis_layer_spec("MCD15A2H", "Lai_500m")
+  check_in_range(lai_nonveg, "lai_nonveg", lower = 0,
+                 upper = row$physical_max, call = call)
+  lai_nonveg <- lai_nonveg[order(as.integer(names(lai_nonveg)))]
+  stats::setNames(as.numeric(lai_nonveg), names(lai_nonveg))
+}
+
 #' Leaf area index from MCD15A2H
 #'
 #' `Lai_500m` \[m2 m-2\] = DN * 0.1 with `FparLai_QC` and, when given,
 #' `FparExtra_QC`. The non-vegetated class codes 249-254 give `NA` LAI with
 #' `EF_SURF_LAI_NONVEG` and the class kept in `class` (decision MP-06: no
-#' silent LAI = 0).
+#' silent LAI = 0), unless an explicit LAI is assigned to them with
+#' `lai_nonveg`.
+#'
+#' **Assigned LAI** (`lai_nonveg`, MP-06; `CANDIDATA`): in the cells of an
+#' assigned class the LAI is the value given (the class code, not a
+#' retrieval, is its source) and the cell carries `EF_SURF_LAI_ASSIGNED`
+#' (`info`) instead of `EF_SURF_LAI_NONVEG`, which keeps its meaning (the
+#' LAI is `NA`) and is still raised in the classes not assigned. The causes
+#' of `NA` of the QA of the absent retrieval (e.g. `EF_SURF_NOT_PRODUCED`
+#' from SCF_QC 100) are not raised in an assigned cell, as in the
+#' aggregation (M4-21: they explain a missing value); the warnings of the
+#' QA (`EF_SURF_QA_OTHER`, `EF_SURF_SNOW`, `EF_SURF_WATER`, ...) are kept.
+#' The codes masked by the user (`qa_policy = "mask"`) take precedence: a
+#' masked cell of an assigned class stays `NA` with its flags and is counted
+#' in `n_masked`.
 #'
 #' @param lai_dn,fparlai_qc_dn DN of `Lai_500m` and `FparLai_QC`.
 #' @param fparextra_qc_dn DN of `FparExtra_QC`, or `NULL` (no default: the
 #'   caller states whether the snow and land/sea bits are evaluated).
+#' @param lai_nonveg `NULL` (default: the non-vegetated classes are `NA`,
+#'   the provisional recommendation of MP-06), or the explicit LAI
+#'   \[m2 m-2\] of those classes: one number for all of them, or a vector
+#'   named by class code (`"249"` ... `"254"`); see `check_lai_nonveg()`.
 #' @inheritParams modis_variable
 #' @return See `modis_variable()`, plus `class` (integer class code 249-254,
-#'   `NA` elsewhere) and `class_labels` (`modis_lai_classes()`).
+#'   `NA` elsewhere; kept in assigned cells), `class_labels`
+#'   (`modis_lai_classes()`) and `lai_nonveg` (the checked option, `NULL`
+#'   when not used).
 #' @noRd
 modis_lai <- function(lai_dn, fparlai_qc_dn, fparextra_qc_dn, qa_policy,
-                      mask_codes = NULL, collection = "061") {
+                      mask_codes = NULL, collection = "061",
+                      lai_nonveg = NULL) {
+  lai_nonveg <- check_lai_nonveg(lai_nonveg, call = sys.call())
   qa <- list(FparLai_QC = fparlai_qc_dn)
   if (!is.null(fparextra_qc_dn)) qa$FparExtra_QC <- fparextra_qc_dn
   out <- modis_variable(lai_dn, "MCD15A2H", "Lai_500m", qa, qa_policy,
@@ -741,7 +832,47 @@ modis_lai <- function(lai_dn, fparlai_qc_dn, fparextra_qc_dn, qa_policy,
   cls <- ifelse(out$masks$EF_SURF_LAI_NONVEG, v, NA)
   out$class <- as.integer(cls)
   out$class_labels <- modis_lai_classes()
+  out$lai_nonveg <- lai_nonveg
+  if (!is.null(lai_nonveg)) {
+    out <- modis_lai_assign(out, lai_nonveg)
+  }
   out
+}
+
+#' Assign the explicit LAI of the non-vegetated classes
+#'
+#' @param x Result of `modis_lai()` before the assignment.
+#' @param lai_nonveg Checked option (`check_lai_nonveg()`), not `NULL`.
+#' @return `x` with `value`, `na`, `masks`, `flags` and `policy$n_masked`
+#'   updated (see `modis_lai()`).
+#' @noRd
+modis_lai_assign <- function(x, lai_nonveg) {
+  n <- length(x$class)
+  given <- unname(lai_nonveg[as.character(x$class)])
+  assignable <- !is.na(given)
+  na_codes <- modis_na_codes()
+  # Masks as if the assignable cells had a value: the NA causes of the
+  # absent retrieval are not raised there (M4-21); then the codes masked
+  # by the user decide (and are counted).
+  masks <- x$masks
+  for (code in intersect(names(masks), na_codes)) {
+    masks[[code]] <- masks[[code]] & !assignable
+  }
+  pol <- modis_policy_na(masks, x$policy$mask_codes, n)
+  assign <- assignable & !pol$na
+  for (code in intersect(names(masks), na_codes)) {
+    masks[[code]] <- x$masks[[code]] & !assign
+  }
+  masks$EF_SURF_LAI_ASSIGNED <- assign
+  masks <- modis_order_masks(masks)
+  value <- x$value
+  value[assign] <- given[assign]
+  x$value <- value
+  x$na <- x$na & !assign
+  x$masks <- masks
+  x$flags <- ef_diagnose_surface(masks)
+  x$policy$n_masked <- pol$n_masked
+  x
 }
 
 #' Land cover class from MCD12Q1
