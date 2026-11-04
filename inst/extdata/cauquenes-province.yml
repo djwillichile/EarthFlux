@@ -1,0 +1,23 @@
+# Provenance of cauquenes-province.gpkg (built by data-raw/cauquenes-province.R)
+dataset: Cauquenes province boundary (Maule Region, Chile)
+layer: cauquenes_province
+features: 1
+attributes: [CUT_REG, CUT_PROV, PROVINCIA, REGION, SUPERFICIE]
+crs: EPSG:5360 (SIRGAS-Chile 2002, geographic coordinates)
+geometry: original DPA 2023 geometry, not simplified
+superficie_km2: 3021.67
+geodesic_area_km2: 3021.67
+use_in_earthflux: area of interest of the MODIS example scene (decision MP-12)
+source:
+  author: Subsecretaria de Desarrollo Regional y Administrativo (SUBDERE), Unidad de Investigacion Territorial
+  year: 2023
+  title: Division Politico Administrativa 2023 (DPA 2023)
+  file: DivisionPoliticoAdministrativa2023 (shapefile; province layer)
+  published: 2023-08-03, through IDE Chile
+  scale: 1:50,000
+  built_by: IDE Chile DPA working group (SUBDERE, IGM, DIFROL, INE) from SUBDERE interior limits v0702, DIFROL international limit v4 and IGM coastline v3
+  contact: Division de Politicas y Estudios, SUBDERE (https://www.subdere.gov.cl)
+circulation: Autorizada su circulacion por Resolucion No 87 del 2023 de la Direccion Nacional de Fronteras y Limites del Estado (DIFROL). The edition and circulation of maps that refer to the limits and borders of Chile do not commit the State of Chile (DFL No 83 de 1979, art. 2, letra g); maps derived from these boundaries that show international limits must be reviewed by DIFROL.
+license: public information of the Government of Chile; not covered by the MIT license of the EarthFlux code
+taken_from: the dataset cauquenes of the author's package thermify (file cauquenes.rda), feature nivel = provincia, unchanged
+thermify: https://github.com/djwillichile/thermify
