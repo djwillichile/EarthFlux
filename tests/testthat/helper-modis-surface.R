@@ -52,7 +52,9 @@ ss_subcell <- function(i, k, nc = 4L) {
 #   4  good                            10  LAI class 253 (barren)
 #   5  view time fill, LST valid       11  NDVI VI Quality MODLAND 01
 #   6  good                            12  good
-ss_scene <- function(dir, lst_date = as.Date("2019-01-15")) {
+# The band 31/32 emissivities (`emis = TRUE`) are good everywhere except
+# `Emis_31` of cell 4 (fill, DN 0).
+ss_scene <- function(dir, lst_date = as.Date("2019-01-15"), emis = TRUE) {
   g1 <- ss_grid(3, 4, modis_sinusoidal_grid()$cell_1km)
   g5 <- ss_grid(6, 8, modis_sinusoidal_grid()$cell_500m)
 
@@ -60,6 +62,8 @@ ss_scene <- function(dir, lst_date = as.Date("2019-01-15")) {
            15300, 15000, 14800)
   qc <- c(0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   vt <- c(105, 255, 106, 105, 255, 104, 105, 105, 106, 105, 105, 104)
+  e31 <- c(245, 240, 250, 0, 245, 246, 247, 248, 249, 230, 244, 243)
+  e32 <- c(250, 245, 251, 252, 250, 249, 248, 247, 246, 235, 249, 248)
 
   bsa1 <- c(180, 190, 185, 175, 200, 170, 1500, 182, 188, 210, 176, 181)
   wsa1 <- bsa1 + 10
@@ -87,7 +91,9 @@ ss_scene <- function(dir, lst_date = as.Date("2019-01-15")) {
     lst = modis_source(
       c(LST_Day_1km = w1(lst, "lst.tif", "INT2U"),
         QC_Day = w1(qc, "qc_day.tif", "INT1U"),
-        Day_view_time = w1(vt, "view_time.tif", "INT1U")),
+        Day_view_time = w1(vt, "view_time.tif", "INT1U"),
+        if (emis) c(Emis_31 = w1(e31, "emis_31.tif", "INT1U"),
+                    Emis_32 = w1(e32, "emis_32.tif", "INT1U"))),
       product = "MOD11A1", date = lst_date, scaled = FALSE
     ),
     albedo = modis_source(

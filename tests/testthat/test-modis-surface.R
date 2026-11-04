@@ -98,6 +98,20 @@ test_that("planned options raise earthflux_method_not_implemented", {
   expect_match(conditionMessage(cnd), "lst_product")
 })
 
+test_that("modis_surface_options() takes an explicit LAI of non-vegetated classes", {
+  # default: nothing assigned (MP-06), recorded as NULL
+  expect_null(ss_options()$lai_nonveg)
+  expect_true("lai_nonveg" %in% names(ss_options()))
+  expect_identical(ss_options(lai_nonveg = 0)$lai_nonveg,
+                   stats::setNames(rep(0, 6), as.character(249:254)))
+  expect_identical(ss_options(lai_nonveg = c("254" = 0, "253" = 0.3))$lai_nonveg,
+                   c("253" = 0.3, "254" = 0))
+  err <- "earthflux_input_error"
+  expect_error(ss_options(lai_nonveg = c(0, 0)), class = err)
+  expect_error(ss_options(lai_nonveg = c(water = 0)), class = err)
+  expect_error(ss_options(lai_nonveg = -1), class = "earthflux_domain_error")
+})
+
 test_that("modis_surface_options() checks the coupling of the choices", {
   err <- "earthflux_input_error"
   expect_error(ss_options(diffuse_fraction = NULL),
@@ -141,8 +155,8 @@ test_that("the surface state holds the contract on the working grid", {
   st <- modis_surface_state(files, aoi = NULL, options = ss_options())
   expect_s3_class(st, c("earthflux_surface_state", "list"))
   expect_named(st, c("lst", "albedo", "ndvi", "lai", "emissivity",
-                     "overpass_time", "lonlat", "qa", "units", "flags",
-                     "provenance"))
+                     "band_emissivity", "overpass_time", "lonlat", "qa",
+                     "units", "flags", "provenance"))
   tmpl <- ss_grid(3, 4, modis_sinusoidal_grid()$cell_1km)
   for (v in c("lst", "albedo", "ndvi", "lai", "emissivity")) {
     expect_s4_class(st[[v]], "SpatRaster")
@@ -257,7 +271,7 @@ test_that("flags of the inputs reach the layers of the state", {
   expect_identical(at("EF_INPUT_NA", "emissivity"), 10L)
   ev <- st$provenance$flags_evaluated_by_target
   expect_named(ev, c("lst", "overpass_time", "albedo", "ndvi", "lai",
-                     "emissivity"))
+                     "emissivity", "emis_31", "emis_32"))
   expect_true("EF_SURF_ALBEDO_GT1" %in% ev$albedo)
   expect_true("EF_SURF_OVERPASS_MISSING" %in% ev$overpass_time)
   expect_identical(names(st$qa$flag_word), paste0("flags_", names(ev)))
@@ -273,6 +287,122 @@ test_that("flags of the inputs reach the layers of the state", {
     cnt$n_flagged[cnt$target == "albedo" & cnt$code == "EF_SURF_ALBEDO_GT1"],
     1L
   )
+})
+
+test_that("an explicit LAI of non-vegetated classes reaches LAI and emissivity", {
+  dir <- ss_dir()
+  files <- ss_scene(dir)
+  val <- function(x) terra::values(x, mat = FALSE)
+  at <- function(st, code, target) {
+    r <- Filter(function(f) f$code == code && f$target == target, st$flags)
+    if (length(r) == 0L) integer(0) else r[[1]]$index
+  }
+  # positive: cell 10 (four sub-cells of class 253) gets LAI 0 and the E3
+  # emissivity of LAI 0 (0.95), flagged in both layers
+  st <- modis_surface_state(files, aoi = NULL,
+                            options = ss_options(lai_nonveg = 0))
+  expect_equal(val(st$lai)[c(1, 10)], c(2, 0), tolerance = 1e-6)
+  expect_equal(val(st$emissivity)[10], 0.95, tolerance = 1e-6)
+  expect_identical(at(st, "EF_SURF_LAI_ASSIGNED", "lai"), 10L)
+  expect_identical(at(st, "EF_SURF_LAI_ASSIGNED", "emissivity"), 10L)
+  expect_identical(at(st, "EF_SURF_LAI_NONVEG", "lai"), integer(0))
+  expect_identical(at(st, "EF_INPUT_NA", "emissivity"), integer(0))
+  rec <- Filter(function(f) f$code == "EF_SURF_LAI_ASSIGNED", st$flags)
+  expect_identical(unique(vapply(rec, `[[`, character(1), "severity")),
+                   "info")
+  word <- terra::values(st$qa$flag_word, mat = TRUE)
+  b15 <- bitwShiftL(1L, 15L)
+  expect_identical(which(bitwAnd(as.integer(word[, "flags_lai"]), b15) != 0L),
+                   10L)
+  expect_identical(
+    which(bitwAnd(as.integer(word[, "flags_emissivity"]), b15) != 0L), 10L
+  )
+  # recorded in the provenance (value and status)
+  p <- st$provenance
+  expect_identical(p$methods$lai_nonveg[["253"]], 0)
+  expect_match(p$status[["lai_nonveg"]], "CANDIDATA")
+  expect_true("EF_SURF_LAI_ASSIGNED" %in% p$flags_evaluated_by_target$lai)
+  cnt <- p$flags$counts
+  expect_identical(
+    cnt$n_flagged[cnt$target == "lai" & cnt$code == "EF_SURF_LAI_ASSIGNED"],
+    1L
+  )
+  # per class: class 253 not named -> cell 10 stays NA with its cause
+  pc <- modis_surface_state(files, aoi = NULL,
+                            options = ss_options(lai_nonveg = c("250" = 0)))
+  expect_true(is.na(val(pc$lai)[10]))
+  expect_identical(at(pc, "EF_SURF_LAI_NONVEG", "lai"), 10L)
+  expect_identical(at(pc, "EF_SURF_LAI_ASSIGNED", "lai"), integer(0))
+  # negative: without the option nothing is assigned or evaluated
+  st0 <- modis_surface_state(files, aoi = NULL, options = ss_options())
+  expect_true(is.na(val(st0$lai)[10]))
+  expect_false(any(vapply(st0$flags, `[[`, character(1), "code") ==
+                     "EF_SURF_LAI_ASSIGNED"))
+  expect_false("EF_SURF_LAI_ASSIGNED" %in% st0$provenance$flags_evaluated)
+  expect_null(st0$provenance$methods$lai_nonveg)
+  expect_match(st0$provenance$status[["lai_nonveg"]], "not used")
+})
+
+test_that("a mixed cell averages the assigned and the retrieved LAI", {
+  dir <- ss_dir()
+  files <- ss_scene(dir)
+  # synthetic: one of the four sub-cells of cell 1 (LAI 2.0) is class 250
+  lai <- ss_to_500m(c(20, 25, 30, 15, 22, 18, 5, 21, 19, 253, 24, 26))
+  lai[ss_subcell(1L, 2L)] <- 250
+  g5 <- ss_grid(6, 8, modis_sinusoidal_grid()$cell_500m)
+  files$lai$path[["Lai_500m"]] <- ss_write(g5, lai, dir, "lai_mixed.tif",
+                                           "INT1U")
+  st <- modis_surface_state(files, aoi = NULL,
+                            options = ss_options(lai_nonveg = 0,
+                                                 min_valid_fraction = 1))
+  expect_equal(terra::values(st$lai, mat = FALSE)[1], 1.5, tolerance = 1e-6)
+  r <- Filter(function(f) f$code == "EF_SURF_LAI_ASSIGNED" &&
+                f$target == "lai", st$flags)
+  expect_identical(r[[1]]$index, c(1L, 10L))
+  # without the option the same cell is NA (min_valid_fraction = 1)
+  st0 <- modis_surface_state(files, aoi = NULL,
+                             options = ss_options(min_valid_fraction = 1))
+  expect_true(is.na(terra::values(st0$lai, mat = FALSE)[1]))
+})
+
+test_that("the band 31/32 emissivities of MOD11A1 are carried, not used", {
+  dir <- ss_dir()
+  val <- function(x) terra::values(x, mat = FALSE)
+  st <- modis_surface_state(ss_scene(dir), aoi = NULL,
+                            options = ss_options())
+  be <- st$band_emissivity
+  expect_s4_class(be, "SpatRaster")
+  expect_identical(names(be), c("emis_31", "emis_32"))
+  expect_true(terra::compareGeom(be, st$lst))
+  # Emis = DN * 0.002 + 0.49 (product table); cell 4 of Emis_31 is fill
+  expect_equal(val(be[["emis_31"]])[c(1, 4, 10)], c(0.98, NA, 0.95),
+               tolerance = 1e-6)
+  expect_equal(val(be[["emis_32"]])[c(1, 4)], c(0.99, 0.994),
+               tolerance = 1e-6)
+  expect_identical(st$units[["emis_31"]], "1")
+  r <- Filter(function(f) f$code == "EF_SURF_FILL" && f$target == "emis_31",
+              st$flags)
+  expect_identical(r[[1]]$index, 4L)
+  expect_true(all(c("flags_emis_31", "flags_emis_32") %in%
+                    names(st$qa$flag_word)))
+  expect_true(all(c("Emis_31", "Emis_32") %in%
+                    st$provenance$product_rows$layer))
+  expect_match(st$provenance$status[["band_emissivity"]], "not implemented")
+  # the broadband emissivity is still E3 (from LAI), not from the bands
+  expect_equal(val(st$emissivity)[1], 0.97, tolerance = 1e-6)
+  # the split-window method stays not implemented
+  expect_error(modis_broadband_emissivity(e31 = 0.98, e32 = 0.99,
+                                          method = "split_window_regression"),
+               class = "earthflux_method_not_implemented")
+  # converted LST files without them: no band emissivities, nothing fails
+  st2 <- modis_surface_state(ss_scene(dir, emis = FALSE), aoi = NULL,
+                             options = ss_options())
+  expect_null(st2$band_emissivity)
+  expect_true("band_emissivity" %in% names(st2))
+  expect_false(any(c("flags_emis_31", "flags_emis_32") %in%
+                     names(st2$qa$flag_word)))
+  expect_identical(modis_band_emissivity_layers("MYD11A1"),
+                   c("Emis_31", "Emis_32"))
 })
 
 test_that("a cell without enough valid sub-cells is NA with its cause", {

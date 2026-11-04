@@ -156,11 +156,13 @@ modis_emissivity_methods <- function() {
     planned = c(
       split_window_regression = paste0(
         "option E1 (regression on the band 31/32 emissivities, Wang et ",
-        "al., 2005) has its coefficients TODO in ",
-        "dev/specs/modis-products.md 8.2"
+        "al., 2005) has its coefficients TODO; what is needed to implement ",
+        "it is listed in dev/specs/modis-products.md 8.2 (the band ",
+        "emissivities are already carried in the surface state)"
       ),
       tes_regression = paste0(
-        "option E2 (regression on the MOD21A1D emissivities) is TODO in ",
+        "option E2 (regression on the MOD21A1D emissivities) is TODO; what ",
+        "is needed to implement it is listed in ",
         "dev/specs/modis-products.md 8.2"
       ),
       camel = paste0(
@@ -637,10 +639,14 @@ modis_albedo <- function(bsa = NULL, wsa = NULL, diffuse_fraction = NULL,
 #' @param e31,e32 Band 31 and band 32 emissivities of MOD11A1/MYD11A1
 #'   (`Emis_31`, `Emis_32`, already scaled) \[-\]. Reserved for option E1,
 #'   which is not implemented; they must be `NULL` with the implemented
-#'   method.
+#'   method. `modis_surface_state()` already carries them
+#'   (`band_emissivity`); what E1 still needs is listed in
+#'   dev/specs/modis-products.md 8.2.
 #' @param lai Numeric (or single-layer `SpatRaster`). Leaf area index
 #'   \[m2 m-2\], >= 0. Used by `"lai_empirical"`. Non-vegetated MCD15A2H
-#'   classes must already be `NA` (MP-06): they are never set to 0 here.
+#'   classes arrive as `NA` or with the LAI assigned explicitly by the user
+#'   (`modis_lai()`, option `lai_nonveg`, MP-06): they are never set to 0
+#'   here.
 #' @param method Character, no default. Implemented:
 #'   * `"lai_empirical"` (E3):
 #'     \eqn{\varepsilon_0 = \min(0.95 + 0.01\,LAI,\ 0.98)}.
