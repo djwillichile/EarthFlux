@@ -151,7 +151,7 @@ station_regionalization_input <- function(x, variables) {
   out
 }
 
-# Reference ET at the stations ---------------------------------------------------
+# Reference ET at the stations ------------------------------------------------
 
 #' Reference evapotranspiration at weather stations
 #'
@@ -513,7 +513,8 @@ ef_station_ref_et <- function(x, reference, timestep, standard, humidity,
         references = c(
           "FAO-56 (Allen et al., 1998), chapters 3-4",
           if (standard == "asce") {
-            "ASCE-EWRI (2005), doi:10.1061/9780784408056 (not accessible; constants CANDIDATA)"
+            paste("ASCE-EWRI (2005), doi:10.1061/9780784408056",
+                  "(not accessible; constants CANDIDATA)")
           }
         ),
         flags_evaluated = unique(unlist(evaluated_by_target,
@@ -623,8 +624,10 @@ station_ref_utc_offset <- function(utc_offset, day_definition, stations,
   n <- nrow(stations)
   if (day_definition == "utc") {
     if (!is.null(utc_offset)) {
-      station_abort("`utc_offset` must be NULL with `day_definition = \"utc\"`.",
-                    call = call)
+      station_abort(
+        "`utc_offset` must be NULL with `day_definition = \"utc\"`.",
+        call = call
+      )
     }
     return(rep(0, n))
   }
