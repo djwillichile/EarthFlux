@@ -114,4 +114,13 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
 }
+\seealso{
+Other radiation functions:
+\code{\link[=ef_atm_emissivity]{ef_atm_emissivity()}},
+\code{\link[=ef_rl_in]{ef_rl_in()}},
+\code{\link[=ef_rl_out]{ef_rl_out()}},
+\code{\link[=ef_rs_in]{ef_rs_in()}},
+\code{\link[=ef_solar_geometry]{ef_solar_geometry()}},
+\code{\link[=ef_tau_sw]{ef_tau_sw()}}
+}
 \concept{radiation functions}
