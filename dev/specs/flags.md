@@ -538,10 +538,10 @@ según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_G_RN_NONPOSITIVE` | ídem | — | I | warning | cell | 1 | `g_rn_ratio = NA` si Rn = 0 |
-| `EF_G_RATIO_NEGATIVE` | ídem | — | I | warning | cell | 2 | – |
-| `EF_G_AVAILABLE_NONPOSITIVE` | `EF_G_EXCEEDS_RN`, `EF_AVAILABLE_ENERGY_NONPOSITIVE` | fusión (C3) | I | warning | cell | 3 | Condición Rn − G ≤ 0 (incluye G = Rn y Rn ≤ 0) |
-| `EF_G_LOW_LAI_BRANCH` | ídem | — | I-m | info | cell | 4 | LAI < 0.5 es parte de Tasumi (`CANDIDATA`) |
+| `EF_G_RN_NONPOSITIVE` | ídem | — | I (registrado) | warning | cell | 1 | `g_rn_ratio = NA` si Rn = 0 |
+| `EF_G_RATIO_NEGATIVE` | ídem | — | I (registrado) | warning | cell | 2 | – |
+| `EF_G_AVAILABLE_NONPOSITIVE` | `EF_G_EXCEEDS_RN`, `EF_AVAILABLE_ENERGY_NONPOSITIVE` | fusión (C3) | I (registrado) | warning | cell | 3 | Condición Rn − G ≤ 0 (incluye G = Rn y Rn ≤ 0) |
+| `EF_G_LOW_LAI_BRANCH` | ídem | — | I-m (registrado) | info | cell | 4 | LAI < 0.5 es parte de Tasumi (`CANDIDATA`); registrado con `ef_g_tasumi()` `CANDIDATA` (regla M2, `DECISIONS.md` §1.0) |
 | `EF_G_NDVI_NONPOSITIVE` | ídem | — | II | warning | cell | libre | Condición sin umbral numérico, pero su significado (agua/nieve) proviene de una fuente terciaria: registrar al verificar D4 |
 | `EF_G_RATIO_IMPLAUSIBLE` | ídem | — | II | warning | cell | libre | D7 `TODO` |
 
