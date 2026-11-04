@@ -99,6 +99,7 @@ Equation}. American Society of Civil Engineers.
 \seealso{
 Other reference evapotranspiration functions:
 \code{\link[=ef_ref_et]{ef_ref_et()}},
-\code{\link[=ef_ref_net_radiation]{ef_ref_net_radiation()}}
+\code{\link[=ef_ref_net_radiation]{ef_ref_net_radiation()}},
+\code{\link[=ef_station_ref_et]{ef_station_ref_et()}}
 }
 \concept{reference evapotranspiration functions}

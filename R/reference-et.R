@@ -28,9 +28,11 @@
 #     record-scope flags of this stage and their registry rows.
 #   - ef_ref_et_inst_interp() and ef_ref_et_daily_sum() (internal): option
 #     O3 of spec 5.5 (linear interpolation of the hourly rate between period
-#     midpoints) and option D1 of spec 5.6 (sum of complete days), the
-#     provisional recommendations of decisions WF-09 and WF-16, to be used by
-#     the station orchestration (ef_station_ref_et(), not implemented yet).
+#     midpoints) and option D1 of spec 5.6 (sum of complete days), used by
+#     the station orchestration ef_station_ref_et() (R/prep-weather.R), where
+#     the open decisions WF-09, WF-11 and WF-16 are explicit arguments.
+#   - ef_flags_reference_et() also registers the codes raised by that
+#     orchestration (EF_WS_INCOMPLETE_DAY, EF_WS_OVERPASS_OUTSIDE_RECORDS).
 #
 # Verification status (spec 5.3): FAO-56 grass reference rows are
 #   VERIFICADA (FAO-56 Eqs. 6, 42, 45, 46, 53). The ASCE-EWRI (2005)
@@ -278,8 +280,9 @@ check_daytime <- function(daytime, needed, timestep, args,
 #' 0.52}{ws - 0.79 <= w <= ws - 0.52}, or, approximately, to 0.4-0.6 in
 #' humid and sub-humid and 0.7-0.8 in arid and semi-arid climates (0.3 means
 #' complete cloud cover). Selecting that value is the task of the station
-#' orchestration; here the resulting term is passed as `cloudiness`
-#' (for a ratio \eqn{r}{r}, `cloudiness = 1.35 * r - 0.35`).
+#' orchestration ([ef_station_ref_et()], argument `night_cloudiness`); here
+#' the resulting term is passed as `cloudiness` (for a ratio \eqn{r}{r},
+#' `cloudiness = 1.35 * r - 0.35`).
 #'
 #' **Normative constants** (decision WF-14): \eqn{\sigma}{sigma} of FAO-56
 #' (4.903e-9 MJ m-2 d-1 K-4, about 5.6748e-8 W m-2 K-4, 0.08 % below the
@@ -685,7 +688,7 @@ ef_ref_soil_heat_flux <- function(net_radiation, reference, timestep,
 #'
 #' The instantaneous reference ET at the satellite overpass (spec 5.5) and
 #' the daily ETr from hourly values (spec 5.6) belong to the station
-#' orchestration, not to this function.
+#' orchestration [ef_station_ref_et()], not to this function.
 #'
 #' Missing values propagate (and are flagged `EF_INPUT_NA`). Negative
 #' results (for example at night, when \eqn{R_n - G < 0}{Rn - G < 0} with a
@@ -863,34 +866,50 @@ ef_diagnose_reference_et <- function(et_ref, inputs, n) {
 
 #' Flag codes of the reference evapotranspiration stage
 #'
-#' Registry rows owned by this file (dev/specs/flags.md section 4.2, stage
-#' `WS`): `EF_WS_RS_RSO_LIMITED` (class I-m, the limit Rs/Rso <= 1 of
-#' FAO-56 Eq. 39, `VERIFICADA`) and `EF_WS_ETR_NEGATIVE` (class I; the
-#' normalised name of `EF_ETREF_NEGATIVE`). Both are informative, record
-#' scope, without bit (the cell scope of `EF_WS_ETR_NEGATIVE` depends on
-#' decision FL-09).
+#' Registry rows owned by this file and by the station orchestration
+#' `ef_station_ref_et()` (`R/prep-weather.R`) (dev/specs/flags.md section
+#' 4.2, stage `WS`): `EF_WS_RS_RSO_LIMITED` (class I-m, the limit
+#' Rs/Rso <= 1 of FAO-56 Eq. 39, `VERIFICADA`), `EF_WS_ETR_NEGATIVE`
+#' (class I; the normalised name of `EF_ETREF_NEGATIVE`),
+#' `EF_WS_INCOMPLETE_DAY` (class I, QC-10: a day without all its periods
+#' gives no daily sum) and `EF_WS_OVERPASS_OUTSIDE_RECORDS` (class I, cause
+#' of `NA` of the reference ET at the overpass). All have the record scope
+#' and no bit (the cell scope of `EF_WS_ETR_NEGATIVE` depends on decision
+#' FL-09).
 #'
 #' @return A data frame built with `ef_flag_rows()`.
 #' @noRd
 ef_flags_reference_et <- function() {
   ef_flag_rows(
-    code = c("EF_WS_RS_RSO_LIMITED", "EF_WS_ETR_NEGATIVE"),
-    stage = c("WS", "WS"),
-    severity = c("info", "info"),
-    scope = c("record", "record"),
-    bit = c(NA_integer_, NA_integer_),
-    error_class = c(NA_character_, NA_character_),
+    code = c("EF_WS_RS_RSO_LIMITED", "EF_WS_ETR_NEGATIVE",
+             "EF_WS_INCOMPLETE_DAY", "EF_WS_OVERPASS_OUTSIDE_RECORDS"),
+    stage = rep("WS", 4L),
+    severity = c("info", "info", "warning", "info"),
+    scope = rep("record", 4L),
+    bit = rep(NA_integer_, 4L),
+    error_class = rep(NA_character_, 4L),
     description = c(
       paste(
         "The ratio Rs/Rso exceeds 1 and is limited to 1 inside the",
         "cloudiness term of the reference net longwave radiation;",
         "Rs is unchanged."
       ),
-      "The reference evapotranspiration is negative; the value is kept."
+      "The reference evapotranspiration is negative; the value is kept.",
+      paste(
+        "The day does not have a valid reference evapotranspiration in all",
+        "its periods; the daily sum is missing."
+      ),
+      paste(
+        "The overpass time is outside the time range covered by the",
+        "records of the station; the instantaneous reference",
+        "evapotranspiration is missing."
+      )
     ),
     spec = c("dev/specs/weather-forcing.md 4.8",
-             "dev/specs/weather-forcing.md 5.4"),
-    since = c("0.0.0.9000", "0.0.0.9000")
+             "dev/specs/weather-forcing.md 5.4",
+             "dev/specs/weather-forcing.md 3.2 (QC-10), 5.6",
+             "dev/specs/weather-forcing.md 5.5"),
+    since = rep("0.0.0.9000", 4L)
   )
 }
 
@@ -902,9 +921,10 @@ ef_flags_reference_et <- function() {
 #' recommendation of decision WF-09, still open): the hourly reference ET
 #' rates of consecutive periods are interpolated linearly in time between
 #' the midpoints of the periods. No extrapolation: an overpass time outside
-#' \[first midpoint, last midpoint\] gives `NA` (the orchestration flags it
-#' `EF_WS_OVERPASS_OUTSIDE_RECORDS`, not registered yet). A missing rate at
-#' either neighbour gives `NA` (no interpolation across gaps).
+#' \[first midpoint, last midpoint\] gives `NA` (the orchestration
+#' `ef_station_ref_et()` flags it `EF_WS_OVERPASS_OUTSIDE_RECORDS`). A
+#' missing rate at either neighbour gives `NA` (no interpolation across
+#' gaps).
 #'
 #' @param et_ref Numeric hourly reference ET rates \[mm h-1\], one per
 #'   period.
@@ -958,8 +978,8 @@ ef_ref_et_inst_interp <- function(et_ref, period_mid, overpass) {
 #' the per-period depths of each day. The day of each period (local
 #' standard or UTC day, decision WF-11 open) is given by the caller. A day
 #' with fewer than `periods_per_day` periods or with a missing value gives
-#' `NA` (the orchestration flags it `EF_WS_INCOMPLETE_DAY`, not registered
-#' yet); no gap is filled.
+#' `NA` (the orchestration `ef_station_ref_et()` flags it
+#' `EF_WS_INCOMPLETE_DAY`); no gap is filled.
 #'
 #' @param et_ref Numeric reference ET per period \[mm h-1 times 1 h = mm\].
 #' @param day Vector (character, integer, Date) with the day of each period,
