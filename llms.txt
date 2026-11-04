@@ -232,6 +232,54 @@ pixels and sensible heat flux.
   [`ef_et_daily_etrf()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md)
   : Daily actual evapotranspiration
 
+## Meteorological forcing
+
+Meteorological forcing of the METRIC chain from weather stations:
+variables derived from the station observations and the reference
+evapotranspiration (grass ETo of FAO-56, alfalfa ETr of the ASCE-EWRI
+standardized equation).
+
+### Derived variables
+
+Psychrometric constant, saturation and actual vapour pressure, dew
+point, wind speed at 2 m, extraterrestrial and clear-sky radiation
+(FAO-56).
+
+- [`ef_psychrometric()`](https://djwillichile.github.io/EarthFlux/reference/ef_psychrometric.md)
+  : Psychrometric constant
+- [`ef_es()`](https://djwillichile.github.io/EarthFlux/reference/ef_es.md)
+  : Saturation vapour pressure
+- [`ef_es_slope()`](https://djwillichile.github.io/EarthFlux/reference/ef_es_slope.md)
+  : Slope of the saturation vapour pressure curve
+- [`ef_ea_dewpoint()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)
+  [`ef_ea_rh()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)
+  [`ef_ea_tmin()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)
+  [`ef_ea_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)
+  : Actual vapour pressure
+- [`ef_dewpoint()`](https://djwillichile.github.io/EarthFlux/reference/ef_dewpoint.md)
+  : Dew point temperature from the actual vapour pressure
+- [`ef_wind_2m()`](https://djwillichile.github.io/EarthFlux/reference/ef_wind_2m.md)
+  : Wind speed at 2 m above short grass
+- [`ef_ra_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_daily.md)
+  : Daily extraterrestrial radiation
+- [`ef_ra_period()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_period.md)
+  : Extraterrestrial radiation of an hourly or shorter period
+- [`ef_rso()`](https://djwillichile.github.io/EarthFlux/reference/ef_rso.md)
+  : Clear-sky solar radiation
+
+### Reference evapotranspiration
+
+Net radiation and soil heat flux of the reference surface and the
+reference evapotranspiration, with explicit reference crop, time step
+and standard.
+
+- [`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md)
+  : Net radiation of the reference surface
+- [`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md)
+  : Soil heat flux of the reference surface
+- [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md)
+  : Reference evapotranspiration (grass ETo, alfalfa ETr)
+
 ## Shared physical quantities
 
 Atmospheric and thermodynamic quantities used by several modules

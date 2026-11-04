@@ -197,6 +197,62 @@ yet.
   formulations are corroborated by secondary sources; verification
   against Allen et al. (2007) is pending.
 
+#### Meteorological forcing
+
+- Derived meteorological variables, verified against the FAO-56
+  equations and worked examples (air temperature in degrees Celsius,
+  angles in radians, radiation in MJ m-2 per day or per period):
+  [`ef_psychrometric()`](https://djwillichile.github.io/EarthFlux/reference/ef_psychrometric.md)
+  (psychrometric constant),
+  [`ef_es()`](https://djwillichile.github.io/EarthFlux/reference/ef_es.md)
+  and
+  [`ef_es_slope()`](https://djwillichile.github.io/EarthFlux/reference/ef_es_slope.md)
+  (saturation vapour pressure and the slope of its curve), the actual
+  vapour pressure from the dew point
+  ([`ef_ea_dewpoint()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)),
+  from hourly temperature and relative humidity
+  ([`ef_ea_rh()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)),
+  from daily extremes with an explicit `method`
+  ([`ef_ea_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md):
+  `"rhmax_rhmin"`, `"rhmax"`, `"rhmean"`) and from the minimum
+  temperature with an explicit aridity correction
+  ([`ef_ea_tmin()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md)),
+  [`ef_dewpoint()`](https://djwillichile.github.io/EarthFlux/reference/ef_dewpoint.md),
+  [`ef_wind_2m()`](https://djwillichile.github.io/EarthFlux/reference/ef_wind_2m.md)
+  (logarithmic profile over short grass),
+  [`ef_ra_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_daily.md)
+  and
+  [`ef_ra_period()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_period.md)
+  (extraterrestrial radiation per day and per hourly or shorter period,
+  reusing the solar geometry of the METRIC core) and
+  [`ef_rso()`](https://djwillichile.github.io/EarthFlux/reference/ef_rso.md)
+  (clear-sky radiation from elevation). Relative humidities above 100 %
+  are computed, never truncated.
+
+- Reference evapotranspiration:
+  [`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md)
+  (net radiation of the reference surface, daily or hourly; a
+  carried-over cloudiness term can be supplied for night-time periods)
+  and
+  [`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md)
+  (soil heat flux of the reference surface) feed
+  [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md),
+  which computes the grass (ETo) or alfalfa (ETr) reference
+  evapotranspiration with explicit `reference`, `timestep` and
+  `standard` and no defaults, and returns an `earthflux_reference_et`
+  object with flags and provenance. The FAO-56 grass equations reproduce
+  FAO-56 examples 18 and 19. The constants of the ASCE-EWRI (2005)
+  standardized equation (tall reference, hourly day and night
+  coefficients) are `CANDIDATA`: the standard could not be read and the
+  values come from secondary implementations. FAO-56 with the alfalfa
+  reference is a classed error (`earthflux_undefined_reference`).
+  Negative reference ET is kept and flagged.
+
+- Diagnostic flags of the reference ET stage: `EF_WS_RS_RSO_LIMITED`
+  (the ratio Rs/Rso is limited to 1 inside the FAO-56 cloudiness term,
+  Rs is not modified) and `EF_WS_ETR_NEGATIVE` (negative reference ET,
+  kept).
+
 #### Dispatchers, flags and provenance
 
 - Every dispatcher of a method family

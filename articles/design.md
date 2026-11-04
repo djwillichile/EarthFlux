@@ -123,7 +123,7 @@ Specification:
 |----|----|----|
 | `ef_station_table()` | Standard station and observation tables (explicit time zone, measurement heights) | Planned |
 | `ef_station_qc()` | Station quality control (values are flagged, never deleted) | Planned |
-| `ef_ref_et()` | Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and daily | Planned; FAO-56 grass reference verified, alfalfa constants candidate |
+| [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md) | Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and daily | Planned; FAO-56 grass reference verified, alfalfa constants candidate |
 
 Specification:
 [weather-forcing.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/weather-forcing.md).

@@ -294,6 +294,113 @@
         </dt>
         <dd>Daily actual evapotranspiration</dd>
       </dl></div><div class="section level2">
+      <h2 id="meteorological-forcing">Meteorological forcing<a class="anchor" aria-label="anchor" href="#meteorological-forcing"></a></h2>
+
+      <div class="section-desc"><p>Meteorological forcing of the METRIC chain from weather stations: variables derived from the station observations and the reference evapotranspiration (grass ETo of FAO-56, alfalfa ETr of the ASCE-EWRI standardized equation).</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+      <h3 id="derived-variables">Derived variables<a class="anchor" aria-label="anchor" href="#derived-variables"></a></h3>
+      <div class="section-desc"><p>Psychrometric constant, saturation and actual vapour pressure, dew point, wind speed at 2 m, extraterrestrial and clear-sky radiation (FAO-56).</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="ef_psychrometric.html">ef_psychrometric()</a></code>
+
+        </dt>
+        <dd>Psychrometric constant</dd>
+
+        <dt>
+
+          <code><a href="ef_es.html">ef_es()</a></code>
+
+        </dt>
+        <dd>Saturation vapour pressure</dd>
+
+        <dt>
+
+          <code><a href="ef_es_slope.html">ef_es_slope()</a></code>
+
+        </dt>
+        <dd>Slope of the saturation vapour pressure curve</dd>
+
+        <dt>
+
+          <code><a href="ef_ea.html">ef_ea_dewpoint()</a></code> <code><a href="ef_ea.html">ef_ea_rh()</a></code> <code><a href="ef_ea.html">ef_ea_tmin()</a></code> <code><a href="ef_ea.html">ef_ea_daily()</a></code>
+
+        </dt>
+        <dd>Actual vapour pressure</dd>
+
+        <dt>
+
+          <code><a href="ef_dewpoint.html">ef_dewpoint()</a></code>
+
+        </dt>
+        <dd>Dew point temperature from the actual vapour pressure</dd>
+
+        <dt>
+
+          <code><a href="ef_wind_2m.html">ef_wind_2m()</a></code>
+
+        </dt>
+        <dd>Wind speed at 2 m above short grass</dd>
+
+        <dt>
+
+          <code><a href="ef_ra_daily.html">ef_ra_daily()</a></code>
+
+        </dt>
+        <dd>Daily extraterrestrial radiation</dd>
+
+        <dt>
+
+          <code><a href="ef_ra_period.html">ef_ra_period()</a></code>
+
+        </dt>
+        <dd>Extraterrestrial radiation of an hourly or shorter period</dd>
+
+        <dt>
+
+          <code><a href="ef_rso.html">ef_rso()</a></code>
+
+        </dt>
+        <dd>Clear-sky solar radiation</dd>
+      </dl></div><div class="section level2">
+
+      <h3 id="reference-evapotranspiration">Reference evapotranspiration<a class="anchor" aria-label="anchor" href="#reference-evapotranspiration"></a></h3>
+      <div class="section-desc"><p>Net radiation and soil heat flux of the reference surface and the reference evapotranspiration, with explicit reference crop, time step and standard.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="ef_ref_net_radiation.html">ef_ref_net_radiation()</a></code>
+
+        </dt>
+        <dd>Net radiation of the reference surface</dd>
+
+        <dt>
+
+          <code><a href="ef_ref_soil_heat_flux.html">ef_ref_soil_heat_flux()</a></code>
+
+        </dt>
+        <dd>Soil heat flux of the reference surface</dd>
+
+        <dt>
+
+          <code><a href="ef_ref_et.html">ef_ref_et()</a></code>
+
+        </dt>
+        <dd>Reference evapotranspiration (grass ETo, alfalfa ETr)</dd>
+      </dl></div><div class="section level2">
       <h2 id="shared-physical-quantities">Shared physical quantities<a class="anchor" aria-label="anchor" href="#shared-physical-quantities"></a></h2>
 
       <div class="section-desc"><p>Atmospheric and thermodynamic quantities used by several modules (radiation, sensible heat, evapotranspiration and reference ET).</p></div>
