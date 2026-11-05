@@ -35,7 +35,18 @@ Después de la corrida principal se borraron todas las tablas CSV de
 `results/tables/` y `results/validation/`. Luego se ejecutó de nuevo la
 cadena completa, sin descargas (`CEDES_SKIP_DOWNLOAD=1 Rscript
 research/cedes2027/scripts/run_all.R`), y se compararon las sumas MD5 de los
-17 archivos. El resultado está en `results/diagnostics/reproducibility_check.txt`.
+17 archivos. Resultado: 16 de los 17 archivos son idénticos. El restante
+(`claims_register.csv`) solo difiere en el hash del commit del código
+(macro `EarthFluxCommit`), como corresponde. Por lo tanto, todas las cifras
+científicas se reproducen exactamente, incluida la validación cruzada
+ejecutada en paralelo. El detalle está en
+`results/diagnostics/reproducibility_check.txt`.
+
+Tiempos de la reproducción (4 procesos; `results/diagnostics/run_all_log.csv`):
+covariables 8 s; estaciones 8 s; validación cruzada 101 s; residuos y
+densidad 452 s; METRIC 32 s; rango de los campos 4 s; sensibilidad (200
+réplicas) 69 s; figuras y tablas 29 s; cifras 5 s; más la compilación de los
+tres documentos LaTeX. Total: alrededor de 12 minutos sin descargas.
 
 ## Pruebas
 
