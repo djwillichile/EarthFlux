@@ -18,11 +18,12 @@
 #   `aggregate`; dispersion recorded; boundary conditions in a stage [B]
 #   function; ETr_inst evaluated at each anchor pixel).
 #
-# Verification status: no selection criterion, threshold or boundary
-#   condition of this file is VERIFICADA (Allen, Tasumi and Trezza, 2007 and
-#   Allen et al., 2013 were not available). Every numerical value is an
-#   explicit argument of the user; the forms of the boundary conditions are
-#   CANDIDATA.
+# Verification status: no selection criterion or threshold of this file is
+#   VERIFICADA (Allen, Tasumi and Trezza, 2007 and Allen et al., 2013 were
+#   not available). The forms of the boundary conditions are VERIFICADA
+#   (SEBAL-Idaho 2002) against the SEBAL Idaho manual (Waters et al., 2002,
+#   pp. 30-31); every numerical value (k of the cold anchor, hot condition)
+#   stays an explicit argument of the user (P0-8, D-AP-04, D-AP-05).
 #
 # Design (D-AP-09): the core works on numeric vectors or matrices sharing one
 #   grid (no terra). Cells are numbered as in terra: row by row from the top
@@ -1769,17 +1770,31 @@ anchor_user_cells <- function(x, arg, grid, call) {
 #' `earthflux_input_error` / `earthflux_domain_error`; `etr_inst <= 0`
 #' raises `earthflux_domain_error`.
 #'
-#' Verification status: `CANDIDATA`. The form of the cold condition is
-#' attributed to Allen et al. (2007) by secondary sources; the value 1.05 of
-#' \eqn{k}{k} with an alfalfa reference and \eqn{ETrF = 0}{ETrF = 0} for
-#' dry bare soil are observed in the `water` package (no default here). The
-#' unit conversion is `VERIFICADA` (FAO-56, box 8, with 3600 s h-1).
+#' Verification status: the forms are `VERIFICADA (SEBAL-Idaho 2002)`:
+#' Waters et al. (2002), p. 30, step 5a (cold anchor:
+#' \eqn{H_{cold} = R_n - G - 1.05\,\lambda ET_r}{H_cold = Rn - G - 1.05 *
+#' lambda * ETr}, ETr being the alfalfa reference at the image time,
+#' pp. 13 and 38) and p. 31, step 5b (hot anchor:
+#' \eqn{H_{hot} = R_n - G - \lambda ET_{hot}}{H_hot = Rn - G - lambda *
+#' ET_hot} with \eqn{ET_{hot} = 0}{ET_hot = 0} for a dry bare agricultural
+#' field, or from a soil water balance after rain in the previous 1-4
+#' days). The values 1.05 and 0 are the ones of the manual (also "generally"
+#' in appendix 8, p. 81), but they stay explicit arguments without default
+#' (decisions D-AP-04 and D-AP-05, P0-8: no coefficient by default in the
+#' anchor core). The unit conversion is `VERIFICADA` (FAO-56, box 8, with
+#' 3600 s h-1; Eq. 42 of the manual). The cross-check with Allen et al.
+#' (2007) remains desirable but is no longer blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 #' evapotranspiration: Guidelines for computing crop water requirements*
@@ -1793,13 +1808,13 @@ anchor_user_cells <- function(x, arg, grid, call) {
 #' anchors <- ef_anchors(cold = 1, hot = 2, lst = lst,
 #'                       ndvi = c(0.85, 0.10, 0.4),
 #'                       albedo = c(0.20, 0.25, 0.2), aggregate = "none")
-#' # Coefficients are test values (CANDIDATA), not defaults
+#' # Coefficients of the SEBAL Idaho manual, passed explicitly (no defaults)
 #' anchors <- ef_anchor_conditions(
 #'   anchors, rn = c(700, 500, 600), g = c(100, 120, 110), etr_inst = 0.8,
 #'   lambda = ef_lambda(method = "constant"), etrf_cold = 1.05,
 #'   etrf_hot = 0, reference = "alfalfa",
-#'   source = "test values observed in the water package",
-#'   status = "CANDIDATA", etr_source = "station"
+#'   source = "Waters et al. (2002), SEBAL Idaho manual, pp. 30-31",
+#'   status = "VERIFICADA", etr_source = "station"
 #' )
 #' anchors$calibration_points[, c("type", "lst", "rn", "g", "le_target",
 #'                                "h_target")]

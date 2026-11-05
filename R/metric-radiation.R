@@ -5,8 +5,8 @@
 # Implemented:
 #   - ef_net_radiation(): instantaneous surface radiation balance from its
 #     four components. Specification: dev/specs/ef_net_radiation.md.
-#     Equation status: CANDIDATA (corroborated by secondary sources);
-#     verification against the primary reference is pending.
+#     Equation status: VERIFICADA (SEBAL-Idaho 2002): Eq. 2 of the SEBAL
+#     Idaho manual (Waters et al., 2002; dev/VERIFICATION.md).
 #   - Radiation components that produce its inputs
 #     (dev/specs/radiation-components.md; solar geometry in
 #     R/solar-geometry.R):
@@ -19,8 +19,11 @@
 #         projected to the plane by the internal ef_rs_to_slope(); returns
 #         an earthflux_incoming_shortwave object;
 #       ef_rl_in() (incoming longwave; temperature input agnostic, decision
-#         RC-12 open) and ef_rl_out() (longwave emitted by the surface).
-#     Every form is CANDIDATA except where its roxygen says otherwise.
+#         RC-12) and ef_rl_out() (longwave emitted by the surface).
+#     Each roxygen block states its status; the forms of the SEBAL Idaho
+#     manual (Waters et al., 2002) are VERIFICADA (SEBAL-Idaho 2002):
+#     tau_sw by elevation, atmospheric emissivity, Rs_in on flat terrain,
+#     RL_in and RL_out (dev/VERIFICATION.md).
 #   - ef_diagnose_radiation() (internal): cell-scope flags EF_RAD_* of this
 #     stage, built from the numeric inputs and outputs (never by the numeric
 #     functions themselves) and called by the dispatchers.
@@ -106,15 +109,23 @@
 #' expected to be masked or flagged upstream by quality control; values are
 #' never silently corrected.
 #'
-#' The form of the equation has been cross-checked against independent
-#' secondary sources; verification against the primary reference (Allen et
-#' al., 2007) is pending.
+#' Verification status: `VERIFICADA (SEBAL-Idaho 2002)`. The form is
+#' identical, term by term, to Eq. 2 of Waters et al. (2002), pp. 10 and 14,
+#' which also keeps the reflected incoming longwave term
+#' \eqn{(1 - \varepsilon_0) R_{L\downarrow}}{(1 - e0) * rl_in} explicit. The
+#' cross-check with Allen et al. (2007) remains desirable but is no longer
+#' blocking (`dev/VERIFICATION.md`).
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family radiation functions
 #' @export
@@ -282,11 +293,14 @@ ef_net_radiation <- function(rs_in, albedo, rl_in, rl_out, emissivity) {
 #' discrepancy is recorded under decision RC-08 and must be resolved against
 #' ASCE-EWRI (2005) and Allen et al. (2007).
 #'
-#' `ef_tau_sw_elevation()` has the form of FAO-56 Eq. 37 (annex 3,
-#' Eq. 3-13) for the ratio of clear-sky to extraterrestrial radiation, which
-#' FAO-56 declares valid for daily and hourly periods, for elevations below
-#' 6000 m and low turbidity; its use as an instantaneous transmissivity in
-#' METRIC is `CANDIDATA`.
+#' `ef_tau_sw_elevation()` is `VERIFICADA (SEBAL-Idaho 2002)`: Waters et
+#' al. (2002), p. 18, Eq. 11, use exactly this FAO-56 form (FAO-56 Eq. 37;
+#' annex 3, Eq. 3-13) as the instantaneous clear-sky transmissivity of the
+#' incoming shortwave radiation (Eq. 12), with the elevation of the area of
+#' interest (e.g. of the weather station; per pixel in the mountain model,
+#' appendix 12). FAO-56 declares the form valid for daily and hourly
+#' periods, for elevations below 6000 m and low turbidity. The cross-check
+#' with Allen et al. (2007) remains desirable but is no longer blocking.
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -297,6 +311,11 @@ ef_net_radiation <- function(rs_in, albedo, rl_in, rl_out, emissivity) {
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family radiation functions
 #' @export
@@ -347,8 +366,14 @@ ef_tau_sw <- function(..., method) {
       diffuse = value$diffuse,
       method = method,
       flags = flags$flags,
-      provenance = ef_rad_provenance(method, fun_name, inputs,
-                                     flags$evaluated)
+      provenance = ef_rad_provenance(
+        method, fun_name, inputs, flags$evaluated,
+        status = if (method == "elevation") {
+          "VERIFICADA (SEBAL-Idaho 2002)"
+        } else {
+          "CANDIDATA"
+        }
+      )
     ),
     "earthflux_sw_transmissivity"
   )
@@ -411,7 +436,8 @@ ef_tau_sw_elevation <- function(elevation) {
 #'
 #' @param tau_sw Numeric. Total clear-sky broadband shortwave transmissivity
 #'   on the horizontal \eqn{\tau_{sw}}{tau_sw} \[-\], in the open interval
-#'   (0, 1), normally `ef_tau_sw_allen()$total` (see Details).
+#'   (0, 1): `ef_tau_sw_elevation()` in the SEBAL Idaho manual, or
+#'   `ef_tau_sw_allen()$total` (see Details).
 #'
 #' @return A numeric vector of \eqn{\varepsilon_a}{ea} \[-\] with the length
 #'   and `dim` of `tau_sw`. Values above 1 (which occur only for
@@ -434,19 +460,28 @@ ef_tau_sw_elevation <- function(elevation) {
 #' propagate.
 #'
 #' @section Verification status:
-#' `CANDIDATA`. Form and coefficients (0.85, 0.09) observed in the `water`
-#' package (v1.0), which attributes the form to Bastiaanssen (1995) and the
-#' coefficients to an internal report of Allen (2000); neither has been
-#' verified, nor its use in Allen et al. (2007), nor the range of
-#' transmissivities over which the coefficients were derived. Formulations
-#' in terms of vapour pressure and air temperature (e.g. Brutsaert) are an
-#' open alternative (decision RC-13).
+#' `VERIFICADA (SEBAL-Idaho 2002)`. Form and coefficients (0.85, 0.09) are
+#' those of Waters et al. (2002), p. 23, Eq. 22: the empirical form of
+#' Bastiaanssen (1995) refitted "using data from alfalfa fields in Idaho"
+#' (the original coefficients for western Egypt were 1.08 and 0.265). In
+#' the manual the transmissivity is that of Eq. 11 (`ef_tau_sw_elevation()`);
+#' its use with the partitioned transmissivity of `ef_tau_sw_allen()` is not
+#' covered by the manual (`CANDIDATA`). The range of transmissivities over
+#' which the coefficients were fitted is not given. The cross-check with
+#' Allen et al. (2007) remains desirable but is no longer blocking.
+#' Formulations in terms of vapour pressure and air temperature (e.g.
+#' Brutsaert) are an open alternative (decision RC-13).
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family radiation functions
 #' @export
@@ -608,7 +643,7 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #'   Gsc * dr * cos(theta_h)}, \eqn{R_{b,h} = \tau_b R_{a,h}}{Rb_h = tau_b *
 #'   Ra_h} and \eqn{R_{d,h} = \tau_d R_{a,h}}{Rd_h = tau_d * Ra_h}, with
 #'   \eqn{G_{sc}}{Gsc} the solar constant of the package (1366.67 W m-2,
-#'   FAO-56 Eq. 21; its adoption for METRIC is `CANDIDATA`, decision RC-06);
+#'   FAO-56 Eq. 21; the SEBAL Idaho manual rounds it to 1367 W m-2, RC-06);
 #' * `ef_rs_in_measured()`: \eqn{R_{b,h} = (1 - k_d) R_{s,meas}}{Rb_h =
 #'   (1 - kd) * Rs_meas} and \eqn{R_{d,h} = k_d R_{s,meas}}{Rd_h = kd *
 #'   Rs_meas}.
@@ -665,15 +700,23 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #' outputs that depend on them, and always to `total`.
 #'
 #' @section Verification status:
-#' `CANDIDATA`. The flat-terrain modelled form is the one observed in the
-#' `water` package (v1.0), attributed there to Allen et al. (2007) (not
-#' verified). The isotropic projection onto tilted planes is the standard
-#' form of solar engineering texts (Duffie and Beckman; isotropic model
-#' attributed to Liu and Jordan; neither verified); whether Allen, Trezza
-#' and Tasumi (2006) prescribe an anisotropic diffuse term is `TODO`
-#' (decision RC-09). In the measured path, the source of the diffuse
-#' fraction is `TODO` (decision RC-10). The solar constant is `CANDIDATA`
-#' (RC-06).
+#' The modelled form on flat terrain is `VERIFICADA (SEBAL-Idaho 2002)`:
+#' \eqn{G_{sc} \cos\theta\, d_r\, \tau_{sw}}{Gsc * cos(theta) * dr *
+#' tau_sw}, Waters et al. (2002), p. 19, Eq. 12 (the manual rounds
+#' \eqn{G_{sc}}{Gsc} to 1367 W m-2; the package uses the FAO-56 value
+#' 1366.67 W m-2, a relative difference of 2.4e-4, decision RC-06).
+#'
+#' On slopes the form is `CANDIDATA` and differs from the mountain model of
+#' the manual (appendix 12, pp. 93-95), which applies Eq. 12 with the
+#' cosine of the incidence angle on the slope divided by the cosine of the
+#' slope ("horizontal equivalent") and one total transmissivity, without a
+#' beam / diffuse partition. EarthFlux projects the beam and diffuse
+#' components separately onto the plane (isotropic projection of solar
+#' engineering texts, Duffie and Beckman; isotropic model attributed to Liu
+#' and Jordan; neither verified); whether Allen, Trezza and Tasumi (2006)
+#' prescribe an anisotropic diffuse term is `TODO` (decision RC-09). In the
+#' measured path, the source of the diffuse fraction is `TODO` (decision
+#' RC-10).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -684,6 +727,12 @@ resolve_ground_albedo <- function(ground_albedo, slope, call) {
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family radiation functions
 #' @export
@@ -743,8 +792,14 @@ ef_rs_in <- function(..., method) {
       diffuse_fraction = value$diffuse_fraction,
       method = method,
       flags = flags$flags,
-      provenance = ef_rad_provenance(method, fun_name, inputs,
-                                     flags$evaluated)
+      provenance = ef_rad_provenance(
+        method, fun_name, inputs, flags$evaluated,
+        status = if (method == "modelled") {
+          "VERIFICADA (SEBAL-Idaho 2002) on flat terrain; CANDIDATA on slopes"
+        } else {
+          "CANDIDATA"
+        }
+      )
     ),
     "earthflux_incoming_shortwave"
   )
@@ -867,9 +922,13 @@ ef_rs_in_measured <- function(rs_horizontal, diffuse_fraction, cos_zenith,
 #' with the cold-pixel surface temperature, the result is uniform in the
 #' scene except through the emissivity; with the surface temperature of each
 #' pixel, hot and dry pixels receive more longwave radiation, which
-#' artificially reduces the contrast of net radiation. With which
-#' temperature the coefficients of `ef_atm_emissivity()` were derived is not
-#' known (`TODO`).
+#' artificially reduces the contrast of net radiation. The SEBAL Idaho
+#' manual uses the surface temperature of the cold anchor pixel as the
+#' near-surface air temperature (Waters et al., 2002, p. 23, Eq. 23), with a
+#' lapse correction for each pixel in its mountain model (appendix 12,
+#' p. 96, Eq. 12-8); the coefficients of `ef_atm_emissivity()` were fitted
+#' in that configuration. The function keeps the temperature as an explicit
+#' input (decision RC-12, `dev/DECISIONS.md` P0-3).
 #'
 #' Assumptions: grey-body atmosphere with effective emissivity and
 #' temperature; clear sky; instantaneous value.
@@ -880,15 +939,25 @@ ef_rs_in_measured <- function(rs_horizontal, diffuse_fraction, cos_zenith,
 #' (also `earthflux_input_error`). Missing values propagate.
 #'
 #' @section Verification status:
-#' `CANDIDATA`. Stefan-Boltzmann law with an effective emissivity, form
-#' observed in the `water` package (v1.0), attributed there to Allen et al.
-#' (2007) (equation number and prescribed temperature not verified).
+#' `VERIFICADA (SEBAL-Idaho 2002)`: Stefan-Boltzmann law with an effective
+#' emissivity, Waters et al. (2002), p. 23, Eq. 21 (\eqn{T_a}{Ta}, "near
+#' surface air temperature"), evaluated with the cold-pixel temperature in
+#' Eq. 23 (configuration (b) of RC-12). The manual uses
+#' \eqn{\sigma = 5.67 \times 10^{-8}}{sigma = 5.67e-8}; the package uses
+#' the exact CODATA value (RC-07, relative difference 6.6e-5). The
+#' cross-check with Allen et al. (2007) remains desirable but is no longer
+#' blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family radiation functions
 #' @export
@@ -956,17 +1025,23 @@ ef_rl_in <- function(temperature, atm_emissivity) {
 #' propagate.
 #'
 #' @section Verification status:
-#' `CANDIDATA` (corroborated): the form \eqn{\varepsilon_0 \sigma
-#' T_s^4}{e0 * sigma * Ts^4} is the one used by the `water` package (v1.0)
-#' and by an independent secondary source (Wasti, 2020) together with the
-#' net radiation of `ef_net_radiation()`; contrast with Allen et al. (2007)
-#' is pending.
+#' `VERIFICADA (SEBAL-Idaho 2002)`: the form \eqn{\varepsilon_0 \sigma
+#' T_s^4}{e0 * sigma * Ts^4} is Eq. 20 of Waters et al. (2002), p. 22, with
+#' the broadband emissivity \eqn{\varepsilon_0}{e0} (the manual uses
+#' \eqn{\sigma = 5.67 \times 10^{-8}}{sigma = 5.67e-8}, see above). The
+#' cross-check with Allen et al. (2007) remains desirable but is no longer
+#' blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family radiation functions
 #' @export
@@ -1005,14 +1080,17 @@ ef_rad_layer <- function(x, n) {
 #' @param inputs Named list of the matched inputs (`NULL` elements are
 #'   ignored).
 #' @param flags_evaluated Character. Flag codes evaluated.
+#' @param status Character. Verification status of the method
+#'   (`dev/VERIFICATION.md`).
 #' @return A list with `method`, `fun`, `status`, `inputs`,
 #'   `flags_evaluated` and `earthflux_version`.
 #' @noRd
-ef_rad_provenance <- function(method, fun_name, inputs, flags_evaluated) {
+ef_rad_provenance <- function(method, fun_name, inputs, flags_evaluated,
+                              status) {
   list(
     method = method,
     fun = fun_name,
-    status = "CANDIDATA",
+    status = status,
     inputs = names(inputs)[!vapply(inputs, is.null, logical(1))],
     flags_evaluated = flags_evaluated,
     earthflux_version = as.character(getNamespaceVersion("EarthFlux"))

@@ -116,8 +116,10 @@ the hour angle are \code{VERIFICADA} against FAO-56 (chapter 3, Eqs. 23, 24
 and 31-33; the hour angle is Eq. 31 written for UTC times, with the exact
 1/15 h per degree instead of 0.06667). The zenith angle relation is the
 standard spherical-trigonometry identity; the incidence angle on a
-tilted plane is \code{CANDIDATA} (form from solar engineering texts; primary
-reference and its use in Allen et al., 2007, to be verified). The
+tilted plane is \code{CANDIDATA} (form from solar engineering texts; Eq. 12-1
+of Waters et al., 2002, coincides except for a fifth term printed with
+the latitude instead of the aspect, an apparent misprint;
+\code{dev/VERIFICATION.md}). The
 precision of the FAO-56 calendar formulae against a higher-precision
 ephemeris has not been quantified (decision RC-04).
 }

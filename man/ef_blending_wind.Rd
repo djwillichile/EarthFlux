@@ -4,7 +4,13 @@
 \alias{ef_blending_wind}
 \title{Wind speed at the blending height}
 \usage{
-ef_blending_wind(wind_speed, height, zom_station, d_station, blending_height)
+ef_blending_wind(
+  wind_speed,
+  height,
+  zom_station,
+  d_station,
+  blending_height = 200
+)
 }
 \arguments{
 \item{wind_speed}{Numeric. Wind speed measured at \code{height} [m s-1].
@@ -25,8 +31,8 @@ implementations use 0, FAO-56 gives 2 h / 3 = 0.08 m for grass 0.12 m
 tall (SH-04).}
 
 \item{blending_height}{Numeric. Blending height \eqn{z_b}{z_b} [m]. Must
-be finite and greater than \code{d_station + zom_station}. No default: the
-METRIC value of 200 m is \code{CANDIDATA}.}
+be finite and greater than \code{d_station + zom_station}. Default 200 m
+(Waters et al., 2002, p. 26, Eq. 29).}
 }
 \value{
 A numeric vector of wind speed at the blending height
@@ -54,16 +60,18 @@ Missing values propagate. Infinite values and values outside the domain
 raise an error of class \code{earthflux_domain_error} (also
 \code{earthflux_input_error}).
 
-Verification status: \code{CANDIDATA} (form observed in the \code{water} package,
-which attributes it to Allen et al., 2007, "Eq. 32", with
-\eqn{d_w = 0}{d_w = 0}). With \eqn{d_w}{d_w} and
+Verification status: with \eqn{d_w = 0}{d_w = 0}, \verb{VERIFICADA (SEBAL-Idaho 2002)}: Waters et al. (2002), p. 26, Eqs. 27 and 29 (neutral friction
+velocity at the station and wind at 200 m), which use no displacement for
+the station surface and estimate its roughness as
+\eqn{z_{om,w} = 0.12 h}{z_om,w = 0.12 * h} (Eq. 28; h = 0.3 m at
+Kimberly). A positive \eqn{d_w}{d_w} is an extension of the package
+(\code{CANDIDATA} in METRIC, decision SH-04): with \eqn{d_w}{d_w} and
 \eqn{z_{om,w}}{z_om,w} from FAO-56 box 4, the normalised profile
 coincides with FAO-56, chapter 3, Eq. 47 (author's calculation).
 }
 \examples{
 # 3 m s-1 at 2 m over grass (z_om,w = 0.015 m, d_w = 0), z_b = 200 m
-ef_blending_wind(3, height = 2, zom_station = 0.015, d_station = 0,
-                 blending_height = 200)
+ef_blending_wind(3, height = 2, zom_station = 0.015, d_station = 0)
 
 # Same grass with the FAO-56 displacement and roughness (h = 0.12 m)
 ef_blending_wind(3, height = 2, zom_station = 0.01476, d_station = 0.08,
@@ -78,6 +86,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other aerodynamics and sensible heat functions:

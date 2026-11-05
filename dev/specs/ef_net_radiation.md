@@ -3,10 +3,13 @@
 Función científica · Módulo `metric` (`R/metric-radiation.R`) · Hito M1/M2 ·
 Rama `function/net-radiation`.
 
-Estado de la ecuación: **`CANDIDATA (corroborada)`** — forma corroborada por
-dos fuentes secundarias independientes; **no verificada todavía contra la
-fuente primaria**. La fusión a `main` requiere que el autor confirme la
-ecuación contra el artículo (sección 2.3).
+Estado de la ecuación: **`VERIFICADA (SEBAL-Idaho 2002)`** desde el
+2026-11-05 — forma idéntica, término a término, a la Ec. 2 del manual SEBAL
+de Idaho (Waters et al., 2002, pp. 10 y 14), que mantiene explícito el
+término reflejado (1 − ε₀)RL↓ (`DECISIONS.md` M2-08; NR-D3 cerrada;
+[`../VERIFICATION.md`](../VERIFICATION.md), fila 1). El contraste con Allen
+et al. (2007) es deseable, no bloqueante. Antes: `CANDIDATA (corroborada)`,
+forma corroborada por dos fuentes secundarias independientes (sección 2.3).
 
 Complementa `SCIENTIFIC_SPEC.md` (sección 3, fila de radiación neta) y sigue
 la *Definition of Done* de `DEVELOPMENT.md` (sección 3).

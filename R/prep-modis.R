@@ -662,9 +662,14 @@ modis_albedo <- function(bsa = NULL, wsa = NULL, diffuse_fraction = NULL,
 #'   propagates.
 #'
 #' @details
-#' E3 is the empirical METRIC form (form observed in the `water` package;
-#' dev/specs/radiation-components.md 6.6). It is **decoupled from the LST
-#' retrieval**: MOD11A1 retrieves the LST with its own band 31/32
+#' E3 is the empirical form of the SEBAL Idaho manual (Waters et al., 2002,
+#' p. 20, Eq. 16b: \eqn{\varepsilon_0 = 0.95 + 0.01\,LAI} for LAI < 3 and
+#' 0.98 for LAI >= 3, written here as a minimum; also observed in the
+#' `water` package; dev/specs/radiation-components.md 6.6). The manual
+#' applies it where NDVI > 0 and sets \eqn{\varepsilon_0 = 0.985} for water
+#' and snow (NDVI < 0); that filter is not applied here (the non-vegetated
+#' classes arrive as `NA` or with an explicit LAI). It is **decoupled from
+#' the LST retrieval**: MOD11A1 retrieves the LST with its own band 31/32
 #' emissivities (by classification), so a LAI-based \eqn{\varepsilon_0}
 #' does not describe the same surface emissivity as the LST product
 #' (RC-14). The provisional recommendation of the specification (MP-04) is a
@@ -678,10 +683,11 @@ modis_albedo <- function(bsa = NULL, wsa = NULL, diffuse_fraction = NULL,
 #' `earthflux_domain_error`.
 #'
 #' @section Verification status:
-#' E3 is `CANDIDATA` (RC-14; dev/specs/modis-products.md 8.2): form and
-#' coefficients observed in a secondary implementation, primary reference
-#' (Allen et al., 2007; Tasumi, 2003) not verified; its domain (e.g.
-#' treatment of water and bare soil) is not specified.
+#' E3 is `VERIFICADA (SEBAL-Idaho 2002)` as a formulation for vegetated
+#' land (NDVI > 0; Waters et al., 2002, p. 20, Eq. 16b); its consistency
+#' with the emissivities assumed by the MODIS LST retrieval remains an open
+#' question (RC-14, MP-04; dev/specs/modis-products.md 8.2), and Allen et al.
+#' (2007) and Tasumi (2003) were not consulted.
 #' @noRd
 modis_broadband_emissivity <- function(e31 = NULL, e32 = NULL, lai = NULL,
                                        method) {

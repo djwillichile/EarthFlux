@@ -4,7 +4,7 @@
 \alias{ef_sensible_heat}
 \title{Sensible heat flux}
 \usage{
-ef_sensible_heat(air_density, dt, rah, cp)
+ef_sensible_heat(air_density, dt, rah, cp = EF_SPECIFIC_HEAT_AIR)
 }
 \arguments{
 \item{air_density}{Numeric. Air density [kg m-3] (see
@@ -18,9 +18,10 @@ finite; negative values are allowed.}
 (see \code{\link[=ef_rah]{ef_rah()}}). Must be finite and \verb{> 0}.}
 
 \item{cp}{Numeric. Specific heat of air at constant pressure
-[J kg-1 K-1]. Must be finite and \verb{> 0}. No default: the METRIC value
-(1004 J kg-1 K-1, \code{CANDIDATA}, decision SH-09) is the one used and
-recorded by \code{\link[=ef_calibrate_h]{ef_calibrate_h()}} (element \code{constants$cp}); FAO-56 uses
+[J kg-1 K-1]. Must be finite and \verb{> 0}. Default 1004 J kg-1 K-1 (the
+package constant \code{EF_SPECIFIC_HEAT_AIR}; Waters et al., 2002, p. 25,
+text of Eq. 25; decision SH-09), the value used and recorded by
+\code{\link[=ef_calibrate_h]{ef_calibrate_h()}} (element \code{constants$cp}); FAO-56 uses
 1013 J kg-1 K-1.}
 }
 \value{
@@ -48,18 +49,24 @@ Missing values propagate. Infinite values and values outside the domain
 raise an error of class \code{earthflux_domain_error} (also
 \code{earthflux_input_error}).
 
-Verification status: \code{CANDIDATA} (form of \code{dev/SCIENTIFIC_SPEC.md}
-section 3 and METRIC implementations; Allen et al., 2007, not consulted).
+Verification status: \verb{VERIFICADA (SEBAL-Idaho 2002)}: Waters et al.
+(2002), p. 25, Eq. 25, with \eqn{c_p}{cp} = 1004 J kg-1 K-1. The
+cross-check with Allen et al. (2007) remains desirable but is no longer
+blocking.
 }
 \examples{
-ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850,
-                 cp = 1004)
+ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850)
 }
 \references{
 Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other aerodynamics and sensible heat functions:

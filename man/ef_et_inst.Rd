@@ -42,11 +42,14 @@ where 1000 is mm m-1, 3600 is s h-1, \eqn{\lambda}{lambda} is \code{lambda}
 \eqn{\rho_w}{rho_w} = 1000 kg m-3 this is numerically
 \eqn{3600 LE / \lambda}{3600 * LE / lambda}.
 
-The notation \eqn{3600 LE / (\lambda \rho_w)}{3600 * LE / (lambda *
-rho_w)} attributed to METRIC by secondary sources gives m h-1, not
-mm h-1, with \eqn{\lambda}{lambda} in J kg-1; the factor 1000 mm m-1 is
-written explicitly here. How the primary reference resolves that factor
-is pending verification.
+The SEBAL Idaho manual writes \eqn{ET_{inst} = 3600\, \lambda ET /
+\lambda}{ET_inst = 3600 * LE / lambda} in mm h-1 (Waters et al., 2002,
+p. 34, Eq. 42), i.e. kg m-2 h-1, which is mm h-1 with
+\eqn{\rho_w}{rho_w} = 1000 kg m-3: numerically identical to the form
+above. The notation \eqn{3600 LE / (\lambda \rho_w)}{3600 * LE /
+(lambda * rho_w)} attributed to METRIC by secondary sources gives m h-1,
+not mm h-1, with \eqn{\lambda}{lambda} in J kg-1; the factor
+1000 mm m-1 is written explicitly here.
 
 Unit guard: a \code{lambda} given in MJ kg-1 (about 2.45) instead of J kg-1
 would silently give an evapotranspiration 1e6 times too large. Values of
@@ -69,8 +72,8 @@ raise an error of class \code{earthflux_domain_error} (also
 Verification status: \code{VERIFICADA} as a unit conversion (FAO-56, chapter
 3, box 8 and Eq. 20, plus 3600 s h-1); checked against the FAO-56
 equivalences 1 mm d-1 = 2.45 MJ m-2 d-1 (chapter 1, table 1) and
-1 W m-2 = 0.035 mm d-1 (chapter 3, table 3). Its notation in Allen et al.
-(2007) is \code{CANDIDATA} (corroborated by secondary sources).
+1 W m-2 = 0.035 mm d-1 (chapter 3, table 3); and \verb{VERIFICADA (SEBAL-Idaho 2002)} (Waters et al., 2002, Eq. 42, see above). Its notation in Allen et
+al. (2007) has not been verified (desirable, not blocking).
 }
 \examples{
 # 490 W m-2 with the FAO-56 constant lambda: 0.72 mm h-1
@@ -91,6 +94,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other latent heat and evapotranspiration functions:

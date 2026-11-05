@@ -19,6 +19,20 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 fuente primaria durante la redacción de este documento**, con la ubicación
 exacta indicada (capítulo, recuadro, ecuación, tabla o página).
 
+> **Verificación (2026-11-05, `DECISIONS.md` M2-08).** Contraste con el
+> manual SEBAL de Idaho (Waters et al., 2002), registro en
+> [`../VERIFICATION.md`](../VERIFICATION.md) (filas 43–49). Pasan a
+> `VERIFICADA (SEBAL-Idaho 2002)`: LE = Rn − G − H (Ec. 1; V1), ET_inst =
+> 3600·λET/λ en mm h⁻¹ (p. 34, Ec. 42; **V3 resuelto**: numéricamente
+> idéntica a la forma de §5.1 con ρ_w = 1000; la que omite el factor 1000
+> es la notación con ρ_w en el denominador), ETrF = ET_inst/ETr (p. 35,
+> Ec. 43; V4; ETr de alfalfa a la hora de la imagen, V5) y ET_24 =
+> ETrF·ETr_24 con ETr_24 = suma de la ETr horaria del día (p. 35, Ec. 44;
+> V6, sin C_rad). La forma de ET de período (p. 38, Ec. 45; V8) queda
+> documentada, sin implementar. Evidencia para V7 y V9: ETrF esperada entre
+> 0 y ~1,1; valores negativos posibles (p. 35). Siguen `CANDIDATA`: λ
+> `"metric"` (V2: el manual no da λ(T)) y C_rad.
+
 > **Estado de implementación (M2, 2026-11-04).** Implementadas:
 > `ef_latent_heat()` (`R/metric-latent-heat.R`), `ef_et_inst()`,
 > `ef_etrf()`, el despachador `ef_et_daily(method = )` con su único método

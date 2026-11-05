@@ -8,8 +8,9 @@
 #
 # Specification: dev/specs/sensible-heat.md sections 2, 8, 11-13 and 16;
 #   decisions SH-08, SH-10, SH-14 to SH-19 and P0-6, P0-9, P0-10 (provisional,
-#   dev/DECISIONS.md section 1.0); SH-11 (P0-2) is open and blocking, hence
-#   `stable_psi_m_height` of ef_h_control() has no default. Flags:
+#   dev/DECISIONS.md section 1.0); SH-11 (P0-2) is resolved with the SEBAL
+#   Idaho manual (Waters et al., 2002, p. 33, Eq. 38): `stable_psi_m_height`
+#   of ef_h_control() defaults to 2 m. Flags:
 #   dev/specs/flags.md section 4.2 (EF_H_).
 #
 # Implemented (exported): ef_air_density(), ef_sensible_heat(),
@@ -54,9 +55,12 @@
 #' `earthflux_input_error`).
 #'
 #' Verification status: `VERIFICADA` as the content of FAO-56 (chapter 2,
-#' box 6); its use in METRIC with \eqn{T_a = T_s - dT}{Ta = Ts - dT} is
-#' `CANDIDATA` (METRIC implementations use a variant with the pressure of a
-#' standard atmosphere at \eqn{T_a}{Ta}, about 0.6 % higher).
+#' box 6). Its use in METRIC is `CANDIDATA`: the SEBAL Idaho manual
+#' computes the air density at \eqn{T_a = T_s - dT}{Ta = Ts - dT}
+#' (Waters et al., 2002, p. 31, step 6), which corroborates the temperature
+#' used here, but it does not print the density equation (METRIC
+#' implementations use a variant with the pressure of a standard atmosphere
+#' at \eqn{T_a}{Ta}, about 0.6 % higher).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -107,9 +111,10 @@ air_density_core <- function(pressure, air_temperature) {
 #' @param rah Numeric. Aerodynamic resistance to heat transport \[s m-1\]
 #'   (see [ef_rah()]). Must be finite and `> 0`.
 #' @param cp Numeric. Specific heat of air at constant pressure
-#'   \[J kg-1 K-1\]. Must be finite and `> 0`. No default: the METRIC value
-#'   (1004 J kg-1 K-1, `CANDIDATA`, decision SH-09) is the one used and
-#'   recorded by [ef_calibrate_h()] (element `constants$cp`); FAO-56 uses
+#'   \[J kg-1 K-1\]. Must be finite and `> 0`. Default 1004 J kg-1 K-1 (the
+#'   package constant `EF_SPECIFIC_HEAT_AIR`; Waters et al., 2002, p. 25,
+#'   text of Eq. 25; decision SH-09), the value used and recorded by
+#'   [ef_calibrate_h()] (element `constants$cp`); FAO-56 uses
 #'   1013 J kg-1 K-1.
 #'
 #' @return A numeric vector of sensible heat flux \eqn{H}{H} \[W m-2\], with
@@ -131,8 +136,10 @@ air_density_core <- function(pressure, air_temperature) {
 #' raise an error of class `earthflux_domain_error` (also
 #' `earthflux_input_error`).
 #'
-#' Verification status: `CANDIDATA` (form of `dev/SCIENTIFIC_SPEC.md`
-#' section 3 and METRIC implementations; Allen et al., 2007, not consulted).
+#' Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+#' (2002), p. 25, Eq. 25, with \eqn{c_p}{cp} = 1004 J kg-1 K-1. The
+#' cross-check with Allen et al. (2007) remains desirable but is no longer
+#' blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
@@ -140,13 +147,18 @@ air_density_core <- function(pressure, air_temperature) {
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
 #'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
+#'
 #' @family aerodynamics and sensible heat functions
 #' @export
 #'
 #' @examples
-#' ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850,
-#'                  cp = 1004)
-ef_sensible_heat <- function(air_density, dt, rah, cp) {
+#' ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850)
+ef_sensible_heat <- function(air_density, dt, rah,
+                             cp = EF_SPECIFIC_HEAT_AIR) {
   call <- sys.call()
   check_core_args(list(air_density = air_density, dt = dt, rah = rah, cp = cp),
                   call)
@@ -165,32 +177,34 @@ ef_sensible_heat <- function(air_density, dt, rah, cp) {
 #' @description
 #' Builds and validates the settings of [ef_calibrate_h()]: the heights of
 #' the aerodynamic formulation, the height at which the stable stability
-#' correction for momentum is evaluated (open decision SH-11) and the
-#' convergence settings of the iteration.
+#' correction for momentum of the blending height is evaluated (decision
+#' SH-11) and the convergence settings of the iteration.
 #'
 #' @param stable_psi_m_height Numeric scalar. Height \[m\] at which the
 #'   stability correction for momentum \eqn{\psi_m}{psi_m} of the blending
 #'   height is evaluated **under stable conditions** (\eqn{L > 0}{L > 0}).
-#'   No default: this is the open and blocking decision SH-11 (P0-2). METRIC
-#'   implementations (`water`) use 2 m, i.e.
-#'   \eqn{\psi_m = -5 \cdot 2/L}{psi_m = -5 * 2 / L}; the alternative is the
-#'   blending height itself (e.g. 200 m,
-#'   \eqn{\psi_m = -5 \cdot 200/L}{psi_m = -5 * 200 / L}). With
+#'   Default 2 m, i.e.
+#'   \eqn{\psi_m(200\,m) = -5 \cdot 2/L}{psi_m(200 m) = -5 * 2 / L}, as
+#'   written in Waters et al. (2002), p. 33, Eq. 38 (decision SH-11,
+#'   resolved). Another height may still be chosen explicitly, e.g. the
+#'   blending height itself (`stable_psi_m_height = 200`,
+#'   \eqn{\psi_m = -5 \cdot 200/L}{psi_m = -5 * 200 / L}); with
 #'   \eqn{L = 41.97}{L = 41.97} m the two choices give -0.238 and -23.8.
 #'   Under unstable conditions \eqn{\psi_m}{psi_m} is always evaluated at
-#'   `blending_height`. Must be finite, `> 0` and `<= blending_height`.
+#'   `blending_height` (Eqs. 35 and 37a). Must be finite, `> 0` and
+#'   `<= blending_height`.
 #' @param blending_height Numeric scalar. Blending height \eqn{z_b}{z_b}
-#'   \[m\]. No default (200 m in METRIC, `CANDIDATA`). Must be finite and
+#'   \[m\]. Default 200 m (Waters et al., 2002, p. 26). Must be finite and
 #'   greater than `z2`.
 #' @param z1,z2 Numeric scalars. Lower and upper heights of the aerodynamic
-#'   resistance \[m\], `0 < z1 < z2`. No defaults (0.1 m and 2 m in METRIC,
-#'   `CANDIDATA`).
+#'   resistance \[m\], `0 < z1 < z2`. Defaults 0.1 m and 2 m (Waters et al.,
+#'   2002, p. 30 and Eq. 41).
 #' @param tol Numeric scalar. Convergence tolerance on the relative change
 #'   of \eqn{r_{ah}}{rah} between iterations, applied to every anchor
 #'   (phase A) and to every pixel (phase B). Must be `> 0`. Default 0.01
 #'   (decision P0-10; value of METRIC implementations, without a primary
 #'   source). The value matters: in the synthetic case of the specification,
-#'   `tol = 0.01` stops 0.7 % away from the fixed point of the intercept.
+#'   `tol = 0.01` stops 0.6 % away from the fixed point of the intercept.
 #' @param maxit Integer scalar. Maximum number of iterations, `>= 1`.
 #'   Default 20 (P0-10; a design choice).
 #' @param damping Numeric scalar. Damping factor \eqn{\omega}{omega} in
@@ -203,40 +217,44 @@ ef_sensible_heat <- function(air_density, dt, rah, cp) {
 #'   `blending_height`, `z1`, `z2`, `tol`, `maxit` (integer) and `damping`.
 #'
 #' @details
-#' A missing `stable_psi_m_height`, `blending_height`, `z1` or `z2` raises an
-#' error of class `earthflux_missing_input`; invalid values raise
-#' `earthflux_domain_error` or `earthflux_input_error`.
+#' Invalid values raise `earthflux_domain_error` or `earthflux_input_error`
+#' (e.g. a `stable_psi_m_height` above the blending height, or `z2 <= z1`).
 #'
-#' Verification status: all heights are `CANDIDATA`; `tol`, `maxit` and
-#' `damping` are design choices adopted provisionally (P0-10).
+#' Why 2 m under stable conditions: the manual evaluates the stable
+#' correction of the momentum at the blending height with the ratio
+#' \eqn{2/L}{2 / L}, not \eqn{200/L}{200 / L}; the `water` package does the
+#' same. With a stable cold anchor (\eqn{H < 0}{H < 0}, advection) the
+#' calibration converges with 2 m and diverges with 200 m in the synthetic
+#' scene of the specification (finding M2-07 of `dev/DECISIONS.md`).
+#'
+#' Verification status: `blending_height`, `z1`, `z2` and
+#' `stable_psi_m_height = 2` are `VERIFICADA (SEBAL-Idaho 2002)` (Waters et
+#' al., 2002, pp. 26, 30 and 33, Eqs. 38-41); the cross-check with Allen,
+#' Tasumi and Trezza (2007) is desirable but no longer blocking
+#' (`dev/VERIFICATION.md`). `tol`, `maxit` and `damping` are design choices
+#' adopted provisionally (P0-10).
+#'
+#' @references
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family aerodynamics and sensible heat functions
 #' @export
 #'
 #' @examples
-#' # Explicit choice of the open decision SH-11 (2 m, as in `water`)
-#' ef_h_control(stable_psi_m_height = 2, blending_height = 200,
-#'              z1 = 0.1, z2 = 2)
-ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
-                         tol = 0.01, maxit = 20L, damping = 0) {
+#' # Defaults of the SEBAL Idaho manual (z_b = 200 m, z1 = 0.1 m, z2 = 2 m,
+#' # stable psi_m of the blending height with 2 / L)
+#' ef_h_control()
+#'
+#' # The blending height in the stable correction, chosen explicitly
+#' ef_h_control(stable_psi_m_height = 200)
+ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
+                         z1 = 0.1, z2 = 2, tol = 0.01, maxit = 20L,
+                         damping = 0) {
   call <- sys.call()
   required <- c("stable_psi_m_height", "blending_height", "z1", "z2")
-  absent <- required[c(missing(stable_psi_m_height), missing(blending_height),
-                       missing(z1), missing(z2))]
-  if (length(absent) > 0L) {
-    ef_abort(
-      sprintf(
-        paste0(
-          "%s must be supplied explicitly (no verified default; ",
-          "`stable_psi_m_height` is the open decision SH-11: 2 m as in ",
-          "`water`, or the blending height)."
-        ),
-        paste0("`", absent, "`", collapse = ", ")
-      ),
-      class = c("earthflux_missing_input", "earthflux_input_error"),
-      call = call
-    )
-  }
   for (nm in c(required, "tol", "maxit", "damping")) {
     check_scalar(get(nm), nm, call = call)
   }
@@ -297,8 +315,11 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'   An optional column `anchor_id` is carried to the result; other columns
 #'   are ignored. Missing values at an anchor raise
 #'   `earthflux_calibration_error`.
-#' @param control The list returned by [ef_h_control()] (heights, the open
-#'   decision SH-11 and the convergence settings). It is validated again.
+#' @param control The list returned by [ef_h_control()] (heights, the
+#'   height of the stable momentum correction of decision SH-11 and the
+#'   convergence settings), e.g. `ef_h_control()` for its defaults. It is
+#'   validated again; elements not given take the defaults of
+#'   [ef_h_control()].
 #' @param lapse_rate Numeric scalar. Lapse rate of the surface temperature
 #'   with elevation \[K m-1\] (see [ef_ts_datum()]). No default (SH-13).
 #' @param datum_elevation Numeric scalar. Elevation of the temperature datum
@@ -352,14 +373,15 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'    rho_k * cp * (a_k + b_k * Ts_datum) / rah_(k-1)} (equal to the target
 #'    by construction);
 #' 5. Monin-Obukhov length
-#'    \eqn{L = -\rho c_p u_*^3 T_a / (k g H)}{L = -rho * cp * u*^3 * Ta /
-#'    (k * g * H)} with \eqn{u_{*,k-1}}{u*_(k-1)},
-#'    \eqn{T_a = T_s - dT_k}{Ta = Ts - dT_k} and \eqn{\rho_k}{rho_k} (SH-10;
-#'    \eqn{L = \infty}{L = Inf}, neutral, when \eqn{H = 0}{H = 0});
+#'    \eqn{L = -\rho c_p u_*^3 T_s / (k g H)}{L = -rho * cp * u*^3 * Ts /
+#'    (k * g * H)} with \eqn{u_{*,k-1}}{u*_(k-1)}, the surface temperature
+#'    \eqn{T_s}{Ts} and \eqn{\rho_k}{rho_k} (Waters et al., 2002, Eq. 34;
+#'    SH-10; \eqn{L = \infty}{L = Inf}, neutral, when \eqn{H = 0}{H = 0});
 #' 6. stability corrections (unstable: Paulson-type forms with coefficient
 #'    16; stable: log-linear form \eqn{-5 z/L}{-5 * z / L}), with
 #'    \eqn{\psi_m}{psi_m} at the blending height (or at
-#'    `stable_psi_m_height` when \eqn{L > 0}{L > 0}, open decision SH-11)
+#'    `stable_psi_m_height` when \eqn{L > 0}{L > 0}: 2 m by default,
+#'    Waters et al., 2002, Eq. 38, decision SH-11)
 #'    and \eqn{\psi_h}{psi_h} at `z2` and `z1`; then \eqn{u_{*,k}}{u*_k} and
 #'    the new \eqn{r_{ah}}{rah};
 #' 7. damping: \eqn{r_{ah,k} = (1 - \omega) r_{ah,new} + \omega
@@ -401,23 +423,37 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'   iterate and gets `EF_H_PIXEL_NOT_CONVERGED`.
 #'
 #' Constants: von Karman constant `EF_VON_KARMAN` (0.41), gravity
-#' `EF_GRAVITY` (9.807 m s-2, `CANDIDATA`) and specific heat of air
-#' `EF_SPECIFIC_HEAT_AIR` (1004 J kg-1 K-1, `CANDIDATA`, decision SH-09
-#' open); they are recorded in `constants`.
+#' `EF_GRAVITY` (9.81 m s-2) and specific heat of air `EF_SPECIFIC_HEAT_AIR`
+#' (1004 J kg-1 K-1), the values of Waters et al. (2002, pp. 25-26 and 32);
+#' they are recorded in `constants`.
 #'
-#' Verification status: `CANDIDATA`. The procedure follows
-#' `dev/specs/sensible-heat.md` section 11, written from the `water` package
-#' and secondary sources; Allen, Tasumi and Trezza (2007), Paulson (1970)
-#' and Webb (1970) have not been consulted. Known differences with `water`
-#' are listed in section 17 of that specification (e.g. no wind floor, no
-#' substitute friction velocity, density at \eqn{T_a}{Ta}, per-anchor
-#' convergence, strategy P2).
+#' Verification status: the forms are `VERIFICADA (SEBAL-Idaho 2002)`: the
+#' iterative scheme of Waters et al. (2002), pp. 25-34 (figure 4, Eqs.
+#' 25-41) and appendix 8 (anchor conditions of p. 30-31, dT from Eq. 33,
+#' \eqn{dT}{dT} linear in the surface temperature, Eq. 32, Monin-Obukhov
+#' length with \eqn{T_s}{Ts}, Eq. 34, stability corrections, Eqs. 35-39,
+#' corrected \eqn{u_*}{u*} and \eqn{r_{ah}}{rah}, Eqs. 40-41). The
+#' procedural choices are EarthFlux decisions (P0-10, `CANDIDATA` as
+#' procedure): the manual iterates "until the successive values for dT_hot
+#' and rah at the hot pixel have stabilized" (p. 34; 3 to 7 iterations,
+#' appendix 8), whereas EarthFlux uses a relative tolerance on rah at both
+#' anchors, the closure of the anchors and phase B with the per-pixel
+#' strategy P2. Known differences with `water` are listed in section 17 of
+#' `dev/specs/sensible-heat.md` (e.g. no wind floor, no substitute friction
+#' velocity, per-anchor convergence, strategy P2). The cross-check with
+#' Allen, Tasumi and Trezza (2007) remains desirable but is no longer
+#' blocking; Paulson (1970) and Webb (1970) were not consulted.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' Paulson, C. A. (1970). The mathematical representation of wind speed and
 #' temperature profiles in the unstable atmospheric surface layer. *Journal
@@ -446,8 +482,8 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'   u_blend = u_b,
 #'   pressure = ef_air_pressure(c(500, 700))
 #' )
-#' ctrl <- ef_h_control(stable_psi_m_height = 2, blending_height = 200,
-#'                      z1 = 0.1, z2 = 2)
+#' # Heights of the SEBAL Idaho manual (the defaults of ef_h_control())
+#' ctrl <- ef_h_control()
 #' cal <- ef_calibrate_h(anchors, control = ctrl, lapse_rate = 0.00649,
 #'                       datum_elevation = 500,
 #'                       pixels = list(lst = 308, elevation = 500, zom = 0.02,
@@ -585,15 +621,19 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
         von_karman = EF_VON_KARMAN,
         gravity = EF_GRAVITY,
         cp = cp,
-        status = c(von_karman = "VERIFICADA (FAO-56); CANDIDATA in METRIC",
-                   gravity = "CANDIDATA", cp = "CANDIDATA (SH-09)")
+        status = c(von_karman = "VERIFICADA (FAO-56; SEBAL-Idaho 2002)",
+                   gravity = "VERIFICADA (SEBAL-Idaho 2002)",
+                   cp = "VERIFICADA (SEBAL-Idaho 2002)")
       ),
       provenance = list(
         procedure = paste0(
           "METRIC dT calibration: phase A at the anchors with closure; ",
           "phase B strategy P2"
         ),
-        status = "CANDIDATA",
+        status = paste0(
+          "VERIFICADA (SEBAL-Idaho 2002) forms; ",
+          "procedure: provisional decisions P0-10"
+        ),
         specification = "dev/specs/sensible-heat.md sections 9-11",
         anchors_input = if (inherits(anchors, "earthflux_anchors")) {
           "earthflux_anchors$calibration_points"
@@ -770,7 +810,8 @@ h_pixel_inputs <- function(pixels, control, call) {
 #'
 #' @param air_density Air density \[kg m-3\].
 #' @param u_star Friction velocity of the previous step \[m s-1\].
-#' @param air_temperature Near-surface air temperature \[K\].
+#' @param lst Land surface temperature \[K\] (the temperature of the
+#'   Monin-Obukhov length, Waters et al., 2002, p. 32, Eq. 34).
 #' @param h Sensible heat flux \[W m-2\].
 #' @param u_blend Wind speed at the blending height \[m s-1\].
 #' @param log_blend `log(blending_height / zom)`.
@@ -779,12 +820,12 @@ h_pixel_inputs <- function(pixels, control, call) {
 #' @return A list with `obukhov_length`, `u_star` and `rah` (undamped);
 #'   `u_star` and `rah` are `NA` where they are not defined or not positive.
 #' @noRd
-h_stability_step <- function(air_density, u_star, air_temperature, h,
-                             u_blend, log_blend, control, cp) {
-  obukhov <- ef_monin_obukhov_length(air_density, u_star, air_temperature, h,
-                                     cp)
+h_stability_step <- function(air_density, u_star, lst, h, u_blend, log_blend,
+                             control, cp) {
+  obukhov <- ef_monin_obukhov_length(air_density, u_star, lst, h, cp)
   # Height of psi_m for the blending height: z_b when unstable or neutral,
-  # `stable_psi_m_height` when stable (open decision SH-11).
+  # `stable_psi_m_height` when stable (decision SH-11: 2 m by default, as in
+  # Waters et al., 2002, p. 33, Eq. 38).
   z_m <- rep(control$blending_height, length(obukhov))
   z_m[!is.na(obukhov) & obukhov > 0] <- control$stable_psi_m_height
   u_new <- ustar_core(u_blend, log_blend, ef_psi_m(z_m, obukhov))
@@ -869,7 +910,7 @@ h_phase_a <- function(anc, ts_datum, h_target, control, cp, call) {
                      call)
     }
     h <- rho * cp * (co$a + co$b * ts_datum) / rah
-    step <- h_stability_step(rho, u_star, anc$lst - dt, h, anc$u_blend,
+    step <- h_stability_step(rho, u_star, anc$lst, h, anc$u_blend,
                              log_blend, control, cp)
     if (anyNA(step$u_star) || anyNA(step$rah)) {
       h_anchor_abort(
@@ -945,8 +986,7 @@ h_phase_a <- function(anc, ts_datum, h_target, control, cp, call) {
 h_phase_b <- function(inp, ts_datum, a, b, control, cp) {
   n <- length(inp$lst)
   dt <- a + b * ts_datum
-  t_air <- inp$lst - dt
-  rho <- air_density_core(inp$pressure, t_air)
+  rho <- air_density_core(inp$pressure, inp$lst - dt)
   log_blend <- log(control$blending_height / inp$zom)
   u_star <- ustar_core(inp$u_blend, log_blend, 0)
   u_star[!is.na(u_star) & !(u_star > 0)] <- NA_real_
@@ -971,7 +1011,7 @@ h_phase_b <- function(inp, ts_datum, a, b, control, cp) {
       break
     }
     h <- rho[idx] * cp * dt[idx] / rah[idx]
-    step <- h_stability_step(rho[idx], u_star[idx], t_air[idx], h,
+    step <- h_stability_step(rho[idx], u_star[idx], inp$lst[idx], h,
                              inp$u_blend[idx], log_blend[idx], control, cp)
     bad <- is.na(step$u_star) | is.na(step$rah)
     rah_new <- (1 - control$damping) * step$rah + control$damping * rah[idx]

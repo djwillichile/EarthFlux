@@ -360,8 +360,9 @@ modis_read_source_layers <- function(src, layers, aoi, call) {
 #'   in \[0, 1\] or a single-layer `SpatRaster` on the working grid (its
 #'   model is open, T-11); `NULL` otherwise.
 #' @param emissivity_method Character. Method of
-#'   `modis_broadband_emissivity()`: `"lai_empirical"` (E3, `CANDIDATA`,
-#'   MP-04).
+#'   `modis_broadband_emissivity()`: `"lai_empirical"` (E3, `VERIFICADA
+#'   (SEBAL-Idaho 2002)` as a formulation; its consistency with the LST
+#'   product is open, RC-14, MP-04).
 #' @param ndvi_source Character. `"MOD13A2"` (MP-05); other sources raise
 #'   `earthflux_method_not_implemented`.
 #' @param composite_method Named character with elements `albedo`, `ndvi`
@@ -707,8 +708,9 @@ surface_flags <- function(masks, target) {
 #'
 #' @section Verification status:
 #' Assembly only; the status of each step is that of the function used:
-#' product facts `VERIFICADA` (product table), view time conversion,
-#' broadband albedo and emissivity `CANDIDATA`, the assigned LAI of the
+#' product facts `VERIFICADA` (product table), view time conversion and
+#' broadband albedo `CANDIDATA`, broadband emissivity E3 `VERIFICADA
+#' (SEBAL-Idaho 2002)` as a formulation (RC-14 open), the assigned LAI of the
 #' non-vegetated classes `CANDIDATA` (MP-06), NDVI and band emissivities
 #' `VERIFICADA` (product layers), temporal matching and aggregation
 #' provisional decisions (MP-07, MP-08). Not contrasted with a real granule
@@ -1033,7 +1035,7 @@ modis_provenance <- function(sources, options, rows) {
       product_facts = "VERIFICADA",
       overpass_time = "CANDIDATA",
       albedo = "CANDIDATA",
-      emissivity = "CANDIDATA",
+      emissivity = "VERIFICADA (SEBAL-Idaho 2002); RC-14 open",
       lai_nonveg = if (is.null(options$lai_nonveg))
         "not used: non-vegetated classes NA (MP-06)" else
         "CANDIDATA (explicit LAI of the non-vegetated classes, MP-06)",

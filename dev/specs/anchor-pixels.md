@@ -18,6 +18,21 @@ Complementa `SCIENTIFIC_SPEC.md` (§1.2, §2.1, §2.2, §2.3, §7),
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`).
 
+> **Verificación (2026-11-05, `DECISIONS.md` M2-08).** Contraste con el
+> manual SEBAL de Idaho (Waters et al., 2002), registro en
+> [`../VERIFICATION.md`](../VERIFICATION.md) (filas 40–42). La **forma** de
+> las condiciones de borde pasa a `VERIFICADA (SEBAL-Idaho 2002)`: ancla
+> fría H = Rn − G − 1,05·λETr con ETr de alfalfa (ASCE estandarizada)
+> (p. 30, paso 5a; ap. 7, p. 66) y ancla caliente H = Rn − G − λET_hot con
+> ET_hot = 0 en suelo agrícola desnudo y seco, o por balance hídrico tras
+> lluvia en los 3–4 días previos (p. 31, paso 5b; ap. 7, p. 72). Los valores
+> 1,05 y 0 son los del manual, pero k, `etrf_hot` y `le_hot` siguen sin
+> defecto por diseño (D-AP-04, D-AP-05, P0-8). Los criterios de selección
+> siguen `CANDIDATA`: el manual describe una selección visual con guías
+> numéricas (frío: α 0,22–0,24, LAI 4–6; caliente: LAI 0–0,4, pendiente
+> < 1 % en montaña; cerca de la estación), evidencia para un preset futuro
+> (D-AP-01), no implementada.
+
 > **Estado de implementación (M2, 2026-11-04).** Implementado en
 > `R/metric-anchors.R` bajo las decisiones provisionales P0-8 y P0-9
 > (`DECISIONS.md` §1.0), sin que ningún criterio pase a `VERIFICADA`: todo

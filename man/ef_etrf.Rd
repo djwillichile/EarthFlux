@@ -66,10 +66,14 @@ infinite value raises an error of class \code{earthflux_domain_error} (also
 \code{earthflux_input_error}). A missing \code{reference} raises
 \code{earthflux_missing_input}; an unknown one, \code{earthflux_input_error}.
 
-Verification status: \code{CANDIDATA} (corroborated by secondary sources,
-Olmedo et al., 2016, Eq. 4). It is implemented as an operational
-definition; its form and equation number in Allen et al. (2007) have not
-been verified.
+Verification status: \verb{VERIFICADA (SEBAL-Idaho 2002)}: Waters et al.
+(2002), p. 35, Eq. 43 (ETrF = ET_inst / ETr, with ETr the alfalfa
+reference ET at the image time, "similar to the well-known crop
+coefficient"); also corroborated by Olmedo et al. (2016, Eq. 4). The
+manual expects values between 0 and about 1.1 and notes that negative
+values can occur (p. 35); no range is checked here (decision ET-D5).
+The cross-check with Allen et al. (2007) remains desirable but is no
+longer blocking.
 }
 \examples{
 # 0.72 mm h-1 against an alfalfa reference of 0.80 mm h-1: 0.9
@@ -90,6 +94,11 @@ Fonseca-Luengo, D., & Fuentes-Penailillo, F. (2016). water: Tools and
 functions to estimate actual evapotranspiration using land surface energy
 balance models in R. \emph{The R Journal}, 8(2), 352-369.
 \doi{10.32614/RJ-2016-051}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other latent heat and evapotranspiration functions:

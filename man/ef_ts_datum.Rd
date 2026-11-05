@@ -20,9 +20,11 @@ not the sensible heat flux (see Details).}
 
 \item{lapse_rate}{Numeric scalar. Lapse rate of the surface temperature
 with elevation \eqn{\Gamma}{Gamma} [K m-1] (note: per metre, not per
-kilometre). Must be finite and \verb{>= 0}. No default: the value
-0.00649 K m-1 (6.49 K km-1) observed in METRIC implementations is
-\code{CANDIDATA} (decision SH-13).}
+kilometre). Must be finite and \verb{>= 0}. No default (decision SH-13): the
+SEBAL Idaho manual uses 0.0065 K m-1 (Waters et al., 2002, Eq. 12-7),
+the \code{water} package 0.00649 K m-1, and METRIC tailors the lapse rate to
+the scene, with separate rates for flat and mountainous terrain (Allen
+et al., 2012, p. 74).}
 }
 \value{
 A numeric vector of datum temperature
@@ -51,9 +53,14 @@ Missing values propagate. Infinite values and values outside the domain
 raise an error of class \code{earthflux_domain_error} (also
 \code{earthflux_input_error}).
 
-Verification status: \code{CANDIDATA} (observed in the \code{water} package; the
-"customized lapse rate" attributed to Allen et al., 2007, has not been
-verified).
+Verification status: the form is \verb{VERIFICADA (SEBAL-Idaho 2002)}:
+Waters et al. (2002), appendix 12, p. 96, Eq. 12-7
+(\eqn{T_{s,dem} = T_s + 0.0065\,\Delta z}{Ts_dem = Ts + 0.0065 * dz},
+with \eqn{\Delta z}{dz} the elevation of the pixel minus that of the
+datum, usually the weather station). The "dual-stage" correction of
+METRIC for mountains (Allen et al., 2012, p. 74) is not implemented. The
+cross-check with Allen et al. (2007) remains desirable but is no longer
+blocking.
 }
 \examples{
 # Pixels at 500 m and 700 m referred to a 500 m datum
@@ -65,6 +72,16 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
+
+Allen, R. G., Kjaersgaard, J. H., Trezza, R., Oliveira, A., Robison, C.,
+& Lorite-Torres, I. (2012). Refining components of a satellite-based
+surface energy balance model to complex land-use systems. In \emph{Remote
+Sensing and Hydrology} (IAHS Publication 352, pp. 73-75). IAHS Press.
 }
 \seealso{
 Other aerodynamics and sensible heat functions:

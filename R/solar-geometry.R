@@ -33,9 +33,13 @@
 #
 # Verification status: declination, inverse relative distance, equation of
 #   time and hour angle are VERIFICADA against FAO-56 (Eqs. 23, 24, 31-33;
-#   dev/specs/weather-forcing.md 4.6). The cosine of the incidence angle on a
-#   tilted plane is CANDIDATA (form attributed to solar engineering texts,
-#   primary source and its use in Allen et al., 2007, not verified).
+#   dev/specs/weather-forcing.md 4.6); declination and inverse distance are
+#   also those of the SEBAL Idaho manual (Waters et al., 2002, Eqs. 12-2 and
+#   7). The cosine of the incidence angle on a tilted plane stays CANDIDATA:
+#   its first four terms are those of Eq. 12-1 of the manual (attributed to
+#   Duffie and Beckman, 1991), but the fifth term is printed there with
+#   sin(latitude) instead of sin(gamma), an apparent misprint
+#   (dev/VERIFICATION.md).
 
 # Input checks (check_core_args(), check_doy(), check_angle()) and the
 # reshaping helpers (common_dim(), ef_reshape()) are shared core helpers in
@@ -167,10 +171,16 @@ ef_hour_angle <- function(doy, utc_hour, lon) {
 #'   (clockwise from north), in \[0, 2 pi).
 #' @return Numeric \eqn{\cos\theta_{rel}} \[-\] with the common length (and
 #'   `dim`) of the inputs.
-#' @section Verification status: `CANDIDATA` (incidence angle on an
-#'   arbitrarily oriented plane from solar engineering texts, e.g. Duffie and
-#'   Beckman; primary reference, equation number and its use in Allen et
-#'   al., 2007, not verified; dev/specs/radiation-components.md 6.1).
+#' @section Verification status: `CANDIDATA`. The SEBAL Idaho manual
+#'   (Waters et al., 2002, p. 94, Eq. 12-1, citing Duffie and Beckman, 1991)
+#'   gives the same aspect convention (0 south, east negative) and the same
+#'   first four terms, but prints the fifth as
+#'   \eqn{\cos\delta \sin\phi \sin s \sin\omega}; EarthFlux keeps
+#'   \eqn{\cos\delta \sin\gamma \sin s \sin\omega} (solar engineering
+#'   form): with \eqn{\sin\phi} a vertical east-facing plane at the equator
+#'   would never receive beam radiation, so the printed term is taken as a
+#'   misprint, to be confirmed against Duffie and Beckman (1991)
+#'   (dev/VERIFICATION.md; dev/specs/radiation-components.md 6.1).
 #' @noRd
 ef_cos_incidence <- function(lat, declination, hour_angle, slope, aspect) {
   call <- sys.call()
@@ -305,8 +315,10 @@ ef_cos_incidence <- function(lat, declination, hour_angle, slope, aspect) {
 #' and 31-33; the hour angle is Eq. 31 written for UTC times, with the exact
 #' 1/15 h per degree instead of 0.06667). The zenith angle relation is the
 #' standard spherical-trigonometry identity; the incidence angle on a
-#' tilted plane is `CANDIDATA` (form from solar engineering texts; primary
-#' reference and its use in Allen et al., 2007, to be verified). The
+#' tilted plane is `CANDIDATA` (form from solar engineering texts; Eq. 12-1
+#' of Waters et al., 2002, coincides except for a fifth term printed with
+#' the latitude instead of the aspect, an apparent misprint;
+#' `dev/VERIFICATION.md`). The
 #' precision of the FAO-56 calendar formulae against a higher-precision
 #' ephemeris has not been quantified (decision RC-04).
 #'

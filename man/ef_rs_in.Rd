@@ -116,7 +116,7 @@ Components on the horizontal:
   Gsc * dr * cos(theta_h)}, \eqn{R_{b,h} = \tau_b R_{a,h}}{Rb_h = tau_b *
   Ra_h} and \eqn{R_{d,h} = \tau_d R_{a,h}}{Rd_h = tau_d * Ra_h}, with
 \eqn{G_{sc}}{Gsc} the solar constant of the package (1366.67 W m-2,
-FAO-56 Eq. 21; its adoption for METRIC is \code{CANDIDATA}, decision RC-06);
+FAO-56 Eq. 21; the SEBAL Idaho manual rounds it to 1367 W m-2, RC-06);
 \item \code{ef_rs_in_measured()}: \eqn{R_{b,h} = (1 - k_d) R_{s,meas}}{Rb_h =
   (1 - kd) * Rs_meas} and \eqn{R_{d,h} = k_d R_{s,meas}}{Rd_h = kd *
   Rs_meas}.
@@ -175,15 +175,23 @@ outputs that depend on them, and always to \code{total}.
 }
 \section{Verification status}{
 
-\code{CANDIDATA}. The flat-terrain modelled form is the one observed in the
-\code{water} package (v1.0), attributed there to Allen et al. (2007) (not
-verified). The isotropic projection onto tilted planes is the standard
-form of solar engineering texts (Duffie and Beckman; isotropic model
-attributed to Liu and Jordan; neither verified); whether Allen, Trezza
-and Tasumi (2006) prescribe an anisotropic diffuse term is \code{TODO}
-(decision RC-09). In the measured path, the source of the diffuse
-fraction is \code{TODO} (decision RC-10). The solar constant is \code{CANDIDATA}
-(RC-06).
+The modelled form on flat terrain is \verb{VERIFICADA (SEBAL-Idaho 2002)}:
+\eqn{G_{sc} \cos\theta\, d_r\, \tau_{sw}}{Gsc * cos(theta) * dr *
+tau_sw}, Waters et al. (2002), p. 19, Eq. 12 (the manual rounds
+\eqn{G_{sc}}{Gsc} to 1367 W m-2; the package uses the FAO-56 value
+1366.67 W m-2, a relative difference of 2.4e-4, decision RC-06).
+
+On slopes the form is \code{CANDIDATA} and differs from the mountain model of
+the manual (appendix 12, pp. 93-95), which applies Eq. 12 with the
+cosine of the incidence angle on the slope divided by the cosine of the
+slope ("horizontal equivalent") and one total transmissivity, without a
+beam / diffuse partition. EarthFlux projects the beam and diffuse
+components separately onto the plane (isotropic projection of solar
+engineering texts, Duffie and Beckman; isotropic model attributed to Liu
+and Jordan; neither verified); whether Allen, Trezza and Tasumi (2006)
+prescribe an anisotropic diffuse term is \code{TODO} (decision RC-09). In the
+measured path, the source of the diffuse fraction is \code{TODO} (decision
+RC-10).
 }
 
 \examples{
@@ -220,6 +228,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other radiation functions:

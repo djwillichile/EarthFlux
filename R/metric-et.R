@@ -10,19 +10,22 @@
 #   - ef_et_inst(): LE [W m-2] -> instantaneous ET [mm h-1] with lambda from
 #     ef_lambda() (R/shared-physics.R) and rho_w = EF_WATER_DENSITY.
 #     VERIFICADA as a unit conversion (FAO-56, chapter 3, box 8, plus
-#     3600 s h-1); the METRIC notation 3600 * LE / (lambda * rho_w) is
-#     CANDIDATA (corroborated) and lacks the factor 1000 mm m-1 (item V3,
-#     section 5.2). The dimensionally explicit form of section 5.1 is used.
+#     3600 s h-1) and VERIFICADA (SEBAL-Idaho 2002): Eq. 42 of the SEBAL
+#     Idaho manual, ET_inst = 3600 * LE / lambda in mm h-1, is numerically
+#     identical (item V3, section 5.2). The notation 3600 * LE /
+#     (lambda * rho_w) of secondary sources lacks the factor 1000 mm m-1.
+#     The dimensionally explicit form of section 5.1 is used.
 #   - ef_et_inst_to_latent_heat() (internal): exact inverse of ef_et_inst(),
 #     for tests and for the cold anchor boundary condition.
-#   - ef_etrf(): reference ET fraction. CANDIDATA (corroborated; items V4,
-#     V5).
+#   - ef_etrf(): reference ET fraction. VERIFICADA (SEBAL-Idaho 2002),
+#     Eq. 43 of the manual (items V4, V5).
 #   - ef_et_daily(): dispatcher of the daily ET family (rule N6 of
 #     dev/NAMING.md); only method "etrf" is implemented. Returns an
 #     earthflux_daily_et object with the flags EF_INPUT_NA and
 #     EF_ET_NEGATIVE and the provenance.
-#   - ef_et_daily_etrf(): ETa_24 = ETrF * ETr_24. CANDIDATA (corroborated;
-#     item V6). No slope correction C_rad (decision ET-D7, open).
+#   - ef_et_daily_etrf(): ETa_24 = ETrF * ETr_24. VERIFICADA (SEBAL-Idaho
+#     2002), Eq. 44 of the manual (item V6). No slope correction C_rad
+#     (decision ET-D7, open; not in the manual).
 #   - ef_diagnose_et() (internal): cell-scope flags of the stage
 #     (EF_ET_NEGATIVE on each ET output layer).
 #
@@ -101,11 +104,14 @@ check_reference_type <- function(reference, call = sys.call(-1)) {
 #' \eqn{\rho_w}{rho_w} = 1000 kg m-3 this is numerically
 #' \eqn{3600 LE / \lambda}{3600 * LE / lambda}.
 #'
-#' The notation \eqn{3600 LE / (\lambda \rho_w)}{3600 * LE / (lambda *
-#' rho_w)} attributed to METRIC by secondary sources gives m h-1, not
-#' mm h-1, with \eqn{\lambda}{lambda} in J kg-1; the factor 1000 mm m-1 is
-#' written explicitly here. How the primary reference resolves that factor
-#' is pending verification.
+#' The SEBAL Idaho manual writes \eqn{ET_{inst} = 3600\, \lambda ET /
+#' \lambda}{ET_inst = 3600 * LE / lambda} in mm h-1 (Waters et al., 2002,
+#' p. 34, Eq. 42), i.e. kg m-2 h-1, which is mm h-1 with
+#' \eqn{\rho_w}{rho_w} = 1000 kg m-3: numerically identical to the form
+#' above. The notation \eqn{3600 LE / (\lambda \rho_w)}{3600 * LE /
+#' (lambda * rho_w)} attributed to METRIC by secondary sources gives m h-1,
+#' not mm h-1, with \eqn{\lambda}{lambda} in J kg-1; the factor
+#' 1000 mm m-1 is written explicitly here.
 #'
 #' Unit guard: a `lambda` given in MJ kg-1 (about 2.45) instead of J kg-1
 #' would silently give an evapotranspiration 1e6 times too large. Values of
@@ -128,8 +134,9 @@ check_reference_type <- function(reference, call = sys.call(-1)) {
 #' Verification status: `VERIFICADA` as a unit conversion (FAO-56, chapter
 #' 3, box 8 and Eq. 20, plus 3600 s h-1); checked against the FAO-56
 #' equivalences 1 mm d-1 = 2.45 MJ m-2 d-1 (chapter 1, table 1) and
-#' 1 W m-2 = 0.035 mm d-1 (chapter 3, table 3). Its notation in Allen et al.
-#' (2007) is `CANDIDATA` (corroborated by secondary sources).
+#' 1 W m-2 = 0.035 mm d-1 (chapter 3, table 3); and `VERIFICADA (SEBAL-Idaho
+#' 2002)` (Waters et al., 2002, Eq. 42, see above). Its notation in Allen et
+#' al. (2007) has not been verified (desirable, not blocking).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -140,6 +147,11 @@ check_reference_type <- function(reference, call = sys.call(-1)) {
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family latent heat and evapotranspiration functions
 #' @export
@@ -259,10 +271,14 @@ ef_et_inst_to_latent_heat <- function(et_inst, lambda) {
 #' `earthflux_input_error`). A missing `reference` raises
 #' `earthflux_missing_input`; an unknown one, `earthflux_input_error`.
 #'
-#' Verification status: `CANDIDATA` (corroborated by secondary sources,
-#' Olmedo et al., 2016, Eq. 4). It is implemented as an operational
-#' definition; its form and equation number in Allen et al. (2007) have not
-#' been verified.
+#' Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+#' (2002), p. 35, Eq. 43 (ETrF = ET_inst / ETr, with ETr the alfalfa
+#' reference ET at the image time, "similar to the well-known crop
+#' coefficient"); also corroborated by Olmedo et al. (2016, Eq. 4). The
+#' manual expects values between 0 and about 1.1 and notes that negative
+#' values can occur (p. 35); no range is checked here (decision ET-D5).
+#' The cross-check with Allen et al. (2007) remains desirable but is no
+#' longer blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
@@ -275,6 +291,11 @@ ef_et_inst_to_latent_heat <- function(et_inst, lambda) {
 #' functions to estimate actual evapotranspiration using land surface energy
 #' balance models in R. *The R Journal*, 8(2), 352-369.
 #' \doi{10.32614/RJ-2016-051}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family latent heat and evapotranspiration functions
 #' @export
@@ -395,10 +416,13 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #' `earthflux_unknown_method`; an unknown `reference`,
 #' `earthflux_input_error`.
 #'
-#' Verification status: method `"etrf"` is `CANDIDATA` (corroborated by
-#' secondary sources, Olmedo et al., 2016, Eq. 4). It is implemented as an
-#' operational definition; its form and equation number in Allen et al.
-#' (2007) have not been verified.
+#' Verification status: method `"etrf"` is `VERIFICADA (SEBAL-Idaho
+#' 2002)`: Waters et al. (2002), p. 35, Eq. 44
+#' (\eqn{ET_{24} = ETrF \times ET_{r-24}}{ET_24 = ETrF * ETr_24}, with
+#' \eqn{ET_{r-24}}{ETr_24} the sum of the hourly reference ET of the day,
+#' assuming that the instantaneous ETrF equals its 24-hour average); also
+#' corroborated by Olmedo et al. (2016, Eq. 4). The cross-check with Allen
+#' et al. (2007), including its slope correction, remains desirable.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
@@ -411,6 +435,11 @@ ef_etrf <- function(et_inst, etr_inst, reference) {
 #' functions to estimate actual evapotranspiration using land surface energy
 #' balance models in R. *The R Journal*, 8(2), 352-369.
 #' \doi{10.32614/RJ-2016-051}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family latent heat and evapotranspiration functions
 #' @export
@@ -472,7 +501,7 @@ ef_et_daily <- function(etrf, etr_24, reference, method) {
       provenance = list(
         method = method,
         fun = "ef_et_daily_etrf",
-        status = "CANDIDATA",
+        status = "VERIFICADA (SEBAL-Idaho 2002)",
         reference = reference,
         inputs = names(inputs),
         flags_evaluated = flags$evaluated,

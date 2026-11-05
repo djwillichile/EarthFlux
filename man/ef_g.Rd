@@ -134,14 +134,28 @@ with a reference.
 }
 \section{Verification status}{
 
-Both formulations are \code{CANDIDATA}. Their form, coefficients and the
-LAI threshold were observed in a secondary implementation (the \code{water}
-R package, version 1.0) and are rewritten here; the primary references
-were not consulted. The sign convention, the Kelvin offset used by the
-sources (273.15 is used here) and whether the bare-soil condition is
-\code{LAI < 0.5} or \code{LAI <= 0.5} remain to be verified. No default method is
-offered for this reason. Applying the relations to 1 km MODIS pixels
-(mixed cover, composite NDVI and LAI) is not validated.
+\code{"bastiaanssen"} is \verb{VERIFICADA (SEBAL-Idaho 2002)}: Waters et al.
+(2002), p. 24, Eq. 24, after Bastiaanssen (2000), print
+\eqn{G/R_n = T_s/\alpha\, (0.0038\,\alpha + 0.0074\,\alpha^2)\,
+(1 - 0.98\,\mathrm{NDVI}^4)}{G/Rn = Ts / albedo * (0.0038 * albedo +
+0.0074 * albedo^2) * (1 - 0.98 * NDVI^4)} with \eqn{T_s}{Ts} in degrees
+Celsius, "representing values near midday"; the expanded form above is
+algebraically identical for \eqn{\alpha > 0}{albedo > 0} (and defined at
+\eqn{\alpha = 0}{albedo = 0}). The manual assigns G/Rn = 0.5 to water
+(NDVI < 0) and to snow (\eqn{T_s}{Ts} < 4 degrees C and albedo > 0.45)
+(p. 25, appendix 10); these rules are not applied here (decision G-D4).
+The cross-check with Allen et al. (2007) remains desirable but is no
+longer blocking.
+
+\code{"tasumi"} is \code{CANDIDATA}: its form, coefficients and the LAI threshold
+were observed in a secondary implementation (the \code{water} R package,
+version 1.0) and are rewritten here; the primary references (Tasumi,
+2003; Allen et al., 2007) were not consulted. Whether its bare-soil
+condition is \code{LAI < 0.5} or \code{LAI <= 0.5} remains to be verified.
+
+The method has no default (dispatcher convention, decision T-15).
+Applying the relations to 1 km MODIS pixels (mixed cover, composite NDVI
+and LAI) is not validated.
 }
 
 \examples{
@@ -178,6 +192,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 \code{\link[=ef_net_radiation]{ef_net_radiation()}} for \eqn{R_n}{Rn}.

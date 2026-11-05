@@ -12,6 +12,24 @@ Estado: **borrador M1** · Complementa `SCIENTIFIC_SPEC.md` (§1.2, §2.2, §2.3
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`).
 
+> **Verificación (2026-11-05, `DECISIONS.md` M2-08).** Contraste con el
+> manual SEBAL de Idaho (Waters et al., 2002), registro en
+> [`../VERIFICATION.md`](../VERIFICATION.md) (filas 2–13). Pasan a
+> `VERIFICADA (SEBAL-Idaho 2002)`: τ_sw = 0,75 + 2·10⁻⁵·z como τ
+> instantánea (p. 18, Ec. 11), ε_a = 0,85·(−ln τ_sw)^0,09 (p. 23, Ec. 22),
+> Rs↓ = Gsc·cos θ·d_r·τ_sw en terreno plano (p. 19, Ec. 12), RL↓ =
+> ε_a·σ·T⁴ (p. 23, Ec. 21) y RL↑ = ε₀·σ·Ts⁴ (p. 22, Ec. 20); ε₀ desde LAI
+> (E3, p. 20, Ec. 16b) como forma para NDVI > 0. **RC-12:** el manual usa
+> la Ts del píxel frío (Ec. 23) con ajuste por elevación en montaña
+> (Ec. 12-8), y Allen et al. (2012, p. 74) lo confirma para METRIC
+> (opción (b)); `ef_rl_in()` sigue agnóstica (P0-3). **RC-06:** el manual
+> usa Gsc = 1367 W m⁻² (el de FAO-56 redondeado) con la τ de FAO-56.
+> Siguen `CANDIDATA`: τ particionada (RC-08), Rs↓ en laderas (el modelo de
+> montaña del manual usa cos θ / cos s, "equivalente horizontal", y una τ
+> total: discrepancia de marco, RC-09) y cos θ en plano inclinado (el
+> quinto término de la Ec. 12-1 está impreso con sen φ en lugar de sen γ,
+> errata aparente). El resto del documento conserva la redacción de M1.
+
 Convención de trazabilidad usada en este documento:
 
 - **"Forma observada en `water` v1.0, función X"**: la ecuación aparece en

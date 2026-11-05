@@ -7,9 +7,11 @@
 #
 # Tolerances: printed 6-decimal values, half a unit of the last digit
 # (section 14.7); calibration identities, relative 1e-12 / 1e-9 (section
-# 14.6). The iteration values of section 14.5 are provisional values of the
-# author's working script (not independent references): they are compared
-# with half a unit of their last printed digit, as regression values.
+# 14.6). The iteration values of section 14.5 were recomputed for 0.1.0
+# with the forms of Waters et al. (2002), Eqs. 25-41 (T = Ts in the
+# Monin-Obukhov length, g = 9.81 m s-2), by an independent script of the
+# author (Python, not the package code); they are compared with half a unit
+# of their last printed digit.
 
 # Synthetic scene of section 14.3 / 14.5 -------------------------------------------
 
@@ -152,10 +154,20 @@ test_that("ef_dt_coef() rejects swapped or equal anchor temperatures", {
 
 # Control -----------------------------------------------------------------------------
 
-test_that("ef_h_control() has no default for the open decision SH-11", {
-  expect_error(ef_h_control(blending_height = 200, z1 = 0.1, z2 = 2),
-               class = "earthflux_missing_input")
-  expect_error(ef_h_control(2), class = "earthflux_missing_input")
+test_that("ef_h_control() defaults follow the SEBAL Idaho manual (SH-11)", {
+  # Waters et al. (2002): z_b = 200 m (p. 26), z1 = 0.1 m and z2 = 2 m
+  # (p. 30, Eq. 41), stable psi_m(200 m) = -5 (2 / L) (p. 33, Eq. 38)
+  defaults <- ef_h_control()
+  expect_identical(defaults$stable_psi_m_height, 2)
+  expect_identical(defaults$blending_height, 200)
+  expect_identical(defaults$z1, 0.1)
+  expect_identical(defaults$z2, 2)
+  expect_identical(defaults, ctrl_for())
+  # The blending height can still be chosen explicitly
+  expect_identical(ef_h_control(stable_psi_m_height = 200)$stable_psi_m_height,
+                   200)
+  expect_error(ef_h_control(stable_psi_m_height = NULL),
+               class = "earthflux_input_error")
   ctrl <- ctrl_for()
   expect_identical(
     ctrl,
@@ -183,10 +195,10 @@ test_that("SH-14.5: iteration with tol = 0.01 and damping 0 or 0.5", {
   expect_identical(cal$iterations, 6L)
   last <- cal$trace[nrow(cal$trace), ]
   expect_identical(nrow(cal$trace), 6L)
-  expect_lt(abs(last$a - (-86.27)), 5e-3)
-  expect_lt(abs(last$b - 0.28936), 5e-6)
-  expect_lt(abs(last$rah_cold - 19.8266), 5e-5)
-  expect_lt(abs(last$rah_hot - 15.7205), 5e-5)
+  expect_lt(abs(last$a - (-86.74)), 5e-3)
+  expect_lt(abs(last$b - 0.29093), 5e-6)
+  expect_lt(abs(last$rah_cold - 19.8294), 5e-5)
+  expect_lt(abs(last$rah_hot - 15.7863), 5e-5)
   expect_lt(last$max_rel_change, 0.01)
   expect_true(is.na(cal$trace$delta_a[1]))
   expect_equal(cal$trace$delta_a[-1], diff(cal$trace$a), tolerance = 1e-12)
@@ -194,10 +206,10 @@ test_that("SH-14.5: iteration with tol = 0.01 and damping 0 or 0.5", {
   cal_d <- calibrate(control = ctrl_for(damping = 0.5))
   last_d <- cal_d$trace[nrow(cal_d$trace), ]
   expect_identical(cal_d$iterations, 7L)
-  expect_lt(abs(last_d$a - (-88.133)), 5e-4)
-  expect_lt(abs(last_d$b - 0.29558), 5e-6)
-  expect_lt(abs(last_d$rah_cold - 19.8564), 5e-5)
-  expect_lt(abs(last_d$rah_hot - 15.7971), 5e-5)
+  expect_lt(abs(last_d$a - (-88.570)), 5e-4)
+  expect_lt(abs(last_d$b - 0.29703), 5e-6)
+  expect_lt(abs(last_d$rah_cold - 19.8593), 5e-5)
+  expect_lt(abs(last_d$rah_hot - 15.8685), 5e-5)
 })
 
 test_that("SH-14.5: fixed point, independent of damping (properties 1-2)", {
@@ -207,14 +219,14 @@ test_that("SH-14.5: fixed point, independent of damping (properties 1-2)", {
   cal5 <- calibrate(control = ctrl)
   expect_true(cal0$converged)
   expect_true(cal5$converged)
-  expect_identical(cal0$iterations, 24L)
+  expect_identical(cal0$iterations, 23L)
   expect_identical(cal5$iterations, 34L)
   for (cal in list(cal0, cal5)) {
-    expect_lt(abs(cal$a - (-86.84546)), 5e-6)
-    expect_lt(abs(cal$b - 0.2912792), 5e-8)
-    expect_lt(abs(cal$anchors$rah[cal$anchors$type == "cold"] - 19.82518),
+    expect_lt(abs(cal$a - (-87.26315)), 5e-6)
+    expect_lt(abs(cal$b - 0.2926717), 5e-8)
+    expect_lt(abs(cal$anchors$rah[cal$anchors$type == "cold"] - 19.82799),
               5e-6)
-    expect_lt(abs(cal$anchors$rah[cal$anchors$type == "hot"] - 15.68989),
+    expect_lt(abs(cal$anchors$rah[cal$anchors$type == "hot"] - 15.75910),
               5e-6)
   }
   expect_lt(abs(cal0$a - cal5$a), 1e-7)
@@ -246,9 +258,9 @@ test_that("SH-14.5: phase B of the interior pixel at the fixed point", {
   cal <- calibrate(control = ctrl_for(tol = 1e-10, maxit = 100L),
                    pixels = interior)
   expect_true(cal$pixels$converged)
-  expect_lt(abs(cal$pixels$dt - 2.868528), 5e-7)
-  expect_lt(abs(cal$pixels$rah - 17.1505), 5e-5)
-  expect_lt(abs(cal$pixels$h - 181.3655), 5e-5)
+  expect_lt(abs(cal$pixels$dt - 2.879745), 5e-7)
+  expect_lt(abs(cal$pixels$rah - 17.1702), 5e-5)
+  expect_lt(abs(cal$pixels$h - 181.8722), 5e-5)
   expect_equal(cal$pixels$h,
                ef_sensible_heat(cal$pixels$air_density, cal$pixels$dt,
                                 cal$pixels$rah, cal$constants$cp),
@@ -321,9 +333,14 @@ test_that("SH-14.5: phase B is block-size invariant (property 7)", {
 test_that("SH-11: both stable_psi_m_height options with a stable cold anchor", {
   stable <- scene_anchors
   stable$le_target <- c(600, 0) # H_target = -50 W m-2 at the cold anchor
-  ctrl2 <- ef_h_control(2, 200, 0.1, 2, tol = 1e-8, maxit = 100L)
+  # Default of ef_h_control(): 2 m (Waters et al., 2002, Eq. 38)
+  ctrl2 <- ef_h_control(tol = 1e-8, maxit = 100L)
   cal <- calibrate(stable, control = ctrl2)
   expect_true(cal$converged)
+  # Values of the independent script of the author (forms of the manual)
+  expect_identical(cal$iterations, 19L)
+  expect_lt(abs(cal$a - (-120.328834)), 5e-6)
+  expect_lt(abs(cal$b - 0.39688192), 5e-8)
   cold <- cal$anchors[cal$anchors$type == "cold", ]
   expect_gt(cold$obukhov_length, 0)
   expect_lt(abs(cold$h / -50 - 1), 1e-9)
@@ -332,9 +349,8 @@ test_that("SH-11: both stable_psi_m_height options with a stable cold anchor", {
                     psi_m = ef_psi_m(2, cold$obukhov_length))
   expect_equal(cold$u_star, u_fix, tolerance = 1e-6)
 
-  # With z_b / L the iteration of this synthetic scene diverges (observed
-  # behaviour of the CANDIDATA forms, reported with a classed error and the
-  # trace, never silently)
+  # With z_b / L the iteration of this synthetic scene diverges (finding
+  # M2-07; reported with a classed error and the trace, never silently)
   ctrl200 <- ef_h_control(200, 200, 0.1, 2, tol = 1e-8, maxit = 100L)
   err <- tryCatch(calibrate(stable, control = ctrl200), error = function(e) e)
   expect_s3_class(err, "earthflux_calibration_error")
@@ -387,8 +403,8 @@ test_that("ef_calibrate_h() validates control, lapse rate and datum", {
   expect_error(ef_calibrate_h(scene_anchors, lapse_rate = 0.0065,
                               datum_elevation = 500),
                class = "earthflux_missing_input")
-  expect_error(calibrate(control = list(tol = 0.01)),
-               class = "earthflux_missing_input")
+  # A partial control list is completed with the defaults of ef_h_control()
+  expect_identical(calibrate(control = list(tol = 0.01))$control, ctrl_for())
   expect_error(calibrate(control = c(ctrl_for(), list(foo = 1))),
                class = "earthflux_input_error")
   expect_error(ef_calibrate_h(scene_anchors, ctrl_for(), lapse_rate = -1,
@@ -554,7 +570,10 @@ test_that("the calibration object records control, constants and provenance", {
   expect_identical(cal$constants$cp, EF_SPECIFIC_HEAT_AIR)
   expect_identical(cal$constants$von_karman, EF_VON_KARMAN)
   expect_identical(cal$constants$gravity, EF_GRAVITY)
-  expect_identical(cal$provenance$status, "CANDIDATA")
+  expect_match(cal$provenance$status, "VERIFICADA (SEBAL-Idaho 2002)",
+               fixed = TRUE)
+  expect_identical(cal$constants$status[["cp"]],
+                   "VERIFICADA (SEBAL-Idaho 2002)")
   expect_length(cal$flags, 0L)
   expect_identical(cal$provenance$flags_evaluated,
                    c("EF_H_CALIBRATION_NOT_CONVERGED",

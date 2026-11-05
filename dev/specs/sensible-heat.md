@@ -9,12 +9,27 @@ driver de calibración) · Tests: `tests/testthat/test-aerodynamics.R`,
 > Este documento detalla las filas **rah**, **dT** y **H** de la tabla de
 > variables de `SCIENTIFIC_SPEC.md` (§3) y el punto de entrada "velocidad
 > del viento a altura de mezcla" de `SCIENTIFIC_SPEC.md` §1.2.
-> `SCIENTIFIC_SPEC.md` sigue siendo la fuente de verdad científica. Ninguna
-> ecuación **de METRIC** de este documento está en estado `VERIFICADA`; solo
-> están `VERIFICADA` algunas formas **tal como aparecen en FAO-56** (leídas
-> en esta redacción), cuyo **uso dentro de METRIC** sigue siendo
-> `CANDIDATA`. Nada de este documento puede implementarse hasta cumplir la
+> `SCIENTIFIC_SPEC.md` sigue siendo la fuente de verdad científica. En la
+> redacción de M1 ninguna ecuación **de METRIC** de este documento estaba
+> en estado `VERIFICADA`; solo algunas formas **tal como aparecen en
+> FAO-56**. Nada de este documento podía implementarse hasta cumplir la
 > Definition of Done (`DEVELOPMENT.md` §3).
+>
+> **Verificación (2026-11-05, `DECISIONS.md` M2-08 … M2-10).** Las formas
+> de §5–§11 se contrastaron con el manual SEBAL de Idaho (Waters et al.,
+> 2002; antecesor directo de METRIC) y la de Perrier con Allen et al.
+> (2012, IAHS Publ. 352). Pasan a `VERIFICADA (SEBAL-Idaho 2002)`: z_om
+> lineal en LAI y exponencial en NDVI/α (Ecs. 31a–31b), viento a 200 m
+> (Ecs. 27, 29), u* (Ecs. 30, 40), rah con z₁ = 0,1 m y z₂ = 2 m (Ecs. 26,
+> 41), ψ inestables y estables (Ecs. 35–39), L (Ec. 34, con Ts y g = 9,81),
+> H (Ec. 25, c_p = 1004), dT (Ecs. 32–33) y Ts_datum (Ec. 12-7); Perrier
+> pasa a `VERIFICADA (IAHS 2012)`. **SH-11 queda resuelta: 2/L** (Ec. 38).
+> Siguen `CANDIDATA`: la forma de ρ_air en METRIC, el mínimo de z_om y la
+> pendiente de dT sobre Ts_hot. El contraste con Allen et al. (2007) es
+> deseable, no bloqueante. Registro fila por fila:
+> [`../VERIFICATION.md`](../VERIFICATION.md). Las tablas de §1 y §4.3
+> muestran el estado vigente; el resto del texto conserva la redacción de
+> M1 salvo donde se indica.
 
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`). Convención de trazabilidad: la misma de
@@ -54,22 +69,22 @@ verifican aritmética y no física).
 
 | Componente | Forma | Estado | Dónde se observó / leyó |
 |---|---|---|---|
-| z_om cultivos bajos | z_om = 0.018·LAI | `CANDIDATA` | `water` v1.0, `momentumRoughnessLength(method = "short.crops")`; fuente primaria citada allí: Allen et al. (2007), "Eq. 33" (no consultada) |
-| z_om "custom" | z_om = exp(a·NDVI/α + b) | `CANDIDATA` | `water`, `method = "custom"`; Allen et al. (2007) |
-| z_om Perrier | z_om = (1 − e^(−p·LAI/2))·e^(−p·LAI/2)·h | `CANDIDATA` | `water`, `method = "Perrier"`; Santos et al. (2012), Pôças et al. (2014) |
+| z_om cultivos bajos | z_om = 0.018·LAI | `VERIFICADA (SEBAL-Idaho 2002)` | Waters et al. (2002), p. 27, Ec. 31a; también `water` v1.0 (`"short.crops"`) |
+| z_om "custom" | z_om = exp(a·NDVI/α + b) | `VERIFICADA (SEBAL-Idaho 2002)` | Waters et al. (2002), p. 28, Ec. 31b; también `water` (`"custom"`) |
+| z_om Perrier | z_om = (1 − e^(−p·LAI/2))·e^(−p·LAI/2)·h | `VERIFICADA (IAHS 2012)` | Allen et al. (2012), IAHS Publ. 352, p. 73; también `water` (`"Perrier"`), Santos et al. (2012), Pôças et al. (2014) |
 | z_om desde altura de cultivo | z_om = 0.123·h; d = 2/3·h | `VERIFICADA` como contenido de FAO-56 (Cap. 2, Recuadro 4); uso en METRIC `TODO` | FAO-56 |
 | Mínimo de z_om | 0.005 m | `CANDIDATA` | `water` (comentario "Allen et al., 2007, after Eq. 33") |
-| Ajuste por terreno de z_om | ×(1 + (s° − 5)/20) | `CANDIDATA` | `water` (comentario "Allen et al., 2007, Eq. 35") |
-| Viento a altura de mezcla | u_b = u_x·ln(z_b/z_om,w)/ln(z_x/z_om,w), z_b = 200 m | `CANDIDATA` | `water`, `calcH()`; "Eq. 32" según su roxygen |
+| Ajuste por terreno de z_om | ×(1 + (s° − 5)/20), solo con s ≥ 5° | Forma `VERIFICADA (SEBAL-Idaho 2002)` e `(IAHS 2012)`; no implementada | Waters et al. (2002), ap. 12, Ec. 12-9; Allen et al. (2012), p. 74; `water` |
+| Viento a altura de mezcla | u_b = u_x·ln(z_b/z_om,w)/ln(z_x/z_om,w), z_b = 200 m | `VERIFICADA (SEBAL-Idaho 2002)` (con d_w = 0) | Waters et al. (2002), p. 26, Ecs. 27 y 29; `water`, `calcH()` |
 | Perfil logarítmico neutral | r_a = ln((z_m − d)/z_om)·ln((z_h − d)/z_oh)/(k²·u_z); k = 0.41 | `VERIFICADA` como contenido de FAO-56 (Cap. 2, Ec. 4) | FAO-56 |
-| u* | u* = k·u_b/(ln(z_b/z_om) − ψ_m(z_b)) | `CANDIDATA` | `water`, `calcH()`, `rahStep()` |
-| rah | rah = (ln(z₂/z₁) − ψ_h(z₂) + ψ_h(z₁))/(k·u*); z₁ = 0.1 m, z₂ = 2 m | `CANDIDATA` | `water`; `SCIENTIFIC_SPEC.md` §3 |
+| u* | u* = k·u_b/(ln(z_b/z_om) − ψ_m(z_b)) | `VERIFICADA (SEBAL-Idaho 2002)` | Waters et al. (2002), p. 27, Ec. 30; p. 33, Ec. 40 |
+| rah | rah = (ln(z₂/z₁) − ψ_h(z₂) + ψ_h(z₁))/(k·u*); z₁ = 0.1 m, z₂ = 2 m | `VERIFICADA (SEBAL-Idaho 2002)` | Waters et al. (2002), p. 26, Ec. 26; p. 30; p. 34, Ec. 41 |
 | ρ_air | ρ = P/(T_Kv·R), T_Kv = 1.01·(T + 273), R = 0.287 kJ kg⁻¹ K⁻¹ | `VERIFICADA` como contenido de FAO-56 (Cap. 2, Recuadro 6); uso en METRIC `CANDIDATA` | FAO-56; `water` |
-| c_p | 1004 J kg⁻¹ K⁻¹ (`water`) o 1.013 × 10⁻³ MJ kg⁻¹ °C⁻¹ (FAO-56) | `CANDIDATA` / `VERIFICADA` (FAO-56) | §8.3 |
-| Ts_datum | Ts_datum = Ts + Γ·(z − z_datum), Γ = 6.49 K km⁻¹ | `CANDIDATA` | `water`, `calcH()`, `calcH.control(lapse = )` |
-| dT | dT = a + b·Ts_datum, a y b desde dos anclas | `CANDIDATA` | `SCIENTIFIC_SPEC.md` §3; `water` (notación invertida, §4.2) |
-| H | H = ρ_air·c_p·dT/rah | `CANDIDATA` | `SCIENTIFIC_SPEC.md` §3; `water` |
-| L, ψ_m, ψ_h | Paulson (inestable), log-lineal −5·z/L (estable) | `CANDIDATA` | `water`, `rahStep()`; `bigleaf` (rdrr.io); citas verificadas en Crossref, contenido no |
+| c_p | 1004 J kg⁻¹ K⁻¹ (METRIC) o 1.013 × 10⁻³ MJ kg⁻¹ °C⁻¹ (FAO-56) | 1004: `VERIFICADA (SEBAL-Idaho 2002)` (SH-09 cerrada) / 1013: `VERIFICADA` (FAO-56) | Waters et al. (2002), pp. 25 y 32; §8.3 |
+| Ts_datum | Ts_datum = Ts + Γ·(z − z_datum) | Forma `VERIFICADA (SEBAL-Idaho 2002)` (Γ = 0,0065 K m⁻¹ en el manual); Γ sin defecto (SH-13) | Waters et al. (2002), ap. 12, Ec. 12-7; `water` (Γ = 6.49 K km⁻¹) |
+| dT | dT = a + b·Ts_datum, a y b desde dos anclas | `VERIFICADA (SEBAL-Idaho 2002)` (el manual escribe dT = b + a·Ts, §4.2) | Waters et al. (2002), pp. 30–31, Ecs. 32–33 |
+| H | H = ρ_air·c_p·dT/rah | `VERIFICADA (SEBAL-Idaho 2002)` | Waters et al. (2002), p. 25, Ec. 25 |
+| L, ψ_m, ψ_h | L con Ts y g = 9,81; Paulson (inestable), log-lineal −5·z/L (estable), ψ_m(200 m) estable con 2/L | `VERIFICADA (SEBAL-Idaho 2002)` | Waters et al. (2002), pp. 32–33, Ecs. 34–39; `water`, `rahStep()`; `bigleaf` |
 
 Recomendación de API (§12): seis funciones numéricas vectorizadas
 (`ef_zom()`, `ef_ustar()`,
@@ -153,6 +168,8 @@ decisión abierta SH-14.
 | Fuente | Tipo | Qué aporta | Limitación |
 |---|---|---|---|
 | Allen, Tasumi & Trezza (2007), METRIC — Model | Primaria | — | **No consultada** (ascelibrary.org bloqueado en el entorno). Metadatos verificados en Crossref (§3.1). |
+| Waters, Allen, Bastiaanssen, Tasumi & Trezza (2002), *SEBAL … Idaho implementation. Advanced training and users manual*, v1.0 (añadida 2026-11-05) | Primaria (manual de los autores; antecesor directo de METRIC) | Ecs. 25–41 (H, rah, u*, viento a 200 m, z_om, L, ψ), anclas (pp. 30–31), Ts_datum (ap. 12) | Leída como imagen; sin DOI. Registro en `VERIFICATION.md` |
+| Allen, Kjaersgaard, Trezza, Oliveira, Robison & Lorite-Torres (2012), IAHS Publ. 352, pp. 73–75 (añadida 2026-11-05) | Primaria (METRIC) | Función de Perrier; ajustes de montaña de z_om y del viento; gradiente de Ts | Sin DOI impreso |
 | Paulson (1970); Webb (1970) | Primaria | — | **No consultadas** (journals.ametsoc.org y rmets.onlinelibrary.wiley.com bloqueados). Metadatos verificados en Crossref. |
 | FAO-56 (Allen, Pereira, Raes & Smith, 1998), edición web en `www.fao.org/4/x0490e/` | Primaria (para su propio contenido) | **Leída en esta redacción:** Cap. 2 (`x0490e06.htm`): Ec. 4 (r_a neutral, k = 0.41, restricción a estabilidad neutral), Recuadro 4 (d = 2/3·h, z_om = 0.123·h, z_oh = 0.1·z_om), Recuadro 6 (ρ_a = P/(T_Kv·R), T_Kv = 1.01·(T + 273), R = 0.287 kJ kg⁻¹ K⁻¹). Cap. 3 (`x0490e07.htm`): Ec. 7 (P(z)), texto de Ec. 8 (c_p = 1.013 × 10⁻³ MJ kg⁻¹ °C⁻¹ "for average atmospheric conditions"), Ec. 47 (perfil de viento sobre pasto corto) | Las ecuaciones de la edición web son imágenes; se leyeron como imagen. La edición web no tiene número de página: se cita capítulo, ecuación y recuadro. FAO-56 no trata METRIC: verifica formas compartidas, no su uso en METRIC. |
 | `water` v1.0 (2026-10-19; commit `3c94630`; GPL ≥ 2): `R/water_sensibleHeatFlux.R` (`momentumRoughnessLength()`, `airDensity()`, `rahStep()`, `calcH()`), `R/water_controls.R` (`calcH.control()`), `R/water_internals.R` (`anchorCells()`, `checkIteration()`), `NEWS` | Secundaria (implementación) | Formas, coeficientes, valores por defecto, estructura de la iteración y su manejo de errores | Una implementación no es una fuente científica. **No se copia código** (GPL vs MIT); las formas se reescriben con notación propia. |
@@ -215,6 +232,9 @@ responde pero redirige a hosts bloqueados.
   primaria se debe **mapear explícitamente** a_EarthFlux = b_water y
   b_EarthFlux = a_water. `TODO`: confirmar la notación de Allen et al.
   (2007) y, si difiere, decidir si se adopta la del artículo (SH-12).
+  *2026-11-05:* el manual SEBAL de Idaho escribe dT = b + a·Ts (a =
+  pendiente, b = intercepto; Waters et al., 2002, Ec. 32), como `water`;
+  la notación de EarthFlux se mantiene hasta que el autor decida SH-12.
 
 ### 4.3 Constantes
 
@@ -223,17 +243,17 @@ nombrada, con referencia en roxygen), como en `radiation-components.md` §5.
 
 | Constante | Símbolo | Valor candidato | Fuente | Estado |
 |---|---|---|---|---|
-| Constante de von Kármán | k | 0.41 | FAO-56, Cap. 2, Ec. 4 ("von Karman's constant, 0.41"); `water` (`calcH()`, `rahStep()`); `SCIENTIFIC_SPEC.md` §3 | `VERIFICADA` como valor usado en FAO-56; uso en METRIC `CANDIDATA` |
-| Calor específico del aire a presión constante | c_p | 1004 J kg⁻¹ K⁻¹ | `water` (`calcH()`, `rahStep()`); `SCIENTIFIC_SPEC.md` §3 ("≈ 1004 `TODO`") | `CANDIDATA` |
+| Constante de von Kármán | k | 0.41 | FAO-56, Cap. 2, Ec. 4 ("von Karman's constant, 0.41"); Waters et al. (2002), p. 26; `water` (`calcH()`, `rahStep()`); `SCIENTIFIC_SPEC.md` §3 | `VERIFICADA` (FAO-56) y `VERIFICADA (SEBAL-Idaho 2002)` |
+| Calor específico del aire a presión constante | c_p | 1004 J kg⁻¹ K⁻¹ | Waters et al. (2002), p. 25 (texto de Ec. 25) y p. 32; `water` (`calcH()`, `rahStep()`); `SCIENTIFIC_SPEC.md` §3 | `VERIFICADA (SEBAL-Idaho 2002)` |
 | Ídem (alternativa) | c_p | 1013 J kg⁻¹ K⁻¹ (= 1.013 × 10⁻³ MJ kg⁻¹ °C⁻¹) | FAO-56, Cap. 3, texto de Ec. 8 | `VERIFICADA` como valor de FAO-56 |
 | Constante específica del aire seco | R | 287 J kg⁻¹ K⁻¹ (0.287 kJ kg⁻¹ K⁻¹) | FAO-56, Cap. 2, Recuadro 6; `water` | `VERIFICADA` como valor de FAO-56 |
 | Factor de temperatura virtual | – | 1.01 (T_Kv = 1.01·(T + 273)) | FAO-56, Cap. 2, Recuadro 6; `water` | `VERIFICADA` como forma de FAO-56 |
-| Aceleración de gravedad | g | 9.807 m s⁻² | `water` (`rahStep()`) | `CANDIDATA`; `TODO`: valor y referencia (gravedad estándar convencional vs 9.81) |
-| Altura de mezcla (blending height) | z_b | 200 m | `water`; `SCIENTIFIC_SPEC.md` §1.2 | `CANDIDATA` |
-| Alturas de rah | z₁, z₂ | 0.1 m, 2 m | `water` (`calcH()`, `rahStep()`) | `CANDIDATA` |
-| Coeficientes de ψ inestable | – | 16; exponente 1/4 (momento) | `water`; `bigleaf` (formulación "Dyer_1970") | `CANDIDATA` |
-| Coeficiente de ψ estable | – | −5 | `water`; `bigleaf` | `CANDIDATA` |
-| Gradiente de Ts con la elevación | Γ | 6.49 K km⁻¹ | `water` (`calcH.control(lapse = 6.49)`) | `CANDIDATA` |
+| Aceleración de gravedad | g | 9.81 m s⁻² (hasta la revisión del 2026-11-05: 9.807, valor de `water`) | Waters et al. (2002), p. 32, texto de Ec. 34 | `VERIFICADA (SEBAL-Idaho 2002)` (M2-10) |
+| Altura de mezcla (blending height) | z_b | 200 m | Waters et al. (2002), p. 26; `water`; `SCIENTIFIC_SPEC.md` §1.2 | `VERIFICADA (SEBAL-Idaho 2002)`; defecto (M2-09) |
+| Alturas de rah | z₁, z₂ | 0.1 m, 2 m | Waters et al. (2002), p. 30 y Ec. 41; `water` (`calcH()`, `rahStep()`) | `VERIFICADA (SEBAL-Idaho 2002)`; defectos (M2-09) |
+| Coeficientes de ψ inestable | – | 16; exponente 1/4 (momento) | Waters et al. (2002), Ecs. 35–37; `water`; `bigleaf` (formulación "Dyer_1970") | `VERIFICADA (SEBAL-Idaho 2002)` |
+| Coeficiente de ψ estable | – | −5 | Waters et al. (2002), Ecs. 38–39; `water`; `bigleaf` | `VERIFICADA (SEBAL-Idaho 2002)` |
+| Gradiente de Ts con la elevación | Γ | 6.5 K km⁻¹ (manual); 6.49 K km⁻¹ (`water`) | Waters et al. (2002), Ec. 12-7; `water` (`calcH.control(lapse = 6.49)`) | Forma `VERIFICADA (SEBAL-Idaho 2002)`; valor por escena, sin defecto (SH-13; Allen et al., 2012, p. 74) |
 | Mínimo de z_om | z_om,min | 0.005 m | `water` | `CANDIDATA` |
 | Coeficientes de P(z) | – | 101.3; 293; 0.0065; 5.26 | FAO-56, Cap. 3, Ec. 7 | `VERIFICADA` como contenido de FAO-56 (ver `radiation-components.md` §6.2, donde aún figura `TODO: verify equation number`: el número es Ec. 7) |
 | Conversión K ↔ °C | – | 273.15 | Convención del paquete (`soil-heat-flux.md` §3.2) | FAO-56 usa 273 en T_Kv: diferencia relativa ≈ 5 × 10⁻⁴ en ρ (§8.1) |
@@ -579,9 +599,11 @@ a = dT_cold − b · Ts_datum,cold                                  [K]
 
 ## 10. Estabilidad de Monin-Obukhov
 
-Todas las formas: `CANDIDATA` (observadas en `water`, `rahStep()`;
-corroboradas por `bigleaf`; fuentes primarias Paulson, 1970, y Webb, 1970,
-con citas verificadas en Crossref pero contenido no consultado).
+Todas las formas: `VERIFICADA (SEBAL-Idaho 2002)` desde el 2026-11-05
+(Waters et al., 2002, pp. 32–33, Ecs. 34–39, "using the formulations by
+Paulson (1970) and Webb (1970)"); antes `CANDIDATA` (observadas en `water`,
+`rahStep()`; corroboradas por `bigleaf`). Paulson (1970) y Webb (1970)
+tienen citas verificadas en Crossref, contenido no consultado.
 
 ### 10.1 Longitud de Monin-Obukhov
 
@@ -592,9 +614,14 @@ L = − ρ_air · c_p · u*³ · T / (k · g · H)          [m]
 - H > 0 (inestable) → L < 0; H < 0 (estable) → L > 0; H = 0 → neutral
   (|L| = ∞, ψ = 0): tratar explícitamente, sin dividir por cero.
 - **Qué T y qué ρ:** `water` usa Ts y la densidad inicial (calculada con Ts,
-  no actualizada); `bigleaf` usa T_aire. Propuesta: T = T_a = Ts − dT y la
-  ρ de la iteración (SH-10). `TODO`: verificar en Allen et al. (2007).
-- g: §4.3.
+  no actualizada); `bigleaf` usa T_aire. Propuesta de M1: T = T_a = Ts − dT
+  y la ρ de la iteración (SH-10). **Resuelto (2026-11-05, M2-10):** el
+  manual SEBAL de Idaho escribe L = −ρ·c_p·u*³·**Ts**/(k·g·H) con Ts "the
+  surface temperature (K)" y g = 9,81 m s⁻² (Waters et al., 2002, p. 32,
+  Ec. 34; también la fig. 4, p. 29); el modelo F14 recibe Ts y la densidad
+  de cada iteración (ap. 8, p. 82). EarthFlux usa Ts y la ρ de la
+  iteración.
+- g: §4.3 (9,81 m s⁻²).
 
 ### 10.2 Inestable (L < 0) — forma tipo Paulson
 
@@ -612,14 +639,18 @@ x(z)    = (1 − 16 · z/L)^(1/4)
 
 ```text
 ψ_h(z)   = −5 · z/L                 (z = z₂, z₁)
-ψ_m(z_b) = −5 · (2/L)               ← tal como en `water`
+ψ_m(z_b) = −5 · (2/L)               ← Waters et al. (2002), Ec. 38; como en `water`
 ```
 
-- **Punto crítico a verificar (SH-11):** `water` evalúa ψ_m de la altura de
-  mezcla con **2/L**, no con z_b/L = 200/L. Las notas terciarias afirman que
-  el artículo especifica el caso estable "con z = 2 m". La diferencia es
-  enorme (cálculo propio, §14.4): con L = 41.97 m, −5·(2/L) = −0.238 y
-  −5·(200/L) = −23.8.
+- **SH-11 — resuelta (2026-11-05, `DECISIONS.md` M2-09).** El manual
+  SEBAL de Idaho escribe, para L > 0, ψ_m(200m) = −5·(2/L) (Ec. 38),
+  ψ_h(2m) = −5·(2/L) (Ec. 39a) y ψ_h(0.1m) = −5·(0.1/L) (Ec. 39b)
+  (Waters et al., 2002, p. 33, leídas como imagen). `water` hace lo mismo;
+  las notas terciarias afirmaban lo mismo para el artículo de 2007 (no
+  consultado). `ef_h_control()` tiene defecto `stable_psi_m_height = 2`;
+  200 m sigue disponible como elección explícita. La diferencia es enorme
+  (§14.4): con L = 41.97 m, −5·(2/L) = −0.2383 y −5·(200/L) = −23.83, y
+  con un ancla fría estable 200 m hace divergir la calibración (M2-07).
 - Estabilidad fuerte: Webb (1970) trata la "extensión a estabilidad
   fuerte"; el rango de validez de la forma log-lineal y el comportamiento
   para z/L grandes son `TODO`. Flag propuesto `EF_STRONGLY_STABLE` (umbral
@@ -669,9 +700,12 @@ H_target exactamente con (a*, b*) (§14.6).
 - Propuesta: max_i |rah_i,k − rah_i,k−1| / rah_i,k < `tol` (por ancla, no
   por promedio), con `tol` por defecto `CANDIDATA` 0.01 (valor de `water`,
   sin fuente primaria) (SH-16). Registrar además |Δa|, |Δb| por iteración.
-- Sensibilidad observada en el caso sintético (§14.5): con `tol` = 0.01 la
-  iteración se detiene en k = 6 con a = −86.27 K, mientras el punto fijo es
-  a* = −86.85 K (0.7 %). El valor de `tol` importa y debe documentarse.
+- Sensibilidad observada en el caso sintético (§14.5, valores del
+  2026-11-05): con `tol` = 0.01 la iteración se detiene en k = 6 con
+  a = −86.74 K, mientras el punto fijo es a* = −87.26 K (0.6 %). El valor
+  de `tol` importa y debe documentarse. El manual SEBAL de Idaho itera
+  hasta que dT_hot y rah del ancla caliente "se estabilizan" (p. 34; 3 a 7
+  iteraciones, ap. 8), sin una tolerancia numérica.
 
 ### 11.4 Amortiguación
 
@@ -779,10 +813,15 @@ Diseño para `terra`, bloques y paralelismo (`ARCHITECTURE.md` §6.2–6.3,
 
 ## 14. Casos numéricos
 
-Calculados por el autor a partir de las formas `CANDIDATA` de este
-documento; verifican aritmética, no física. Constantes del caso: k = 0.41,
-c_p = 1004 J kg⁻¹ K⁻¹, g = 9.807 m s⁻², z_b = 200 m, z₁ = 0.1 m, z₂ = 2 m,
-Γ = 6.49 × 10⁻³ K m⁻¹, P desde FAO-56 Ec. 7, ρ por §8.1 con T en K.
+Calculados por el autor a partir de las formas de este documento;
+verifican aritmética, no física. Constantes del caso: k = 0.41,
+c_p = 1004 J kg⁻¹ K⁻¹, g = 9.81 m s⁻² (9.807 hasta la revisión del
+2026-11-05), z_b = 200 m, z₁ = 0.1 m, z₂ = 2 m, Γ = 6.49 × 10⁻³ K m⁻¹ (valor
+de prueba), P desde FAO-56 Ec. 7, ρ por §8.1 con T en K. Los valores de
+§14.4 y §14.5 que dependen de L se recalcularon el 2026-11-05 con las formas
+del manual SEBAL de Idaho (L con Ts y g = 9.81, M2-10) mediante un script
+independiente del autor (Python, sin usar el código del paquete), que
+reproduce exactamente los valores anteriores al restituir T_a y 9.807.
 
 ### 14.1 Neutral: viento a altura de mezcla y u*
 
@@ -840,44 +879,54 @@ z_datum = 500 m.
 
 ### 14.4 Un paso de estabilidad (ancla caliente, inestable)
 
-Con ρ = 1.018513, u* = 0.225324, T = 316 K (dT₀ = 0), H = 370:
+Con ρ = 1.018513, u* = 0.225324, Ts = 316 K, H = 370 (valores del
+2026-11-05, g = 9.81):
 
-1. L = −1.018513 × 1004 × 0.225324³ × 316 / (0.41 × 9.807 × 370) =
-   **−2.484793 m**.
-2. x(200) = (1 + 16 × 200/2.484793)^(1/4) = 5.991688; x(2) = 1.930120;
-   x(0.1) = 1.132322.
-3. ψ_m(200) = 4.178174; ψ_h(2) = 1.719595; ψ_h(0.1) = 0.263944.
-4. u* = 0.41 × 5.823611 / (10.596635 − 4.178174) = 0.372002 m s⁻¹.
-5. rah = (2.995732 − 1.719595 + 0.263944) / (0.41 × 0.372002) =
-   **10.097518 s m⁻¹** (desde 32.4273 neutral).
+1. L = −1.018513 × 1004 × 0.225324³ × 316 / (0.41 × 9.81 × 370) =
+   **−2.484034 m** (con g = 9.807: −2.484793).
+2. x(200) = (1 + 16 × 200/2.484034)^(1/4); x(2); x(0.1) (Ecs. 37a–37c).
+3. ψ_m(200) = 4.178429; ψ_h(2) = 1.719818; ψ_h(0.1) = 0.264012.
+4. u* = 0.41 × 5.823611 / (10.596635 − 4.178429) = 0.372017 m s⁻¹.
+5. rah = (2.995732 − 1.719818 + 0.264012) / (0.41 × 0.372017) =
+   **10.096093 s m⁻¹** (desde 32.4273 neutral).
 
 Caso estable ilustrativo (ancla fría con H = −50 W m⁻², ρ = 1.098511, u* =
-0.294349, T = 300 K): L = 41.9718 m; −5·(2/L) = −0.238255; −5·(200/L) =
-−23.825502; −5·(0.1/L) = −0.011913. Muestra la magnitud de SH-11.
+0.294349, Ts = 300 K): L = 41.958911 m; −5·(2/L) = −0.238328 (Ec. 38, la
+del defecto); −5·(200/L) = −23.832840; −5·(0.1/L) = −0.011916. Muestra la
+magnitud de SH-11. Con L = 41.97 m (cifra redonda de P0-2):
+−5·(2/41.97) = −0.2382654.
 
 ### 14.5 Diseño del test de iteración (escena sintética de 2 anclas)
 
 Escena: las dos anclas de §14.3 y el píxel interior de §14.3, u_b =
 5.823611 m s⁻¹ uniforme. Configuración: Fase A según §11.2 (ρ con T_a =
-Ts − dT_{k−1}; L con T_a = Ts − dT_k y ρ de la iteración; ψ estable con
+Ts − dT_{k−1}; L con Ts y la ρ de la iteración, g = 9.81; ψ estable con
 2/L, no activado porque ambas anclas son inestables).
 
-Valores provisionales de orientación, obtenidos con un script propio de
-trabajo (no versionado) que implementa las formas `CANDIDATA` de este
-documento. **No son referencias independientes**: deben regenerarse cuando
-las formas pasen a `VERIFICADA` y se usan para diseñar el test, no para
-validar la física.
+Valores regenerados el 2026-11-05 con las formas `VERIFICADA (SEBAL-Idaho
+2002)` mediante un script independiente del autor (Python; ver la
+introducción de §14). Las columnas a y b son el iterado a_k, b_k de la
+última iteración (con `tol` = 10⁻¹⁰ coinciden con el cierre).
 
 | Configuración | Iteraciones | a (K) | b (–) | rah_cold | rah_hot |
 |---|---|---|---|---|---|
-| ω = 0, tol = 0.01 | 6 | −86.27 | 0.28936 | 19.8266 | 15.7205 |
-| ω = 0.5, tol = 0.01 | 7 | −88.133 | 0.29558 | 19.8564 | 15.7971 |
-| ω = 0, tol = 10⁻¹⁰ | 24 | −86.84546 | 0.2912792 | 19.82518 | 15.68989 |
-| ω = 0.5, tol = 10⁻¹⁰ | 34 | −86.84546 | 0.2912792 | 19.82518 | 15.68989 |
+| ω = 0, tol = 0.01 | 6 | −86.74 | 0.29093 | 19.8294 | 15.7863 |
+| ω = 0.5, tol = 0.01 | 7 | −88.570 | 0.29703 | 19.8593 | 15.8685 |
+| ω = 0, tol = 10⁻¹⁰ | 23 | −87.26315 | 0.2926717 | 19.82799 | 15.75910 |
+| ω = 0.5, tol = 10⁻¹⁰ | 34 | −87.26315 | 0.2926717 | 19.82799 | 15.75910 |
+
+Valores anteriores (L con T_a = Ts − dT y g = 9.807): 6 iteraciones,
+a = −86.27, b = 0.28936 con `tol` = 0.01; punto fijo a* = −86.84546,
+b* = 0.2912792 en 24 iteraciones.
 
 Fase B (P2) con (a*, b*) del punto fijo: el ancla fría vuelve a H = 30 y la
 caliente a H = 370 W m⁻² (|error| < 10⁻⁹); el píxel interior converge a
-dT = 2.868528 K, rah = 17.1505 s m⁻¹, H = 181.3655 W m⁻².
+dT = 2.879745 K, rah = 17.1702 s m⁻¹, H = 181.8722 W m⁻² (antes 2.868528,
+17.1505 y 181.3655).
+
+Variante con el ancla fría estable (H_target = −50 W m⁻², `tol` = 10⁻⁸,
+`stable_psi_m_height` = 2 m): converge en 19 iteraciones con a* =
+−120.328834 K y b* = 0.39688192; con 200 m diverge (M2-07).
 
 Propiedades que el test debe comprobar (independientes de los valores
 provisionales):
@@ -964,7 +1013,7 @@ forzarse:
 | Piso de viento | u_b ≥ 2 m s⁻¹ con warning | Sin piso por defecto; flag | Grande a viento bajo |
 | u* = 0 | Sustituida por 0.1 m s⁻¹ | `NA`/error, sin sustitución | Solo casos degenerados |
 | ρ en H | §8.2 (P con T_a) | §8.1 con T_a (SH-08) | ≈ 0.6 % en ρ; en gran parte absorbido por la calibración (§8.3) |
-| ρ y T en L | ρ inicial (con Ts) y Ts, no actualizadas | ρ y T_a de la iteración (SH-10) | Pequeño |
+| ρ y T en L | ρ inicial (con Ts) y Ts, no actualizadas | ρ de la iteración y Ts (SH-10, M2-10; como el manual SEBAL de Idaho) | Pequeño |
 | ρ en dT de anclas vs en H | dT de anclas con ρ(dT_{k−1}); H con ρ(dT_k): H_ancla ≈ H_target | Mismo ρ en ambos: H_ancla = H_target exacto | Pequeño |
 | Convergencia | Promedio por clase, 1 %, más una iteración | Por ancla (SH-16) | Pequeño |
 | Fase B | P1 (reproduce secuencia de a, b) | P2 (convergencia por píxel) | Pequeño si converge; distinto si no |
@@ -978,17 +1027,17 @@ forzarse:
 |---|---|---|---|---|
 | SH-01 | Método de z_om por defecto con MODIS 1 km | LAI lineal / custom NDVI-α / Perrier / tabla por cobertura | LAI lineal como base; tabla por cobertura cuando exista fuente; Perrier solo con mapa de alturas | §5 |
 | SH-02 | Mínimo de z_om | Aplicar 0.005 m con flag / no aplicar | Aplicar con flag, tras verificar p. 386 | §5.6 |
-| SH-03 | Ajuste por terreno | Sin ajuste / factor / factor con mínimo 1 | Desactivado por defecto hasta verificar Eq. 35 y el manual | §5.7 |
+| SH-03 | Ajuste por terreno | Sin ajuste / factor / factor con mínimo 1 | Desactivado por defecto hasta verificar Eq. 35 y el manual. *2026-11-05:* forma con pendiente en grados y solo para pendiente ≥ 5° (Waters et al., 2002, Ec. 12-9; Allen et al., 2012, p. 74); no implementada | §5.7 |
 | SH-04 | Perfil de la estación | d_w = 0 (`water`) / d_w y z_om,w desde h (FAO-56) | Argumentos explícitos; defecto coherente con FAO-56 (h = 0.12 m) | §6.1 |
 | SH-05 | u_b uniforme vs espacial | Escalar de escena / superficie (GWR) | Aceptar ambos; registrar cuál (H1) | §6.1 |
 | SH-06 | Viento bajo | Sin piso + flag / piso explícito opcional | Sin piso por defecto; umbral del flag con referencia | §6.2 |
-| SH-07 | Ajuste del viento por elevación | No / sí con z_w de estación / sí con datum de escena | No implementar hasta verificar fuente | §6.3 |
+| SH-07 | Ajuste del viento por elevación | No / sí con z_w de estación / sí con datum de escena | No implementar hasta verificar fuente. *2026-11-05:* forma con z_w de la estación (Waters et al., 2002, Ec. 12-10; Allen et al., 2012, p. 74); no implementada | §6.3 |
 | SH-08 | Forma y temperatura de ρ_air; 273 vs 273.15 | §8.1 con T_a / §8.2 / con Ts | §8.1 con T_a y P de `ef_air_pressure()` o medida | §8 |
-| SH-09 | c_p | 1004 / 1013 | Verificar en Allen et al. (2007) | §8.3 |
-| SH-10 | T, ρ y g en L | Ts / T_a; ρ inicial / iterada; 9.807 / otro | T_a y ρ iterada; g con referencia | §10.1 |
-| SH-11 | Altura de ψ_m estable en z_b | 2/L (`water`) / 200/L | **Bloqueante**: verificar en la fuente primaria | §10.3 |
-| SH-12 | Notación de a y b | SPEC (a intercepto) / la del artículo | Mantener SPEC salvo que el artículo difiera | §4.2 |
-| SH-13 | Γ y z_datum | 6.49 K km⁻¹ fijo / argumento; z_datum de estación / constante de escena | Γ como argumento con valor documentado; z_datum constante explícito | §9.1 |
+| SH-09 | c_p | 1004 / 1013 | **Cerrada (2026-11-05):** 1004, Waters et al. (2002), pp. 25 y 32 | §8.3 |
+| SH-10 | T, ρ y g en L | Ts / T_a; ρ inicial / iterada; 9.807 / otro | **Decidida (2026-11-05, M2-10):** Ts, ρ iterada, g = 9.81 (Waters et al., 2002, Ec. 34) | §10.1 |
+| SH-11 | Altura de ψ_m estable en z_b | 2/L (`water`) / 200/L | **Cerrada (2026-11-05, M2-09):** 2/L (Waters et al., 2002, p. 33, Ec. 38); defecto `stable_psi_m_height = 2`, 200 m como elección explícita | §10.3 |
+| SH-12 | Notación de a y b | SPEC (a intercepto) / la del artículo | Mantener SPEC salvo que el artículo difiera. *2026-11-05:* el manual SEBAL de Idaho usa la notación de `water` (a = pendiente); decide el autor | §4.2 |
+| SH-13 | Γ y z_datum | 6.49 K km⁻¹ fijo / argumento; z_datum de estación / constante de escena | Γ como argumento con valor documentado; z_datum constante explícito. *2026-11-05:* forma verificada (Ec. 12-7, 0,0065 K m⁻¹); Γ sin defecto porque METRIC lo ajusta a la escena (Allen et al., 2012, p. 74) | §9.1 |
 | SH-14 | Agregación de varias anclas | Promedio de entradas / promedio de dT / por par / regresión | Coordinar con la especificación de anclas; caso base 1 valor por clase | §2.3 |
 | SH-15 | Estrategia de Fase B | P1 / P2 | P2; P1 solo para verificación | §11.7 |
 | SH-16 | `tol`, `maxit`, ω por defecto; criterio por ancla o promedio | – | 0.01, 20, 0 por ancla; reportar Δa, Δb | §11.3–11.5 |
@@ -1038,14 +1087,15 @@ estado a `SCIENTIFIC_SPEC.md` §3.
 ## 21. Estado de implementación (M2)
 
 Implementado el 2026-11-04 (rama `feature/m2-sensible-heat`) con las
-decisiones provisionales P0-6, P0-9 y P0-10. Todo sigue `CANDIDATA`
-(salvo las formas de FAO-56 indicadas en §1).
+decisiones provisionales P0-6, P0-9 y P0-10. Todo quedó `CANDIDATA` (salvo
+las formas de FAO-56 indicadas en §1) hasta la revisión de verificación del
+2026-11-05 (último punto de esta sección).
 
 | Elemento | Implementación |
 |---|---|
 | z_om | `ef_zom(..., method)` (despachador, N6; `method` último argumento y objeto `earthflux_roughness_length` desde la armonización M2) con `ef_zom_lai()`, `ef_zom_ndvi()` (§5.2, "custom"), `ef_zom_perrier()`, `ef_zom_height()` (§5.4). Sin mínimo de 0.005 m (SH-02) ni factor de terreno (SH-03): z_om = 0 se devuelve tal cual y `ef_ustar()` lo rechaza |
-| Viento, u*, rah | `ef_blending_wind()`, `ef_ustar()`, `ef_rah()`. z_b, z₁, z₂, z_om,w y d_w son argumentos **sin valor por defecto** (valores `CANDIDATA`, SH-04). Sin piso de viento (SH-06) ni ajuste por elevación (SH-07). u* con denominador ≤ 0 → `NA` |
-| Estabilidad | Internas (`ef_monin_obukhov_length()`, `ef_psi_m()`, `ef_psi_h()`); H = 0 → L = +∞ y ψ = 0. ψ_m(z_b) estable evaluada a `stable_psi_m_height` de `ef_h_control()`, **sin defecto** (SH-11) |
+| Viento, u*, rah | `ef_blending_wind()`, `ef_ustar()`, `ef_rah()`. z_om,w y d_w son argumentos **sin valor por defecto** (SH-04). z_b, z₁ y z₂ no tenían defecto en M2; desde el 2026-11-05 tienen defectos 200 m, 0.1 m y 2 m (`VERIFICADA (SEBAL-Idaho 2002)`, M2-09). Sin piso de viento (SH-06) ni ajuste por elevación (SH-07). u* con denominador ≤ 0 → `NA` |
+| Estabilidad | Internas (`ef_monin_obukhov_length()`, `ef_psi_m()`, `ef_psi_h()`); H = 0 → L = +∞ y ψ = 0. L con Ts y g = 9.81 desde el 2026-11-05 (M2-10). ψ_m(z_b) estable evaluada a `stable_psi_m_height` de `ef_h_control()`: sin defecto en M2, **defecto 2 m** desde el 2026-11-05 (SH-11, M2-09) |
 | ρ_air, Ts_datum, dT, H | `ef_air_density()` (§8.1 con T en K), `ef_ts_datum()` (exportada; Γ en K m⁻¹, sin defecto), `ef_dt_coef()` (Ts_datum,hot ≤ Ts_datum,cold → `earthflux_calibration_error`), `ef_sensible_heat()` (`cp` sin defecto; el driver usa `EF_SPECIFIC_HEAT_AIR`) |
 | Driver | `ef_calibrate_h(anchors, control, lapse_rate, datum_elevation, pixels = NULL)` → `earthflux_h_calibration`. Fase A de §11.2 con cierre; Fase B estrategia P2 por píxel (píxeles convergidos se congelan: invariante al tamaño de bloque) |
 | Contrato de anclas (§2.2–2.3, P0-9) | `data.frame` con exactamente una fila `type = "hot"` y una `"cold"` y columnas `lst`, `elevation`, `zom`, `rn`, `g`, `le_target`, `u_blend`, `pressure` (opcional `anchor_id`), o un objeto `earthflux_anchors` cuyo elemento `calibration_points` sea ese `data.frame`. H_target = rn − g − le_target |
@@ -1054,9 +1104,10 @@ decisiones provisionales P0-6, P0-9 y P0-10. Todo sigue `CANDIDATA`
 Observaciones al implementar:
 
 - **a y b reportados.** Los valores de §14.5 con `tol` = 0.01 (a =
-  −86.27, b = 0.28936) son el iterado a_k, b_k de la última iteración
-  (calculado con rah_{k−1}); el objeto devuelve además el par del cierre
-  (a = −87.04413, b = 0.2919416 con `tol` = 0.01, ω = 0), que es el que
+  −86.74, b = 0.29093 desde el 2026-11-05; antes −86.27 y 0.28936) son el
+  iterado a_k, b_k de la última iteración (calculado con rah_{k−1}); el
+  objeto devuelve además el par del cierre (a = −87.43978, b = 0.2932606
+  con `tol` = 0.01, ω = 0; antes −87.04413 y 0.2919416), que es el que
   reproduce H_target. Ambos se conservan (`trace` y `a`, `b`).
 - **Redondeo en §14.4.** Con las entradas impresas, L estable = 41.971746 m
   (§14.4 imprime 41.9718) y −5·(200/L) = −23.825552 (imprime −23.825502);
@@ -1066,11 +1117,11 @@ Observaciones al implementar:
   estable (H_target = −50 W m⁻², y también con −5 W m⁻²), la Fase A
   converge con `stable_psi_m_height` = 2 m y **diverge** con 200 m (rah del
   ancla fría crece sin cota → `earthflux_calibration_error`). Es un
-  comportamiento de las formas `CANDIDATA`, no una validación; refuerza que
-  SH-11 es bloqueante. Registrado como hallazgo M2-07 en `DECISIONS.md`
-  §1.2 (P0-2 sigue abierta y se sabe decisiva) y reproducido en el test de
+  comportamiento de las formas, no una validación. Registrado como
+  hallazgo M2-07 en `DECISIONS.md` §1.2 y reproducido en el test de
   extremo a extremo `tests/testthat/test-metric-chain.R` (variante con el
-  ancla fría estable).
+  ancla fría estable); se mantiene con las formas del 2026-11-05. SH-11 se
+  resolvió con la fuente primaria (M2-09, 2 m).
 - **Fase B en paralelo.** Probada la invariancia por bloques (propiedad 7);
   la comparación secuencial = paralelo queda para el envoltorio ráster.
 - **Armonización M2 (2026-11-04).** `check_condition()` y `check_scalar()`
@@ -1078,3 +1129,18 @@ Observaciones al implementar:
   comparten las anclas); `ef_zom()` tiene `method` como último argumento y
   devuelve un objeto con `zom`, `method`, `flags` (`EF_INPUT_NA`) y
   `provenance` (`DECISIONS.md` §1.2, M2-04).
+- **Revisión de verificación (2026-11-05, `DECISIONS.md` M2-08 …
+  M2-10).** Contraste con el manual SEBAL de Idaho (Waters et al., 2002) y
+  con Allen et al. (2012, IAHS): las formas pasan a `VERIFICADA
+  (SEBAL-Idaho 2002)` (Perrier: `VERIFICADA (IAHS 2012)`), con página y
+  ecuación en roxygen y en [`../VERIFICATION.md`](../VERIFICATION.md).
+  Cambios en el código: (1) L con **Ts** (antes T_a = Ts − dT) y
+  g = **9.81** (antes 9.807), Ec. 34; (2) defectos `stable_psi_m_height =
+  2`, `blending_height = 200`, `z1 = 0.1`, `z2 = 2` en `ef_h_control()` (y
+  z_b, z₁, z₂ en `ef_blending_wind()`, `ef_ustar()`, `ef_rah()`), y
+  `cp = 1004` en `ef_sensible_heat()`. Los valores de §14.4–§14.5 se
+  regeneraron con un script independiente; `tests/testthat/test-verification.R`
+  compara cada ecuación del manual, escrita literalmente, con la función.
+  Siguen `CANDIDATA`: ρ_air en METRIC (el manual no imprime su forma), el
+  mínimo de z_om (SH-02), la pendiente de dT sobre Ts_hot (SH-20); no
+  implementados aunque ya con forma documentada: SH-03 y SH-07.

@@ -50,6 +50,27 @@ Convención:
   & Kjaersgaard, J. (2011). Satellite-based ET estimation in agriculture
   using SEBAL and METRIC. *Hydrological Processes*, 25(26), 4011–4027.
   https://doi.org/10.1002/hyp.8408 `VERIFIED (2026-11-04, Crossref)`
+- Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+  (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+  implementation. Advanced training and users manual* (Versión 1.0, agosto
+  de 2002). University of Idaho e Idaho Department of Water Resources.
+  97 p. Sin DOI ni URL registrada (PDF abierto).
+  `VERIFIED (2026-11-05, documento)`: portada y texto completo leídos;
+  contenido contrastado formulación por formulación en
+  [`VERIFICATION.md`](VERIFICATION.md).
+- Allen, R. G., Kjaersgaard, J. H., Trezza, R., Oliveira, A., Robison, C.,
+  & Lorite-Torres, I. (2012). Refining components of a satellite-based
+  surface energy balance model to complex land-use systems. En *Remote
+  Sensing and Hydrology* (Actas del simposio de Jackson Hole, Wyoming,
+  septiembre de 2010; IAHS Publ. 352, pp. 73–75). IAHS Press. Sin DOI
+  impreso. `VERIFIED (2026-11-05, documento)`: las tres páginas leídas.
+- Hong, S.-h., Hendrickx, J. M. H., Kleissl, J., Allen, R. G., Bastiaanssen,
+  W. G. M., Scott, R. L., & Steinwand, A. L. *Evaluation of an
+  extreme-condition-inverse calibration remote sensing model for mapping
+  energy balance fluxes in arid riparian areas*. Manuscrito de 59 p.
+  obtenido como material suplementario. `PARCIAL (2026-11-05, documento)`:
+  el PDF imprime título, autores y afiliaciones, pero no revista, volumen,
+  año ni DOI; solo se usa como corroboración (`VERIFICATION.md`).
 - Bastiaanssen, W. G. M., Menenti, M., Feddes, R. A., & Holtslag, A. A. M.
   (1998). A remote sensing surface energy balance algorithm for land
   (SEBAL). 1. Formulation. *Journal of Hydrology*, 212–213, 198–212.

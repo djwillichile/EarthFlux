@@ -93,6 +93,16 @@ control del tipo `stable_psi_m_height`; RL↓ mediante un argumento de
 temperatura agnóstico, `ef_rl_in(temperature, …)`, RC-12) y se
 rotulan como `CANDIDATA` en roxygen.
 
+> **Actualización 2026-11-05 (M2-08 … M2-10, §1.2).** El manual SEBAL de
+> Idaho (Waters et al., 2002), antecesor directo de METRIC, y Allen et al.
+> (2012, IAHS Publ. 352) se contrastaron formulación por formulación
+> ([`VERIFICATION.md`](VERIFICATION.md)). Las formas confirmadas palabra
+> por palabra pasan a `VERIFICADA (SEBAL-Idaho 2002)` o
+> `VERIFICADA (IAHS 2012)` (política M2-08) y dejan de estar sujetas a esta
+> regla; las no cubiertas siguen `CANDIDATA` y sin defecto. **P0-2 queda
+> RESUELTA** (SH-11: 2 m, Ec. 38 del manual, M2-09); P0-1 y P0-3 se
+> actualizan en §1.1.
+
 | P0 | Se adopta | Filas que pasan a `DECIDIDA (provisional)` (§5) | Sigue pendiente |
 |---|---|---|---|
 | P0-4 | K y radianes en el núcleo `metric`; °C en `forcing` y ET de referencia con conversión explícita en la frontera; `doy` + `utc_hour` numéricos | ARCH-4, WF-02, RC-01, RC-03 (convención) | *View time* de MOD21 (MP-01) |
@@ -118,6 +128,11 @@ LE/ET) y al armonizarlos después de fusionarlos. Estado: **`DECIDIDA
 (provisional)`, 2026-11-04**, revisables por el autor antes de `0.1.0`
 (las tres primeras por indicación del autor de avanzar M2). Los documentos
 dueños registran el detalle en sus secciones de estado de implementación.
+M2-08 … M2-10 se tomaron el 2026-11-05, en la revisión de verificación
+contra el manual SEBAL de Idaho (registro en
+[`VERIFICATION.md`](VERIFICATION.md)); M2-08 y M2-09 son `DECIDIDA`
+(regla de estados y resolución con fuente primaria) y M2-10 corrige una
+decisión provisional (SH-10) para alinearla con la fuente.
 
 | ID | Decisión | Fundamento | Dónde |
 |---|---|---|---|
@@ -127,7 +142,10 @@ dueños registran el detalle en sus secciones de estado de implementación.
 | M2-04 | **Despachadores**: `ef_tau_sw()`, `ef_rs_in()`, `ef_g()`, `ef_zom()` y `ef_et_daily()` validan `method` (sin defecto, `check_method()`), llaman a la función del método, construyen los flags de celda de su etapa con `ef_diagnose_<etapa>()` más `EF_INPUT_NA` (`ef_input_na_flags()`) y devuelven `new_ef_object(list(<valores>, method, flags, provenance), "earthflux_<magnitud>")`: `earthflux_sw_transmissivity`, `earthflux_incoming_shortwave`, `earthflux_soil_heat_flux`, `earthflux_roughness_length`, `earthflux_daily_et`. Las funciones de método siguen devolviendo `numeric` (o una lista simple si producen varias magnitudes). `ef_tau_sw()` es de tipo estable (`total` siempre; `beam`/`diffuse` con nombre, `NULL` con `"elevation"`). `method` es el **último** argumento en todos (se corrigió `ef_zom()`). El test "despachador ≡ llamada directa" compara el elemento de valor. `ef_lambda()` es una función única con `method` (N6b) y sigue devolviendo `numeric` | Convención `ARCHITECTURE.md` §3.2 (punto 4), que solo `ef_g()` cumplía; antes `ef_tau_sw()` no era de tipo estable (lista con `allen`, numérico con `elevation`) y `ef_et_daily()`, `ef_rs_in()` y `ef_zom()` reenviaban el valor del método. **Cambio visible para el usuario**: el valor numérico se lee ahora en `$total`, `$g`, `$zom` o `$eta_24` | `ARCHITECTURE.md` §3.2; `NAMING.md` §2.1; especificaciones de cada módulo |
 | M2-05 | **Diagnósticos**: toda `ef_diagnose_<etapa>()` devuelve una lista (posiblemente vacía) con registros solo para los códigos marcados en alguna posición (`n_flagged > 0`); los códigos evaluados viajan en el atributo `evaluated` y el despachador o procedimiento los registra en `provenance$flags_evaluated`. Se alinearon radiación y calor sensible (que devolvían todo código evaluado, con `n_flagged = 0`) y los flags de objeto de `ef_calibrate_h()` | Una sola convención para todas las etapas; los flags de un objeto se leen como "lo que ocurrió"; "evaluado y ausente" sigue distinguible de "no evaluado" (`flags.md` §6.7) | `R/diagnostics.R` (cabecera); `ARCHITECTURE.md` §3.2 |
 | M2-06 | **Auxiliares en un solo lugar**: `check_core_args()`, `check_whole()`, `check_doy()`, `check_angle()`, `check_condition()`, `check_scalar()` (con cotas y `whole` opcionales; reemplaza a `anchor_check_scalar()`), `common_dim()` y `ef_reshape()` en `R/utils.R`; `ef_input_na_flags()` en `R/diagnostics.R`; `EF_SECONDS_PER_HOUR` y `EF_MM_PER_M` en `R/constants.R`. `stats` (paquete base) en `Imports`: las anclas usan `stats::quantile(type = )`, `stats::median()` y `stats::sd()` en lugar de reimplementaciones (resultados idénticos). Una sola conversión LE ↔ ET: las anclas usan la inversa interna `ef_et_inst_to_latent_heat()` | Eliminar duplicación y notas `TODO(shared)` tras fusionar los cinco módulos desarrollados en paralelo | `R/utils.R`, `R/diagnostics.R`, `R/constants.R`, `R/metric-anchors.R` |
-| M2-07 | **Hallazgo SH-11** (no es una decisión): con el ancla fría estable de la especificación (H_target < 0), `stable_psi_m_height` = 200 m hace **divergir** la Fase A (rah del ancla fría sin cota → `earthflux_calibration_error`), mientras que 2 m converge. P0-2 sigue `ABIERTA` y ahora se sabe **decisiva** para cualquier escena con ancla fría estable (advección) | Observado en la escena de `sensible-heat.md` §14 (H_target = −50 y −5 W m⁻²) y en la variante estable del test de extremo a extremo (`tests/testthat/test-metric-chain.R`). Es un comportamiento de las formas `CANDIDATA`, no una validación | `sensible-heat.md` §21; P0-2 |
+| M2-07 | **Hallazgo SH-11** (no es una decisión): con el ancla fría estable de la especificación (H_target < 0), `stable_psi_m_height` = 200 m hace **divergir** la Fase A (rah del ancla fría sin cota → `earthflux_calibration_error`), mientras que 2 m converge. P0-2 sigue `ABIERTA` y ahora se sabe **decisiva** para cualquier escena con ancla fría estable (advección). *Resuelto el 2026-11-05 por M2-09 (2 m, fuente primaria).* | Observado en la escena de `sensible-heat.md` §14 (H_target = −50 y −5 W m⁻²) y en la variante estable del test de extremo a extremo (`tests/testthat/test-metric-chain.R`). Es un comportamiento de las formas `CANDIDATA`, no una validación | `sensible-heat.md` §21; P0-2 |
+| M2-08 | **Política de verificación con el manual SEBAL de Idaho** (`DECIDIDA`, 2026-11-05). Nuevo estado **`VERIFICADA (SEBAL-Idaho 2002)`**: formulación confirmada palabra por palabra (forma, coeficientes, alturas) contra Waters et al. (2002), con página y número de ecuación; análogamente **`VERIFICADA (IAHS 2012)`** contra Allen et al. (2012, IAHS Publ. 352, pp. 73–75). Se registra fuente, página y ecuación en las tablas de las especificaciones y en `VERIFICATION.md`. El contraste con Allen, Tasumi & Trezza (2007) sigue siendo **deseable pero deja de ser bloqueante**. Si la forma de EarthFlux **difiere** del manual: se documenta la discrepancia; si la forma del manual es inequívoca, el código se alinea (pasa a `VERIFICADA` y se anota en `NEWS.md`); si es ambigua, sigue `CANDIDATA`. Lo propio de METRIC que el manual no cubre sigue `CANDIDATA`. Una formulación `VERIFICADA` deja de estar sujeta a la regla de §1.0: puede tener defecto **solo** donde la especificación o este registro decían que la falta de defecto se debía a la verificación pendiente; la regla de diseño T-15 (despachadores con `method` sin defecto) y los coeficientes sin defecto por diseño (P0-8: k del ancla fría, condición caliente, criterios de anclas; SH-13: Γ) no cambian | El manual es el documento de los autores de METRIC (Waters, Allen, Bastiaanssen, Tasumi, Trezza) con el mismo esquema aerodinámico y de estabilidad, anclas y dT = a + b·Ts; se leyeron como imagen todas las ecuaciones usadas. Sin DOI ni URL (PDF abierto) | `VERIFICATION.md`; `SCIENTIFIC_SPEC.md` (convención de estados); roxygen |
+| M2-09 | **SH-11 / P0-2 resueltas** (`DECIDIDA`, 2026-11-05): ψ_m(200 m) estable = −5·(2/L) (Waters et al., 2002, p. 33, Ec. 38; también ψ_h(2 m) = −5·(2/L), Ec. 39a, y ψ_h(0,1 m) = −5·(0,1/L), Ec. 39b). `ef_h_control()` tiene defecto `stable_psi_m_height = 2` y conserva el argumento para elegir otra altura (p. ej., 200 m) explícitamente. Además, por la misma regla, `blending_height = 200` (p. 26), `z1 = 0.1` y `z2 = 2` (p. 30, Ec. 41) son defectos de `ef_h_control()`, `ef_blending_wind()`, `ef_ustar()` y `ef_rah()`, y `cp = 1004` J kg⁻¹ K⁻¹ (p. 25; SH-09) de `ef_sensible_heat()` | Coincide con `water` y con el hallazgo M2-07 (2 m converge con un ancla fría estable). La falta de defecto se debía solo a la verificación pendiente (§1.0) | `sensible-heat.md` §10.3, §18, §21; `NEWS.md` |
+| M2-10 | **L con Ts y g = 9,81** (`DECIDIDA`, 2026-11-05; revisa SH-10): la longitud de Monin-Obukhov se calcula con la **temperatura de superficie** Ts (no con T_a = Ts − dT) y g = 9,81 m s⁻² (`EF_GRAVITY`), como en la Ec. 34 del manual (p. 32; el modelo F14 recibe Ts, ap. 8, p. 82); la densidad sigue siendo la de la iteración | Discrepancia con forma inequívoca en el manual: se alinea el código (M2-08). Cambia los valores de la escena sintética (`sensible-heat.md` §14.4–§14.5), recalculados con un script independiente | `sensible-heat.md` §10.1, §14; `R/constants.R`; `NEWS.md` |
 
 ### 1.3 Decisiones de implementación de M3 (2026-11-04)
 
@@ -356,6 +374,17 @@ Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
    y `"fao56"`, ET_inst, ρ_w, P(z)); una única lectura del artículo
    desbloquea a la vez NR-D3, SH-11, SH-09, SH-08, D-AP-04, D-AP-05, los
    ítems 8–18 de `soil-heat-flux.md` §10, V2 de λ y RC-12.
+   — *Estado (2026-11-05):* **resuelta en lo que cubre el manual SEBAL de
+   Idaho** (Waters et al., 2002), por la política M2-08: NR-D3 (Ec. 2),
+   SH-09 (c_p = 1004) y SH-11 (M2-09) se cierran; las formas de Rn y sus
+   componentes, G de Bastiaanssen, u*, rah, ψ, L, H, dT, las condiciones de
+   borde de las anclas, ET_inst, ETrF y ETa_24 pasan a
+   `VERIFICADA (SEBAL-Idaho 2002)` (`VERIFICATION.md`). Siguen `CANDIDATA`
+   lo que el manual no cubre: G de Tasumi, τ particionada, λ `"metric"`
+   (V2), la regla de cobertura parcial del ancla fría, C_rad, el mínimo de
+   z_om, la forma de ρ_air en METRIC y la pendiente de dT sobre Ts_hot.
+   El contraste con Allen et al. (2007) queda como deseable, no
+   bloqueante.
 2. **P0-2 · SH-11.** ¿ψ_m(z_b) en el caso estable se evalúa con 2/L (como
    `water`) o con z_b/L = 200/L? — *Recomendación:* **bloqueante**, verificar
    en la fuente primaria (`sensible-heat.md` §10.3, §18). — *Consecuencia:*
@@ -364,6 +393,10 @@ Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
    (§12), de modo que el resto de la iteración puede implementarse sin fijar
    el valor. *Hallazgo M2 (§1.2, M2-07):* con un ancla fría estable, 200 m
    hace divergir la calibración y 2 m converge: la decisión es decisiva.
+   — **RESUELTA (2026-11-05, M2-09):** 2/L, con la fuente primaria Waters
+   et al. (2002), p. 33, Ec. 38: ψ_m(200 m) = −5·(2/L). Defecto
+   `stable_psi_m_height = 2` en `ef_h_control()`; 200 m sigue disponible
+   como elección explícita.
 3. **P0-3 · RC-12 (con RC-13, GW-07, SPEC-5.1; transversal T-01).** ¿Qué
    temperatura entra en RL↓? — *Recomendación:* función agnóstica
    `ef_rl_in(temperature, atm_emissivity)`; (a) Ta del forzamiento y
@@ -373,6 +406,18 @@ Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
    seleccionar anclas **antes** de Rn (`anchor-pixels.md` §1.3); (a) es la
    única vía por la que GWR entra en RL↓ y hereda el riesgo de circularidad
    Ta–LST (GW-07).
+   — *Evidencia (2026-11-05):* el manual SEBAL de Idaho usa la opción
+   **(b)**: RL↓ = ε_a·σ·T_cold⁴ con la Ts del píxel frío como temperatura
+   del aire cerca de la superficie (Waters et al., 2002, p. 23, Ecs. 21 y
+   23), corregida por elevación en cada píxel en el modelo de montaña
+   (T_cold + 0,0065·Δz, Ec. 12-8); Allen et al. (2012, p. 74) describen lo
+   mismo para METRIC (temperatura de referencia de una superficie bien
+   regada, con gradiente por elevación). La forma de `ef_rl_in()` pasa a
+   `VERIFICADA (SEBAL-Idaho 2002)` y la configuración verificada es (b);
+   la función sigue agnóstica (argumento `temperature` explícito) y (a)
+   sigue como configuración de investigación (H1). Queda para el autor
+   fijar (b) como la del preset `VERIFICADA` de `earthflux()` y decidir si
+   se implementa el ajuste por elevación de T_cold.
 4. **P0-4 · Unidades y tiempo del núcleo (ARCH-4 = WF-02; RC-01; RC-03; T-09, T-02).**
    ¿K y radianes en todo el núcleo `metric`, °C solo en `forcing` y en la ET
    de referencia, y tiempo como `doy` + `utc_hour` numéricos? —
@@ -471,7 +516,7 @@ GW-22, GW-23 y ARCH-6.3b para M3): 101 `ABIERTA`, 58 `DECIDIDA`, 3
 `CERRADA`; las de M4 (§1.4) pasan **3 filas** más (MP-10, MP-11 y
 MP-13): 98 `ABIERTA`, 61 `DECIDIDA`, 3 `CERRADA`; y las decisiones del
 autor del 2026-11-04 posteriores a M4 (M4-27, M4-28) pasan **2 filas** más
-(MP-06 y MP-12): 96 `ABIERTA`, 63 `DECIDIDA`, 3 `CERRADA`. Las decisiones de diseño de la API de usuario del 2026-11-05 (§1.5, M5-01 … M5-07) son nuevas y no cambian el recuento. Las tablas de esta sección y de §5 conservan el recuento
+(MP-06 y MP-12): 96 `ABIERTA`, 63 `DECIDIDA`, 3 `CERRADA`. Las decisiones de diseño de la API de usuario del 2026-11-05 (§1.5, M5-01 … M5-07) son nuevas y no cambian el recuento. La revisión de verificación del 2026-11-05 (§1.2, M2-08 … M2-10) pasa **3 filas** de `ABIERTA` a `CERRADA` (NR-D3, SH-09 y SH-11): 93 `ABIERTA`, 63 `DECIDIDA`, 6 `CERRADA`; SH-10 sigue `DECIDIDA` con contenido revisado. Las tablas de esta sección y de §5 conservan el recuento
 original salvo en la columna de estado.
 
 Decisiones abiertas por prioridad:
@@ -578,6 +623,9 @@ recomendaciones ya escritas en los documentos citados; el autor decide.
   `EF_GWR_SURFACE_COVARIATE` y sensibilidad obligatoria; SPEC-5.1 con A y C
   soportadas; (4) M6: diseño factorial de `weather-forcing.md` §6 punto 3.
   Corregir "GWR = C2" → "GWR = C3".
+- **Evidencia (2026-11-05):** el manual SEBAL de Idaho y Allen et al.
+  (2012) usan la opción (b) de RC-12 (Ts del píxel frío, con gradiente por
+  elevación); ver P0-3 y `VERIFICATION.md`, fila 7.
 
 ### T-02 · Tiempo, hora de paso y definición del día — P0 (núcleo) / P1
 
@@ -618,6 +666,8 @@ recomendaciones ya escritas en los documentos citados; el autor decide.
   de referencia mantienen los literales de su norma (WF-14). La sensibilidad
   es baja (c_p se cancela en H salvo vía L, §8.3), por lo que no bloquea el
   código si la constante vive en un solo lugar.
+- **Resuelto (2026-11-05, M2-08):** 1004 J kg⁻¹ K⁻¹ confirmado en el
+  manual SEBAL de Idaho (Waters et al., 2002, pp. 25 y 32); SH-09 `CERRADA`.
 
 ### T-05 · Calor latente de vaporización λ — P0
 
@@ -854,7 +904,7 @@ grupo**.
 | NR-10.1 | §10.1 | Decisiones tomadas de diseño | — | Firma, unidades, ε₀ explícita, término reflejado, NA sin flags, errores con clase | DECIDIDA (fecha no registrada) | — | §10.1 | — |
 | NR-D1 | D1 | Cotas superiores de plausibilidad | Con referencia / no implementar | No implementar; requiere referencia | ABIERTA | P2 | §6, §10.2 | T-14 (`EF_RS_EXCEEDS_EXTRATERRESTRIAL`, `EF_LST_IMPLAUSIBLE`) |
 | NR-D2 | D2 | Marcar Rn < 0 en escenas diurnas | Flag / sin flag | Capa de orquestación; criterio documentado | ABIERTA | P2 | §4, §10.2 | T-14 |
-| NR-D3 | D3 | Número de ecuación y notación en Allen et al. (2007) | — | `TODO`; bloquea la fusión a `main` | ABIERTA | P0 | §2.3, §10.2 | P0-1 |
+| NR-D3 | D3 | Número de ecuación y notación en Allen et al. (2007) | — | `TODO`; bloquea la fusión a `main` | CERRADA (2026-11-05, M2-08): forma idéntica a la Ec. 2 de Waters et al. (2002), pp. 10 y 14; Allen et al. (2007) deseable, no bloqueante | — | §2.3, §10.2 | P0-1 |
 | NR-D4 | D4 | DOI de Allen et al. (2007) | — | Verificado con Crossref | CERRADA 2026-11-04 | — | §10.2; audit §8 | §6 ítem 9 |
 | NR-D5 | D5 | Argumentos de longitud 0 | Error / `numeric(0)` | Rechazar (provisional) | DECIDIDA (provisional; confirmada 2026-11-04 con P0-12) | — | §3.1, §10.2 | P0-12 |
 | NR-D6 | D6 | `dim` sin reciclar | — | Deben compartir `dim` (provisional) | DECIDIDA (provisional; confirmada 2026-11-04 con P0-12) | — | §3.1, §10.2 | Revisar con `SpatRaster`; P0-12 |
@@ -869,13 +919,13 @@ grupo**.
 | RC-03 | RC-03 | Tiempo y origen de la hora de paso | `doy`+`utc_hour` / `POSIXct`; *view time* medio / aparente; `solar_hour` | Numéricos; envoltorio desde `POSIXct` UTC; verificar *view time* (resuelto para MOD11A1 en MP §6.1) | DECIDIDA (provisional, 2026-11-04) en la convención (`doy`/`utc_hour` numéricos, envoltorio `POSIXct` UTC); *view time* de MOD21: MP-01 | — | §4.4, §9 | MP-01; T-02; P0-4 |
 | RC-04 | RC-04 | Precisión de la geometría solar | FAO-56 / efemérides | Cuantificar error antes de decidir | ABIERTA | P0 | §6.1, §9 | — |
 | RC-05 | RC-05 | Exportar auxiliares geométricas | Solo envolvente / también `ef_cos_incidence()` | Exportar solo la envolvente | ABIERTA | P0 | §9 | T-16 |
-| RC-06 | RC-06 | Valor de Gsc | 1367 / ≈ 1361 | El de los coeficientes de τ | ABIERTA (regla de P0-5 adoptada provisionalmente; valor sin verificar) | P0 | §5, §9 | T-07; P0-5 |
+| RC-06 | RC-06 | Valor de Gsc | 1367 / ≈ 1361 | El de los coeficientes de τ | ABIERTA (regla de P0-5 adoptada provisionalmente). Evidencia 2026-11-05: el manual SEBAL de Idaho usa 1367 W m⁻² con la τ de FAO-56 Ec. 37 (p. 19, Ec. 12), es decir, el Gsc de FAO-56 redondeado: la regla se cumple para la τ por elevación; para la τ particionada (ASCE-EWRI) sigue sin verificar | P0 | §5, §9 | T-07; P0-5 |
 | RC-07 | RC-07 | Valor de σ | CODATA exacto / 5.67e-8 | Exacto; tests de reproducción con tolerancia | DECIDIDA (provisional, 2026-11-04) | — | §5, §9 | T-07; WF-14; P0-5 |
 | RC-08 | RC-08 | τ_sw y origen de P | Particionada ASCE / simple; P medida/GWR / P(z) | Particionada por defecto; simple en plano y sensibilidad | ABIERTA | P0 | §6.3, §9 | WF-05; T-08; discrepancia K_B (WF §10) |
 | RC-09 | RC-09 | Difusa en pendiente y ρ_g | Isotrópico / anisotrópico; ρ_g píxel / vecindario | Verificar Allen et al. (2006) primero | ABIERTA | P1 (P0 si M2 incluye corrección topográfica) | §6.4, §9 | MP-03; T-11 |
 | RC-10 | RC-10 | Fuente de Rs↓ | Modelada / medida + descomposición / híbrida | Modelada por defecto; híbrida para H1; coherencia con Rs de ETr | ABIERTA | P0 | §6.4, §9 | SPEC-5.1; T-01 |
 | RC-11 | RC-11 | Escala de la corrección topográfica | MDE a 1 km / MDE fino y agregación | Evaluar | ABIERTA | P1 | §6.4, §9 | MP-08; T-18 |
-| RC-12 | RC-12 | Temperatura para RL↓ | Ta / Ts del píxel frío / Ts por píxel | Función agnóstica; (a) y (b) configuraciones; (c) solo verificación; verificar Allen 2007 | ABIERTA | P0 | §6.5.B, §9 | GW-07; SPEC-5.1; D-AP-03; T-01; P0-3 |
+| RC-12 | RC-12 | Temperatura para RL↓ | Ta / Ts del píxel frío / Ts por píxel | Función agnóstica; (a) y (b) configuraciones; (c) solo verificación; verificar Allen 2007 | ABIERTA (defecto del preset). Evidencia 2026-11-05: el manual SEBAL de Idaho usa (b), Ts del píxel frío (Ecs. 21 y 23) con ajuste por elevación (Ec. 12-8); Allen et al. (2012, p. 74) lo confirma para METRIC (P0-3) | P0 | §6.5.B, §9 | GW-07; SPEC-5.1; D-AP-03; T-01; P0-3 |
 | RC-13 | RC-13 | Formulación de ε_a y τ de entrada | τ_sw / Brutsaert (eₐ, Ta); τ modelada / efectiva | τ_sw modelada; evaluar Brutsaert calibrado (evidencia del autor, 2023) | ABIERTA | P0 | §6.5.A, §9 | RC-12; T-01 |
 | RC-14 | RC-14 | ε₀ de banda ancha y coherencia con LST | Desde LAI / producto LST / MOD21 | Preferir derivada del producto; registrar procedencia | ABIERTA | P1 | §6.6, §9 | MP-04; NR-D7; T-10 |
 | RC-15 | RC-15 | Tipo de retorno | Vector / lista | Lista en `ef_rs_in_modelled()` y `ef_solar_geometry()`; vector en onda larga | ABIERTA | P0 | §9 | T-17 |
@@ -890,7 +940,7 @@ grupo**.
 | G-D1 | D1 | Método por defecto en `earthflux()` | Tasumi / Bastiaanssen | Tasumi solo si se verifica; despachador sin defecto | ABIERTA | P2 | §5.4, §11 | T-15; ítems §10 |
 | G-D2 | D2 | Exportar funciones por método | Sí / no | Sí, como API avanzada | ABIERTA | P0 | §5.3, §11 | T-16 |
 | G-D3 | D3 | Objeto devuelto por el despachador | Lista liviana / clase | Lista con `g`, `g_rn_ratio`, `method`, `branch`, `flags`, `provenance` | DECIDIDA (provisional, 2026-11-04) (convención de `ARCHITECTURE.md` §3.2) | — | §5.4, §11 | T-17 |
-| G-D4 | D4 | Superficies especiales (agua, nieve, impermeable) | Regla / flag / capa explícita | Sin regla hasta verificar; flag `EF_G_NDVI_NONPOSITIVE` | ABIERTA | P0 | §3.4, §11 | Ítems 15, 16, 19 de §10 |
+| G-D4 | D4 | Superficies especiales (agua, nieve, impermeable) | Regla / flag / capa explícita | Sin regla hasta verificar; flag `EF_G_NDVI_NONPOSITIVE`. Evidencia 2026-11-05: el manual SEBAL de Idaho asigna G/Rn = 0,5 a agua (NDVI < 0) y nieve (Ts < 4 °C y α > 0,45), p. 25 y ap. 10 | ABIERTA | P0 | §3.4, §11 | Ítems 15, 16, 19 de §10 |
 | G-D5 | D5 | NA en `lst` con LAI ≥ 0.5 (Tasumi) | `NA` / calcular | `NA` (conservador); confirmación del autor | ABIERTA | P0 | §6.1, §11 | — |
 | G-D6 | D6 | Entradas fuera de dominio en rásteres | Error / `on_invalid` | Error por defecto; evaluar `on_invalid` | DECIDIDA (provisional, 2026-11-04): error por defecto; `on_invalid` no adoptado | — | §6.2, §11 | T-13; P0-11 |
 | G-D7 | D7 | Rango plausible de G/Rn | — | Ninguno hasta referencia; flag no registrado | ABIERTA | P2 | §6.3, §11 | Ítem 18 de §10 |
@@ -924,17 +974,17 @@ la columna Recomendación.
 |---|---|---|---|---|---|
 | SH-01 | Método de z_om por defecto con MODIS 1 km | LAI lineal / custom / Perrier / tabla por cobertura | LAI lineal como base; tabla cuando exista fuente; Perrier con mapa de alturas | §5, §18 | T-15; T-18 |
 | SH-02 | Mínimo de z_om | 0.005 m con flag / no aplicar | Aplicar con flag, tras verificar p. 386 | §5.6 | — |
-| SH-03 | Ajuste por terreno de z_om | Sin ajuste / factor / factor con mínimo 1 | Desactivado hasta verificar Eq. 35 | §5.7 | — |
+| SH-03 | Ajuste por terreno de z_om | Sin ajuste / factor / factor con mínimo 1 | Desactivado hasta verificar Eq. 35. Evidencia 2026-11-05: z_om·[1 + (pendiente_grados − 5)/20] para pendiente ≥ 5° (Waters et al., 2002, Ec. 12-9; Allen et al., 2012, p. 74); no implementado | §5.7 | — |
 | SH-04 | Perfil de la estación | d_w = 0 / d_w y z_om,w desde h (FAO-56) | Argumentos explícitos; defecto FAO-56 (h = 0.12 m) | §6.1 | T-21 |
 | SH-05 | u_b uniforme vs espacial | Escalar / superficie GWR | Aceptar ambos; registrar cuál | §6.1 | T-21; GW enmienda A4 |
 | SH-06 | Viento bajo | Sin piso + flag / piso explícito | Sin piso por defecto | §6.2 | T-21 |
-| SH-07 | Ajuste del viento por elevación | No / con z_w / con datum | No implementar hasta verificar | §6.3 | T-21 |
+| SH-07 | Ajuste del viento por elevación | No / con z_w / con datum | No implementar hasta verificar. Evidencia 2026-11-05: ϖ = 1 + 0,1·(z − z_estación)/1000 sobre u₂₀₀ (Waters et al., 2002, Ec. 12-10; Allen et al., 2012, p. 74); no implementado | §6.3 | T-21 |
 | SH-08 | Forma y temperatura de ρ_air; 273 vs 273.15 | §8.1 con T_a / §8.2 / con Ts | §8.1 con T_a y P de `ef_air_pressure()` o medida → **DECIDIDA (provisional, 2026-11-04)** | §8 | T-06; T-08; P0-6 |
-| SH-09 | c_p | 1004 / 1013 | Verificar en Allen et al. (2007) → sigue **ABIERTA** (depende de P0-1); constante única `EF_SPECIFIC_HEAT_AIR` = 1004 `CANDIDATA` | §8.3 | T-04; P0-6 |
-| SH-10 | T, ρ y g en L | Ts / T_a; ρ inicial / iterada; 9.807 / otro | T_a y ρ iterada; g con referencia → **DECIDIDA (provisional, 2026-11-04)** salvo g (`EF_GRAVITY` = 9.807 `CANDIDATA`) | §10.1 | P0-6 |
-| SH-11 | Altura de ψ_m estable en z_b | 2/L / 200/L | **Bloqueante**: verificar en la fuente primaria. Hallazgo M2 (§1.2, M2-07): con ancla fría estable, 200/L diverge y 2/L converge | §10.3 | P0-2 |
-| SH-12 | Notación de a y b | SPEC / artículo | Mantener SPEC salvo que el artículo difiera | §4.2 | `water` invierte a ↔ b |
-| SH-13 | Γ y z_datum | 6.49 K km⁻¹ fijo / argumento; z_datum estación / escena | Γ argumento documentado; z_datum constante explícito | §9.1 | D-AP-07; T-20 |
+| SH-09 | c_p | 1004 / 1013 | **CERRADA (2026-11-05, M2-08):** 1004 J kg⁻¹ K⁻¹, `VERIFICADA (SEBAL-Idaho 2002)` (Waters et al., 2002, p. 25 y p. 32); `EF_SPECIFIC_HEAT_AIR` y defecto de `cp` en `ef_sensible_heat()` (M2-09) | §8.3 | T-04; P0-6 |
+| SH-10 | T, ρ y g en L | Ts / T_a; ρ inicial / iterada; 9.807 / otro | **DECIDIDA (2026-11-05, M2-10; revisa la provisional del 2026-11-04):** Ts, ρ de la iteración y g = 9,81 (`EF_GRAVITY`), `VERIFICADA (SEBAL-Idaho 2002)` (p. 32, Ec. 34) | §10.1 | P0-6 |
+| SH-11 | Altura de ψ_m estable en z_b | 2/L / 200/L | **CERRADA (2026-11-05, M2-09):** 2/L, Waters et al. (2002), p. 33, Ec. 38; defecto `stable_psi_m_height = 2`. Hallazgo M2 (§1.2, M2-07): con ancla fría estable, 200/L diverge y 2/L converge | §10.3 | P0-2 |
+| SH-12 | Notación de a y b | SPEC / artículo | Mantener SPEC salvo que el artículo difiera. Evidencia 2026-11-05: el manual SEBAL de Idaho escribe dT = b + a·Ts (a = pendiente), como `water`; decisión del autor | §4.2 | `water` invierte a ↔ b |
+| SH-13 | Γ y z_datum | 6.49 K km⁻¹ fijo / argumento; z_datum estación / escena | Γ argumento documentado; z_datum constante explícito. Evidencia 2026-11-05: forma `VERIFICADA (SEBAL-Idaho 2002)` (Ec. 12-7, Γ = 0,0065 K m⁻¹, datum en la estación); METRIC ajusta Γ a la escena con doble tasa en montaña (Allen et al., 2012, p. 74): Γ sigue sin defecto por diseño | §9.1 | D-AP-07; T-20 |
 | SH-14 | Agregación de varias anclas | Promedio entradas / dT / por par / regresión | Coordinar con anclas; caso base 1 valor por clase → **DECIDIDA (provisional, 2026-11-04)** | §2.3 | = D-AP-06; T-03; P0-9 |
 | SH-15 | Estrategia de Fase B | Estrategia P1 (`water`) / estrategia P2 | Estrategia P2; P1 solo verificación → **DECIDIDA (provisional, 2026-11-04)** | §11.7 | P0-10 |
 | SH-16 | `tol`, `maxit`, ω; criterio por ancla o promedio | — | 0.01, 20, 0, por ancla; reportar Δa, Δb → **DECIDIDA (provisional, 2026-11-04)** | §11.3–11.5 | T-15; P0-10 |
