@@ -4,7 +4,7 @@
 \alias{ef_sensible_heat}
 \title{Sensible heat flux}
 \usage{
-ef_sensible_heat(air_density, dt, rah, cp)
+ef_sensible_heat(air_density, dt, rah, cp = EF_SPECIFIC_HEAT_AIR)
 }
 \arguments{
 \item{air_density}{Numeric. Air density [kg m-3] (see
@@ -18,10 +18,11 @@ finite; negative values are allowed.}
 (see \code{\link[=ef_rah]{ef_rah()}}). Must be finite and \verb{> 0}.}
 
 \item{cp}{Numeric. Specific heat of air at constant pressure
-[J kg-1 K-1]. Must be finite and \verb{> 0}. The METRIC value is
-1004 J kg-1 K-1 (Waters et al., 2002, p. 25, text of Eq. 25; decision
-SH-09), the one used and recorded by \code{\link[=ef_calibrate_h]{ef_calibrate_h()}} (element
-\code{constants$cp}); FAO-56 uses 1013 J kg-1 K-1.}
+[J kg-1 K-1]. Must be finite and \verb{> 0}. Default 1004 J kg-1 K-1 (the
+package constant \code{EF_SPECIFIC_HEAT_AIR}; Waters et al., 2002, p. 25,
+text of Eq. 25; decision SH-09), the value used and recorded by
+\code{\link[=ef_calibrate_h]{ef_calibrate_h()}} (element \code{constants$cp}); FAO-56 uses
+1013 J kg-1 K-1.}
 }
 \value{
 A numeric vector of sensible heat flux \eqn{H}{H} [W m-2], with
@@ -54,8 +55,7 @@ cross-check with Allen et al. (2007) remains desirable but is no longer
 blocking.
 }
 \examples{
-ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850,
-                 cp = 1004)
+ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850)
 }
 \references{
 Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy

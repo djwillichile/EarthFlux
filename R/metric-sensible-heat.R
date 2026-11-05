@@ -111,10 +111,11 @@ air_density_core <- function(pressure, air_temperature) {
 #' @param rah Numeric. Aerodynamic resistance to heat transport \[s m-1\]
 #'   (see [ef_rah()]). Must be finite and `> 0`.
 #' @param cp Numeric. Specific heat of air at constant pressure
-#'   \[J kg-1 K-1\]. Must be finite and `> 0`. The METRIC value is
-#'   1004 J kg-1 K-1 (Waters et al., 2002, p. 25, text of Eq. 25; decision
-#'   SH-09), the one used and recorded by [ef_calibrate_h()] (element
-#'   `constants$cp`); FAO-56 uses 1013 J kg-1 K-1.
+#'   \[J kg-1 K-1\]. Must be finite and `> 0`. Default 1004 J kg-1 K-1 (the
+#'   package constant `EF_SPECIFIC_HEAT_AIR`; Waters et al., 2002, p. 25,
+#'   text of Eq. 25; decision SH-09), the value used and recorded by
+#'   [ef_calibrate_h()] (element `constants$cp`); FAO-56 uses
+#'   1013 J kg-1 K-1.
 #'
 #' @return A numeric vector of sensible heat flux \eqn{H}{H} \[W m-2\], with
 #'   the common length of the inputs and keeping their `dim`. Negative values
@@ -155,9 +156,9 @@ air_density_core <- function(pressure, air_temperature) {
 #' @export
 #'
 #' @examples
-#' ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850,
-#'                  cp = 1004)
-ef_sensible_heat <- function(air_density, dt, rah, cp) {
+#' ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850)
+ef_sensible_heat <- function(air_density, dt, rah,
+                             cp = EF_SPECIFIC_HEAT_AIR) {
   call <- sys.call()
   check_core_args(list(air_density = air_density, dt = dt, rah = rah, cp = cp),
                   call)
