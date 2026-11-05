@@ -47,10 +47,13 @@ and \\\rho_w\\ = 1000 kg m-3 is the density of water (FAO-56, chapter 3,
 box 8; internal constant, not an argument). With \\\rho_w\\ = 1000 kg
 m-3 this is numerically \\3600 LE / \lambda\\.
 
-The notation \\3600 LE / (\lambda \rho_w)\\ attributed to METRIC by
-secondary sources gives m h-1, not mm h-1, with \\\lambda\\ in J kg-1;
-the factor 1000 mm m-1 is written explicitly here. How the primary
-reference resolves that factor is pending verification.
+The SEBAL Idaho manual writes \\ET\_{inst} = 3600\\ \lambda ET /
+\lambda\\ in mm h-1 (Waters et al., 2002, p. 34, Eq. 42), i.e. kg m-2
+h-1, which is mm h-1 with \\\rho_w\\ = 1000 kg m-3: numerically
+identical to the form above. The notation \\3600 LE / (\lambda \rho_w)\\
+attributed to METRIC by secondary sources gives m h-1, not mm h-1, with
+\\\lambda\\ in J kg-1; the factor 1000 mm m-1 is written explicitly
+here.
 
 Unit guard: a `lambda` given in MJ kg-1 (about 2.45) instead of J kg-1
 would silently give an evapotranspiration 1e6 times too large. Values of
@@ -73,8 +76,9 @@ raise an error of class `earthflux_domain_error` (also
 Verification status: `VERIFICADA` as a unit conversion (FAO-56, chapter
 3, box 8 and Eq. 20, plus 3600 s h-1); checked against the FAO-56
 equivalences 1 mm d-1 = 2.45 MJ m-2 d-1 (chapter 1, table 1) and 1 W m-2
-= 0.035 mm d-1 (chapter 3, table 3). Its notation in Allen et al. (2007)
-is `CANDIDATA` (corroborated by secondary sources).
+= 0.035 mm d-1 (chapter 3, table 3); and `VERIFICADA (SEBAL-Idaho 2002)`
+(Waters et al., 2002, Eq. 42, see above). Its notation in Allen et al.
+(2007) has not been verified (desirable, not blocking).
 
 ## References
 
@@ -87,6 +91,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 

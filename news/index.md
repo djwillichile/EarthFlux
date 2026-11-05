@@ -27,17 +27,70 @@ of the ASCE-EWRI (2005) standardized equation (equations and constants
 checked against the 2005 Task Committee report; its worked examples are
 not reproduced yet), the unit conversions and the MODIS product facts,
 each with its citation to the official user guide or file specification.
-Most METRIC formulations are candidates (`CANDIDATA`): corroborated by
-secondary sources, with verification against Allen, Tasumi & Trezza
-(2007) pending. The key open items are the height of the stable momentum
-correction psi_m (decision SH-11, argument `stable_psi_m_height` without
-default), which decides whether the sensible heat calibration converges
-when the cold anchor is stable (finding M2-07); the specific heat of air
-c_p (1004 J kg-1 K-1, candidate); the temperature used in the incoming
-longwave radiation (left to the caller of
-[`ef_rl_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_in.md));
-and the emissivity of non-vegetated pixels, derived from a LAI assigned
-with the option `lai_nonveg` of the surface state.
+Most METRIC formulations are verified against the SEBAL Idaho manual of
+the METRIC authors (Waters et al., 2002), the direct predecessor of
+METRIC, with page and equation (`VERIFICADA (SEBAL-Idaho 2002)`; see the
+next section); the cross-check with Allen, Tasumi & Trezza (2007)
+remains desirable. The formulations not covered by that manual stay
+candidates (`CANDIDATA`). The key open items are the temperature used in
+the incoming longwave radiation (left to the caller of
+[`ef_rl_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_in.md);
+the manual uses the cold-pixel surface temperature), the terrain
+projection of the incoming shortwave radiation, and the emissivity of
+non-vegetated pixels, derived from a LAI assigned with the option
+`lai_nonveg` of the surface state.
+
+### Verification against the SEBAL Idaho manual
+
+- The METRIC formulations were checked one by one against Waters et al.
+  (2002), *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+  implementation. Advanced training and users manual* (version 1.0), and
+  the Perrier roughness against Allen et al. (2012, IAHS Publ. 352,
+  pp. 73-75). Roxygen, provenance status strings and constants cite the
+  page and equation of each verified form
+  (`VERIFICADA (SEBAL-Idaho 2002)` or `VERIFICADA (IAHS 2012)`).
+
+- Decision SH-11 is resolved: the stable momentum correction of the
+  blending height is psi_m(200 m) = -5 (2 / L) (Eq. 38), so
+  [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
+  now defaults `stable_psi_m_height` to 2 m; 200 m can still be chosen
+  explicitly. The blending height and the heights of the aerodynamic
+  resistance are now defaults (200 m, 0.1 m and 2 m) of
+  [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md),
+  [`ef_blending_wind()`](https://djwillichile.github.io/EarthFlux/reference/ef_blending_wind.md),
+  [`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md)
+  and
+  [`ef_rah()`](https://djwillichile.github.io/EarthFlux/reference/ef_rah.md),
+  and
+  [`ef_sensible_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_sensible_heat.md)
+  defaults `cp` to 1004 J kg-1 K-1.
+
+- The Monin-Obukhov length of
+  [`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md)
+  now uses the surface temperature and g = 9.81 m s-2, as written in the
+  manual (Eq. 34); it used the near-surface air temperature Ts - dT and
+  g = 9.807. The calibrated coefficients of the synthetic test scene
+  change by less than 0.5 %.
+
+- Promoted to `VERIFICADA (SEBAL-Idaho 2002)`: net radiation; the
+  elevation shortwave transmissivity, the atmospheric emissivity, the
+  incoming shortwave radiation on flat terrain and the incoming and
+  emitted longwave radiation; G of Bastiaanssen; the LAI and NDVI/albedo
+  roughness, the blending-height wind, the friction velocity, the
+  aerodynamic resistance, the stability corrections and the
+  Monin-Obukhov length; c_p, g and the von Karman constant; H, dT and
+  the datum surface temperature; the forms of the anchor boundary
+  conditions; LE, instantaneous ET, ETrF and daily ETa; and the LAI
+  emissivity of the MODIS surface state. The Perrier roughness is
+  `VERIFICADA (IAHS 2012)`.
+
+- Still `CANDIDATA`: the partitioned shortwave transmissivity, the
+  terrain projection of the incoming shortwave radiation, the incidence
+  angle on a tilted plane (the manual prints an apparent misprint), G of
+  Tasumi, the use of the FAO-56 air density in METRIC, the anchor
+  selection criteria and `ef_lambda(method = "metric")`. The register,
+  with every discrepancy, is `dev/VERIFICATION.md` in the source
+  repository.
 
 ### New features
 
@@ -50,13 +103,13 @@ with the option `lai_nonveg` of the surface state.
   radiation balance), keeping the reflected incoming longwave term
   explicit. Inputs are validated (type, recycling and physical domain,
   with classed errors) and missing values propagate. The form of the
-  equation is corroborated by secondary sources; verification against
-  the primary reference (Allen et al., 2007) is pending.
+  equation is verified against the SEBAL Idaho manual (Waters et al.,
+  2002, Eq. 2).
 
 - Radiation components that produce the inputs of
   [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md)
-  (all `CANDIDATA` except where stated; unverified choices are explicit
-  arguments without defaults):
+  (verification status in the section above; unverified choices are
+  explicit arguments without defaults):
 
   - [`ef_solar_geometry()`](https://djwillichile.github.io/EarthFlux/reference/ef_solar_geometry.md)
     returns, per pixel and overpass instant (numeric `doy` of the UTC
@@ -104,10 +157,10 @@ with the option `lai_nonveg` of the surface state.
   [`ef_g_bastiaanssen()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)
   (SEBAL, function of surface temperature, albedo and NDVI) and
   [`ef_g_tasumi()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)
-  (METRIC, function of LAI, with a bare-soil branch for LAI \< 0.5).
-  Both formulations are candidates: verification against the primary
-  references is pending. Impossible inputs raise classed errors; values
-  of G are never truncated.
+  (METRIC, function of LAI, with a bare-soil branch for LAI \< 0.5). The
+  Bastiaanssen formulation is verified against the SEBAL Idaho manual
+  (Eq. 24); the Tasumi formulation is a candidate. Impossible inputs
+  raise classed errors; values of G are never truncated.
 
 - Anchor pixels of the METRIC calibration (stage \[A\], selection):
   [`ef_select_anchors()`](https://djwillichile.github.io/EarthFlux/reference/ef_select_anchors.md)
@@ -143,8 +196,8 @@ with the option `lai_nonveg` of the surface state.
   [`ef_et_inst()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_inst.md).
   Optional roughness length, blending-height wind speed and pressure are
   passed through to the calibration points, which then hold every input
-  of the sensible heat calibration. The forms are `CANDIDATA`; no
-  coefficient has a default.
+  of the sensible heat calibration. The forms are verified against the
+  SEBAL Idaho manual; no coefficient has a default.
 
 - Aerodynamics of the METRIC sensible heat flux:
   [`ef_zom()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md)
@@ -162,9 +215,10 @@ with the option `lai_nonveg` of the surface state.
   [`ef_rah()`](https://djwillichile.github.io/EarthFlux/reference/ef_rah.md)
   compute the friction velocity and the aerodynamic resistance to heat
   transport, with optional stability corrections. No minimum roughness,
-  terrain factor or wind floor is applied (not verified). All forms are
-  `CANDIDATA`; the heights (blending height, z1, z2) and the station
-  roughness have no defaults.
+  terrain factor or wind floor is applied. The forms are verified
+  against the SEBAL Idaho manual (Perrier: Allen et al., 2012); the
+  heights default to the values of the manual and the station roughness
+  has no default.
 
 - [`ef_air_density()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_density.md)
   (FAO-56 form, temperature in K),
@@ -189,11 +243,10 @@ with the option `lai_nonveg` of the surface state.
   `EF_H_CALIBRATION_NOT_CONVERGED`; invalid anchor states raise
   `earthflux_calibration_error`.
   [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
-  sets the convergence settings (`tol = 0.01`, `maxit = 20`,
-  `damping = 0`) and requires the height of the stable momentum
-  correction, `stable_psi_m_height`, because that choice is still open
-  (decision SH-11); with a stable cold anchor it decides whether the
-  calibration converges.
+  sets the heights, the height of the stable momentum correction
+  `stable_psi_m_height` (default 2 m, decision SH-11; with a stable cold
+  anchor 200 m makes the calibration diverge) and the convergence
+  settings (`tol = 0.01`, `maxit = 20`, `damping = 0`).
 
 - [`ef_lambda()`](https://djwillichile.github.io/EarthFlux/reference/ef_lambda.md)
   returns the latent heat of vaporization in J kg-1 with an explicit
@@ -224,8 +277,7 @@ with the option `lai_nonveg` of the surface state.
   ETa_24 = ETrF \* ETr_24). Both require the reference crop (`"alfalfa"`
   or `"grass"`) explicitly. A non-positive instantaneous reference ET or
   a negative daily reference ET is a classed domain error. These
-  formulations are corroborated by secondary sources; verification
-  against Allen et al. (2007) is pending.
+  formulations are verified against the SEBAL Idaho manual (Eqs. 43-44).
 
 #### Dispatchers, flags and provenance
 

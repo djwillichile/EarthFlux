@@ -8,7 +8,7 @@ blending height (neutral when `psi_m = 0`).
 ## Usage
 
 ``` r
-ef_ustar(u_blend, zom, blending_height, psi_m = 0)
+ef_ustar(u_blend, zom, blending_height = 200, psi_m = 0)
 ```
 
 ## Arguments
@@ -27,8 +27,8 @@ ef_ustar(u_blend, zom, blending_height, psi_m = 0)
 
 - blending_height:
 
-  Numeric. Blending height \\z_b\\ \[m\]. Must be finite and `> 0`. No
-  default: the METRIC value of 200 m is `CANDIDATA`.
+  Numeric. Blending height \\z_b\\ \[m\]. Must be finite and `> 0`.
+  Default 200 m (Waters et al., 2002, p. 26, Eqs. 30 and 40).
 
 - psi_m:
 
@@ -58,9 +58,11 @@ Missing values propagate. Infinite values and values outside the domain
 raise an error of class `earthflux_domain_error` (also
 `earthflux_input_error`).
 
-Verification status: `CANDIDATA` (observed in the `water` package; the
-value of \\k\\ is `VERIFICADA` as the FAO-56 value, its use in METRIC is
-`CANDIDATA`).
+Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+(2002), p. 27, Eq. 30 (neutral) and p. 33, Eq. 40 (with
+\\\psi_m(200\\m)\\), with \\k = 0.41\\ (also the FAO-56 value). The
+cross-check with Allen et al. (2007) remains desirable but is no longer
+blocking.
 
 ## References
 
@@ -69,6 +71,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 

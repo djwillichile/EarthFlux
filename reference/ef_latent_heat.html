@@ -118,9 +118,12 @@ arguments are recycled, arrays with a <code>dim</code> are not. Infinite values
 raise an error of class <code>earthflux_domain_error</code> (also
 <code>earthflux_input_error</code>) that names the argument.</p>
 <p>Verification status: <code>VERIFICADA</code> as the FAO-56 surface energy balance
-(chapter 1, Eq. 1, rearranged). Its use as a residual in METRIC is
-corroborated by secondary sources (Olmedo et al., 2016, Eq. 1); the
-equation number in Allen et al. (2007) has not been verified.</p>
+(chapter 1, Eq. 1, rearranged) and <code>VERIFICADA (SEBAL-Idaho 2002)</code> as the
+residual of the energy balance, Waters et al. (2002), Eq. 1 (pp. 9, 24
+and 34), with the same sign convention (G and H positive away from the
+surface). Also corroborated by Olmedo et al. (2016, Eq. 1); the equation
+number in Allen et al. (2007) has not been verified (desirable, not
+blocking).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -136,6 +139,10 @@ Fonseca-Luengo, D., &amp; Fuentes-Penailillo, F. (2016). water: Tools and
 functions to estimate actual evapotranspiration using land surface energy
 balance models in R. <em>The R Journal</em>, 8(2), 352-369.
 <a href="https://doi.org/10.32614/RJ-2016-051" class="external-link">doi:10.32614/RJ-2016-051</a></p>
+<p>Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., &amp; Trezza, R.
+(2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual</em> (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

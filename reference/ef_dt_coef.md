@@ -36,7 +36,8 @@ calibration, e.g. per scene) keeping their `dim`.
 T\_{s,datum,cold}}, \qquad a = dT\_{cold} - b\\T\_{s,datum,cold}\$\$
 
 Notation: `a` is the intercept and `b` the slope, as in
-`dev/SCIENTIFIC_SPEC.md`; the `water` package uses the opposite names.
+`dev/SCIENTIFIC_SPEC.md`; the SEBAL Idaho manual (\\dT = b + a T_s\\,
+Eq. 32) and the `water` package use the opposite names (decision SH-12).
 
 Pixels outside the range of the anchors use the same line
 (extrapolation, flagged by
@@ -53,9 +54,11 @@ swapped anchors) raises an error of class `earthflux_calibration_error`.
 Other values outside the domain raise `earthflux_domain_error` (also
 `earthflux_input_error`).
 
-Verification status: `CANDIDATA` (form observed in the `water` package
-and in `dev/SCIENTIFIC_SPEC.md` section 3; Allen et al., 2007, not
-consulted, including a reported erratum in its intercept equation).
+Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: linear relation of
+Waters et al. (2002), p. 30, Eq. 32, through the anchor values of Eq. 33
+(p. 31: "the correlation coefficients ... are now computed for the
+linear relationship"). Allen et al. (2007) was not consulted, including
+a reported erratum in its intercept equation (desirable, not blocking).
 
 ## References
 
@@ -64,6 +67,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 

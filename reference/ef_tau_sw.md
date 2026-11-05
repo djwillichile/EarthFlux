@@ -148,11 +148,14 @@ coefficients (0.091 and exponent 0.25 in the beam term, 0.33 in the
 diffuse term); the discrepancy is recorded under decision RC-08 and must
 be resolved against ASCE-EWRI (2005) and Allen et al. (2007).
 
-`ef_tau_sw_elevation()` has the form of FAO-56 Eq. 37 (annex 3, Eq.
-3-13) for the ratio of clear-sky to extraterrestrial radiation, which
-FAO-56 declares valid for daily and hourly periods, for elevations below
-6000 m and low turbidity; its use as an instantaneous transmissivity in
-METRIC is `CANDIDATA`.
+`ef_tau_sw_elevation()` is `VERIFICADA (SEBAL-Idaho 2002)`: Waters et
+al. (2002), p. 18, Eq. 11, use exactly this FAO-56 form (FAO-56 Eq. 37;
+annex 3, Eq. 3-13) as the instantaneous clear-sky transmissivity of the
+incoming shortwave radiation (Eq. 12), with the elevation of the area of
+interest (e.g. of the weather station; per pixel in the mountain model,
+appendix 12). FAO-56 declares the form valid for daily and hourly
+periods, for elevations below 6000 m and low turbidity. The cross-check
+with Allen et al. (2007) remains desirable but is no longer blocking.
 
 ## References
 
@@ -165,6 +168,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 

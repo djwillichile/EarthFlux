@@ -45,7 +45,7 @@ resistance to heat transport (bulk transfer equation of METRIC).</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ef_sensible_heat</span><span class="op">(</span><span class="va">air_density</span>, <span class="va">dt</span>, <span class="va">rah</span>, <span class="va">cp</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ef_sensible_heat</span><span class="op">(</span><span class="va">air_density</span>, <span class="va">dt</span>, <span class="va">rah</span>, cp <span class="op">=</span> <span class="va">EF_SPECIFIC_HEAT_AIR</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -70,9 +70,10 @@ finite; negative values are allowed.</p></dd>
 
 <dt id="arg-cp">cp<a class="anchor" aria-label="anchor" href="#arg-cp"></a></dt>
 <dd><p>Numeric. Specific heat of air at constant pressure
-[J kg-1 K-1]. Must be finite and <code>&gt; 0</code>. No default: the METRIC value
-(1004 J kg-1 K-1, <code>CANDIDATA</code>, decision SH-09) is the one used and
-recorded by <code><a href="ef_calibrate_h.html">ef_calibrate_h()</a></code> (element <code>constants$cp</code>); FAO-56 uses
+[J kg-1 K-1]. Must be finite and <code>&gt; 0</code>. Default 1004 J kg-1 K-1 (the
+package constant <code>EF_SPECIFIC_HEAT_AIR</code>; Waters et al., 2002, p. 25,
+text of Eq. 25; decision SH-09), the value used and recorded by
+<code><a href="ef_calibrate_h.html">ef_calibrate_h()</a></code> (element <code>constants$cp</code>); FAO-56 uses
 1013 J kg-1 K-1.</p></dd>
 
 </dl></div>
@@ -94,8 +95,10 @@ proportional to \(1/c_p\), so that, for a given
 <p>Missing values propagate. Infinite values and values outside the domain
 raise an error of class <code>earthflux_domain_error</code> (also
 <code>earthflux_input_error</code>).</p>
-<p>Verification status: <code>CANDIDATA</code> (form of <code>dev/SCIENTIFIC_SPEC.md</code>
-section 3 and METRIC implementations; Allen et al., 2007, not consulted).</p>
+<p>Verification status: <code>VERIFICADA (SEBAL-Idaho 2002)</code>: Waters et al.
+(2002), p. 25, Eq. 25, with \(c_p\) = 1004 J kg-1 K-1. The
+cross-check with Allen et al. (2007) remains desirable but is no longer
+blocking.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -103,6 +106,10 @@ section 3 and METRIC implementations; Allen et al., 2007, not consulted).</p>
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. <em>Journal of Irrigation and Drainage Engineering</em>,
 133(4), 380-394. <a href="https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29" class="external-link">doi:10.1061/(ASCE)0733-9437(2007)133:4(380)</a></p>
+<p>Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., &amp; Trezza, R.
+(2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual</em> (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -120,8 +127,7 @@ balance for mapping evapotranspiration with internalized calibration
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">ef_sensible_heat</span><span class="op">(</span>air_density <span class="op">=</span> <span class="fl">1.069979</span>, dt <span class="op">=</span> <span class="fl">5.789273</span>, rah <span class="op">=</span> <span class="fl">28.1850</span>,</span></span>
-<span class="r-in"><span>                 cp <span class="op">=</span> <span class="fl">1004</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">ef_sensible_heat</span><span class="op">(</span>air_density <span class="op">=</span> <span class="fl">1.069979</span>, dt <span class="op">=</span> <span class="fl">5.789273</span>, rah <span class="op">=</span> <span class="fl">28.1850</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 220.6556</span>
 </code></pre></div>
     </div>

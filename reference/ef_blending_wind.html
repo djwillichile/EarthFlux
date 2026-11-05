@@ -51,7 +51,13 @@ surface is also accepted (vectors per pixel).</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ef_blending_wind</span><span class="op">(</span><span class="va">wind_speed</span>, <span class="va">height</span>, <span class="va">zom_station</span>, <span class="va">d_station</span>, <span class="va">blending_height</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ef_blending_wind</span><span class="op">(</span></span>
+<span>  <span class="va">wind_speed</span>,</span>
+<span>  <span class="va">height</span>,</span>
+<span>  <span class="va">zom_station</span>,</span>
+<span>  <span class="va">d_station</span>,</span>
+<span>  blending_height <span class="op">=</span> <span class="fl">200</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -85,8 +91,8 @@ tall (SH-04).</p></dd>
 
 <dt id="arg-blending-height">blending_height<a class="anchor" aria-label="anchor" href="#arg-blending-height"></a></dt>
 <dd><p>Numeric. Blending height \(z_b\) [m]. Must
-be finite and greater than <code>d_station + zom_station</code>. No default: the
-METRIC value of 200 m is <code>CANDIDATA</code>.</p></dd>
+be finite and greater than <code>d_station + zom_station</code>. Default 200 m
+(Waters et al., 2002, p. 26, Eq. 29).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -106,9 +112,12 @@ elevation adjustment of the wind is applied (SH-07, not verified).</p>
 <p>Missing values propagate. Infinite values and values outside the domain
 raise an error of class <code>earthflux_domain_error</code> (also
 <code>earthflux_input_error</code>).</p>
-<p>Verification status: <code>CANDIDATA</code> (form observed in the <code>water</code> package,
-which attributes it to Allen et al., 2007, "Eq. 32", with
-\(d_w = 0\)). With \(d_w\) and
+<p>Verification status: with \(d_w = 0\), <code>VERIFICADA (SEBAL-Idaho 2002)</code>: Waters et al. (2002), p. 26, Eqs. 27 and 29 (neutral friction
+velocity at the station and wind at 200 m), which use no displacement for
+the station surface and estimate its roughness as
+\(z_{om,w} = 0.12 h\) (Eq. 28; h = 0.3 m at
+Kimberly). A positive \(d_w\) is an extension of the package
+(<code>CANDIDATA</code> in METRIC, decision SH-04): with \(d_w\) and
 \(z_{om,w}\) from FAO-56 box 4, the normalised profile
 coincides with FAO-56, chapter 3, Eq. 47 (author's calculation).</p>
     </div>
@@ -121,6 +130,10 @@ evapotranspiration: Guidelines for computing crop water requirements</em>
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. <em>Journal of Irrigation and Drainage Engineering</em>,
 133(4), 380-394. <a href="https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29" class="external-link">doi:10.1061/(ASCE)0733-9437(2007)133:4(380)</a></p>
+<p>Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., &amp; Trezza, R.
+(2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual</em> (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -139,8 +152,7 @@ balance for mapping evapotranspiration with internalized calibration
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># 3 m s-1 at 2 m over grass (z_om,w = 0.015 m, d_w = 0), z_b = 200 m</span></span></span>
-<span class="r-in"><span><span class="fu">ef_blending_wind</span><span class="op">(</span><span class="fl">3</span>, height <span class="op">=</span> <span class="fl">2</span>, zom_station <span class="op">=</span> <span class="fl">0.015</span>, d_station <span class="op">=</span> <span class="fl">0</span>,</span></span>
-<span class="r-in"><span>                 blending_height <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">ef_blending_wind</span><span class="op">(</span><span class="fl">3</span>, height <span class="op">=</span> <span class="fl">2</span>, zom_station <span class="op">=</span> <span class="fl">0.015</span>, d_station <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 5.823611</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Same grass with the FAO-56 displacement and roughness (h = 0.12 m)</span></span></span>

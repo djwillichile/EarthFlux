@@ -88,10 +88,13 @@ where 1000 is mm m-1, 3600 is s h-1, \(\lambda\) is <code>lambda</code>
 (FAO-56, chapter 3, box 8; internal constant, not an argument). With
 \(\rho_w\) = 1000 kg m-3 this is numerically
 \(3600 LE / \lambda\).</p>
-<p>The notation \(3600 LE / (\lambda \rho_w)\) attributed to METRIC by secondary sources gives m h-1, not
-mm h-1, with \(\lambda\) in J kg-1; the factor 1000 mm m-1 is
-written explicitly here. How the primary reference resolves that factor
-is pending verification.</p>
+<p>The SEBAL Idaho manual writes \(ET_{inst} = 3600\, \lambda ET /
+\lambda\) in mm h-1 (Waters et al., 2002,
+p. 34, Eq. 42), i.e. kg m-2 h-1, which is mm h-1 with
+\(\rho_w\) = 1000 kg m-3: numerically identical to the form
+above. The notation \(3600 LE / (\lambda \rho_w)\) attributed to METRIC by secondary sources gives m h-1,
+not mm h-1, with \(\lambda\) in J kg-1; the factor
+1000 mm m-1 is written explicitly here.</p>
 <p>Unit guard: a <code>lambda</code> given in MJ kg-1 (about 2.45) instead of J kg-1
 would silently give an evapotranspiration 1e6 times too large. Values of
 <code>lambda</code> outside [1e6, 1e7] J kg-1 therefore raise an error of class
@@ -110,8 +113,8 @@ raise an error of class <code>earthflux_domain_error</code> (also
 <p>Verification status: <code>VERIFICADA</code> as a unit conversion (FAO-56, chapter
 3, box 8 and Eq. 20, plus 3600 s h-1); checked against the FAO-56
 equivalences 1 mm d-1 = 2.45 MJ m-2 d-1 (chapter 1, table 1) and
-1 W m-2 = 0.035 mm d-1 (chapter 3, table 3). Its notation in Allen et al.
-(2007) is <code>CANDIDATA</code> (corroborated by secondary sources).</p>
+1 W m-2 = 0.035 mm d-1 (chapter 3, table 3); and <code>VERIFICADA (SEBAL-Idaho 2002)</code> (Waters et al., 2002, Eq. 42, see above). Its notation in Allen et
+al. (2007) has not been verified (desirable, not blocking).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -122,6 +125,10 @@ evapotranspiration: Guidelines for computing crop water requirements</em>
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. <em>Journal of Irrigation and Drainage Engineering</em>,
 133(4), 380-394. <a href="https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29" class="external-link">doi:10.1061/(ASCE)0733-9437(2007)133:4(380)</a></p>
+<p>Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., &amp; Trezza, R.
+(2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual</em> (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

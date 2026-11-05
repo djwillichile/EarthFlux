@@ -111,6 +111,13 @@ designed to test, not an established result.</p>
 page or table).</td>
 </tr>
 <tr class="even">
+<td>Verified (SEBAL Idaho manual)</td>
+<td>The equation was checked word for word against the SEBAL Idaho
+manual of the METRIC authors (Waters et al., 2002), with page and
+equation; the cross-check with Allen, Tasumi &amp; Trezza (2007) remains
+desirable. Likewise “Verified (IAHS 2012)” for Allen et al. (2012).</td>
+</tr>
+<tr class="odd">
 <td>Candidate</td>
 <td>Known form, corroborated by secondary sources, pending verification
 against the primary source.</td>
@@ -140,7 +147,7 @@ against the primary source.</td>
 <td><code><a href="../reference/ef_net_radiation.html">ef_net_radiation()</a></code></td>
 <td>Surface net radiation</td>
 <td>
-<strong>Available</strong>; candidate (corroborated)</td>
+<strong>Available</strong>; verified (SEBAL Idaho manual)</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_solar_geometry.html">ef_solar_geometry()</a></code></td>
@@ -163,7 +170,8 @@ against the primary source.</td>
 <td>Broadband shortwave transmissivity, with beam/diffuse partition
 (<code>"allen"</code>) or from elevation</td>
 <td>
-<strong>Available</strong>; candidate</td>
+<strong>Available</strong>; <code>"elevation"</code> verified (SEBAL
+Idaho manual), <code>"allen"</code> candidate</td>
 </tr>
 <tr class="odd">
 <td>
@@ -173,13 +181,14 @@ against the primary source.</td>
 <td>Incoming shortwave radiation on the pixel plane (slope and aspect),
 clear-sky or measured</td>
 <td>
-<strong>Available</strong>; candidate</td>
+<strong>Available</strong>; modelled on flat terrain verified (SEBAL
+Idaho manual), on slopes candidate</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_atm_emissivity.html">ef_atm_emissivity()</a></code></td>
 <td>Clear-sky atmospheric emissivity</td>
 <td>
-<strong>Available</strong>; candidate</td>
+<strong>Available</strong>; verified (SEBAL Idaho manual)</td>
 </tr>
 <tr class="odd">
 <td>
@@ -187,7 +196,8 @@ clear-sky or measured</td>
 </td>
 <td>Incoming and emitted longwave radiation</td>
 <td>
-<strong>Available</strong>; candidate</td>
+<strong>Available</strong>; verified (SEBAL Idaho manual); the
+temperature of <code><a href="../reference/ef_rl_in.html">ef_rl_in()</a></code> is chosen by the caller</td>
 </tr>
 </tbody>
 </table>
@@ -215,7 +225,8 @@ clear-sky or measured</td>
 </td>
 <td>Soil heat flux with an explicit method</td>
 <td>
-<strong>Available</strong>; candidate</td>
+<strong>Available</strong>; Bastiaanssen verified (SEBAL Idaho
+manual), Tasumi candidate</td>
 </tr></tbody>
 </table>
 <p>Specification: <a href="https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/soil-heat-flux.md" class="external-link">soil-heat-flux.md</a>.</p>
@@ -260,8 +271,8 @@ pixels</td>
 <td><code><a href="../reference/ef_anchor_conditions.html">ef_anchor_conditions()</a></code></td>
 <td>Boundary conditions (target LE and H) at the anchors</td>
 <td>
-<strong>Available</strong>; candidate (unit conversion
-verified)</td>
+<strong>Available</strong>; forms verified (SEBAL Idaho manual),
+coefficients explicit</td>
 </tr>
 </tbody>
 </table>
@@ -290,14 +301,16 @@ verified)</td>
 </td>
 <td>Momentum roughness length</td>
 <td>
-<strong>Available</strong>; candidate (<code><a href="../reference/ef_zom.html">ef_zom_height()</a></code>
-verified as FAO-56 content)</td>
+<strong>Available</strong>; <code>"lai"</code> and
+<code>"ndvi"</code> verified (SEBAL Idaho manual),
+<code>"perrier"</code> verified (IAHS 2012), <code>"height"</code>
+verified as FAO-56 content</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_blending_wind.html">ef_blending_wind()</a></code></td>
 <td>Wind speed at the blending height</td>
 <td>
-<strong>Available</strong>; candidate</td>
+<strong>Available</strong>; verified (SEBAL Idaho manual)</td>
 </tr>
 <tr class="odd">
 <td>
@@ -306,8 +319,7 @@ verified as FAO-56 content)</td>
 <td>Friction velocity and aerodynamic resistance with stability
 correction</td>
 <td>
-<strong>Available</strong>; candidate (neutral profile verified as
-FAO-56 content)</td>
+<strong>Available</strong>; verified (SEBAL Idaho manual)</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_air_density.html">ef_air_density()</a></code></td>
@@ -323,13 +335,13 @@ candidate</td>
 <td>Datum surface temperature and coefficients of dT from the
 anchors</td>
 <td>
-<strong>Available</strong>; candidate</td>
+<strong>Available</strong>; verified (SEBAL Idaho manual)</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_sensible_heat.html">ef_sensible_heat()</a></code></td>
 <td>Sensible heat flux</td>
 <td>
-<strong>Available</strong>; candidate</td>
+<strong>Available</strong>; verified (SEBAL Idaho manual)</td>
 </tr>
 <tr class="odd">
 <td>
@@ -337,8 +349,9 @@ anchors</td>
 </td>
 <td>Iterative calibration of dT and H with stability correction</td>
 <td>
-<strong>Available</strong>; candidate (open decision SH-11 is an
-explicit argument)</td>
+<strong>Available</strong>; forms verified (SEBAL Idaho manual),
+including the stable momentum correction (decision SH-11, default 2
+m)</td>
 </tr>
 </tbody>
 </table>
@@ -384,7 +397,7 @@ explicit argument)</td>
 </td>
 <td>Reference ET fraction and daily actual ET</td>
 <td>
-<strong>Available</strong>; candidate (corroborated)</td>
+<strong>Available</strong>; verified (SEBAL Idaho manual)</td>
 </tr>
 <tr class="odd">
 <td><code>ef_et_period()</code></td>
@@ -538,10 +551,11 @@ files, apply scale factors and quality flags, convert view times to UTC
 and assemble the surface state (LST, albedo, NDVI, LAI, emissivity and
 the overpass instant, each with a flag word). Product metadata (layers,
 scale factors, fill values, quality bits) are verified against the
-official user guides; the conversions (albedo, emissivity, aggregation)
-are candidates. The dataset <code>cauquenes_modis</code> is the output
-of this preprocessing for the Cauquenes province on 15 February 2019;
-see the article <a href="cauquenes-example.html">Example scene:
+official user guides; the conversions (albedo, aggregation) are
+candidates and the LAI-based emissivity follows the SEBAL Idaho manual.
+The dataset <code>cauquenes_modis</code> is the output of this
+preprocessing for the Cauquenes province on 15 February 2019; see the
+article <a href="cauquenes-example.html">Example scene:
 Cauquenes</a>.</p>
 <p>Specification: <a href="https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/modis-products.md" class="external-link">modis-products.md</a>.</p>
 </div>

@@ -48,10 +48,14 @@ meteorological forcing (and GWR) enters the incoming longwave radiation;
 with the cold-pixel surface temperature, the result is uniform in the
 scene except through the emissivity; with the surface temperature of
 each pixel, hot and dry pixels receive more longwave radiation, which
-artificially reduces the contrast of net radiation. With which
-temperature the coefficients of
+artificially reduces the contrast of net radiation. The SEBAL Idaho
+manual uses the surface temperature of the cold anchor pixel as the
+near-surface air temperature (Waters et al., 2002, p. 23, Eq. 23), with
+a lapse correction for each pixel in its mountain model (appendix 12, p.
+96, Eq. 12-8); the coefficients of
 [`ef_atm_emissivity()`](https://djwillichile.github.io/EarthFlux/reference/ef_atm_emissivity.md)
-were derived is not known (`TODO`).
+were fitted in that configuration. The function keeps the temperature as
+an explicit input (decision RC-12, `dev/DECISIONS.md` P0-3).
 
 Assumptions: grey-body atmosphere with effective emissivity and
 temperature; clear sky; instantaneous value.
@@ -63,9 +67,13 @@ temperature is recycled); matrix or array arguments must share their
 
 ## Verification status
 
-`CANDIDATA`. Stefan-Boltzmann law with an effective emissivity, form
-observed in the `water` package (v1.0), attributed there to Allen et al.
-(2007) (equation number and prescribed temperature not verified).
+`VERIFICADA (SEBAL-Idaho 2002)`: Stefan-Boltzmann law with an effective
+emissivity, Waters et al. (2002), p. 23, Eq. 21 (\\T_a\\, "near surface
+air temperature"), evaluated with the cold-pixel temperature in Eq. 23
+(configuration (b) of RC-12). The manual uses \\\sigma = 5.67 \times
+10^{-8}\\; the package uses the exact CODATA value (RC-07, relative
+difference 6.6e-5). The cross-check with Allen et al. (2007) remains
+desirable but is no longer blocking.
 
 ## References
 
@@ -74,6 +82,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 

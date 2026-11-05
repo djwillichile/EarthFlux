@@ -92,9 +92,12 @@ value) raise an error of class `earthflux_domain_error` (also
 offending values. Invalid inputs are expected to be masked or flagged
 upstream by quality control; values are never silently corrected.
 
-The form of the equation has been cross-checked against independent
-secondary sources; verification against the primary reference (Allen et
-al., 2007) is pending.
+Verification status: `VERIFICADA (SEBAL-Idaho 2002)`. The form is
+identical, term by term, to Eq. 2 of Waters et al. (2002), pp. 10 and
+14, which also keeps the reflected incoming longwave term \\(1 -
+\varepsilon_0) R\_{L\downarrow}\\ explicit. The cross-check with Allen
+et al. (2007) remains desirable but is no longer blocking
+(`dev/VERIFICATION.md`).
 
 ## References
 
@@ -103,6 +106,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 

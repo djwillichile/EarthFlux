@@ -85,9 +85,12 @@ as literals of this equation (decision WF-14).</p>
 raise an error of class <code>earthflux_domain_error</code> (also
 <code>earthflux_input_error</code>).</p>
 <p>Verification status: <code>VERIFICADA</code> as the content of FAO-56 (chapter 2,
-box 6); its use in METRIC with \(T_a = T_s - dT\) is
-<code>CANDIDATA</code> (METRIC implementations use a variant with the pressure of a
-standard atmosphere at \(T_a\), about 0.6 % higher).</p>
+box 6). Its use in METRIC is <code>CANDIDATA</code>: the SEBAL Idaho manual
+computes the air density at \(T_a = T_s - dT\)
+(Waters et al., 2002, p. 31, step 6), which corroborates the temperature
+used here, but it does not print the density equation (METRIC
+implementations use a variant with the pressure of a standard atmosphere
+at \(T_a\), about 0.6 % higher).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

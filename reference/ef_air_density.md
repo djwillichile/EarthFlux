@@ -46,9 +46,12 @@ raise an error of class `earthflux_domain_error` (also
 `earthflux_input_error`).
 
 Verification status: `VERIFICADA` as the content of FAO-56 (chapter 2,
-box 6); its use in METRIC with \\T_a = T_s - dT\\ is `CANDIDATA` (METRIC
-implementations use a variant with the pressure of a standard atmosphere
-at \\T_a\\, about 0.6 % higher).
+box 6). Its use in METRIC is `CANDIDATA`: the SEBAL Idaho manual
+computes the air density at \\T_a = T_s - dT\\ (Waters et al., 2002, p.
+31, step 6), which corroborates the temperature used here, but it does
+not print the density equation (METRIC implementations use a variant
+with the pressure of a standard atmosphere at \\T_a\\, about 0.6 %
+higher).
 
 ## References
 

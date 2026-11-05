@@ -23,9 +23,10 @@ forcing (station tables, quality control, reference ET) and its
 regionalization (including GWR) are available as functions, and the
 MODIS preprocessing is internal, with an example scene shipped as the
 dataset `cauquenes_modis`. The integrated `earthflux()` workflow does
-not exist yet. Most METRIC formulations are candidates pending
-verification against the primary reference, and no result shown in the
-package documentation should be interpreted as validated.
+not exist yet. Most METRIC formulations are verified against the SEBAL
+Idaho manual of the METRIC authors (Waters et al., 2002), the direct
+predecessor of METRIC; the others remain candidates. No result shown in
+the package documentation should be interpreted as validated.
 
 ## Conceptual workflow
 

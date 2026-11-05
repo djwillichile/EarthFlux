@@ -35,8 +35,11 @@ ef_ts_datum(lst, elevation, datum_elevation, lapse_rate)
 
   Numeric scalar. Lapse rate of the surface temperature with elevation
   \\\Gamma\\ \[K m-1\] (note: per metre, not per kilometre). Must be
-  finite and `>= 0`. No default: the value 0.00649 K m-1 (6.49 K km-1)
-  observed in METRIC implementations is `CANDIDATA` (decision SH-13).
+  finite and `>= 0`. No default (decision SH-13): the SEBAL Idaho manual
+  uses 0.0065 K m-1 (Waters et al., 2002, Eq. 12-7), the `water` package
+  0.00649 K m-1, and METRIC tailors the lapse rate to the scene, with
+  separate rates for flat and mountainous terrain (Allen et al.,
+  2012, p. 74).
 
 ## Value
 
@@ -57,9 +60,13 @@ Missing values propagate. Infinite values and values outside the domain
 raise an error of class `earthflux_domain_error` (also
 `earthflux_input_error`).
 
-Verification status: `CANDIDATA` (observed in the `water` package; the
-"customized lapse rate" attributed to Allen et al., 2007, has not been
-verified).
+Verification status: the form is `VERIFICADA (SEBAL-Idaho 2002)`: Waters
+et al. (2002), appendix 12, p. 96, Eq. 12-7 (\\T\_{s,dem} = T_s +
+0.0065\\\Delta z\\, with \\\Delta z\\ the elevation of the pixel minus
+that of the datum, usually the weather station). The "dual-stage"
+correction of METRIC for mountains (Allen et al., 2012, p. 74) is not
+implemented. The cross-check with Allen et al. (2007) remains desirable
+but is no longer blocking.
 
 ## References
 
@@ -68,6 +75,16 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
+
+Allen, R. G., Kjaersgaard, J. H., Trezza, R., Oliveira, A., Robison, C.,
+& Lorite-Torres, I. (2012). Refining components of a satellite-based
+surface energy balance model to complex land-use systems. In *Remote
+Sensing and Hydrology* (IAHS Publication 352, pp. 73-75). IAHS Press.
 
 ## See also
 

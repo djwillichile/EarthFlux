@@ -193,7 +193,7 @@ evaluated in <code>flags_evaluated</code>, EarthFlux version).</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Components on the horizontal:</p><ul><li><p><code>ef_rs_in_modelled()</code>: \(R_{a,h} = G_{sc} d_r \cos\theta_h\), \(R_{b,h} = \tau_b R_{a,h}\) and \(R_{d,h} = \tau_d R_{a,h}\), with
 \(G_{sc}\) the solar constant of the package (1366.67 W m-2,
-FAO-56 Eq. 21; its adoption for METRIC is <code>CANDIDATA</code>, decision RC-06);</p></li>
+FAO-56 Eq. 21; the SEBAL Idaho manual rounds it to 1367 W m-2, RC-06);</p></li>
 <li><p><code>ef_rs_in_measured()</code>: \(R_{b,h} = (1 - k_d) R_{s,meas}\) and \(R_{d,h} = k_d R_{s,meas}\).</p></li>
 </ul><p>Projection onto the plane of slope \(s\) (isotropic diffuse sky and
 isotropic ground reflection, unobstructed horizon):
@@ -238,15 +238,21 @@ outputs that depend on them, and always to <code>total</code>.</p>
     <h2 id="verification-status">Verification status<a class="anchor" aria-label="anchor" href="#verification-status"></a></h2>
 
 
-<p><code>CANDIDATA</code>. The flat-terrain modelled form is the one observed in the
-<code>water</code> package (v1.0), attributed there to Allen et al. (2007) (not
-verified). The isotropic projection onto tilted planes is the standard
-form of solar engineering texts (Duffie and Beckman; isotropic model
-attributed to Liu and Jordan; neither verified); whether Allen, Trezza
-and Tasumi (2006) prescribe an anisotropic diffuse term is <code>TODO</code>
-(decision RC-09). In the measured path, the source of the diffuse
-fraction is <code>TODO</code> (decision RC-10). The solar constant is <code>CANDIDATA</code>
-(RC-06).</p>
+<p>The modelled form on flat terrain is <code>VERIFICADA (SEBAL-Idaho 2002)</code>:
+\(G_{sc} \cos\theta\, d_r\, \tau_{sw}\), Waters et al. (2002), p. 19, Eq. 12 (the manual rounds
+\(G_{sc}\) to 1367 W m-2; the package uses the FAO-56 value
+1366.67 W m-2, a relative difference of 2.4e-4, decision RC-06).</p>
+<p>On slopes the form is <code>CANDIDATA</code> and differs from the mountain model of
+the manual (appendix 12, pp. 93-95), which applies Eq. 12 with the
+cosine of the incidence angle on the slope divided by the cosine of the
+slope ("horizontal equivalent") and one total transmissivity, without a
+beam / diffuse partition. EarthFlux projects the beam and diffuse
+components separately onto the plane (isotropic projection of solar
+engineering texts, Duffie and Beckman; isotropic model attributed to Liu
+and Jordan; neither verified); whether Allen, Trezza and Tasumi (2006)
+prescribe an anisotropic diffuse term is <code>TODO</code> (decision RC-09). In the
+measured path, the source of the diffuse fraction is <code>TODO</code> (decision
+RC-10).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -257,6 +263,10 @@ evapotranspiration: Guidelines for computing crop water requirements</em>
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. <em>Journal of Irrigation and Drainage Engineering</em>,
 133(4), 380-394. <a href="https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29" class="external-link">doi:10.1061/(ASCE)0733-9437(2007)133:4(380)</a></p>
+<p>Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., &amp; Trezza, R.
+(2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual</em> (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

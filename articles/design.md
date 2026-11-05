@@ -37,6 +37,7 @@ designed to test, not an established result.
 | Status | Meaning |
 |----|----|
 | Verified | The equation was checked against the primary source (equation and page or table). |
+| Verified (SEBAL Idaho manual) | The equation was checked word for word against the SEBAL Idaho manual of the METRIC authors (Waters et al., 2002), with page and equation; the cross-check with Allen, Tasumi & Trezza (2007) remains desirable. Likewise “Verified (IAHS 2012)” for Allen et al. (2012). |
 | Candidate | Known form, corroborated by secondary sources, pending verification against the primary source. |
 
 ## Components
@@ -45,13 +46,13 @@ designed to test, not an established result.
 
 | Function | Purpose | Status |
 |----|----|----|
-| [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md) | Surface net radiation | **Available**; candidate (corroborated) |
+| [`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md) | Surface net radiation | **Available**; verified (SEBAL Idaho manual) |
 | [`ef_solar_geometry()`](https://djwillichile.github.io/EarthFlux/reference/ef_solar_geometry.md) | Solar angles and incidence on sloping terrain | **Available**; calendar terms and hour angle verified (FAO-56), incidence on a tilted plane candidate |
 | [`ef_air_pressure()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_pressure.md) | Atmospheric pressure from elevation | **Available**; verified (FAO-56, Eq. 7) |
-| [`ef_tau_sw()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md), [`ef_tau_sw_allen()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md), [`ef_tau_sw_elevation()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md) | Broadband shortwave transmissivity, with beam/diffuse partition (`"allen"`) or from elevation | **Available**; candidate |
-| [`ef_rs_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md), [`ef_rs_in_modelled()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md), [`ef_rs_in_measured()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md) | Incoming shortwave radiation on the pixel plane (slope and aspect), clear-sky or measured | **Available**; candidate |
-| [`ef_atm_emissivity()`](https://djwillichile.github.io/EarthFlux/reference/ef_atm_emissivity.md) | Clear-sky atmospheric emissivity | **Available**; candidate |
-| [`ef_rl_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_in.md), [`ef_rl_out()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_out.md) | Incoming and emitted longwave radiation | **Available**; candidate |
+| [`ef_tau_sw()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md), [`ef_tau_sw_allen()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md), [`ef_tau_sw_elevation()`](https://djwillichile.github.io/EarthFlux/reference/ef_tau_sw.md) | Broadband shortwave transmissivity, with beam/diffuse partition (`"allen"`) or from elevation | **Available**; `"elevation"` verified (SEBAL Idaho manual), `"allen"` candidate |
+| [`ef_rs_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md), [`ef_rs_in_modelled()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md), [`ef_rs_in_measured()`](https://djwillichile.github.io/EarthFlux/reference/ef_rs_in.md) | Incoming shortwave radiation on the pixel plane (slope and aspect), clear-sky or measured | **Available**; modelled on flat terrain verified (SEBAL Idaho manual), on slopes candidate |
+| [`ef_atm_emissivity()`](https://djwillichile.github.io/EarthFlux/reference/ef_atm_emissivity.md) | Clear-sky atmospheric emissivity | **Available**; verified (SEBAL Idaho manual) |
+| [`ef_rl_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_in.md), [`ef_rl_out()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_out.md) | Incoming and emitted longwave radiation | **Available**; verified (SEBAL Idaho manual); the temperature of [`ef_rl_in()`](https://djwillichile.github.io/EarthFlux/reference/ef_rl_in.md) is chosen by the caller |
 
 Specifications:
 [ef_net_radiation.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/ef_net_radiation.md),
@@ -61,7 +62,7 @@ Specifications:
 
 | Function | Purpose | Status |
 |----|----|----|
-| [`ef_g()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md), [`ef_g_bastiaanssen()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md), [`ef_g_tasumi()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md) | Soil heat flux with an explicit method | **Available**; candidate |
+| [`ef_g()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md), [`ef_g_bastiaanssen()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md), [`ef_g_tasumi()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md) | Soil heat flux with an explicit method | **Available**; Bastiaanssen verified (SEBAL Idaho manual), Tasumi candidate |
 
 Specification:
 [soil-heat-flux.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/soil-heat-flux.md).
@@ -73,7 +74,7 @@ Specification:
 | [`ef_anchor_criteria()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_criteria.md), [`ef_anchor_rule()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_rule.md), [`ef_homogeneity()`](https://djwillichile.github.io/EarthFlux/reference/ef_homogeneity.md), [`ef_anchor_pick()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_pick.md) | Explicit, documented selection criteria (no default thresholds) | **Available**; every value is a user choice |
 | [`ef_select_anchors()`](https://djwillichile.github.io/EarthFlux/reference/ef_select_anchors.md) | Automatic, deterministic and auditable selection of hot and cold pixels | **Available**; candidate |
 | [`ef_anchors()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchors.md) | Anchors chosen explicitly by the user | **Available** |
-| [`ef_anchor_conditions()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_conditions.md) | Boundary conditions (target LE and H) at the anchors | **Available**; candidate (unit conversion verified) |
+| [`ef_anchor_conditions()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_conditions.md) | Boundary conditions (target LE and H) at the anchors | **Available**; forms verified (SEBAL Idaho manual), coefficients explicit |
 
 Specification:
 [anchor-pixels.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/anchor-pixels.md).
@@ -82,13 +83,13 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| [`ef_zom()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md), [`ef_zom_lai()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md), [`ef_zom_ndvi()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md), [`ef_zom_perrier()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md), [`ef_zom_height()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md) | Momentum roughness length | **Available**; candidate ([`ef_zom_height()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md) verified as FAO-56 content) |
-| [`ef_blending_wind()`](https://djwillichile.github.io/EarthFlux/reference/ef_blending_wind.md) | Wind speed at the blending height | **Available**; candidate |
-| [`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md), [`ef_rah()`](https://djwillichile.github.io/EarthFlux/reference/ef_rah.md) | Friction velocity and aerodynamic resistance with stability correction | **Available**; candidate (neutral profile verified as FAO-56 content) |
+| [`ef_zom()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md), [`ef_zom_lai()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md), [`ef_zom_ndvi()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md), [`ef_zom_perrier()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md), [`ef_zom_height()`](https://djwillichile.github.io/EarthFlux/reference/ef_zom.md) | Momentum roughness length | **Available**; `"lai"` and `"ndvi"` verified (SEBAL Idaho manual), `"perrier"` verified (IAHS 2012), `"height"` verified as FAO-56 content |
+| [`ef_blending_wind()`](https://djwillichile.github.io/EarthFlux/reference/ef_blending_wind.md) | Wind speed at the blending height | **Available**; verified (SEBAL Idaho manual) |
+| [`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md), [`ef_rah()`](https://djwillichile.github.io/EarthFlux/reference/ef_rah.md) | Friction velocity and aerodynamic resistance with stability correction | **Available**; verified (SEBAL Idaho manual) |
 | [`ef_air_density()`](https://djwillichile.github.io/EarthFlux/reference/ef_air_density.md) | Air density | **Available**; FAO-56 form verified, use in METRIC candidate |
-| [`ef_ts_datum()`](https://djwillichile.github.io/EarthFlux/reference/ef_ts_datum.md), [`ef_dt_coef()`](https://djwillichile.github.io/EarthFlux/reference/ef_dt_coef.md) | Datum surface temperature and coefficients of dT from the anchors | **Available**; candidate |
-| [`ef_sensible_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_sensible_heat.md) | Sensible heat flux | **Available**; candidate |
-| [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md), [`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md) | Iterative calibration of dT and H with stability correction | **Available**; candidate (open decision SH-11 is an explicit argument) |
+| [`ef_ts_datum()`](https://djwillichile.github.io/EarthFlux/reference/ef_ts_datum.md), [`ef_dt_coef()`](https://djwillichile.github.io/EarthFlux/reference/ef_dt_coef.md) | Datum surface temperature and coefficients of dT from the anchors | **Available**; verified (SEBAL Idaho manual) |
+| [`ef_sensible_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_sensible_heat.md) | Sensible heat flux | **Available**; verified (SEBAL Idaho manual) |
+| [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md), [`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md) | Iterative calibration of dT and H with stability correction | **Available**; forms verified (SEBAL Idaho manual), including the stable momentum correction (decision SH-11, default 2 m) |
 
 Specification:
 [sensible-heat.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/sensible-heat.md).
@@ -100,7 +101,7 @@ Specification:
 | [`ef_lambda()`](https://djwillichile.github.io/EarthFlux/reference/ef_lambda.md) | Latent heat of vaporization with an explicit method | **Available**; verified (FAO-56) |
 | [`ef_latent_heat()`](https://djwillichile.github.io/EarthFlux/reference/ef_latent_heat.md) | Latent heat flux as the energy balance residual | **Available**; balance verified (FAO-56) |
 | [`ef_et_inst()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_inst.md) | Instantaneous ET from latent heat flux | **Available**; unit conversion verified (FAO-56) |
-| [`ef_etrf()`](https://djwillichile.github.io/EarthFlux/reference/ef_etrf.md), [`ef_et_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md), [`ef_et_daily_etrf()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md) | Reference ET fraction and daily actual ET | **Available**; candidate (corroborated) |
+| [`ef_etrf()`](https://djwillichile.github.io/EarthFlux/reference/ef_etrf.md), [`ef_et_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md), [`ef_et_daily_etrf()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md) | Reference ET fraction and daily actual ET | **Available**; verified (SEBAL Idaho manual) |
 | `ef_et_period()` | ET between image dates | Planned (later) |
 
 Dispatchers
@@ -151,10 +152,11 @@ files, apply scale factors and quality flags, convert view times to UTC
 and assemble the surface state (LST, albedo, NDVI, LAI, emissivity and
 the overpass instant, each with a flag word). Product metadata (layers,
 scale factors, fill values, quality bits) are verified against the
-official user guides; the conversions (albedo, emissivity, aggregation)
-are candidates. The dataset `cauquenes_modis` is the output of this
-preprocessing for the Cauquenes province on 15 February 2019; see the
-article [Example scene:
+official user guides; the conversions (albedo, aggregation) are
+candidates and the LAI-based emissivity follows the SEBAL Idaho manual.
+The dataset `cauquenes_modis` is the output of this preprocessing for
+the Cauquenes province on 15 February 2019; see the article [Example
+scene:
 Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md).
 
 Specification:

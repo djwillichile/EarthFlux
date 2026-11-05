@@ -77,7 +77,9 @@ per calibration, e.g. per scene) keeping their <code>dim</code>.</p>
     <p>$$b = \frac{dT_{hot} - dT_{cold}}{T_{s,datum,hot} - T_{s,datum,cold}},
   \qquad a = dT_{cold} - b\,T_{s,datum,cold}$$</p>
 <p>Notation: <code>a</code> is the intercept and <code>b</code> the slope, as in
-<code>dev/SCIENTIFIC_SPEC.md</code>; the <code>water</code> package uses the opposite names.</p>
+<code>dev/SCIENTIFIC_SPEC.md</code>; the SEBAL Idaho manual (\(dT = b + a
+T_s\), Eq. 32) and the <code>water</code> package use the opposite
+names (decision SH-12).</p>
 <p>Pixels outside the range of the anchors use the same line
 (extrapolation, flagged by <code><a href="ef_calibrate_h.html">ef_calibrate_h()</a></code>). A slope <code>b &lt;= 0</code> with
 well-ordered anchors contradicts the METRIC assumption that \(dT\)
@@ -88,9 +90,12 @@ temperatures leave <code>b</code> undefined; a lower hot temperature suggests sw
 anchors) raises an error of class <code>earthflux_calibration_error</code>. Other
 values outside the domain raise <code>earthflux_domain_error</code> (also
 <code>earthflux_input_error</code>).</p>
-<p>Verification status: <code>CANDIDATA</code> (form observed in the <code>water</code> package
-and in <code>dev/SCIENTIFIC_SPEC.md</code> section 3; Allen et al., 2007, not
-consulted, including a reported erratum in its intercept equation).</p>
+<p>Verification status: <code>VERIFICADA (SEBAL-Idaho 2002)</code>: linear relation
+of Waters et al. (2002), p. 30, Eq. 32, through the anchor values of
+Eq. 33 (p. 31: "the correlation coefficients ... are now computed for
+the linear relationship"). Allen et al. (2007) was not consulted,
+including a reported erratum in its intercept equation (desirable, not
+blocking).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -98,6 +103,10 @@ consulted, including a reported erratum in its intercept equation).</p>
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. <em>Journal of Irrigation and Drainage Engineering</em>,
 133(4), 380-394. <a href="https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29" class="external-link">doi:10.1061/(ASCE)0733-9437(2007)133:4(380)</a></p>
+<p>Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., &amp; Trezza, R.
+(2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual</em> (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

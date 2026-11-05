@@ -206,11 +206,18 @@ raises <code>earthflux_anchor_na_input</code> (fields <code>variable</code>, <co
 <code>pixels</code>); invalid or out-of-domain arguments raise
 <code>earthflux_input_error</code> / <code>earthflux_domain_error</code>; <code>etr_inst &lt;= 0</code>
 raises <code>earthflux_domain_error</code>.</p>
-<p>Verification status: <code>CANDIDATA</code>. The form of the cold condition is
-attributed to Allen et al. (2007) by secondary sources; the value 1.05 of
-\(k\) with an alfalfa reference and \(ETrF = 0\) for
-dry bare soil are observed in the <code>water</code> package (no default here). The
-unit conversion is <code>VERIFICADA</code> (FAO-56, box 8, with 3600 s h-1).</p>
+<p>Verification status: the forms are <code>VERIFICADA (SEBAL-Idaho 2002)</code>:
+Waters et al. (2002), p. 30, step 5a (cold anchor:
+\(H_{cold} = R_n - G - 1.05\,\lambda ET_r\), ETr being the alfalfa reference at the image time,
+pp. 13 and 38) and p. 31, step 5b (hot anchor:
+\(H_{hot} = R_n - G - \lambda ET_{hot}\) with \(ET_{hot} = 0\) for a dry bare agricultural
+field, or from a soil water balance after rain in the previous 1-4
+days). The values 1.05 and 0 are the ones of the manual (also "generally"
+in appendix 8, p. 81), but they stay explicit arguments without default
+(decisions D-AP-04 and D-AP-05, P0-8: no coefficient by default in the
+anchor core). The unit conversion is <code>VERIFICADA</code> (FAO-56, box 8, with
+3600 s h-1; Eq. 42 of the manual). The cross-check with Allen et al.
+(2007) remains desirable but is no longer blocking.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -218,6 +225,10 @@ unit conversion is <code>VERIFICADA</code> (FAO-56, box 8, with 3600 s h-1).</p>
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. <em>Journal of Irrigation and Drainage Engineering</em>,
 133(4), 380-394. <a href="https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29" class="external-link">doi:10.1061/(ASCE)0733-9437(2007)133:4(380)</a></p>
+<p>Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., &amp; Trezza, R.
+(2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual</em> (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.</p>
 <p>Allen, R. G., Pereira, L. S., Raes, D., &amp; Smith, M. (1998). <em>Crop
 evapotranspiration: Guidelines for computing crop water requirements</em>
 (FAO Irrigation and Drainage Paper 56). FAO, Rome. ISBN 92-5-104219-5.</p>
@@ -239,13 +250,13 @@ evapotranspiration: Guidelines for computing crop water requirements</em>
 <span class="r-in"><span><span class="va">anchors</span> <span class="op">&lt;-</span> <span class="fu"><a href="ef_anchors.html">ef_anchors</a></span><span class="op">(</span>cold <span class="op">=</span> <span class="fl">1</span>, hot <span class="op">=</span> <span class="fl">2</span>, lst <span class="op">=</span> <span class="va">lst</span>,</span></span>
 <span class="r-in"><span>                      ndvi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.85</span>, <span class="fl">0.10</span>, <span class="fl">0.4</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                      albedo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.20</span>, <span class="fl">0.25</span>, <span class="fl">0.2</span><span class="op">)</span>, aggregate <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># Coefficients are test values (CANDIDATA), not defaults</span></span></span>
+<span class="r-in"><span><span class="co"># Coefficients of the SEBAL Idaho manual, passed explicitly (no defaults)</span></span></span>
 <span class="r-in"><span><span class="va">anchors</span> <span class="op">&lt;-</span> <span class="fu">ef_anchor_conditions</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">anchors</span>, rn <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">700</span>, <span class="fl">500</span>, <span class="fl">600</span><span class="op">)</span>, g <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">120</span>, <span class="fl">110</span><span class="op">)</span>, etr_inst <span class="op">=</span> <span class="fl">0.8</span>,</span></span>
 <span class="r-in"><span>  lambda <span class="op">=</span> <span class="fu"><a href="ef_lambda.html">ef_lambda</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"constant"</span><span class="op">)</span>, etrf_cold <span class="op">=</span> <span class="fl">1.05</span>,</span></span>
 <span class="r-in"><span>  etrf_hot <span class="op">=</span> <span class="fl">0</span>, reference <span class="op">=</span> <span class="st">"alfalfa"</span>,</span></span>
-<span class="r-in"><span>  source <span class="op">=</span> <span class="st">"test values observed in the water package"</span>,</span></span>
-<span class="r-in"><span>  status <span class="op">=</span> <span class="st">"CANDIDATA"</span>, etr_source <span class="op">=</span> <span class="st">"station"</span></span></span>
+<span class="r-in"><span>  source <span class="op">=</span> <span class="st">"Waters et al. (2002), SEBAL Idaho manual, pp. 30-31"</span>,</span></span>
+<span class="r-in"><span>  status <span class="op">=</span> <span class="st">"VERIFICADA"</span>, etr_source <span class="op">=</span> <span class="st">"station"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">anchors</span><span class="op">$</span><span class="va">calibration_points</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"type"</span>, <span class="st">"lst"</span>, <span class="st">"rn"</span>, <span class="st">"g"</span>, <span class="st">"le_target"</span>,</span></span>
 <span class="r-in"><span>                               <span class="st">"h_target"</span><span class="op">)</span><span class="op">]</span></span></span>

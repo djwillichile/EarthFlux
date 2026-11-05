@@ -7,7 +7,7 @@ to heat transport (bulk transfer equation of METRIC).
 ## Usage
 
 ``` r
-ef_sensible_heat(air_density, dt, rah, cp)
+ef_sensible_heat(air_density, dt, rah, cp = EF_SPECIFIC_HEAT_AIR)
 ```
 
 ## Arguments
@@ -32,8 +32,9 @@ ef_sensible_heat(air_density, dt, rah, cp)
 - cp:
 
   Numeric. Specific heat of air at constant pressure \[J kg-1 K-1\].
-  Must be finite and `> 0`. No default: the METRIC value (1004 J kg-1
-  K-1, `CANDIDATA`, decision SH-09) is the one used and recorded by
+  Must be finite and `> 0`. Default 1004 J kg-1 K-1 (the package
+  constant `EF_SPECIFIC_HEAT_AIR`; Waters et al., 2002, p. 25, text of
+  Eq. 25; decision SH-09), the value used and recorded by
   [`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md)
   (element `constants$cp`); FAO-56 uses 1013 J kg-1 K-1.
 
@@ -56,9 +57,9 @@ Missing values propagate. Infinite values and values outside the domain
 raise an error of class `earthflux_domain_error` (also
 `earthflux_input_error`).
 
-Verification status: `CANDIDATA` (form of `dev/SCIENTIFIC_SPEC.md`
-section 3 and METRIC implementations; Allen et al., 2007, not
-consulted).
+Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+(2002), p. 25, Eq. 25, with \\c_p\\ = 1004 J kg-1 K-1. The cross-check
+with Allen et al. (2007) remains desirable but is no longer blocking.
 
 ## References
 
@@ -67,6 +68,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 
@@ -84,7 +90,6 @@ Other aerodynamics and sensible heat functions:
 ## Examples
 
 ``` r
-ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850,
-                 cp = 1004)
+ef_sensible_heat(air_density = 1.069979, dt = 5.789273, rah = 28.1850)
 #> [1] 220.6556
 ```

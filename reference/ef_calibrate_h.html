@@ -86,8 +86,11 @@ are ignored. Missing values at an anchor raise
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>The list returned by <code><a href="ef_h_control.html">ef_h_control()</a></code> (heights, the open
-decision SH-11 and the convergence settings). It is validated again.</p></dd>
+<dd><p>The list returned by <code><a href="ef_h_control.html">ef_h_control()</a></code> (heights, the
+height of the stable momentum correction of decision SH-11 and the
+convergence settings), e.g. <code><a href="ef_h_control.html">ef_h_control()</a></code> for its defaults. It is
+validated again; elements not given take the defaults of
+<code><a href="ef_h_control.html">ef_h_control()</a></code>.</p></dd>
 
 
 <dt id="arg-lapse-rate">lapse_rate<a class="anchor" aria-label="anchor" href="#arg-lapse-rate"></a></dt>
@@ -150,13 +153,14 @@ in <code>provenance$flags_evaluated</code>.</p></li>
 <li><p>\(H_k = \rho_k c_p (a_k + b_k T_{s,datum}) / r_{ah,k-1}\) (equal to the target
 by construction);</p></li>
 <li><p>Monin-Obukhov length
-\(L = -\rho c_p u_*^3 T_a / (k g H)\) with \(u_{*,k-1}\),
-\(T_a = T_s - dT_k\) and \(\rho_k\) (SH-10;
-\(L = \infty\), neutral, when \(H = 0\));</p></li>
+\(L = -\rho c_p u_*^3 T_s / (k g H)\) with \(u_{*,k-1}\), the surface temperature
+\(T_s\) and \(\rho_k\) (Waters et al., 2002, Eq. 34;
+SH-10; \(L = \infty\), neutral, when \(H = 0\));</p></li>
 <li><p>stability corrections (unstable: Paulson-type forms with coefficient
 16; stable: log-linear form \(-5 z/L\)), with
 \(\psi_m\) at the blending height (or at
-<code>stable_psi_m_height</code> when \(L &gt; 0\), open decision SH-11)
+<code>stable_psi_m_height</code> when \(L &gt; 0\): 2 m by default,
+Waters et al., 2002, Eq. 38, decision SH-11)
 and \(\psi_h\) at <code>z2</code> and <code>z1</code>; then \(u_{*,k}\) and
 the new \(r_{ah}\);</p></li>
 <li><p>damping: \(r_{ah,k} = (1 - \omega) r_{ah,new} + \omega
@@ -193,16 +197,25 @@ not positive: <code>NA</code> outputs for that pixel and the cell flag
 <code>EF_H_USTAR_INVALID</code>; a pixel without convergence keeps its last
 iterate and gets <code>EF_H_PIXEL_NOT_CONVERGED</code>.</p></li>
 </ul><p>Constants: von Karman constant <code>EF_VON_KARMAN</code> (0.41), gravity
-<code>EF_GRAVITY</code> (9.807 m s-2, <code>CANDIDATA</code>) and specific heat of air
-<code>EF_SPECIFIC_HEAT_AIR</code> (1004 J kg-1 K-1, <code>CANDIDATA</code>, decision SH-09
-open); they are recorded in <code>constants</code>.</p>
-<p>Verification status: <code>CANDIDATA</code>. The procedure follows
-<code>dev/specs/sensible-heat.md</code> section 11, written from the <code>water</code> package
-and secondary sources; Allen, Tasumi and Trezza (2007), Paulson (1970)
-and Webb (1970) have not been consulted. Known differences with <code>water</code>
-are listed in section 17 of that specification (e.g. no wind floor, no
-substitute friction velocity, density at \(T_a\), per-anchor
-convergence, strategy P2).</p>
+<code>EF_GRAVITY</code> (9.81 m s-2) and specific heat of air <code>EF_SPECIFIC_HEAT_AIR</code>
+(1004 J kg-1 K-1), the values of Waters et al. (2002, pp. 25-26 and 32);
+they are recorded in <code>constants</code>.</p>
+<p>Verification status: the forms are <code>VERIFICADA (SEBAL-Idaho 2002)</code>: the
+iterative scheme of Waters et al. (2002), pp. 25-34 (figure 4, Eqs.
+25-41) and appendix 8 (anchor conditions of p. 30-31, dT from Eq. 33,
+\(dT\) linear in the surface temperature, Eq. 32, Monin-Obukhov
+length with \(T_s\), Eq. 34, stability corrections, Eqs. 35-39,
+corrected \(u_*\) and \(r_{ah}\), Eqs. 40-41). The
+procedural choices are EarthFlux decisions (P0-10, <code>CANDIDATA</code> as
+procedure): the manual iterates "until the successive values for dT_hot
+and rah at the hot pixel have stabilized" (p. 34; 3 to 7 iterations,
+appendix 8), whereas EarthFlux uses a relative tolerance on rah at both
+anchors, the closure of the anchors and phase B with the per-pixel
+strategy P2. Known differences with <code>water</code> are listed in section 17 of
+<code>dev/specs/sensible-heat.md</code> (e.g. no wind floor, no substitute friction
+velocity, per-anchor convergence, strategy P2). The cross-check with
+Allen, Tasumi and Trezza (2007) remains desirable but is no longer
+blocking; Paulson (1970) and Webb (1970) were not consulted.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -210,6 +223,10 @@ convergence, strategy P2).</p>
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. <em>Journal of Irrigation and Drainage Engineering</em>,
 133(4), 380-394. <a href="https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29" class="external-link">doi:10.1061/(ASCE)0733-9437(2007)133:4(380)</a></p>
+<p>Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., &amp; Trezza, R.
+(2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual</em> (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.</p>
 <p>Paulson, C. A. (1970). The mathematical representation of wind speed and
 temperature profiles in the unstable atmospheric surface layer. <em>Journal
 of Applied Meteorology</em>, 9(6), 857-861.
@@ -248,8 +265,8 @@ Meteorological Society</em>, 96(407), 67-90. <a href="https://doi.org/10.1002/qj
 <span class="r-in"><span>  u_blend <span class="op">=</span> <span class="va">u_b</span>,</span></span>
 <span class="r-in"><span>  pressure <span class="op">=</span> <span class="fu"><a href="ef_air_pressure.html">ef_air_pressure</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">500</span>, <span class="fl">700</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">ctrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="ef_h_control.html">ef_h_control</a></span><span class="op">(</span>stable_psi_m_height <span class="op">=</span> <span class="fl">2</span>, blending_height <span class="op">=</span> <span class="fl">200</span>,</span></span>
-<span class="r-in"><span>                     z1 <span class="op">=</span> <span class="fl">0.1</span>, z2 <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Heights of the SEBAL Idaho manual (the defaults of ef_h_control())</span></span></span>
+<span class="r-in"><span><span class="va">ctrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="ef_h_control.html">ef_h_control</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu">ef_calibrate_h</span><span class="op">(</span><span class="va">anchors</span>, control <span class="op">=</span> <span class="va">ctrl</span>, lapse_rate <span class="op">=</span> <span class="fl">0.00649</span>,</span></span>
 <span class="r-in"><span>                      datum_elevation <span class="op">=</span> <span class="fl">500</span>,</span></span>
 <span class="r-in"><span>                      pixels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>lst <span class="op">=</span> <span class="fl">308</span>, elevation <span class="op">=</span> <span class="fl">500</span>, zom <span class="op">=</span> <span class="fl">0.02</span>,</span></span>
@@ -257,9 +274,9 @@ Meteorological Society</em>, 96(407), 67-90. <a href="https://doi.org/10.1002/qj
 <span class="r-in"><span>                                    pressure <span class="op">=</span> <span class="fu"><a href="ef_air_pressure.html">ef_air_pressure</a></span><span class="op">(</span><span class="fl">500</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">a</span>, b <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">b</span>, iterations <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">iterations</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           a           b  iterations </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -87.0441335   0.2919416   6.0000000 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -87.4397761   0.2932606   6.0000000 </span>
 <span class="r-in"><span><span class="va">cal</span><span class="op">$</span><span class="va">pixels</span><span class="op">$</span><span class="va">h</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 181.9003</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 182.3605</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

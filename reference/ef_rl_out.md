@@ -61,11 +61,11 @@ cloudy MODIS pixels) propagate.
 
 ## Verification status
 
-`CANDIDATA` (corroborated): the form \\\varepsilon_0 \sigma T_s^4\\ is
-the one used by the `water` package (v1.0) and by an independent
-secondary source (Wasti, 2020) together with the net radiation of
-[`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md);
-contrast with Allen et al. (2007) is pending.
+`VERIFICADA (SEBAL-Idaho 2002)`: the form \\\varepsilon_0 \sigma T_s^4\\
+is Eq. 20 of Waters et al. (2002), p. 22, with the broadband emissivity
+\\\varepsilon_0\\ (the manual uses \\\sigma = 5.67 \times 10^{-8}\\, see
+above). The cross-check with Allen et al. (2007) remains desirable but
+is no longer blocking.
 
 ## References
 
@@ -74,6 +74,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 

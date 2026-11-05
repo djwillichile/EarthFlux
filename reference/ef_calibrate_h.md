@@ -53,8 +53,12 @@ ef_calibrate_h(anchors, control, lapse_rate, datum_elevation, pixels = NULL)
 
   The list returned by
   [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
-  (heights, the open decision SH-11 and the convergence settings). It is
-  validated again.
+  (heights, the height of the stable momentum correction of decision
+  SH-11 and the convergence settings), e.g.
+  [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
+  for its defaults. It is validated again; elements not given take the
+  defaults of
+  [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md).
 
 - lapse_rate:
 
@@ -134,15 +138,16 @@ and \\dT_0 = 0\\ (SH-19). At each iteration k:
 4.  \\H_k = \rho_k c_p (a_k + b_k T\_{s,datum}) / r\_{ah,k-1}\\ (equal
     to the target by construction);
 
-5.  Monin-Obukhov length \\L = -\rho c_p u\_\*^3 T_a / (k g H)\\ with
-    \\u\_{\*,k-1}\\, \\T_a = T_s - dT_k\\ and \\\rho_k\\ (SH-10; \\L =
-    \infty\\, neutral, when \\H = 0\\);
+5.  Monin-Obukhov length \\L = -\rho c_p u\_\*^3 T_s / (k g H)\\ with
+    \\u\_{\*,k-1}\\, the surface temperature \\T_s\\ and \\\rho_k\\
+    (Waters et al., 2002, Eq. 34; SH-10; \\L = \infty\\, neutral, when
+    \\H = 0\\);
 
 6.  stability corrections (unstable: Paulson-type forms with coefficient
     16; stable: log-linear form \\-5 z/L\\), with \\\psi_m\\ at the
-    blending height (or at `stable_psi_m_height` when \\L \> 0\\, open
-    decision SH-11) and \\\psi_h\\ at `z2` and `z1`; then \\u\_{\*,k}\\
-    and the new \\r\_{ah}\\;
+    blending height (or at `stable_psi_m_height` when \\L \> 0\\: 2 m by
+    default, Waters et al., 2002, Eq. 38, decision SH-11) and \\\psi_h\\
+    at `z2` and `z1`; then \\u\_{\*,k}\\ and the new \\r\_{ah}\\;
 
 7.  damping: \\r\_{ah,k} = (1 - \omega) r\_{ah,new} + \omega
     r\_{ah,k-1}\\;
@@ -188,17 +193,26 @@ blocks.
   iterate and gets `EF_H_PIXEL_NOT_CONVERGED`.
 
 Constants: von Karman constant `EF_VON_KARMAN` (0.41), gravity
-`EF_GRAVITY` (9.807 m s-2, `CANDIDATA`) and specific heat of air
-`EF_SPECIFIC_HEAT_AIR` (1004 J kg-1 K-1, `CANDIDATA`, decision SH-09
-open); they are recorded in `constants`.
+`EF_GRAVITY` (9.81 m s-2) and specific heat of air
+`EF_SPECIFIC_HEAT_AIR` (1004 J kg-1 K-1), the values of Waters et al.
+(2002, pp. 25-26 and 32); they are recorded in `constants`.
 
-Verification status: `CANDIDATA`. The procedure follows
-`dev/specs/sensible-heat.md` section 11, written from the `water`
-package and secondary sources; Allen, Tasumi and Trezza (2007), Paulson
-(1970) and Webb (1970) have not been consulted. Known differences with
-`water` are listed in section 17 of that specification (e.g. no wind
-floor, no substitute friction velocity, density at \\T_a\\, per-anchor
-convergence, strategy P2).
+Verification status: the forms are `VERIFICADA (SEBAL-Idaho 2002)`: the
+iterative scheme of Waters et al. (2002), pp. 25-34 (figure 4, Eqs.
+25-41) and appendix 8 (anchor conditions of p. 30-31, dT from Eq. 33,
+\\dT\\ linear in the surface temperature, Eq. 32, Monin-Obukhov length
+with \\T_s\\, Eq. 34, stability corrections, Eqs. 35-39, corrected
+\\u\_\*\\ and \\r\_{ah}\\, Eqs. 40-41). The procedural choices are
+EarthFlux decisions (P0-10, `CANDIDATA` as procedure): the manual
+iterates "until the successive values for dT_hot and rah at the hot
+pixel have stabilized" (p. 34; 3 to 7 iterations, appendix 8), whereas
+EarthFlux uses a relative tolerance on rah at both anchors, the closure
+of the anchors and phase B with the per-pixel strategy P2. Known
+differences with `water` are listed in section 17 of
+`dev/specs/sensible-heat.md` (e.g. no wind floor, no substitute friction
+velocity, per-anchor convergence, strategy P2). The cross-check with
+Allen, Tasumi and Trezza (2007) remains desirable but is no longer
+blocking; Paulson (1970) and Webb (1970) were not consulted.
 
 ## References
 
@@ -207,6 +221,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 Paulson, C. A. (1970). The mathematical representation of wind speed and
 temperature profiles in the unstable atmospheric surface layer. *Journal
@@ -248,8 +267,8 @@ anchors <- data.frame(
   u_blend = u_b,
   pressure = ef_air_pressure(c(500, 700))
 )
-ctrl <- ef_h_control(stable_psi_m_height = 2, blending_height = 200,
-                     z1 = 0.1, z2 = 2)
+# Heights of the SEBAL Idaho manual (the defaults of ef_h_control())
+ctrl <- ef_h_control()
 cal <- ef_calibrate_h(anchors, control = ctrl, lapse_rate = 0.00649,
                       datum_elevation = 500,
                       pixels = list(lst = 308, elevation = 500, zom = 0.02,
@@ -257,7 +276,7 @@ cal <- ef_calibrate_h(anchors, control = ctrl, lapse_rate = 0.00649,
                                     pressure = ef_air_pressure(500)))
 c(a = cal$a, b = cal$b, iterations = cal$iterations)
 #>           a           b  iterations 
-#> -87.0441335   0.2919416   6.0000000 
+#> -87.4397761   0.2932606   6.0000000 
 cal$pixels$h
-#> [1] 181.9003
+#> [1] 182.3605
 ```

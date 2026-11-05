@@ -154,14 +154,26 @@ reference.
 
 ## Verification status
 
-Both formulations are `CANDIDATA`. Their form, coefficients and the LAI
-threshold were observed in a secondary implementation (the `water` R
-package, version 1.0) and are rewritten here; the primary references
-were not consulted. The sign convention, the Kelvin offset used by the
-sources (273.15 is used here) and whether the bare-soil condition is
-`LAI < 0.5` or `LAI <= 0.5` remain to be verified. No default method is
-offered for this reason. Applying the relations to 1 km MODIS pixels
-(mixed cover, composite NDVI and LAI) is not validated.
+`"bastiaanssen"` is `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+(2002), p. 24, Eq. 24, after Bastiaanssen (2000), print \\G/R_n =
+T_s/\alpha\\ (0.0038\\\alpha + 0.0074\\\alpha^2)\\ (1 -
+0.98\\\mathrm{NDVI}^4)\\ with \\T_s\\ in degrees Celsius, "representing
+values near midday"; the expanded form above is algebraically identical
+for \\\alpha \> 0\\ (and defined at \\\alpha = 0\\). The manual assigns
+G/Rn = 0.5 to water (NDVI \< 0) and to snow (\\T_s\\ \< 4 degrees C and
+albedo \> 0.45) (p. 25, appendix 10); these rules are not applied here
+(decision G-D4). The cross-check with Allen et al. (2007) remains
+desirable but is no longer blocking.
+
+`"tasumi"` is `CANDIDATA`: its form, coefficients and the LAI threshold
+were observed in a secondary implementation (the `water` R package,
+version 1.0) and are rewritten here; the primary references (Tasumi,
+2003; Allen et al., 2007) were not consulted. Whether its bare-soil
+condition is `LAI < 0.5` or `LAI <= 0.5` remains to be verified.
+
+The method has no default (dispatcher convention, decision T-15).
+Applying the relations to 1 km MODIS pixels (mixed cover, composite NDVI
+and LAI) is not validated.
 
 ## References
 
@@ -179,6 +191,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 ## See also
 

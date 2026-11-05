@@ -168,11 +168,19 @@ raises `earthflux_anchor_na_input` (fields `variable`, `index` = rows of
 `earthflux_input_error` / `earthflux_domain_error`; `etr_inst <= 0`
 raises `earthflux_domain_error`.
 
-Verification status: `CANDIDATA`. The form of the cold condition is
-attributed to Allen et al. (2007) by secondary sources; the value 1.05
-of \\k\\ with an alfalfa reference and \\ETrF = 0\\ for dry bare soil
-are observed in the `water` package (no default here). The unit
-conversion is `VERIFICADA` (FAO-56, box 8, with 3600 s h-1).
+Verification status: the forms are `VERIFICADA (SEBAL-Idaho 2002)`:
+Waters et al. (2002), p. 30, step 5a (cold anchor: \\H\_{cold} = R_n -
+G - 1.05\\\lambda ET_r\\, ETr being the alfalfa reference at the image
+time, pp. 13 and 38) and p. 31, step 5b (hot anchor: \\H\_{hot} = R_n -
+G - \lambda ET\_{hot}\\ with \\ET\_{hot} = 0\\ for a dry bare
+agricultural field, or from a soil water balance after rain in the
+previous 1-4 days). The values 1.05 and 0 are the ones of the manual
+(also "generally" in appendix 8, p. 81), but they stay explicit
+arguments without default (decisions D-AP-04 and D-AP-05, P0-8: no
+coefficient by default in the anchor core). The unit conversion is
+`VERIFICADA` (FAO-56, box 8, with 3600 s h-1; Eq. 42 of the manual). The
+cross-check with Allen et al. (2007) remains desirable but is no longer
+blocking.
 
 ## References
 
@@ -181,6 +189,11 @@ balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 133(4), 380-394.
 [doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/%28ASCE%290733-9437%282007%29133%3A4%28380%29)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
 evapotranspiration: Guidelines for computing crop water requirements*
@@ -203,13 +216,13 @@ lst <- c(300, 321, 310)
 anchors <- ef_anchors(cold = 1, hot = 2, lst = lst,
                       ndvi = c(0.85, 0.10, 0.4),
                       albedo = c(0.20, 0.25, 0.2), aggregate = "none")
-# Coefficients are test values (CANDIDATA), not defaults
+# Coefficients of the SEBAL Idaho manual, passed explicitly (no defaults)
 anchors <- ef_anchor_conditions(
   anchors, rn = c(700, 500, 600), g = c(100, 120, 110), etr_inst = 0.8,
   lambda = ef_lambda(method = "constant"), etrf_cold = 1.05,
   etrf_hot = 0, reference = "alfalfa",
-  source = "test values observed in the water package",
-  status = "CANDIDATA", etr_source = "station"
+  source = "Waters et al. (2002), SEBAL Idaho manual, pp. 30-31",
+  status = "VERIFICADA", etr_source = "station"
 )
 anchors$calibration_points[, c("type", "lst", "rn", "g", "le_target",
                                "h_target")]
