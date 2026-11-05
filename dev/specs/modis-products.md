@@ -103,11 +103,22 @@ esa fecha.
 >    `thermify`) con `aoi_cauquenes()`; script reproducible
 >    `data-raw/modis-example.R` (CMR + LP DAAC con `EARTHDATA_TOKEN` del
 >    entorno), con la fecha **2019-02-15** (Terra, decisión del autor,
->    M4-27) y `lai_nonveg = 0` (M4-28). **Pendiente**: ejecutar el script en
->    un entorno con `EARTHDATA_TOKEN` y acceso a los dominios de Earthdata y
->    versionar `inst/extdata/modis-example/` (comando y salidas esperadas en
->    §12); contraste con granulos reales (§16; A-M4-3); fixtures de DN
->    crudos reales (`tests/testthat/fixtures/`).
+>    M4-27) y `lai_nonveg = 0` (M4-28). **Hecho** (2026-11-05): escena
+>    generada desde los granulos reales y versionada como el dataset
+>    `cauquenes_modis` (`data/cauquenes_modis.rda`, 58 KB, 20 capas;
+>    decisión del autor: un único objeto, como `cauquenes` de `thermify`,
+>    en lugar de los 14 archivos de `inst/extdata/modis-example/`);
+>    procedencia en `data-raw/cauquenes_modis.yml` y `?cauquenes_modis`.
+>    Contraste parcial con granulos reales (A-M4-3): `QC_Day` declara
+>    `_FillValue` 0 (patrón de bits válido, se conserva), la grilla de
+>    MCD43A3 es `MOD_Grid_BRDF`, GDAL entrega entre comillas los nombres
+>    SDS con espacios (MOD13), MOD13 declara la escala recíproca (10000) y
+>    los bordes de las grillas de 1 km y 500 m difieren por redondeo
+>    (tolerancia 1e-3 celda). **Pendiente**: fixtures de DN crudos reales
+>    (`tests/testthat/fixtures/`); el `VI Quality` de relleno (65535) se
+>    decodifica bit a bit y activa `EF_SURF_SNOW` y
+>    `EF_SURF_CLOUD_ADJACENT` en las celdas de relleno de NDVI (34 en la
+>    escena; sin efecto en los valores).
 > 11. **E1/E2** (`"split_window_regression"`, `"tes_regression"`): siguen
 >    `earthflux_method_not_implemented`; lo que falta para implementarlas
 >    está en la lista de §8.2 (M4-30).
@@ -579,7 +590,7 @@ días respecto de la fecha de la LST (§9.1) y marcarlo.
 | Extensión | 2000-02-16 → presente | `VERIFICADA` | D12 |
 | DOI | `10.5067/MODIS/MCD43A3.061` | `VERIFICADA` | D12 |
 | QA completa | En el archivo compañero MCD43A2 (debe consultarse) | `VERIFICADA` | D12 |
-| Grilla HDF-EOS | `MODIS_Grid_BRDF` | `VERIFICADA` | D8 |
+| Grilla HDF-EOS | `MOD_Grid_BRDF` (granulo real `MCD43A3.A2019046.h12v12.061.2020290040302`; D8 da `MODIS_Grid_BRDF`, que no coincide con el archivo) | `VERIFICADA` | D8; granulo real |
 
 **(b) Capas necesarias** — D8 (definiciones de campos) y D12 (tabla de
 variables); coinciden.
@@ -1197,8 +1208,16 @@ h12v12 (3 % de nubosidad de tesela), colección 061; opciones explícitas de
 `"same_day"`, MCD15A2H con `"period"`, `"mean"`, `min_valid_fraction = 1`,
 `qa_policy = "flag"`).
 
-**Paso pendiente: generar y versionar la escena** (no se puede hacer sin
-credenciales ni red; ejecutable más tarde sin más contexto):
+**Estado (2026-11-05): hecho.** La escena se generó desde los granulos
+reales y se versiona como un único dataset, `cauquenes_modis`
+(`data/cauquenes_modis.rda`, `PackedSpatRaster` de 20 capas, 58 KB),
+por decisión del autor, en lugar de los 14 archivos de
+`inst/extdata/modis-example/` previstos abajo; el script escribe ahora ese
+objeto y la procedencia en `data-raw/cauquenes_modis.yml`. Los pasos
+siguientes se conservan como registro del procedimiento.
+
+**Paso (registro): generar y versionar la escena** (no se puede hacer sin
+credenciales ni red):
 
 1. Requisitos: R con `EarthFlux` en desarrollo (fuentes de este
    repositorio), `pkgload`, `jsonlite` y `terra` con el driver GDAL HDF4

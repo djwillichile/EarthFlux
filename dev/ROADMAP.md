@@ -91,26 +91,18 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       flag `EF_SURF_LAI_ASSIGNED`; emisividades de banda 31/32 llevadas en
       el estado de superficie para E1 (lo que falta para E1/E2:
       `specs/modis-products.md` §8.2).
-- [ ] Dataset de ejemplo compatible con CRAN: límite de la provincia de
-      Cauquenes, script reproducible, fecha y opciones listos
-      (`data-raw/modis-example.R`, M4-26, M4-27). **Paso restante**:
-      ejecutar el script en un entorno con la variable `EARTHDATA_TOKEN`
-      y salida HTTPS permitida a los dominios de Earthdata
-      (`cmr.earthdata.nasa.gov`, `data.lpdaac.earthdatacloud.nasa.gov`,
-      `urs.earthdata.nasa.gov` y el almacenamiento al que LP DAAC
-      redirige), desde la raíz de las fuentes y en una rama nueva:
-      `EARTHDATA_TOKEN=<token> Rscript data-raw/modis-example.R`.
-      Salida esperada: la tabla de 4 granulos (MOD11A1 y MCD43A3 del
-      día `A2019046`, compuestos MOD13A2 y MCD15A2H que contienen
-      2019-02-15) y `Example scene: 14 files, <n> KB.` con `<n>` < 500;
-      14 archivos en `inst/extdata/modis-example/` (`lst.tif`,
-      `albedo.tif`, `ndvi.tif`, `lai.tif`, `emissivity.tif`,
-      `band_emissivity.tif`, `overpass_doy.tif`, `overpass_utc_hour.tif`,
-      `flags.tif`, `valid_fraction.tif`, `ndvi_lag_days.tif`,
-      `flag_bits.csv`, `provenance.csv`, `provenance.yml`). Luego
-      `devtools::check()` y versionar `inst/extdata/modis-example/`
-      (`data: add the modis example scene of cauquenes`). Detalle en
-      `specs/modis-products.md` §12.
+- [x] Dataset de ejemplo compatible con CRAN: `cauquenes_modis`
+      (`data/cauquenes_modis.rda`, 58 KB), un `SpatRaster` empaquetado
+      con `terra::wrap()` (convención del dataset `cauquenes` de
+      thermify) con las 20 capas del estado de superficie del 2019-02-15
+      (Terra, h12v12, C6.1) enmascaradas a la provincia de Cauquenes; LST
+      válida en el 96,7 % de las 3.779 celdas de la provincia. Generado
+      con `data-raw/modis-example.R` (M4-26, M4-27); procedencia en
+      `?cauquenes_modis` y `data-raw/cauquenes_modis.yml`. El contraste
+      con los granulos reales corrigió el lector HDF4 (`_FillValue` de
+      `QC_Day`, grilla de MCD43A3, nombres SDS entre comillas, escala
+      recíproca de MOD13, tolerancia de anidamiento 1 km/500 m; NEWS).
+      Detalle en `specs/modis-products.md` §12.
 - [ ] Primer release experimental `0.1.0` al cierre de M4, con la escena de
       ejemplo de Cauquenes (opción B, decisión del autor del 2026-11-04;
       `DECISIONS.md` §1.4, M4-00); antes previsto al cierre de M2 con el
