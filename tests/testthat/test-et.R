@@ -269,7 +269,7 @@ test_that("dispatcher ef_et_daily() returns a classed object with flags", {
   expect_identical(out$provenance$flags_evaluated,
                    c("EF_INPUT_NA", "EF_ET_NEGATIVE"))
   expect_identical(out$provenance$fun, "ef_et_daily_etrf")
-  expect_identical(out$provenance$status, "CANDIDATA")
+  expect_identical(out$provenance$status, "VERIFICADA (SEBAL-Idaho 2002)")
   # Negative case: no record when nothing is flagged
   ok <- ef_et_daily(0.9, 8, reference = "grass", method = "etrf")
   expect_length(ok$flags, 0L)

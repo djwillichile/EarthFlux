@@ -30,8 +30,11 @@ An optional column \code{anchor_id} is carried to the result; other columns
 are ignored. Missing values at an anchor raise
 \code{earthflux_calibration_error}.}
 
-\item{control}{The list returned by \code{\link[=ef_h_control]{ef_h_control()}} (heights, the open
-decision SH-11 and the convergence settings). It is validated again.}
+\item{control}{The list returned by \code{\link[=ef_h_control]{ef_h_control()}} (heights, the
+height of the stable momentum correction of decision SH-11 and the
+convergence settings), e.g. \code{ef_h_control()} for its defaults. It is
+validated again; elements not given take the defaults of
+\code{\link[=ef_h_control]{ef_h_control()}}.}
 
 \item{lapse_rate}{Numeric scalar. Lapse rate of the surface temperature
 with elevation [K m-1] (see \code{\link[=ef_ts_datum]{ef_ts_datum()}}). No default (SH-13).}
@@ -153,17 +156,26 @@ iterate and gets \code{EF_H_PIXEL_NOT_CONVERGED}.
 }
 
 Constants: von Karman constant \code{EF_VON_KARMAN} (0.41), gravity
-\code{EF_GRAVITY} (9.81 m s-2, Waters et al., 2002, p. 32) and specific heat of air
-\code{EF_SPECIFIC_HEAT_AIR} (1004 J kg-1 K-1, \code{CANDIDATA}, decision SH-09
-open); they are recorded in \code{constants}.
+\code{EF_GRAVITY} (9.81 m s-2) and specific heat of air \code{EF_SPECIFIC_HEAT_AIR}
+(1004 J kg-1 K-1), the values of Waters et al. (2002, pp. 25-26 and 32);
+they are recorded in \code{constants}.
 
-Verification status: \code{CANDIDATA}. The procedure follows
-\code{dev/specs/sensible-heat.md} section 11, written from the \code{water} package
-and secondary sources; Allen, Tasumi and Trezza (2007), Paulson (1970)
-and Webb (1970) have not been consulted. Known differences with \code{water}
-are listed in section 17 of that specification (e.g. no wind floor, no
-substitute friction velocity, density at \eqn{T_a}{Ta}, per-anchor
-convergence, strategy P2).
+Verification status: the forms are \verb{VERIFICADA (SEBAL-Idaho 2002)}: the
+iterative scheme of Waters et al. (2002), pp. 25-34 (figure 4, Eqs.
+25-41) and appendix 8 (anchor conditions of p. 30-31, dT from Eq. 33,
+\eqn{dT}{dT} linear in the surface temperature, Eq. 32, Monin-Obukhov
+length with \eqn{T_s}{Ts}, Eq. 34, stability corrections, Eqs. 35-39,
+corrected \eqn{u_*}{u*} and \eqn{r_{ah}}{rah}, Eqs. 40-41). The
+procedural choices are EarthFlux decisions (P0-10, \code{CANDIDATA} as
+procedure): the manual iterates "until the successive values for dT_hot
+and rah at the hot pixel have stabilized" (p. 34; 3 to 7 iterations,
+appendix 8), whereas EarthFlux uses a relative tolerance on rah at both
+anchors, the closure of the anchors and phase B with the per-pixel
+strategy P2. Known differences with \code{water} are listed in section 17 of
+\code{dev/specs/sensible-heat.md} (e.g. no wind floor, no substitute friction
+velocity, per-anchor convergence, strategy P2). The cross-check with
+Allen, Tasumi and Trezza (2007) remains desirable but is no longer
+blocking; Paulson (1970) and Webb (1970) were not consulted.
 }
 \examples{
 # Synthetic scene of dev/specs/sensible-heat.md section 14
@@ -180,8 +192,8 @@ anchors <- data.frame(
   u_blend = u_b,
   pressure = ef_air_pressure(c(500, 700))
 )
-ctrl <- ef_h_control(stable_psi_m_height = 2, blending_height = 200,
-                     z1 = 0.1, z2 = 2)
+# Heights of the SEBAL Idaho manual (the defaults of ef_h_control())
+ctrl <- ef_h_control()
 cal <- ef_calibrate_h(anchors, control = ctrl, lapse_rate = 0.00649,
                       datum_elevation = 500,
                       pixels = list(lst = 308, elevation = 500, zom = 0.02,
@@ -195,6 +207,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 
 Paulson, C. A. (1970). The mathematical representation of wind speed and
 temperature profiles in the unstable atmospheric surface layer. \emph{Journal

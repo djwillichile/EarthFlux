@@ -9,7 +9,8 @@ ef_atm_emissivity(tau_sw)
 \arguments{
 \item{tau_sw}{Numeric. Total clear-sky broadband shortwave transmissivity
 on the horizontal \eqn{\tau_{sw}}{tau_sw} [-], in the open interval
-(0, 1), normally \code{ef_tau_sw_allen()$total} (see Details).}
+(0, 1): \code{ef_tau_sw_elevation()} in the SEBAL Idaho manual, or
+\code{ef_tau_sw_allen()$total} (see Details).}
 }
 \value{
 A numeric vector of \eqn{\varepsilon_a}{ea} [-] with the length
@@ -40,13 +41,17 @@ propagate.
 }
 \section{Verification status}{
 
-\code{CANDIDATA}. Form and coefficients (0.85, 0.09) observed in the \code{water}
-package (v1.0), which attributes the form to Bastiaanssen (1995) and the
-coefficients to an internal report of Allen (2000); neither has been
-verified, nor its use in Allen et al. (2007), nor the range of
-transmissivities over which the coefficients were derived. Formulations
-in terms of vapour pressure and air temperature (e.g. Brutsaert) are an
-open alternative (decision RC-13).
+\verb{VERIFICADA (SEBAL-Idaho 2002)}. Form and coefficients (0.85, 0.09) are
+those of Waters et al. (2002), p. 23, Eq. 22: the empirical form of
+Bastiaanssen (1995) refitted "using data from alfalfa fields in Idaho"
+(the original coefficients for western Egypt were 1.08 and 0.265). In
+the manual the transmissivity is that of Eq. 11 (\code{ef_tau_sw_elevation()});
+its use with the partitioned transmissivity of \code{ef_tau_sw_allen()} is not
+covered by the manual (\code{CANDIDATA}). The range of transmissivities over
+which the coefficients were fitted is not given. The cross-check with
+Allen et al. (2007) remains desirable but is no longer blocking.
+Formulations in terms of vapour pressure and air temperature (e.g.
+Brutsaert) are an open alternative (decision RC-13).
 }
 
 \examples{
@@ -57,6 +62,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other radiation functions:

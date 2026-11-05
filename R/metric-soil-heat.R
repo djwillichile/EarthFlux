@@ -8,16 +8,19 @@
 #
 # Implemented:
 #   - ef_g_bastiaanssen(): G/Rn as a function of Ts, albedo and NDVI (SEBAL).
-#     Status: CANDIDATA (form and coefficients observed in a secondary
-#     implementation; the primary reference was not consulted).
+#     Status: VERIFICADA (SEBAL-Idaho 2002): Eq. 24 of the SEBAL Idaho
+#     manual (Waters et al., 2002), after Bastiaanssen (2000).
 #   - ef_g_tasumi(): G/Rn as a function of LAI, with a bare-soil branch for
-#     LAI < 0.5 that depends on Ts and Rn. Status: CANDIDATA (idem).
+#     LAI < 0.5 that depends on Ts and Rn. Status: CANDIDATA (form and
+#     coefficients observed in a secondary implementation; not covered by
+#     the local primary sources).
 #   - ef_g(): thin dispatcher (method without default) that calls one of the
 #     above, derives G/Rn, builds the cell flags with ef_diagnose_soil_heat()
 #     and records the provenance.
 #
-# Not implemented (TODO in the specification): rules for water, snow and
-#   impervious surfaces (decision G-D4), plausible range of G/Rn (G-D7).
+# Not implemented: rules for water, snow and impervious surfaces (decision
+#   G-D4; the SEBAL Idaho manual gives G/Rn = 0.5 for water and snow,
+#   p. 25, and appendix 10), plausible range of G/Rn (G-D7).
 #
 # Design: sensor-independent, purely arithmetic and vectorised. Temperatures
 #   are in K and converted to degrees Celsius inside the equations with
@@ -28,14 +31,16 @@
 #
 # The empirical coefficients are literals of the equation they belong to
 # (dev/DECISIONS.md, WF-14), kept in one place so that the method function
-# and the provenance of the dispatcher use the same values. All of them are
-# CANDIDATA (dev/specs/soil-heat-flux.md section 3).
+# and the provenance of the dispatcher use the same values. Bastiaanssen:
+# VERIFICADA (SEBAL-Idaho 2002); Tasumi: CANDIDATA
+# (dev/specs/soil-heat-flux.md section 3; dev/VERIFICATION.md).
 
 #' Coefficients of the Bastiaanssen (SEBAL) G/Rn relation
 #'
 #' @return A named list: `c_t` and `c_albedo` \[degC-1\], `c_ndvi` \[-\] and
 #'   the NDVI exponent `ndvi_exponent` (dev/specs/soil-heat-flux.md
-#'   section 3.1; status CANDIDATA).
+#'   section 3.1; status VERIFICADA (SEBAL-Idaho 2002), Waters et al.,
+#'   2002, Eq. 24).
 #' @noRd
 ef_g_bastiaanssen_coefficients <- function() {
   list(c_t = 0.0038, c_albedo = 0.0074, c_ndvi = 0.98, ndvi_exponent = 4)
@@ -173,14 +178,28 @@ ef_g_tasumi_coefficients <- function() {
 #' with a reference.
 #'
 #' @section Verification status:
-#' Both formulations are `CANDIDATA`. Their form, coefficients and the
-#' LAI threshold were observed in a secondary implementation (the `water`
-#' R package, version 1.0) and are rewritten here; the primary references
-#' were not consulted. The sign convention, the Kelvin offset used by the
-#' sources (273.15 is used here) and whether the bare-soil condition is
-#' `LAI < 0.5` or `LAI <= 0.5` remain to be verified. No default method is
-#' offered for this reason. Applying the relations to 1 km MODIS pixels
-#' (mixed cover, composite NDVI and LAI) is not validated.
+#' `"bastiaanssen"` is `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+#' (2002), p. 24, Eq. 24, after Bastiaanssen (2000), print
+#' \eqn{G/R_n = T_s/\alpha\, (0.0038\,\alpha + 0.0074\,\alpha^2)\,
+#' (1 - 0.98\,\mathrm{NDVI}^4)}{G/Rn = Ts / albedo * (0.0038 * albedo +
+#' 0.0074 * albedo^2) * (1 - 0.98 * NDVI^4)} with \eqn{T_s}{Ts} in degrees
+#' Celsius, "representing values near midday"; the expanded form above is
+#' algebraically identical for \eqn{\alpha > 0}{albedo > 0} (and defined at
+#' \eqn{\alpha = 0}{albedo = 0}). The manual assigns G/Rn = 0.5 to water
+#' (NDVI < 0) and to snow (\eqn{T_s}{Ts} < 4 degrees C and albedo > 0.45)
+#' (p. 25, appendix 10); these rules are not applied here (decision G-D4).
+#' The cross-check with Allen et al. (2007) remains desirable but is no
+#' longer blocking.
+#'
+#' `"tasumi"` is `CANDIDATA`: its form, coefficients and the LAI threshold
+#' were observed in a secondary implementation (the `water` R package,
+#' version 1.0) and are rewritten here; the primary references (Tasumi,
+#' 2003; Allen et al., 2007) were not consulted. Whether its bare-soil
+#' condition is `LAI < 0.5` or `LAI <= 0.5` remains to be verified.
+#'
+#' The method has no default (dispatcher convention, decision T-15).
+#' Applying the relations to 1 km MODIS pixels (mixed cover, composite NDVI
+#' and LAI) is not validated.
 #'
 #' @references
 #' Bastiaanssen, W. G. M. (2000). SEBAL-based sensible and latent heat
@@ -195,6 +214,11 @@ ef_g_tasumi_coefficients <- function() {
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @seealso [ef_net_radiation()] for \eqn{R_n}{Rn}.
 #'
@@ -254,9 +278,11 @@ ef_g <- function(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
     low_lai <- NULL
     branch <- NULL
     fun <- "ef_g_bastiaanssen"
+    status <- "VERIFICADA (SEBAL-Idaho 2002)"
     coefficients <- ef_g_bastiaanssen_coefficients()
     references <- c(
-      "Bastiaanssen (2000), J. Hydrol. 229(1-2), 87-100, doi:10.1016/S0022-1694(99)00202-4"
+      "Bastiaanssen (2000), J. Hydrol. 229(1-2), 87-100, doi:10.1016/S0022-1694(99)00202-4",
+      "Waters, Allen, Bastiaanssen, Tasumi & Trezza (2002), SEBAL Idaho implementation, users manual v1.0, p. 24, Eq. 24"
     )
   } else {
     g <- ef_g_tasumi(rn = rn, lst = lst, lai = lai)
@@ -268,6 +294,7 @@ ef_g <- function(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
     branch[low_lai] <- paste0("lai_lt_", format(threshold))
     dim(branch) <- dim(g)
     fun <- "ef_g_tasumi"
+    status <- "CANDIDATA"
     references <- c(
       "Tasumi (2003), PhD dissertation, University of Idaho",
       "Allen, Tasumi & Trezza (2007), J. Irrig. Drain. Eng. 133(4), 380-394, doi:10.1061/(ASCE)0733-9437(2007)133:4(380)"
@@ -292,7 +319,7 @@ ef_g <- function(rn, lst = NULL, albedo = NULL, ndvi = NULL, lai = NULL,
       provenance = list(
         method = method,
         fun = fun,
-        status = "CANDIDATA",
+        status = status,
         references = references,
         kelvin_offset = EF_KELVIN_OFFSET,
         coefficients = coefficients,

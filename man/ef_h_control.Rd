@@ -91,7 +91,7 @@ ef_h_control(stable_psi_m_height = 200)
 }
 \references{
 Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
-(2002). \emph{SEBAL (Surface Energy Balance Algorithms for Land): Idaho
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
 implementation. Advanced training and users manual} (Version 1.0).
 University of Idaho and Idaho Department of Water Resources.
 }

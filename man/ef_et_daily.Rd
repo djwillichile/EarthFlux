@@ -102,10 +102,12 @@ method argument raises \code{earthflux_missing_input}; an unknown \code{method},
 \code{earthflux_unknown_method}; an unknown \code{reference},
 \code{earthflux_input_error}.
 
-Verification status: method \code{"etrf"} is \code{CANDIDATA} (corroborated by
-secondary sources, Olmedo et al., 2016, Eq. 4). It is implemented as an
-operational definition; its form and equation number in Allen et al.
-(2007) have not been verified.
+Verification status: method \code{"etrf"} is \verb{VERIFICADA (SEBAL-Idaho 2002)}: Waters et al. (2002), p. 35, Eq. 44
+(\eqn{ET_{24} = ETrF \times ET_{r-24}}{ET_24 = ETrF * ETr_24}, with
+\eqn{ET_{r-24}}{ETr_24} the sum of the hourly reference ET of the day,
+assuming that the instantaneous ETrF equals its 24-hour average); also
+corroborated by Olmedo et al. (2016, Eq. 4). The cross-check with Allen
+et al. (2007), including its slope correction, remains desirable.
 }
 \examples{
 # ETrF 0.9 and 8 mm d-1 of alfalfa reference ET: 7.2 mm d-1
@@ -135,6 +137,11 @@ Fonseca-Luengo, D., & Fuentes-Penailillo, F. (2016). water: Tools and
 functions to estimate actual evapotranspiration using land surface energy
 balance models in R. \emph{The R Journal}, 8(2), 352-369.
 \doi{10.32614/RJ-2016-051}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other latent heat and evapotranspiration functions:

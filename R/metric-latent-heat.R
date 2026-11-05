@@ -81,9 +81,12 @@
 #' `earthflux_input_error`) that names the argument.
 #'
 #' Verification status: `VERIFICADA` as the FAO-56 surface energy balance
-#' (chapter 1, Eq. 1, rearranged). Its use as a residual in METRIC is
-#' corroborated by secondary sources (Olmedo et al., 2016, Eq. 1); the
-#' equation number in Allen et al. (2007) has not been verified.
+#' (chapter 1, Eq. 1, rearranged) and `VERIFICADA (SEBAL-Idaho 2002)` as the
+#' residual of the energy balance, Waters et al. (2002), Eq. 1 (pp. 9, 24
+#' and 34), with the same sign convention (G and H positive away from the
+#' surface). Also corroborated by Olmedo et al. (2016, Eq. 1); the equation
+#' number in Allen et al. (2007) has not been verified (desirable, not
+#' blocking).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -100,6 +103,11 @@
 #' functions to estimate actual evapotranspiration using land surface energy
 #' balance models in R. *The R Journal*, 8(2), 352-369.
 #' \doi{10.32614/RJ-2016-051}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family latent heat and evapotranspiration functions
 #' @export

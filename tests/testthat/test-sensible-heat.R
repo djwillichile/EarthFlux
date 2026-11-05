@@ -566,7 +566,10 @@ test_that("the calibration object records control, constants and provenance", {
   expect_identical(cal$constants$cp, EF_SPECIFIC_HEAT_AIR)
   expect_identical(cal$constants$von_karman, EF_VON_KARMAN)
   expect_identical(cal$constants$gravity, EF_GRAVITY)
-  expect_identical(cal$provenance$status, "CANDIDATA")
+  expect_match(cal$provenance$status, "VERIFICADA (SEBAL-Idaho 2002)",
+               fixed = TRUE)
+  expect_identical(cal$constants$status[["cp"]],
+                   "VERIFICADA (SEBAL-Idaho 2002)")
   expect_length(cal$flags, 0L)
   expect_identical(cal$provenance$flags_evaluated,
                    c("EF_H_CALIBRATION_NOT_CONVERGED",

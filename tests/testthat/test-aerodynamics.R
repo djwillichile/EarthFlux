@@ -84,7 +84,18 @@ test_that("ef_zom() returns a classed object with flags and provenance", {
   expect_identical(vapply(z$flags, `[[`, "", "code"), "EF_INPUT_NA")
   expect_identical(z$flags[[1]]$index, 2L)
   expect_identical(z$provenance$fun, "ef_zom_lai")
-  expect_identical(z$provenance$status, "CANDIDATA")
+  expect_identical(z$provenance$status, "VERIFICADA (SEBAL-Idaho 2002)")
+  expect_identical(
+    vapply(c("ndvi", "perrier"), function(m) {
+      switch(m,
+        ndvi = ef_zom(ndvi = 0.6, albedo = 0.2, coef_1 = 0.5, coef_2 = -5,
+                      method = "ndvi"),
+        perrier = ef_zom(lai = 2, f_lai = 0.6, height = 3, method = "perrier")
+      )$provenance$status
+    }, ""),
+    c(ndvi = "VERIFICADA (SEBAL-Idaho 2002)",
+      perrier = "VERIFICADA (IAHS 2012)")
+  )
   expect_identical(z$provenance$flags_evaluated, "EF_INPUT_NA")
   h <- ef_zom(height = 0.12, method = "height")
   expect_length(h$flags, 0L)
@@ -142,7 +153,9 @@ test_that("wind, friction velocity and resistance inputs are validated", {
                class = "earthflux_domain_error")
   expect_error(ef_blending_wind(3, 2, 0.015, -0.1, 200),
                class = "earthflux_domain_error")
-  expect_error(ef_blending_wind(3, 2, 0.015, 0), "blending_height")
+  # The blending height defaults to 200 m (Waters et al., 2002, p. 26)
+  expect_identical(ef_blending_wind(3, 2, 0.015, 0),
+                   ef_blending_wind(3, 2, 0.015, 0, 200))
   expect_error(ef_ustar(-1, 0.05, 200), class = "earthflux_domain_error")
   expect_error(ef_ustar(5, 0, 200), class = "earthflux_domain_error")
   expect_error(ef_ustar(5, 250, 200), class = "earthflux_domain_error")

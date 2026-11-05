@@ -55,9 +55,12 @@
 #' `earthflux_input_error`).
 #'
 #' Verification status: `VERIFICADA` as the content of FAO-56 (chapter 2,
-#' box 6); its use in METRIC with \eqn{T_a = T_s - dT}{Ta = Ts - dT} is
-#' `CANDIDATA` (METRIC implementations use a variant with the pressure of a
-#' standard atmosphere at \eqn{T_a}{Ta}, about 0.6 % higher).
+#' box 6). Its use in METRIC is `CANDIDATA`: the SEBAL Idaho manual
+#' computes the air density at \eqn{T_a = T_s - dT}{Ta = Ts - dT}
+#' (Waters et al., 2002, p. 31, step 6), which corroborates the temperature
+#' used here, but it does not print the density equation (METRIC
+#' implementations use a variant with the pressure of a standard atmosphere
+#' at \eqn{T_a}{Ta}, about 0.6 % higher).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -108,10 +111,10 @@ air_density_core <- function(pressure, air_temperature) {
 #' @param rah Numeric. Aerodynamic resistance to heat transport \[s m-1\]
 #'   (see [ef_rah()]). Must be finite and `> 0`.
 #' @param cp Numeric. Specific heat of air at constant pressure
-#'   \[J kg-1 K-1\]. Must be finite and `> 0`. No default: the METRIC value
-#'   (1004 J kg-1 K-1, `CANDIDATA`, decision SH-09) is the one used and
-#'   recorded by [ef_calibrate_h()] (element `constants$cp`); FAO-56 uses
-#'   1013 J kg-1 K-1.
+#'   \[J kg-1 K-1\]. Must be finite and `> 0`. The METRIC value is
+#'   1004 J kg-1 K-1 (Waters et al., 2002, p. 25, text of Eq. 25; decision
+#'   SH-09), the one used and recorded by [ef_calibrate_h()] (element
+#'   `constants$cp`); FAO-56 uses 1013 J kg-1 K-1.
 #'
 #' @return A numeric vector of sensible heat flux \eqn{H}{H} \[W m-2\], with
 #'   the common length of the inputs and keeping their `dim`. Negative values
@@ -132,14 +135,21 @@ air_density_core <- function(pressure, air_temperature) {
 #' raise an error of class `earthflux_domain_error` (also
 #' `earthflux_input_error`).
 #'
-#' Verification status: `CANDIDATA` (form of `dev/SCIENTIFIC_SPEC.md`
-#' section 3 and METRIC implementations; Allen et al., 2007, not consulted).
+#' Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+#' (2002), p. 25, Eq. 25, with \eqn{c_p}{cp} = 1004 J kg-1 K-1. The
+#' cross-check with Allen et al. (2007) remains desirable but is no longer
+#' blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family aerodynamics and sensible heat functions
 #' @export
@@ -225,7 +235,7 @@ ef_sensible_heat <- function(air_density, dt, rah, cp) {
 #'
 #' @references
 #' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
-#' (2002). *SEBAL (Surface Energy Balance Algorithms for Land): Idaho
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
 #' implementation. Advanced training and users manual* (Version 1.0).
 #' University of Idaho and Idaho Department of Water Resources.
 #'
@@ -411,23 +421,37 @@ ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
 #'   iterate and gets `EF_H_PIXEL_NOT_CONVERGED`.
 #'
 #' Constants: von Karman constant `EF_VON_KARMAN` (0.41), gravity
-#' `EF_GRAVITY` (9.81 m s-2, Waters et al., 2002, p. 32) and specific heat of air
-#' `EF_SPECIFIC_HEAT_AIR` (1004 J kg-1 K-1, `CANDIDATA`, decision SH-09
-#' open); they are recorded in `constants`.
+#' `EF_GRAVITY` (9.81 m s-2) and specific heat of air `EF_SPECIFIC_HEAT_AIR`
+#' (1004 J kg-1 K-1), the values of Waters et al. (2002, pp. 25-26 and 32);
+#' they are recorded in `constants`.
 #'
-#' Verification status: `CANDIDATA`. The procedure follows
-#' `dev/specs/sensible-heat.md` section 11, written from the `water` package
-#' and secondary sources; Allen, Tasumi and Trezza (2007), Paulson (1970)
-#' and Webb (1970) have not been consulted. Known differences with `water`
-#' are listed in section 17 of that specification (e.g. no wind floor, no
-#' substitute friction velocity, density at \eqn{T_a}{Ta}, per-anchor
-#' convergence, strategy P2).
+#' Verification status: the forms are `VERIFICADA (SEBAL-Idaho 2002)`: the
+#' iterative scheme of Waters et al. (2002), pp. 25-34 (figure 4, Eqs.
+#' 25-41) and appendix 8 (anchor conditions of p. 30-31, dT from Eq. 33,
+#' \eqn{dT}{dT} linear in the surface temperature, Eq. 32, Monin-Obukhov
+#' length with \eqn{T_s}{Ts}, Eq. 34, stability corrections, Eqs. 35-39,
+#' corrected \eqn{u_*}{u*} and \eqn{r_{ah}}{rah}, Eqs. 40-41). The
+#' procedural choices are EarthFlux decisions (P0-10, `CANDIDATA` as
+#' procedure): the manual iterates "until the successive values for dT_hot
+#' and rah at the hot pixel have stabilized" (p. 34; 3 to 7 iterations,
+#' appendix 8), whereas EarthFlux uses a relative tolerance on rah at both
+#' anchors, the closure of the anchors and phase B with the per-pixel
+#' strategy P2. Known differences with `water` are listed in section 17 of
+#' `dev/specs/sensible-heat.md` (e.g. no wind floor, no substitute friction
+#' velocity, per-anchor convergence, strategy P2). The cross-check with
+#' Allen, Tasumi and Trezza (2007) remains desirable but is no longer
+#' blocking; Paulson (1970) and Webb (1970) were not consulted.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' Paulson, C. A. (1970). The mathematical representation of wind speed and
 #' temperature profiles in the unstable atmospheric surface layer. *Journal
@@ -595,16 +619,19 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
         von_karman = EF_VON_KARMAN,
         gravity = EF_GRAVITY,
         cp = cp,
-        status = c(von_karman = "VERIFICADA (FAO-56); CANDIDATA in METRIC",
+        status = c(von_karman = "VERIFICADA (FAO-56; SEBAL-Idaho 2002)",
                    gravity = "VERIFICADA (SEBAL-Idaho 2002)",
-                   cp = "CANDIDATA (SH-09)")
+                   cp = "VERIFICADA (SEBAL-Idaho 2002)")
       ),
       provenance = list(
         procedure = paste0(
           "METRIC dT calibration: phase A at the anchors with closure; ",
           "phase B strategy P2"
         ),
-        status = "CANDIDATA",
+        status = paste0(
+          "VERIFICADA (SEBAL-Idaho 2002) forms; ",
+          "procedure: provisional decisions P0-10"
+        ),
         specification = "dev/specs/sensible-heat.md sections 9-11",
         anchors_input = if (inherits(anchors, "earthflux_anchors")) {
           "earthflux_anchors$calibration_points"

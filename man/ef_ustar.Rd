@@ -48,9 +48,11 @@ Missing values propagate. Infinite values and values outside the domain
 raise an error of class \code{earthflux_domain_error} (also
 \code{earthflux_input_error}).
 
-Verification status: \code{CANDIDATA} (observed in the \code{water} package; the
-value of \eqn{k}{k} is \code{VERIFICADA} as the FAO-56 value, its use in
-METRIC is \code{CANDIDATA}).
+Verification status: \verb{VERIFICADA (SEBAL-Idaho 2002)}: Waters et al.
+(2002), p. 27, Eq. 30 (neutral) and p. 33, Eq. 40 (with
+\eqn{\psi_m(200\,m)}{psi_m(200 m)}), with \eqn{k = 0.41}{k = 0.41}
+(also the FAO-56 value). The cross-check with Allen et al. (2007) remains
+desirable but is no longer blocking.
 }
 \examples{
 # Neutral friction velocity of three pixels (z_b = 200 m)
@@ -65,6 +67,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other aerodynamics and sensible heat functions:

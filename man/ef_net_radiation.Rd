@@ -82,9 +82,12 @@ names the argument and the number of offending values. Invalid inputs are
 expected to be masked or flagged upstream by quality control; values are
 never silently corrected.
 
-The form of the equation has been cross-checked against independent
-secondary sources; verification against the primary reference (Allen et
-al., 2007) is pending.
+Verification status: \verb{VERIFICADA (SEBAL-Idaho 2002)}. The form is
+identical, term by term, to Eq. 2 of Waters et al. (2002), pp. 10 and 14,
+which also keeps the reflected incoming longwave term
+\eqn{(1 - \varepsilon_0) R_{L\downarrow}}{(1 - e0) * rl_in} explicit. The
+cross-check with Allen et al. (2007) remains desirable but is no longer
+blocking (\code{dev/VERIFICATION.md}).
 }
 \examples{
 # Single pixel: rl_out = 0.98 * 5.67e-8 * 300^4 (surface at 300 K)
@@ -113,6 +116,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other radiation functions:

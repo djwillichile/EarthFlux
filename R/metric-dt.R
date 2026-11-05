@@ -6,7 +6,9 @@
 #
 # Specification: dev/specs/sensible-heat.md section 9 (notation of
 #   dev/SCIENTIFIC_SPEC.md section 3: a = intercept [K], b = slope [-]; the
-#   `water` package swaps a and b, section 4.2). Status: CANDIDATA.
+#   `water` package and the SEBAL Idaho manual swap a and b, section 4.2).
+#   Status: VERIFICADA (SEBAL-Idaho 2002) forms (Waters et al., 2002,
+#   Eqs. 32 and 12-7); the lapse rate stays an explicit argument.
 #
 # Implemented (exported): ef_ts_datum(), ef_dt_coef(). The iterative
 #   calibration that uses them lives in R/metric-sensible-heat.R
@@ -32,9 +34,11 @@
 #'   not the sensible heat flux (see Details).
 #' @param lapse_rate Numeric scalar. Lapse rate of the surface temperature
 #'   with elevation \eqn{\Gamma}{Gamma} \[K m-1\] (note: per metre, not per
-#'   kilometre). Must be finite and `>= 0`. No default: the value
-#'   0.00649 K m-1 (6.49 K km-1) observed in METRIC implementations is
-#'   `CANDIDATA` (decision SH-13).
+#'   kilometre). Must be finite and `>= 0`. No default (decision SH-13): the
+#'   SEBAL Idaho manual uses 0.0065 K m-1 (Waters et al., 2002, Eq. 12-7),
+#'   the `water` package 0.00649 K m-1, and METRIC tailors the lapse rate to
+#'   the scene, with separate rates for flat and mountainous terrain (Allen
+#'   et al., 2012, p. 74).
 #'
 #' @return A numeric vector of datum temperature
 #'   \eqn{T_{s,datum}}{Ts_datum} \[K\], with the common length of `lst` and
@@ -54,15 +58,30 @@
 #' raise an error of class `earthflux_domain_error` (also
 #' `earthflux_input_error`).
 #'
-#' Verification status: `CANDIDATA` (observed in the `water` package; the
-#' "customized lapse rate" attributed to Allen et al., 2007, has not been
-#' verified).
+#' Verification status: the form is `VERIFICADA (SEBAL-Idaho 2002)`:
+#' Waters et al. (2002), appendix 12, p. 96, Eq. 12-7
+#' (\eqn{T_{s,dem} = T_s + 0.0065\,\Delta z}{Ts_dem = Ts + 0.0065 * dz},
+#' with \eqn{\Delta z}{dz} the elevation of the pixel minus that of the
+#' datum, usually the weather station). The "dual-stage" correction of
+#' METRIC for mountains (Allen et al., 2012, p. 74) is not implemented. The
+#' cross-check with Allen et al. (2007) remains desirable but is no longer
+#' blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
+#'
+#' Allen, R. G., Kjaersgaard, J. H., Trezza, R., Oliveira, A., Robison, C.,
+#' & Lorite-Torres, I. (2012). Refining components of a satellite-based
+#' surface energy balance model to complex land-use systems. In *Remote
+#' Sensing and Hydrology* (IAHS Publication 352, pp. 73-75). IAHS Press.
 #'
 #' @family aerodynamics and sensible heat functions
 #' @export
@@ -106,7 +125,9 @@ ef_ts_datum <- function(lst, elevation, datum_elevation, lapse_rate) {
 #'   (Ts_datum_hot - Ts_datum_cold); a = dT_cold - b * Ts_datum_cold}
 #'
 #' Notation: `a` is the intercept and `b` the slope, as in
-#' `dev/SCIENTIFIC_SPEC.md`; the `water` package uses the opposite names.
+#' `dev/SCIENTIFIC_SPEC.md`; the SEBAL Idaho manual (\eqn{dT = b + a
+#' T_s}{dT = b + a * Ts}, Eq. 32) and the `water` package use the opposite
+#' names (decision SH-12).
 #'
 #' Pixels outside the range of the anchors use the same line
 #' (extrapolation, flagged by [ef_calibrate_h()]). A slope `b <= 0` with
@@ -120,15 +141,23 @@ ef_ts_datum <- function(lst, elevation, datum_elevation, lapse_rate) {
 #' values outside the domain raise `earthflux_domain_error` (also
 #' `earthflux_input_error`).
 #'
-#' Verification status: `CANDIDATA` (form observed in the `water` package
-#' and in `dev/SCIENTIFIC_SPEC.md` section 3; Allen et al., 2007, not
-#' consulted, including a reported erratum in its intercept equation).
+#' Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: linear relation
+#' of Waters et al. (2002), p. 30, Eq. 32, through the anchor values of
+#' Eq. 33 (p. 31: "the correlation coefficients ... are now computed for
+#' the linear relationship"). Allen et al. (2007) was not consulted,
+#' including a reported erratum in its intercept equation (desirable, not
+#' blocking).
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family aerodynamics and sensible heat functions
 #' @export

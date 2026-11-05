@@ -128,11 +128,25 @@ values, raise an error of class \code{earthflux_domain_error} (also
 required by the chosen method but not supplied to the dispatcher raises
 \code{earthflux_missing_input}. Arguments not used by the method are ignored.
 
-Verification status: \code{"lai"}, \code{"ndvi"} and \code{"perrier"} are \code{CANDIDATA}
-(observed in the \code{water} package, which cites Allen et al., 2007, and
-Santos et al., 2012, and Pocas et al., 2014, for Perrier; the primary
-sources have not been consulted). \code{"height"} is \code{VERIFICADA} as FAO-56
-content; its use in METRIC is not verified.
+Verification status:
+\itemize{
+\item \code{"lai"}: \verb{VERIFICADA (SEBAL-Idaho 2002)}, Waters et al. (2002), p. 27,
+Eq. 31a, "for agricultural areas" (consistent with their
+\eqn{z_{om} = 0.12 h}{z_om = 0.12 * h}, Eq. 28, and
+\eqn{h = 0.15\,\mathrm{LAI}}{h = 0.15 * LAI}, appendix 2);
+\item \code{"ndvi"}: \verb{VERIFICADA (SEBAL-Idaho 2002)}, Waters et al. (2002), p. 28,
+Eq. 31b, with coefficients fitted to sample pixels of known roughness
+(named \code{a} and \code{b} there);
+\item \code{"perrier"}: \verb{VERIFICADA (IAHS 2012)}, Allen et al. (2012), p. 73
+(unnumbered equation; \eqn{f}{f} = 0.6 is suggested there for mixed
+forests);
+\item \code{"height"}: \code{VERIFICADA} as FAO-56 content; its use in METRIC is not
+verified (the SEBAL Idaho manual uses 0.12 h for the station surface,
+Eq. 28, after Brutsaert, 1982).
+}
+
+The cross-check with Allen et al. (2007) remains desirable but is no
+longer blocking (\code{dev/VERIFICATION.md}).
 }
 \examples{
 # Short crops: z_om = 0.018 * LAI (m)
@@ -169,6 +183,16 @@ A., Santos, F. L., Pereira, L. S., & Allen, R. G. (2014). Satellite-based
 evapotranspiration of a super-intensive olive orchard: Application of
 METRIC algorithms. \emph{Biosystems Engineering}, 128, 69-81.
 \doi{10.1016/j.biosystemseng.2014.06.019}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
+
+Allen, R. G., Kjaersgaard, J. H., Trezza, R., Oliveira, A., Robison, C.,
+& Lorite-Torres, I. (2012). Refining components of a satellite-based
+surface energy balance model to complex land-use systems. In \emph{Remote
+Sensing and Hydrology} (IAHS Publication 352, pp. 73-75). IAHS Press.
 }
 \seealso{
 Other aerodynamics and sensible heat functions:

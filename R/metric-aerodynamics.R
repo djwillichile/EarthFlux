@@ -5,10 +5,12 @@
 #   Monin-Obukhov stability corrections.
 #
 # Specification: dev/specs/sensible-heat.md sections 5-7 and 10 (names per
-#   dev/NAMING.md). Every METRIC form here is CANDIDATA (observed in the
-#   `water` package and in secondary sources; Allen, Tasumi and Trezza, 2007,
-#   not yet consulted). Only the FAO-56 forms (z_om = 0.123 h and the neutral
-#   logarithmic profile) are VERIFICADA as FAO-56 content.
+#   dev/NAMING.md). The forms are VERIFICADA (SEBAL-Idaho 2002) against the
+#   SEBAL Idaho manual (Waters et al., 2002, Eqs. 26-41) and the Perrier
+#   function against Allen et al. (2012, IAHS Publ. 352); the FAO-56 forms
+#   (z_om = 0.123 h and the neutral logarithmic profile) are VERIFICADA as
+#   FAO-56 content (dev/VERIFICATION.md). Allen, Tasumi and Trezza (2007) are
+#   still not consulted: the cross-check is desirable, not blocking.
 #
 # Implemented (exported):
 #   - ef_zom() dispatcher (an earthflux_roughness_length object with the
@@ -22,8 +24,11 @@
 # Not implemented on purpose (decisions of section 18 of the spec):
 #   - the 0.005 m minimum of z_om (SH-02, not verified): z_om = 0 is returned
 #     unchanged and rejected downstream by ef_ustar();
-#   - the mountainous-terrain factor of z_om (SH-03, disabled until verified);
-#   - a wind floor (SH-06) and the elevation adjustment of the wind (SH-07).
+#   - the mountainous-terrain factor of z_om (SH-03; form now documented in
+#     the SEBAL Idaho manual, Eq. 12-9, and in Allen et al., 2012, for slopes
+#     of 5 degrees or more; not implemented yet);
+#   - a wind floor (SH-06) and the elevation adjustment of the wind (SH-07;
+#     form documented in the same sources, Eq. 12-10; not implemented yet).
 #
 # Conventions: those of ef_net_radiation() (dev/ARCHITECTURE.md section 3.1).
 #   The blending height (200 m) and the heights of rah (0.1 m and 2 m) are
@@ -131,11 +136,23 @@
 #' required by the chosen method but not supplied to the dispatcher raises
 #' `earthflux_missing_input`. Arguments not used by the method are ignored.
 #'
-#' Verification status: `"lai"`, `"ndvi"` and `"perrier"` are `CANDIDATA`
-#' (observed in the `water` package, which cites Allen et al., 2007, and
-#' Santos et al., 2012, and Pocas et al., 2014, for Perrier; the primary
-#' sources have not been consulted). `"height"` is `VERIFICADA` as FAO-56
-#' content; its use in METRIC is not verified.
+#' Verification status:
+#' * `"lai"`: `VERIFICADA (SEBAL-Idaho 2002)`, Waters et al. (2002), p. 27,
+#'   Eq. 31a, "for agricultural areas" (consistent with their
+#'   \eqn{z_{om} = 0.12 h}{z_om = 0.12 * h}, Eq. 28, and
+#'   \eqn{h = 0.15\,\mathrm{LAI}}{h = 0.15 * LAI}, appendix 2);
+#' * `"ndvi"`: `VERIFICADA (SEBAL-Idaho 2002)`, Waters et al. (2002), p. 28,
+#'   Eq. 31b, with coefficients fitted to sample pixels of known roughness
+#'   (named `a` and `b` there);
+#' * `"perrier"`: `VERIFICADA (IAHS 2012)`, Allen et al. (2012), p. 73
+#'   (unnumbered equation; \eqn{f}{f} = 0.6 is suggested there for mixed
+#'   forests);
+#' * `"height"`: `VERIFICADA` as FAO-56 content; its use in METRIC is not
+#'   verified (the SEBAL Idaho manual uses 0.12 h for the station surface,
+#'   Eq. 28, after Brutsaert, 1982).
+#'
+#' The cross-check with Allen et al. (2007) remains desirable but is no
+#' longer blocking (`dev/VERIFICATION.md`).
 #'
 #' @references
 #' Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop
@@ -158,6 +175,16 @@
 #' evapotranspiration of a super-intensive olive orchard: Application of
 #' METRIC algorithms. *Biosystems Engineering*, 128, 69-81.
 #' \doi{10.1016/j.biosystemseng.2014.06.019}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
+#'
+#' Allen, R. G., Kjaersgaard, J. H., Trezza, R., Oliveira, A., Robison, C.,
+#' & Lorite-Torres, I. (2012). Refining components of a satellite-based
+#' surface energy balance model to complex land-use systems. In *Remote
+#' Sensing and Hydrology* (IAHS Publication 352, pp. 73-75). IAHS Press.
 #'
 #' @family aerodynamics and sensible heat functions
 #' @export
@@ -215,11 +242,13 @@ ef_zom <- function(lai = NULL, ndvi = NULL, albedo = NULL, coef_1 = NULL,
       provenance = list(
         method = method,
         fun = paste0("ef_zom_", method),
-        status = if (method == "height") {
-          "VERIFICADA (FAO-56); CANDIDATA in METRIC"
-        } else {
-          "CANDIDATA"
-        },
+        status = switch(
+          method,
+          lai = "VERIFICADA (SEBAL-Idaho 2002)",
+          ndvi = "VERIFICADA (SEBAL-Idaho 2002)",
+          perrier = "VERIFICADA (IAHS 2012)",
+          height = "VERIFICADA (FAO-56); CANDIDATA in METRIC"
+        ),
         inputs = names(args),
         flags_evaluated = flags$evaluated,
         earthflux_version = as.character(getNamespaceVersion("EarthFlux"))
@@ -235,8 +264,7 @@ ef_zom_lai <- function(lai) {
   call <- sys.call()
   check_core_args(list(lai = lai), call)
   check_in_range(lai, "lai", lower = 0, call = call)
-  # CANDIDATA: `water` v1.0 (method "short.crops"), citing Allen et al.
-  # (2007), "Eq. 33" (not consulted).
+  # Waters et al. (2002), p. 27, Eq. 31a (VERIFICADA, SEBAL-Idaho 2002).
   0.018 * lai
 }
 
@@ -253,7 +281,7 @@ ef_zom_ndvi <- function(ndvi, albedo, coef_1, coef_2) {
                  lower_inclusive = FALSE, call = call)
   check_in_range(coef_1, "coef_1", call = call)
   check_in_range(coef_2, "coef_2", call = call)
-  # CANDIDATA: `water` v1.0 (method "custom"), citing Allen et al. (2007).
+  # Waters et al. (2002), p. 28, Eq. 31b (VERIFICADA, SEBAL-Idaho 2002).
   exp(coef_1 * ndvi / albedo + coef_2)
 }
 
@@ -265,9 +293,9 @@ ef_zom_perrier <- function(lai, f_lai, height) {
   check_in_range(lai, "lai", lower = 0, call = call)
   check_in_range(f_lai, "f_lai", lower = 0, upper = 1, call = call)
   check_in_range(height, "height", lower = 0, call = call)
-  # CANDIDATA: Perrier function as in Santos et al. (2012) and Pocas et al.
-  # (2014), observed in `water` v1.0 (method "Perrier"). Branches combined
-  # by mask (no ifelse), so that NA in f_lai propagates.
+  # Perrier function as written in Allen et al. (2012, IAHS Publ. 352,
+  # p. 73; VERIFICADA, IAHS 2012). Branches combined by mask (no ifelse),
+  # so that NA in f_lai propagates.
   p <- 2 * f_lai
   low <- !is.na(f_lai) & f_lai < 0.5
   p[low] <- 1 / (2 * (1 - f_lai[low]))
@@ -331,9 +359,13 @@ ef_zom_height <- function(height) {
 #' raise an error of class `earthflux_domain_error` (also
 #' `earthflux_input_error`).
 #'
-#' Verification status: `CANDIDATA` (form observed in the `water` package,
-#' which attributes it to Allen et al., 2007, "Eq. 32", with
-#' \eqn{d_w = 0}{d_w = 0}). With \eqn{d_w}{d_w} and
+#' Verification status: with \eqn{d_w = 0}{d_w = 0}, `VERIFICADA (SEBAL-Idaho
+#' 2002)`: Waters et al. (2002), p. 26, Eqs. 27 and 29 (neutral friction
+#' velocity at the station and wind at 200 m), which use no displacement for
+#' the station surface and estimate its roughness as
+#' \eqn{z_{om,w} = 0.12 h}{z_om,w = 0.12 * h} (Eq. 28; h = 0.3 m at
+#' Kimberly). A positive \eqn{d_w}{d_w} is an extension of the package
+#' (`CANDIDATA` in METRIC, decision SH-04): with \eqn{d_w}{d_w} and
 #' \eqn{z_{om,w}}{z_om,w} from FAO-56 box 4, the normalised profile
 #' coincides with FAO-56, chapter 3, Eq. 47 (author's calculation).
 #'
@@ -347,13 +379,17 @@ ef_zom_height <- function(height) {
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
 #'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
+#'
 #' @family aerodynamics and sensible heat functions
 #' @export
 #'
 #' @examples
 #' # 3 m s-1 at 2 m over grass (z_om,w = 0.015 m, d_w = 0), z_b = 200 m
-#' ef_blending_wind(3, height = 2, zom_station = 0.015, d_station = 0,
-#'                  blending_height = 200)
+#' ef_blending_wind(3, height = 2, zom_station = 0.015, d_station = 0)
 #'
 #' # Same grass with the FAO-56 displacement and roughness (h = 0.12 m)
 #' ef_blending_wind(3, height = 2, zom_station = 0.01476, d_station = 0.08,
@@ -426,15 +462,22 @@ ef_blending_wind <- function(wind_speed, height, zom_station, d_station,
 #' raise an error of class `earthflux_domain_error` (also
 #' `earthflux_input_error`).
 #'
-#' Verification status: `CANDIDATA` (observed in the `water` package; the
-#' value of \eqn{k}{k} is `VERIFICADA` as the FAO-56 value, its use in
-#' METRIC is `CANDIDATA`).
+#' Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+#' (2002), p. 27, Eq. 30 (neutral) and p. 33, Eq. 40 (with
+#' \eqn{\psi_m(200\,m)}{psi_m(200 m)}), with \eqn{k = 0.41}{k = 0.41}
+#' (also the FAO-56 value). The cross-check with Allen et al. (2007) remains
+#' desirable but is no longer blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 #' balance for mapping evapotranspiration with internalized calibration
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+#'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family aerodynamics and sensible heat functions
 #' @export
@@ -513,8 +556,11 @@ ustar_core <- function(u_blend, log_blend, psi_m) {
 #' raise an error of class `earthflux_domain_error` (also
 #' `earthflux_input_error`).
 #'
-#' Verification status: `CANDIDATA` (observed in the `water` package and in
-#' `dev/SCIENTIFIC_SPEC.md` section 3; primary source not consulted).
+#' Verification status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al.
+#' (2002), p. 26, Eq. 26 (neutral) and p. 34, Eq. 41 (with the stability
+#' corrections at \eqn{z_2 = 2}{z2 = 2} m and \eqn{z_1 = 0.1}{z1 = 0.1} m,
+#' heights given on p. 30). The cross-check with Allen et al. (2007) remains
+#' desirable but is no longer blocking.
 #'
 #' @references
 #' Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
@@ -522,12 +568,17 @@ ustar_core <- function(u_blend, log_blend, psi_m) {
 #' (METRIC) - Model. *Journal of Irrigation and Drainage Engineering*,
 #' 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
 #'
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
+#'
 #' @family aerodynamics and sensible heat functions
 #' @export
 #'
 #' @examples
-#' # Neutral resistance between 0.1 m and 2 m
-#' ef_rah(u_star = c(0.294349, 0.225324), z1 = 0.1, z2 = 2)
+#' # Neutral resistance between 0.1 m and 2 m (the defaults)
+#' ef_rah(u_star = c(0.294349, 0.225324))
 #'
 #' # Unstable corrections at both heights
 #' ef_rah(0.372002, z1 = 0.1, z2 = 2, psi_h_z2 = 1.719595,
@@ -609,8 +660,10 @@ ef_monin_obukhov_length <- function(air_density, u_star, lst, h, cp) {
 #' `ef_h_control()`, default 2 m after Waters et al., 2002, Eq. 38); this
 #' function evaluates whatever `z` it receives.
 #'
-#' Status: `CANDIDATA` (`water`, `rahStep()`; corroborated by `bigleaf`;
-#' Paulson, 1970, and Webb, 1970, not consulted).
+#' Status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al. (2002), pp. 32-33,
+#' Eqs. 35 and 37 (unstable, "formulations by Paulson (1970) and Webb
+#' (1970)") and Eq. 38 (stable); corroborated by `water` and `bigleaf`.
+#' Paulson (1970) and Webb (1970) themselves were not consulted.
 #'
 #' @param z Height \[m\].
 #' @param obukhov_length Monin-Obukhov length \[m\].
@@ -632,7 +685,8 @@ ef_psi_m <- function(z, obukhov_length) {
 #'
 #' Unstable: \eqn{\psi_h = 2 \ln((1 + x^2)/2)} with
 #' \eqn{x = (1 - 16 z/L)^{1/4}}; stable: \eqn{\psi_h = -5 z/L}; neutral: 0.
-#' Status: `CANDIDATA` (as `ef_psi_m()`).
+#' Status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al. (2002), pp. 32-33,
+#' Eqs. 36a-37c and 39a-39b.
 #'
 #' @inheritParams ef_psi_m
 #' @return \eqn{\psi_h} \[-\].

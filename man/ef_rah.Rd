@@ -43,12 +43,15 @@ Missing values propagate. Infinite values and values outside the domain
 raise an error of class \code{earthflux_domain_error} (also
 \code{earthflux_input_error}).
 
-Verification status: \code{CANDIDATA} (observed in the \code{water} package and in
-\code{dev/SCIENTIFIC_SPEC.md} section 3; primary source not consulted).
+Verification status: \verb{VERIFICADA (SEBAL-Idaho 2002)}: Waters et al.
+(2002), p. 26, Eq. 26 (neutral) and p. 34, Eq. 41 (with the stability
+corrections at \eqn{z_2 = 2}{z2 = 2} m and \eqn{z_1 = 0.1}{z1 = 0.1} m,
+heights given on p. 30). The cross-check with Allen et al. (2007) remains
+desirable but is no longer blocking.
 }
 \examples{
-# Neutral resistance between 0.1 m and 2 m
-ef_rah(u_star = c(0.294349, 0.225324), z1 = 0.1, z2 = 2)
+# Neutral resistance between 0.1 m and 2 m (the defaults)
+ef_rah(u_star = c(0.294349, 0.225324))
 
 # Unstable corrections at both heights
 ef_rah(0.372002, z1 = 0.1, z2 = 2, psi_h_z2 = 1.719595,
@@ -59,6 +62,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other aerodynamics and sensible heat functions:

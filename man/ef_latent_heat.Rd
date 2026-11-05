@@ -71,9 +71,12 @@ raise an error of class \code{earthflux_domain_error} (also
 \code{earthflux_input_error}) that names the argument.
 
 Verification status: \code{VERIFICADA} as the FAO-56 surface energy balance
-(chapter 1, Eq. 1, rearranged). Its use as a residual in METRIC is
-corroborated by secondary sources (Olmedo et al., 2016, Eq. 1); the
-equation number in Allen et al. (2007) has not been verified.
+(chapter 1, Eq. 1, rearranged) and \verb{VERIFICADA (SEBAL-Idaho 2002)} as the
+residual of the energy balance, Waters et al. (2002), Eq. 1 (pp. 9, 24
+and 34), with the same sign convention (G and H positive away from the
+surface). Also corroborated by Olmedo et al. (2016, Eq. 1); the equation
+number in Allen et al. (2007) has not been verified (desirable, not
+blocking).
 }
 \examples{
 # Reference case: 600 - 60 - 50 = 490 W m-2
@@ -100,6 +103,11 @@ Fonseca-Luengo, D., & Fuentes-Penailillo, F. (2016). water: Tools and
 functions to estimate actual evapotranspiration using land surface energy
 balance models in R. \emph{The R Journal}, 8(2), 352-369.
 \doi{10.32614/RJ-2016-051}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other latent heat and evapotranspiration functions:

@@ -31,7 +31,9 @@ pixels. The relation reproduces both anchor values exactly.
   (Ts_datum_hot - Ts_datum_cold); a = dT_cold - b * Ts_datum_cold}
 
 Notation: \code{a} is the intercept and \code{b} the slope, as in
-\code{dev/SCIENTIFIC_SPEC.md}; the \code{water} package uses the opposite names.
+\code{dev/SCIENTIFIC_SPEC.md}; the SEBAL Idaho manual (\eqn{dT = b + a
+T_s}{dT = b + a * Ts}, Eq. 32) and the \code{water} package use the opposite
+names (decision SH-12).
 
 Pixels outside the range of the anchors use the same line
 (extrapolation, flagged by \code{\link[=ef_calibrate_h]{ef_calibrate_h()}}). A slope \code{b <= 0} with
@@ -45,9 +47,12 @@ anchors) raises an error of class \code{earthflux_calibration_error}. Other
 values outside the domain raise \code{earthflux_domain_error} (also
 \code{earthflux_input_error}).
 
-Verification status: \code{CANDIDATA} (form observed in the \code{water} package
-and in \code{dev/SCIENTIFIC_SPEC.md} section 3; Allen et al., 2007, not
-consulted, including a reported erratum in its intercept equation).
+Verification status: \verb{VERIFICADA (SEBAL-Idaho 2002)}: linear relation
+of Waters et al. (2002), p. 30, Eq. 32, through the anchor values of
+Eq. 33 (p. 31: "the correlation coefficients ... are now computed for
+the linear relationship"). Allen et al. (2007) was not consulted,
+including a reported erratum in its intercept equation (desirable, not
+blocking).
 }
 \examples{
 ef_dt_coef(ts_datum_hot = 317.298, ts_datum_cold = 300,
@@ -58,6 +63,11 @@ Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
 balance for mapping evapotranspiration with internalized calibration
 (METRIC) - Model. \emph{Journal of Irrigation and Drainage Engineering},
 133(4), 380-394. \doi{10.1061/(ASCE)0733-9437(2007)133:4(380)}
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual} (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
 }
 \seealso{
 Other aerodynamics and sensible heat functions:
