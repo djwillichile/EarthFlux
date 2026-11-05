@@ -69,11 +69,14 @@ test_that("view time -> UTC keeps dim and recycles length-1 inputs", {
 })
 
 test_that("view time -> UTC result rounding to 24 h is set to 0 h", {
-  # 0 - 1e-15 / 15 is a tiny negative number whose %% 24 rounds to 24.
-  expect_identical((0 - 1e-15 / 15) %% 24, 24)
+  # 0 - 1e-15 / 15 is a tiny negative number. Whether its %% 24 rounds to
+  # exactly 24 depends on the platform's floating-point arithmetic (it does
+  # on x86_64 but not on macOS arm64), so the test checks the result, which
+  # must lie in [0, 24) and be 0 h up to the 24 h wrap-around.
   res <- modis_overpass_time(0, lon_deg = 1e-15,
                              date_utc = as.Date("2019-01-15"))
-  expect_identical(res$utc_hour, 0)
+  expect_true(res$utc_hour >= 0 && res$utc_hour < 24)
+  expect_lt(min(res$utc_hour, 24 - res$utc_hour), 1e-12)
   expect_equal(res$doy, 15)
 })
 
