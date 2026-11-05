@@ -234,3 +234,8 @@ Atmospheric and thermodynamic quantities used by several modules
   : Atmospheric pressure from elevation
 - [`ef_lambda()`](https://djwillichile.github.io/EarthFlux/reference/ef_lambda.md)
   : Latent heat of vaporization
+
+## Datasets
+
+- [`cauquenes_modis`](https://djwillichile.github.io/EarthFlux/reference/cauquenes_modis.md)
+  : MODIS example scene of the Cauquenes province (15 February 2019)

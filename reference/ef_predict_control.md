@@ -103,5 +103,5 @@ ef_predict_control(block_rows = 50,
                    wopt = list(datatype = "FLT8S"))
 #> <earthflux_predict_control>
 #> Mode: exact; block rows: 50; chunk rows: 10000
-#> Surface: /tmp/RtmpFRwtxi/ta.tif; flags: /tmp/RtmpFRwtxi/ta_flags.tif
+#> Surface: /tmp/RtmpZjO2tB/ta.tif; flags: /tmp/RtmpZjO2tB/ta_flags.tif
 ```

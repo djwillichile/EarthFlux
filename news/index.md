@@ -585,9 +585,30 @@ result has been validated yet.
   (`data-raw/modis-example.R`, not part of the package) builds the
   example MODIS scene over it from NASA CMR and LP DAAC with an
   Earthdata token read from the environment, for 15 February 2019
-  (Terra) with LAI 0 assigned to the non-vegetated classes; the scene
-  itself is not included yet (the script must still be run with
-  Earthdata access).
+  (Terra) with LAI 0 assigned to the non-vegetated classes; the scene is
+  shipped as the dataset `cauquenes_modis` (below).
+
+- `cauquenes_modis`: MODIS example scene of the Cauquenes province for
+  15 February 2019 (collection 6.1, tile h12v12), one packed `terra`
+  raster (58 KB) with LST, albedo, NDVI, LAI, emissivity, the band 31/32
+  emissivities, the overpass instant, the NDVI composite lag, the valid
+  fractions of the aggregated inputs and the flag words of every layer,
+  masked to the province. Built from the official granules with
+  `data-raw/modis-example.R`; granules, CMR identifiers, DOIs, options
+  and software versions are documented in
+  [`?cauquenes_modis`](https://djwillichile.github.io/EarthFlux/reference/cauquenes_modis.md).
+
+- The HDF4 reader was checked against the official granules of the
+  example scene and corrected where the files differ from the
+  documentation: the `_FillValue` 0 that MOD11A1 files declare for
+  `QC_Day` (a valid bit pattern, the best-quality code) no longer stops
+  the reading and those cells keep their DN; the HDF-EOS grid of MCD43A3
+  is `MOD_Grid_BRDF`; SDS names that GDAL quotes (MOD13:
+  `"1 km 16 days NDVI"`) are matched; the reciprocal scale factor
+  declared by MOD13 files (10000) is accepted, as the declared scale is
+  never applied; and the 1 km and 500 m grids of a tile, whose edges
+  differ by floating point rounding in the files, are cropped and nested
+  with a tolerance of 1e-3 cell.
 
 ### Changes
 
