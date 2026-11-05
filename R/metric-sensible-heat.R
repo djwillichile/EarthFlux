@@ -352,10 +352,10 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'    rho_k * cp * (a_k + b_k * Ts_datum) / rah_(k-1)} (equal to the target
 #'    by construction);
 #' 5. Monin-Obukhov length
-#'    \eqn{L = -\rho c_p u_*^3 T_a / (k g H)}{L = -rho * cp * u*^3 * Ta /
-#'    (k * g * H)} with \eqn{u_{*,k-1}}{u*_(k-1)},
-#'    \eqn{T_a = T_s - dT_k}{Ta = Ts - dT_k} and \eqn{\rho_k}{rho_k} (SH-10;
-#'    \eqn{L = \infty}{L = Inf}, neutral, when \eqn{H = 0}{H = 0});
+#'    \eqn{L = -\rho c_p u_*^3 T_s / (k g H)}{L = -rho * cp * u*^3 * Ts /
+#'    (k * g * H)} with \eqn{u_{*,k-1}}{u*_(k-1)}, the surface temperature
+#'    \eqn{T_s}{Ts} and \eqn{\rho_k}{rho_k} (Waters et al., 2002, Eq. 34;
+#'    SH-10; \eqn{L = \infty}{L = Inf}, neutral, when \eqn{H = 0}{H = 0});
 #' 6. stability corrections (unstable: Paulson-type forms with coefficient
 #'    16; stable: log-linear form \eqn{-5 z/L}{-5 * z / L}), with
 #'    \eqn{\psi_m}{psi_m} at the blending height (or at
@@ -401,7 +401,7 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'   iterate and gets `EF_H_PIXEL_NOT_CONVERGED`.
 #'
 #' Constants: von Karman constant `EF_VON_KARMAN` (0.41), gravity
-#' `EF_GRAVITY` (9.807 m s-2, `CANDIDATA`) and specific heat of air
+#' `EF_GRAVITY` (9.81 m s-2, Waters et al., 2002, p. 32) and specific heat of air
 #' `EF_SPECIFIC_HEAT_AIR` (1004 J kg-1 K-1, `CANDIDATA`, decision SH-09
 #' open); they are recorded in `constants`.
 #'
@@ -586,7 +586,8 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
         gravity = EF_GRAVITY,
         cp = cp,
         status = c(von_karman = "VERIFICADA (FAO-56); CANDIDATA in METRIC",
-                   gravity = "CANDIDATA", cp = "CANDIDATA (SH-09)")
+                   gravity = "VERIFICADA (SEBAL-Idaho 2002)",
+                   cp = "CANDIDATA (SH-09)")
       ),
       provenance = list(
         procedure = paste0(
@@ -770,7 +771,8 @@ h_pixel_inputs <- function(pixels, control, call) {
 #'
 #' @param air_density Air density \[kg m-3\].
 #' @param u_star Friction velocity of the previous step \[m s-1\].
-#' @param air_temperature Near-surface air temperature \[K\].
+#' @param lst Land surface temperature \[K\] (the temperature of the
+#'   Monin-Obukhov length, Waters et al., 2002, p. 32, Eq. 34).
 #' @param h Sensible heat flux \[W m-2\].
 #' @param u_blend Wind speed at the blending height \[m s-1\].
 #' @param log_blend `log(blending_height / zom)`.
@@ -779,12 +781,12 @@ h_pixel_inputs <- function(pixels, control, call) {
 #' @return A list with `obukhov_length`, `u_star` and `rah` (undamped);
 #'   `u_star` and `rah` are `NA` where they are not defined or not positive.
 #' @noRd
-h_stability_step <- function(air_density, u_star, air_temperature, h,
-                             u_blend, log_blend, control, cp) {
-  obukhov <- ef_monin_obukhov_length(air_density, u_star, air_temperature, h,
-                                     cp)
+h_stability_step <- function(air_density, u_star, lst, h, u_blend, log_blend,
+                             control, cp) {
+  obukhov <- ef_monin_obukhov_length(air_density, u_star, lst, h, cp)
   # Height of psi_m for the blending height: z_b when unstable or neutral,
-  # `stable_psi_m_height` when stable (open decision SH-11).
+  # `stable_psi_m_height` when stable (decision SH-11: 2 m by default, as in
+  # Waters et al., 2002, p. 33, Eq. 38).
   z_m <- rep(control$blending_height, length(obukhov))
   z_m[!is.na(obukhov) & obukhov > 0] <- control$stable_psi_m_height
   u_new <- ustar_core(u_blend, log_blend, ef_psi_m(z_m, obukhov))
@@ -869,7 +871,7 @@ h_phase_a <- function(anc, ts_datum, h_target, control, cp, call) {
                      call)
     }
     h <- rho * cp * (co$a + co$b * ts_datum) / rah
-    step <- h_stability_step(rho, u_star, anc$lst - dt, h, anc$u_blend,
+    step <- h_stability_step(rho, u_star, anc$lst, h, anc$u_blend,
                              log_blend, control, cp)
     if (anyNA(step$u_star) || anyNA(step$rah)) {
       h_anchor_abort(
@@ -945,8 +947,7 @@ h_phase_a <- function(anc, ts_datum, h_target, control, cp, call) {
 h_phase_b <- function(inp, ts_datum, a, b, control, cp) {
   n <- length(inp$lst)
   dt <- a + b * ts_datum
-  t_air <- inp$lst - dt
-  rho <- air_density_core(inp$pressure, t_air)
+  rho <- air_density_core(inp$pressure, inp$lst - dt)
   log_blend <- log(control$blending_height / inp$zom)
   u_star <- ustar_core(inp$u_blend, log_blend, 0)
   u_star[!is.na(u_star) & !(u_star > 0)] <- NA_real_
@@ -971,7 +972,7 @@ h_phase_b <- function(inp, ts_datum, a, b, control, cp) {
       break
     }
     h <- rho[idx] * cp * dt[idx] / rah[idx]
-    step <- h_stability_step(rho[idx], u_star[idx], t_air[idx], h,
+    step <- h_stability_step(rho[idx], u_star[idx], inp$lst[idx], h,
                              inp$u_blend[idx], log_blend[idx], control, cp)
     bad <- is.na(step$u_star) | is.na(step$rah)
     rah_new <- (1 - control$damping) * step$rah + control$damping * rah[idx]

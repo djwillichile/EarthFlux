@@ -565,27 +565,29 @@ rah_core <- function(u_star, log_z, psi_h_z2, psi_h_z1) {
 
 #' Monin-Obukhov length
 #'
-#' \deqn{L = -\rho c_p u_*^3 T / (k g H)}
+#' \deqn{L = -\rho c_p u_*^3 T_s / (k g H)}
 #'
-#' Status: `CANDIDATA` (observed in `water`, `rahStep()`; `bigleaf` uses the
-#' air temperature). EarthFlux uses the near-surface air temperature
-#' \eqn{T_a = T_s - dT} and the air density of the iteration (decision
-#' SH-10, provisional); \eqn{g}{g} = `EF_GRAVITY` (`CANDIDATA`).
+#' Status: `VERIFICADA (SEBAL-Idaho 2002)`: Waters et al. (2002), p. 32,
+#' Eq. 34, with the surface temperature \eqn{T_s}{Ts} \[K\] and
+#' \eqn{g = 9.81}{g = 9.81} m s-2 (`EF_GRAVITY`); the air density is that of
+#' the iteration (the manual passes the air density of each H step to the
+#' stability step, p. 82, steps 4-7). Before the 0.1.0 release EarthFlux
+#' used the near-surface air temperature \eqn{T_a = T_s - dT}{Ta = Ts - dT}
+#' (decision SH-10, provisional); it was aligned with the manual.
 #'
 #' `H = 0` (neutral) is treated explicitly: \eqn{L = +\infty}, without
 #' dividing by zero; the stability functions then return 0.
 #'
 #' @param air_density Air density \[kg m-3\].
 #' @param u_star Friction velocity \[m s-1\].
-#' @param air_temperature Air temperature \[K\].
+#' @param lst Land surface temperature \[K\].
 #' @param h Sensible heat flux \[W m-2\].
 #' @param cp Specific heat of air \[J kg-1 K-1\].
 #' @return Monin-Obukhov length \[m\]: negative when unstable (`h > 0`),
 #'   positive when stable (`h < 0`), `Inf` when neutral (`h == 0`).
 #' @noRd
-ef_monin_obukhov_length <- function(air_density, u_star, air_temperature, h,
-                                    cp) {
-  out <- -air_density * cp * u_star^3 * air_temperature /
+ef_monin_obukhov_length <- function(air_density, u_star, lst, h, cp) {
+  out <- -air_density * cp * u_star^3 * lst /
     (EF_VON_KARMAN * EF_GRAVITY * h)
   out[!is.na(h) & h == 0] <- Inf
   out

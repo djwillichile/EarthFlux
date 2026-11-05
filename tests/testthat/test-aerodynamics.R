@@ -163,65 +163,62 @@ test_that("friction velocity is NA where its denominator is not positive", {
 })
 
 test_that("SH-14.4: one unstable stability step at the hot anchor", {
+  # Values recomputed for 0.1.0 with the forms of Waters et al. (2002),
+  # Eqs. 34-41 (T = Ts in L, g = 9.81 m s-2), by an independent script of
+  # the author (dev/specs/sensible-heat.md section 14.4).
   u_star0 <- ef_ustar(u_b_ref, 0.005, 200)
   obukhov <- ef_monin_obukhov_length(1.018513, u_star0, 316, 370, 1004)
-  # Printed -2.484793 (the value is -2.4847936: last digit truncated in the
-  # spec), so one unit of the last digit
-  expect_lt(abs(obukhov - (-2.484793)), 1e-6)
+  expect_lt(abs(obukhov - (-2.484034)), 5e-7)
   psi_m <- ef_psi_m(200, obukhov)
   psi_h2 <- ef_psi_h(2, obukhov)
   psi_h1 <- ef_psi_h(0.1, obukhov)
-  expect_lt(abs(psi_m - 4.178174), 5e-7)
-  expect_lt(abs(psi_h2 - 1.719595), 5e-7)
-  expect_lt(abs(psi_h1 - 0.263944), 5e-7)
+  expect_lt(abs(psi_m - 4.178429), 5e-7)
+  expect_lt(abs(psi_h2 - 1.719818), 5e-7)
+  expect_lt(abs(psi_h1 - 0.264012), 5e-7)
   u_star <- ef_ustar(u_b_ref, 0.005, 200, psi_m = psi_m)
-  expect_lt(abs(u_star - 0.372002), 5e-7)
+  expect_lt(abs(u_star - 0.372017), 5e-7)
   rah <- ef_rah(u_star, 0.1, 2, psi_h_z2 = psi_h2, psi_h_z1 = psi_h1)
-  # Printed reference chained from rounded intermediates: relative 1e-6
-  expect_equal(rah, 10.097518, tolerance = 1e-6)
+  expect_lt(abs(rah - 10.096093), 5e-7)
   # Unstable correction lowers rah with respect to the neutral value
   expect_lt(rah, 32.4273)
 })
 
 test_that("SH-14.4: stable branch and the two options of SH-11", {
   obukhov <- ef_monin_obukhov_length(1.098511, 0.294349, 300, -50, 1004)
-  # The spec prints L = 41.9718 m and psi_m(200) = -23.825502; the inputs
-  # give L = 41.971746 m and psi_m(200) = -23.825552 (rounding of the hand
-  # calculation in the spec). Tolerance: one unit of the 4th decimal.
-  expect_lt(abs(obukhov - 41.9718), 1e-4)
-  # psi_m of the blending height with 2/L (water) or with z_b/L = 200/L
-  # -0.2382555 printed as -0.238255 (truncated): one unit of the last digit
-  expect_lt(abs(ef_psi_m(2, obukhov) - (-0.238255)), 1e-6)
-  expect_lt(abs(ef_psi_m(200, obukhov) - (-23.825502)), 1e-4)
+  expect_lt(abs(obukhov - 41.958911), 5e-7)
+  # psi_m of the blending height with 2/L (Waters et al., 2002, Eq. 38; the
+  # default since 0.1.0) or with z_b/L = 200/L
+  expect_lt(abs(ef_psi_m(2, obukhov) - (-0.238328)), 5e-7)
+  expect_lt(abs(ef_psi_m(200, obukhov) - (-23.832840)), 5e-7)
   expect_equal(ef_psi_m(200, obukhov), -5 * 200 / obukhov, tolerance = 1e-12)
-  expect_lt(abs(ef_psi_h(0.1, obukhov) - (-0.011913)), 5e-7)
+  expect_lt(abs(ef_psi_h(0.1, obukhov) - (-0.011916)), 5e-7)
   expect_equal(ef_psi_h(2, obukhov), -5 * 2 / obukhov, tolerance = 1e-12)
 })
 
 test_that("SH-11: the stability step uses stable_psi_m_height only if L > 0", {
   zom <- 0.06
-  args <- list(air_density = 1.098511, u_star = 0.294349,
-               air_temperature = 300, h = -50, u_blend = u_b_ref,
-               log_blend = log(200 / zom), cp = 1004)
+  args <- list(air_density = 1.098511, u_star = 0.294349, lst = 300,
+               h = -50, u_blend = u_b_ref, log_blend = log(200 / zom),
+               cp = 1004)
   step2 <- do.call(h_stability_step, c(args, list(
     control = ef_h_control(2, 200, 0.1, 2)
   )))
   step200 <- do.call(h_stability_step, c(args, list(
     control = ef_h_control(200, 200, 0.1, 2)
   )))
-  expect_lt(abs(step2$obukhov_length - 41.9718), 1e-4)
+  l_ref <- -1.098511 * 1004 * 0.294349^3 * 300 / (0.41 * 9.81 * -50)
+  expect_lt(abs(step2$obukhov_length - 41.958911), 5e-7)
   expect_equal(step2$u_star,
-               ef_ustar(u_b_ref, zom, 200, psi_m = ef_psi_m(2, 41.97174594)),
-               tolerance = 1e-8)
+               ef_ustar(u_b_ref, zom, 200, psi_m = ef_psi_m(2, l_ref)),
+               tolerance = 1e-12)
   expect_equal(step200$u_star,
-               ef_ustar(u_b_ref, zom, 200,
-                        psi_m = ef_psi_m(200, 41.97174594)),
-               tolerance = 1e-8)
-  # Spec magnitudes: psi_m = -0.238255 versus -23.825502
+               ef_ustar(u_b_ref, zom, 200, psi_m = ef_psi_m(200, l_ref)),
+               tolerance = 1e-12)
+  # Magnitudes of section 14.4: psi_m = -0.238328 versus -23.832840
   expect_lt(abs(step2$u_star -
-                  EF_VON_KARMAN * u_b_ref / (log(200 / zom) + 0.238255)), 1e-6)
+                  EF_VON_KARMAN * u_b_ref / (log(200 / zom) + 0.238328)), 1e-6)
   expect_lt(abs(step200$u_star -
-                  EF_VON_KARMAN * u_b_ref / (log(200 / zom) + 23.825502)),
+                  EF_VON_KARMAN * u_b_ref / (log(200 / zom) + 23.832840)),
             1e-6)
   expect_gt(step200$rah, 3 * step2$rah)
   # Unstable case: the option does not matter (psi_m always at z_b)

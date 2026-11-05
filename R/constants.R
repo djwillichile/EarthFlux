@@ -58,13 +58,14 @@ EF_SOLAR_CONSTANT <- 0.0820 * 1e6 / 60
 EF_VON_KARMAN <- 0.41
 
 # Gravitational acceleration [m s-2].
-# Source: value used in METRIC implementations (`water`) and in the general
-#   form of the pressure-elevation relation of FAO-56, annex 3, Eq. 3-2
-#   (dev/specs/weather-forcing.md section 4.1).
-# Status: CANDIDATA; value and reference for the METRIC core (standard
-#   gravity versus 9.81) are TODO (decision SH-10, dev/specs/sensible-heat.md
-#   section 4.3).
-EF_GRAVITY <- 9.807
+# Source: Waters et al. (2002), SEBAL Idaho manual, p. 32, text of Eq. 34
+#   (Monin-Obukhov length: "g is the gravitational constant (9.81 m/s2)").
+# Status: VERIFICADA (SEBAL-Idaho 2002); used only in the Monin-Obukhov
+#   length (decision SH-10). Before the 0.1.0 release the value was 9.807
+#   (observed in the `water` package); the difference is 3e-4 relative.
+#   Cross-check with Allen, Tasumi and Trezza (2007) desirable, not
+#   blocking (dev/VERIFICATION.md).
+EF_GRAVITY <- 9.81
 
 # Specific heat of air at constant pressure c_p [J kg-1 K-1].
 # Source: dev/SCIENTIFIC_SPEC.md section 3 ("c_p ~ 1004") and METRIC

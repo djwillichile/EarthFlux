@@ -7,9 +7,11 @@
 #
 # Tolerances: printed 6-decimal values, half a unit of the last digit
 # (section 14.7); calibration identities, relative 1e-12 / 1e-9 (section
-# 14.6). The iteration values of section 14.5 are provisional values of the
-# author's working script (not independent references): they are compared
-# with half a unit of their last printed digit, as regression values.
+# 14.6). The iteration values of section 14.5 were recomputed for 0.1.0
+# with the forms of Waters et al. (2002), Eqs. 25-41 (T = Ts in the
+# Monin-Obukhov length, g = 9.81 m s-2), by an independent script of the
+# author (Python, not the package code); they are compared with half a unit
+# of their last printed digit.
 
 # Synthetic scene of section 14.3 / 14.5 -------------------------------------------
 
@@ -183,10 +185,10 @@ test_that("SH-14.5: iteration with tol = 0.01 and damping 0 or 0.5", {
   expect_identical(cal$iterations, 6L)
   last <- cal$trace[nrow(cal$trace), ]
   expect_identical(nrow(cal$trace), 6L)
-  expect_lt(abs(last$a - (-86.27)), 5e-3)
-  expect_lt(abs(last$b - 0.28936), 5e-6)
-  expect_lt(abs(last$rah_cold - 19.8266), 5e-5)
-  expect_lt(abs(last$rah_hot - 15.7205), 5e-5)
+  expect_lt(abs(last$a - (-86.74)), 5e-3)
+  expect_lt(abs(last$b - 0.29093), 5e-6)
+  expect_lt(abs(last$rah_cold - 19.8294), 5e-5)
+  expect_lt(abs(last$rah_hot - 15.7863), 5e-5)
   expect_lt(last$max_rel_change, 0.01)
   expect_true(is.na(cal$trace$delta_a[1]))
   expect_equal(cal$trace$delta_a[-1], diff(cal$trace$a), tolerance = 1e-12)
@@ -194,10 +196,10 @@ test_that("SH-14.5: iteration with tol = 0.01 and damping 0 or 0.5", {
   cal_d <- calibrate(control = ctrl_for(damping = 0.5))
   last_d <- cal_d$trace[nrow(cal_d$trace), ]
   expect_identical(cal_d$iterations, 7L)
-  expect_lt(abs(last_d$a - (-88.133)), 5e-4)
-  expect_lt(abs(last_d$b - 0.29558), 5e-6)
-  expect_lt(abs(last_d$rah_cold - 19.8564), 5e-5)
-  expect_lt(abs(last_d$rah_hot - 15.7971), 5e-5)
+  expect_lt(abs(last_d$a - (-88.570)), 5e-4)
+  expect_lt(abs(last_d$b - 0.29703), 5e-6)
+  expect_lt(abs(last_d$rah_cold - 19.8593), 5e-5)
+  expect_lt(abs(last_d$rah_hot - 15.8685), 5e-5)
 })
 
 test_that("SH-14.5: fixed point, independent of damping (properties 1-2)", {
@@ -207,14 +209,14 @@ test_that("SH-14.5: fixed point, independent of damping (properties 1-2)", {
   cal5 <- calibrate(control = ctrl)
   expect_true(cal0$converged)
   expect_true(cal5$converged)
-  expect_identical(cal0$iterations, 24L)
+  expect_identical(cal0$iterations, 23L)
   expect_identical(cal5$iterations, 34L)
   for (cal in list(cal0, cal5)) {
-    expect_lt(abs(cal$a - (-86.84546)), 5e-6)
-    expect_lt(abs(cal$b - 0.2912792), 5e-8)
-    expect_lt(abs(cal$anchors$rah[cal$anchors$type == "cold"] - 19.82518),
+    expect_lt(abs(cal$a - (-87.26315)), 5e-6)
+    expect_lt(abs(cal$b - 0.2926717), 5e-8)
+    expect_lt(abs(cal$anchors$rah[cal$anchors$type == "cold"] - 19.82799),
               5e-6)
-    expect_lt(abs(cal$anchors$rah[cal$anchors$type == "hot"] - 15.68989),
+    expect_lt(abs(cal$anchors$rah[cal$anchors$type == "hot"] - 15.75910),
               5e-6)
   }
   expect_lt(abs(cal0$a - cal5$a), 1e-7)
@@ -246,9 +248,9 @@ test_that("SH-14.5: phase B of the interior pixel at the fixed point", {
   cal <- calibrate(control = ctrl_for(tol = 1e-10, maxit = 100L),
                    pixels = interior)
   expect_true(cal$pixels$converged)
-  expect_lt(abs(cal$pixels$dt - 2.868528), 5e-7)
-  expect_lt(abs(cal$pixels$rah - 17.1505), 5e-5)
-  expect_lt(abs(cal$pixels$h - 181.3655), 5e-5)
+  expect_lt(abs(cal$pixels$dt - 2.879745), 5e-7)
+  expect_lt(abs(cal$pixels$rah - 17.1702), 5e-5)
+  expect_lt(abs(cal$pixels$h - 181.8722), 5e-5)
   expect_equal(cal$pixels$h,
                ef_sensible_heat(cal$pixels$air_density, cal$pixels$dt,
                                 cal$pixels$rah, cal$constants$cp),

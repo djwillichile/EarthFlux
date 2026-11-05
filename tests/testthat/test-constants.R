@@ -8,7 +8,7 @@ test_that("constants have the specified values", {
   expect_identical(EF_KELVIN_OFFSET, 273.15)
   expect_identical(EF_STEFAN_BOLTZMANN, 5.670374419e-8)
   expect_identical(EF_VON_KARMAN, 0.41)
-  expect_identical(EF_GRAVITY, 9.807)
+  expect_identical(EF_GRAVITY, 9.81) # Waters et al. (2002), p. 32
   expect_identical(EF_SPECIFIC_HEAT_AIR, 1004)
   expect_identical(EF_WATER_DENSITY, 1000)
   expect_identical(EF_LATENT_HEAT_FAO56, 2.45e6)
