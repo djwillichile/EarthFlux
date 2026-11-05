@@ -1078,7 +1078,10 @@ modis_to_grid <- function(x, template, method, min_valid_fraction) {
   }
   ex <- as.vector(terra::ext(x))
   et <- as.vector(terra::ext(template))
-  if (any(abs(ex - et) > 1e-6 * min(terra::res(x)))) {
+  # Tolerance of 1e-3 cell: the 1 km and 500 m grids of a tile differ by
+  # floating point rounding in the official files (same rule as
+  # aoi_crop_extent()).
+  if (any(abs(ex - et) > 1e-3 * min(terra::res(x)))) {
     ef_abort(
       paste0(
         "`x` and `template` must have the same extent (nested grids); the ",

@@ -1,4 +1,4 @@
-# Builds the MODIS example scene of EarthFlux: inst/extdata/modis-example/
+# Builds the MODIS example scene of EarthFlux: data/cauquenes_modis.rda
 #
 # What it does (dev/specs/modis-products.md section 12; decision MP-12):
 #   1. searches NASA CMR for the collection 6.1 granules of tile h12v12 that
@@ -11,11 +11,13 @@
 #      interest of the Cauquenes province (inst/extdata/
 #      cauquenes-province.gpkg; data-raw/cauquenes-province.R), with the
 #      explicit options below;
-#   4. masks the cells outside the province and writes the physical layers
-#      (with the band 31/32 emissivities of MOD11A1, carried for option E1)
-#      and the flag words as compressed GeoTIFF (target: < 500 KB in all),
-#      plus the provenance (CSV and YAML) and the bit table of the flag
-#      words.
+#   4. masks the cells outside the province and stacks the physical layers
+#      (with the band 31/32 emissivities of MOD11A1, carried for option E1),
+#      the valid fractions and the flag words in one SpatRaster, packed with
+#      terra::wrap() and saved as data/cauquenes_modis.rda (xz; target:
+#      < 500 KB), the convention of the dataset cauquenes of thermify; the
+#      provenance and the bit table of the flag words go to
+#      data-raw/cauquenes_modis.yml and to the documentation (R/data.R).
 #
 # Scene (decision MP-12, author's decision of 2026-11-04): 2019-02-15,
 #   Terra (MOD11A1), tile h12v12, tile cloud cover 3 %; a clear-sky summer
@@ -98,9 +100,7 @@ if (!modis_has_hdf4()) {
 }
 
 cache <- file.path("data-raw", "private", "modis")
-out_dir <- file.path("inst", "extdata", "modis-example")
 dir.create(cache, recursive = TRUE, showWarnings = FALSE)
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 ## 1. Granule search (NASA CMR) ---------------------------------------------------
 
@@ -235,39 +235,39 @@ files <- list(lst = src("lst"), albedo = src("albedo"),
               lai = src("lai", period = TRUE))
 st <- modis_surface_state(files, aoi = province, options = surface_options)
 
-## 5. Mask outside the province and write -------------------------------------------
+## 5. Mask outside the province and assemble one raster ----------------------
 
 inside <- !is.na(terra::rasterize(terra::project(province,
                                                   terra::crs(st$lst)),
                                    st$lst, touches = TRUE))
-outside_na <- function(r) terra::mask(r, inside, maskvalues = FALSE)
-gtiff <- function(r, name, datatype, predictor) {
-  f <- file.path(out_dir, name)
-  terra::writeRaster(
-    outside_na(r), f, overwrite = TRUE, datatype = datatype,
-    gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", paste0("PREDICTOR=", predictor))
-  )
-  f
-}
-written <- c(
-  gtiff(st$lst, "lst.tif", "FLT4S", 3),
-  gtiff(st$albedo, "albedo.tif", "FLT4S", 3),
-  gtiff(st$ndvi, "ndvi.tif", "FLT4S", 3),
-  gtiff(st$lai, "lai.tif", "FLT4S", 3),
-  gtiff(st$emissivity, "emissivity.tif", "FLT4S", 3),
+vf <- st$qa$valid_fraction
+names(vf) <- paste0("valid_fraction_",
+                    ifelse(startsWith(names(vf), "Albedo"), "albedo",
+                           sub("_valid_fraction$", "", names(vf))))
+layers <- list(
+  lst = st$lst, albedo = st$albedo, ndvi = st$ndvi, lai = st$lai,
+  emissivity = st$emissivity,
   # band 31/32 emissivities of MOD11A1 (inputs of option E1, not used yet)
-  gtiff(st$band_emissivity, "band_emissivity.tif", "FLT4S", 3),
-  gtiff(st$overpass_time$doy, "overpass_doy.tif", "INT2S", 2),
-  gtiff(st$overpass_time$utc_hour, "overpass_utc_hour.tif", "FLT4S", 3),
-  # flag words: NA outside the province = not evaluated (flags.md 6.3)
-  gtiff(st$qa$flag_word, "flags.tif", "INT4S", 2),
-  gtiff(st$qa$valid_fraction, "valid_fraction.tif", "FLT4S", 3),
-  gtiff(st$qa$composite$ndvi$lag_days, "ndvi_lag_days.tif", "INT2S", 2)
+  emis_31 = st$band_emissivity[["emis_31"]],
+  emis_32 = st$band_emissivity[["emis_32"]],
+  doy = st$overpass_time$doy, utc_hour = st$overpass_time$utc_hour,
+  ndvi_lag_days = st$qa$composite$ndvi$lag_days
 )
-
-# Bit table of the flag words (travels with the files, flags.md 6.3).
-bits_csv <- file.path(out_dir, "flag_bits.csv")
-utils::write.csv(st$qa$flag_bits, bits_csv, row.names = FALSE)
+units_of <- c(lst = "K", albedo = "-", ndvi = "-", lai = "m2 m-2",
+              emissivity = "-", emis_31 = "-", emis_32 = "-", doy = "-",
+              utc_hour = "h", ndvi_lag_days = "d")
+for (nm in names(layers)) names(layers[[nm]]) <- nm
+scene <- c(terra::rast(unname(layers)), vf, st$qa$flag_word)
+terra::units(scene) <- c(units_of[names(layers)],
+                         rep("-", terra::nlyr(vf)),
+                         rep("bits", terra::nlyr(st$qa$flag_word)))
+# NA outside the province (flag words: not evaluated, flags.md 6.3)
+scene <- terra::mask(scene, inside, maskvalues = FALSE)
+cauquenes_modis <- terra::wrap(scene)
+dir.create("data", showWarnings = FALSE)
+out_rda <- file.path("data", "cauquenes_modis.rda")
+save(cauquenes_modis, file = out_rda, compress = "xz")
+print(scene)
 
 ## 6. Provenance ---------------------------------------------------------------------
 
@@ -277,8 +277,6 @@ gr <- merge(p$granules,
                          "time_end", "url")],
             by = "role", sort = FALSE)
 gr$download_date <- format(download_date)
-prov_csv <- file.path(out_dir, "provenance.csv")
-utils::write.csv(gr, prov_csv, row.names = FALSE)
 
 yaml_scalar <- function(x) {
   x <- as.character(x)
@@ -286,7 +284,7 @@ yaml_scalar <- function(x) {
 }
 methods <- p$methods
 yml <- c(
-  "# Provenance of the MODIS example scene (built by data-raw/modis-example.R)",
+  "# Provenance of data/cauquenes_modis.rda (built by data-raw/modis-example.R)",
   "dataset: EarthFlux MODIS example scene, Cauquenes province (Maule, Chile)",
   "synthetic: false",
   sprintf("scene_date_utc: %s", yaml_scalar(format(scene_date))),
@@ -296,6 +294,7 @@ yml <- c(
   sprintf("download_date: %s", yaml_scalar(format(download_date))),
   "download_source: NASA LP DAAC cloud archive (LPCLOUD), found with NASA CMR",
   "area_of_interest: inst/extdata/cauquenes-province.gpkg (DPA 2023, SUBDERE; see cauquenes-province.yml); cells outside the province are NA",
+  "object: PackedSpatRaster (terra::wrap), one layer per variable, documented in R/data.R",
   "grid: MODIS sinusoidal, 1 km cells of the MOD11A1 file (MP-08)",
   "granules:",
   unlist(lapply(seq_len(nrow(gr)), function(i) c(
@@ -332,28 +331,20 @@ yml <- c(
   "versions:",
   sprintf("  %s: %s", names(p$versions), yaml_scalar(unlist(p$versions))),
   "layers:",
-  "  lst.tif: land surface temperature [K]",
-  "  albedo.tif: broadband shortwave albedo [-]",
-  "  ndvi.tif: NDVI [-]",
-  "  lai.tif: leaf area index [m2 m-2]",
-  "  emissivity.tif: broadband surface emissivity [-] (E3 from LAI; 0.95 where the LAI of a non-vegetated class was set to 0, flag EF_SURF_LAI_ASSIGNED)",
-  "  band_emissivity.tif: MOD11A1 band 31 and band 32 emissivities (layers emis_31, emis_32) [-]; carried for option E1, not used",
-  "  overpass_doy.tif: day of year of the UTC date [-]",
-  "  overpass_utc_hour.tif: UTC hour of the overpass [h]",
-  "  flags.tif: flag words (INT4S), one layer per output (flags_lst, flags_overpass_time, flags_albedo, flags_ndvi, flags_lai, flags_emissivity, flags_emis_31, flags_emis_32); bits in flag_bits.csv",
-  "  valid_fraction.tif: fraction of valid 500 m sub-cells of each aggregated input [-]",
-  "  ndvi_lag_days.tif: LST date minus composite day of the NDVI pixel [days]",
+  sprintf("  %s: %s", names(scene), terra::units(scene)),
+  "flag_bits:",
+  sprintf("  - bit: %d\n    code: %s\n    severity: %s", st$qa$flag_bits$bit,
+          st$qa$flag_bits$code, st$qa$flag_bits$severity),
   "license: MODIS data are shared openly without restriction (EOSDIS Data Use and Citation Guidance); citation requirements for redistribution TODO (modis-products.md section 16, item 20)"
 )
-prov_yml <- file.path(out_dir, "provenance.yml")
+prov_yml <- file.path("data-raw", "cauquenes_modis.yml")
 writeLines(yml, prov_yml)
 
 ## 7. Size check -----------------------------------------------------------------------
 
-all_files <- c(written, bits_csv, prov_csv, prov_yml)
-total <- sum(file.size(all_files))
-message(sprintf("Example scene: %d files, %.1f KB.", length(all_files),
-                total / 1024))
+total <- file.size(out_rda)
+message(sprintf("Example scene: %s, %d layers, %.1f KB.", out_rda,
+                terra::nlyr(scene), total / 1024))
 if (total > size_limit) {
   stop(sprintf("The example scene is %.1f KB, above the %.0f KB target.",
                total / 1024, size_limit / 1024), call. = FALSE)

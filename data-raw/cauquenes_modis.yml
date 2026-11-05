@@ -1,0 +1,161 @@
+# Provenance of data/cauquenes_modis.rda (built by data-raw/modis-example.R)
+dataset: EarthFlux MODIS example scene, Cauquenes province (Maule, Chile)
+synthetic: false
+scene_date_utc: "2019-02-15"
+scene_selection: author's decision of 2026-11-04 (MP-12); Terra MOD11A1, tile h12v12 cloud cover 3 %, southern summer, before the orbital drift of Terra
+tile: "h12v12"
+collection: "061"
+download_date: "2026-11-05"
+download_source: NASA LP DAAC cloud archive (LPCLOUD), found with NASA CMR
+area_of_interest: inst/extdata/cauquenes-province.gpkg (DPA 2023, SUBDERE; see cauquenes-province.yml); cells outside the province are NA
+object: PackedSpatRaster (terra::wrap), one layer per variable, documented in R/data.R
+grid: MODIS sinusoidal, 1 km cells of the MOD11A1 file (MP-08)
+granules:
+  - role: "lst"
+    product: "MOD11A1"
+    local_granule_id: "MOD11A1.A2019046.h12v12.061.2020344054048.hdf"
+    cmr_concept_id: "G2207028292-LPCLOUD"
+    doi: "10.5067/MODIS/MOD11A1.061"
+    doi_status: "VERIFICADA"
+    data_day: "2019-02-15"
+    time_start: "2019-02-15T00:00:00.000Z"
+    time_end: "2019-02-15T23:59:59.000Z"
+    production: "2020-12-09T05:40:48Z"
+  - role: "albedo"
+    product: "MCD43A3"
+    local_granule_id: "MCD43A3.A2019046.h12v12.061.2020290040302.hdf"
+    cmr_concept_id: "G2370514964-LPCLOUD"
+    doi: "10.5067/MODIS/MCD43A3.061"
+    doi_status: "VERIFICADA"
+    data_day: "2019-02-15"
+    time_start: "2019-02-07T00:00:00.000Z"
+    time_end: "2019-02-22T23:59:59.999Z"
+    production: "2020-10-16T04:03:02Z"
+  - role: "ndvi"
+    product: "MOD13A2"
+    local_granule_id: "MOD13A2.A2019033.h12v12.061.2020287215652.hdf"
+    cmr_concept_id: "G2597268827-LPCLOUD"
+    doi: "10.5067/MODIS/MOD13A2.061"
+    doi_status: "DERIVADA"
+    data_day: "2019-02-02"
+    time_start: "2019-02-02T00:00:00.000Z"
+    time_end: "2019-02-17T23:59:59.000Z"
+    production: "2020-10-13T21:56:52Z"
+  - role: "lai"
+    product: "MCD15A2H"
+    local_granule_id: "MCD15A2H.A2019041.h12v12.061.2020288004458.hdf"
+    cmr_concept_id: "G2279339425-LPCLOUD"
+    doi: "10.5067/MODIS/MCD15A2H.061"
+    doi_status: "DERIVADA"
+    data_day: "2019-02-10"
+    time_start: "2019-02-10T00:00:00.000Z"
+    time_end: "2019-02-17T23:59:59.000Z"
+    production: "2020-10-14T00:44:58Z"
+options:
+  lst_product: "MOD11A1"
+  albedo_method: "white_sky"
+  emissivity_method: "lai_empirical"
+  ndvi_source: "MOD13A2"
+  qa_policy: "flag"
+  diffuse_fraction: null
+  composite_method_albedo: "same_day"
+  composite_method_ndvi: "period_pixel_lag"
+  composite_method_lai: "period"
+  resampling_method_albedo: "mean"
+  resampling_method_lai: "mean"
+  min_valid_fraction: 1
+  lai_nonveg_249: 0
+  lai_nonveg_250: 0
+  lai_nonveg_251: 0
+  lai_nonveg_252: 0
+  lai_nonveg_253: 0
+  lai_nonveg_254: 0
+status:
+  product_facts: "VERIFICADA"
+  overpass_time: "CANDIDATA"
+  albedo: "CANDIDATA"
+  emissivity: "CANDIDATA"
+  lai_nonveg: "CANDIDATA (explicit LAI of the non-vegetated classes, MP-06)"
+  band_emissivity: "VERIFICADA (product layers); broadband conversion E1 not implemented (MP-04)"
+  ndvi: "VERIFICADA"
+  composite_matching: "DECIDIDA (provisional), MP-07"
+  resampling: "DECIDIDA (provisional), MP-08"
+  real_granule_check: "TODO (A-M4-3)"
+versions:
+  earthflux: "0.0.0.9000"
+  terra: "1.9.50"
+  gdal: "3.8.4"
+  proj: "9.4.0"
+  geos: "3.12.1"
+  r: "R version 4.3.3 (2024-02-29)"
+layers:
+  lst: K
+  albedo: -
+  ndvi: -
+  lai: m2 m-2
+  emissivity: -
+  emis_31: -
+  emis_32: -
+  doy: -
+  utc_hour: h
+  ndvi_lag_days: d
+  valid_fraction_albedo: -
+  valid_fraction_lai: -
+  flags_lst: bits
+  flags_overpass_time: bits
+  flags_albedo: bits
+  flags_ndvi: bits
+  flags_lai: bits
+  flags_emissivity: bits
+  flags_emis_31: bits
+  flags_emis_32: bits
+flag_bits:
+  - bit: 0
+    code: EF_INPUT_NA
+    severity: info
+  - bit: 1
+    code: EF_SURF_FILL
+    severity: info
+  - bit: 2
+    code: EF_SURF_CLOUD
+    severity: info
+  - bit: 3
+    code: EF_SURF_NOT_PRODUCED
+    severity: info
+  - bit: 4
+    code: EF_SURF_DN_OUT_OF_RANGE
+    severity: info
+  - bit: 5
+    code: EF_SURF_LAI_NONVEG
+    severity: info
+  - bit: 6
+    code: EF_SURF_QA_OTHER
+    severity: warning
+  - bit: 7
+    code: EF_SURF_CLOUD_ADJACENT
+    severity: warning
+  - bit: 8
+    code: EF_SURF_SNOW
+    severity: warning
+  - bit: 9
+    code: EF_SURF_WATER
+    severity: warning
+  - bit: 10
+    code: EF_SURF_SALT_PAN
+    severity: warning
+  - bit: 11
+    code: EF_SURF_LAI_BACKUP
+    severity: warning
+  - bit: 12
+    code: EF_SURF_ALBEDO_MAGNITUDE
+    severity: warning
+  - bit: 13
+    code: EF_SURF_OVERPASS_MISSING
+    severity: warning
+  - bit: 14
+    code: EF_SURF_ALBEDO_GT1
+    severity: critical
+  - bit: 15
+    code: EF_SURF_LAI_ASSIGNED
+    severity: info
+license: MODIS data are shared openly without restriction (EOSDIS Data Use and Citation Guidance); citation requirements for redistribution TODO (modis-products.md section 16, item 20)
