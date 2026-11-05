@@ -105,7 +105,40 @@ for (i in seq_len(nrow(pv))) {
       "100 x share of predictions where |e_GWR| < |e_alt|", 0)
 }
 
+wf <- pred[pred$variable == "wind_speed_2m" & pred$config == "C3-GWR", ]
+add("CVWindCThreeGWRFailed", sum(wf$status == "failed"), "results/validation/cv_predictions.csv",
+    "variable == wind_speed_2m, config == C3-GWR, status == failed", "count")
+add("CVWindCThreeGWRTotal", nrow(wf), "results/validation/cv_predictions.csv",
+    "variable == wind_speed_2m, config == C3-GWR", "count")
+wo <- pred[pred$variable == "wind_speed_2m" & pred$config == "C2-OLS" & pred$status == "ok", ]
+add("CVWindOLSMax", max(wo$predicted), "results/validation/cv_predictions.csv",
+    "wind_speed_2m, C2-OLS, ok", "max predicted", 0)
+add("CVWindOLSNeg", sum(wo$predicted < 0), "results/validation/cv_predictions.csv",
+    "wind_speed_2m, C2-OLS, ok", "count of predicted < 0")
+mo <- read("results", "tables", "cv_residual_moran_summary.csv")
+for (i in seq_len(nrow(mo))) {
+  k <- paste0("Moran", var_key[[mo$variable[i]]], cfg_key[[mo$config[i]]])
+  sel <- sprintf("variable == %s, config == %s", mo$variable[i], mo$config[i])
+  add(paste0(k, "I"), mo$median_I[i], "results/tables/cv_residual_moran_summary.csv", sel,
+      "median Moran's I over target times", 2)
+  add(paste0(k, "Sig"), 100 * mo$share_sig[i], "results/tables/cv_residual_moran_summary.csv", sel,
+      "100 x share of times with p < 0.05 (199 permutations)", 0)
+}
+de <- read("results", "tables", "cv_station_density_summary.csv")
+fk <- c("0.25" = "Quarter", "0.5" = "Half", "0.75" = "ThreeQ", "1" = "All")
+for (i in seq_len(nrow(de))) {
+  k <- paste0("Dens", var_key[[de$variable[i]]], cfg_key[[de$config[i]]], fk[[as.character(de$fraction[i])]])
+  sel <- sprintf("variable == %s, config == %s, fraction == %s", de$variable[i], de$config[i], de$fraction[i])
+  d <- if (de$variable[i] == "vapour_pressure") 3 else 2
+  add(k, de$rmse_mean[i], "results/tables/cv_station_density_summary.csv", sel, "mean RMSE over subsets", d)
+  add(paste0(k, "N"), de$n_stations[i], "results/tables/cv_station_density_summary.csv", sel, "stations")
+}
+
 ## Experiment M ----------------------------------------------------------------------
+stt <- read("results", "diagnostics", "scene_regionalization_status.csv")
+add("OLSWindOOD", stt$n_ood[stt$config == "C2-OLS" & stt$variable == "wind_speed_2m"],
+    "results/diagnostics/scene_regionalization_status.csv", "C2-OLS, wind_speed_2m",
+    "cells x hours of the UTM grid with u2 out of the physical domain")
 summ <- read("results", "tables", "metric_summary.csv")
 for (i in which(summ$variable %in% c("rn", "g", "h", "le", "eta", "etrf", "forcing_ta",
                                      "forcing_etr_24", "forcing_etr_inst", "forcing_u2",
@@ -132,8 +165,22 @@ for (i in seq_len(nrow(cal))) {
   add(paste0("Cal", key, "Neg"), cal$n_eta_negative[i], "results/tables/metric_calibration.csv", sel,
       "cells with ETa < 0")
 }
-add("SameAnchors", if (all(cal$same_anchor_cells)) "sí" else "no",
-    "results/tables/metric_calibration.csv", "same_anchor_cells", "all()")
+fr <- read("results", "tables", "forcing_range_check.csv")
+for (i in seq_len(nrow(fr))) {
+  k <- paste0("Range", c(ta = "Ta", ea = "Ea")[[fr$variable[i]]], cfg_key[[fr$config[i]]])
+  sel <- sprintf("config == %s, variable == %s", fr$config[i], fr$variable[i])
+  add(paste0(k, "Above"), 100 * fr$share_above[i], "results/tables/forcing_range_check.csv", sel,
+      "100 x share of scene cells above the station maximum at 14 UTC", 1)
+  add(paste0(k, "Max"), fr$field_max[i], "results/tables/forcing_range_check.csv", sel, "field max", 1)
+  add(paste0(k, "ObsMax"), fr$obs_max[i], "results/tables/forcing_range_check.csv", sel, "station max", 1)
+}
+add("OLSValidCells", cal$n_cells[cal$config == "C2-OLS"], "results/tables/metric_calibration.csv",
+    "config == C2-OLS", "n_cells")
+add("SameAnchors", if (all(cal$same_anchor_cells[cal$config != "C2-OLS"])) "sí" else "no",
+    "results/tables/metric_calibration.csv", "same_anchor_cells, config != C2-OLS", "all()")
+add("NRunsSameAnchors", sum(cal$same_anchor_cells), "results/tables/metric_calibration.csv",
+    "same_anchor_cells == TRUE", "count of runs with the anchor cells of C1")
+add("NRuns", nrow(cal), "results/tables/metric_calibration.csv", "all rows", "count of METRIC runs")
 dv <- read("results", "tables", "metric_differences_vs_C1.csv")
 for (i in which(dv$variable %in% c("eta", "h", "rn", "etrf"))) {
   cf <- dv$config[i]
@@ -169,6 +216,13 @@ for (i in seq_len(nrow(fe))) {
   add(paste0(k, "EffSign"), 100 * fe$share_same_sign[i], "results/tables/sensitivity_forcing_effect.csv",
       sel, "100 x share of replicates with the sign of the mean", 0)
   add("SContrast", fe$contrast[i], "results/tables/sensitivity_forcing_effect.csv", sel, "contrast label")
+}
+for (src in c("S-A anchors/boundary", "S-B MODIS noise")) {
+  k <- c("S-A anchors/boundary" = "RatioSA", "S-B MODIS noise" = "RatioSB")[[src]]
+  add(k, abs(fe$mean[fe$source == src]) / ss$eta_mean_sd[ss$source == src & ss$config == "C1"],
+      "results/tables/sensitivity_forcing_effect.csv; results/tables/sensitivity_summary.csv",
+      sprintf("source == %s; config == C1", src),
+      "|mean paired effect C3-GWR - C1| / sd of scene-mean ETa with C1", 1)
 }
 for (i in seq_len(nrow(ss))) {
   k <- c("S-A anchors/boundary" = "SA", "S-B MODIS noise" = "SB", "S-C structural" = "SC")[[ss$source[i]]]
@@ -218,3 +272,20 @@ lines <- c("% Generated by scripts/08_numbers.R - do not edit by hand.",
 writeLines(lines, p("results", "tables", "numbers.tex"))
 write_csv(do.call(rbind, reg), p("results", "tables", "claims_register.csv"))
 message(length(macros), " macros written")
+
+## 250-word abstract (Markdown) from its template --------------------------------------
+tpl <- readLines(p("extended-abstract", "resumen_250_template.md"), encoding = "UTF-8")
+txt <- paste(tpl, collapse = "\n")
+for (k in regmatches(txt, gregexpr("\\{[A-Za-z]+\\}", txt))[[1]]) {
+  key <- gsub("[{}]", "", k)
+  if (!key %in% names(macros)) stop("unknown macro in template: ", key)
+  txt <- gsub(k, macros[[key]], txt, fixed = TRUE)
+}
+body <- strsplit(txt, "\n")[[1]]
+body_text <- body[nzchar(body) & !grepl("^#|^\\*\\*", body)]
+n_words <- length(strsplit(paste(body_text, collapse = " "), "\\s+")[[1]])
+writeLines(c(paste0("<!-- Generated by scripts/08_numbers.R from resumen_250_template.md; ",
+                    n_words, " words in the abstract body. -->"), body),
+           p("extended-abstract", "resumen_250_palabras.md"), useBytes = TRUE)
+if (n_words > 250) warning("the abstract has ", n_words, " words")
+message("250-word abstract: ", n_words, " words")

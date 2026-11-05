@@ -65,7 +65,7 @@ p1a <- ggplot(elev_df, aes(x, y, fill = elevation)) + geom_raster() +
   coord_fixed(1.2) + map_theme + theme(legend.position = "bottom", legend.box = "vertical") +
   labs(title = "a) Red de estaciones y relieve")
 sc <- c(scene[["lst"]] - 273.15, scene[["ndvi"]], scene[["albedo"]])
-names(sc) <- c("LST (°C)", "NDVI", "Albedo")
+names(sc) <- c("lst_c", "ndvi", "albedo")
 sdf <- to_df(sc)
 mk <- function(col, title, pal) {
   ggplot(sdf, aes(x, y, fill = .data[[col]])) + geom_raster() + aoi_layer +
@@ -73,9 +73,9 @@ mk <- function(col, title, pal) {
     coord_fixed(1.2) + map_theme + labs(title = title) +
     theme(legend.position = "bottom", legend.key.width = unit(0.7, "cm"))
 }
-p1b <- mk("LST (°C)", "b) LST MODIS (°C)", rev(hcl.colors(9, "YlOrRd")))
-p1c <- mk("NDVI", "c) NDVI", hcl.colors(9, "YlGn", rev = TRUE))
-p1d <- mk("Albedo", "d) Albedo", hcl.colors(9, "Grays", rev = TRUE))
+p1b <- mk("lst_c", "b) LST MODIS (°C)", rev(hcl.colors(9, "YlOrRd")))
+p1c <- mk("ndvi", "c) NDVI", hcl.colors(9, "YlGn", rev = TRUE))
+p1d <- mk("albedo", "d) Albedo", hcl.colors(9, "Grays", rev = TRUE))
 save_fig(p1a + (p1b / p1c / p1d) + plot_layout(widths = c(1.3, 1)), "fig01_area", 17, 15,
          data = meta)
 
@@ -111,7 +111,7 @@ p4 <- lapply(names(var_lab), function(v) {
       na.value = "white") +
     coord_fixed(1.2) + map_theme + theme(legend.position = "right")
 })
-save_fig(wrap_plots(p4, ncol = 1), "fig04_forcing_maps", 18, 16)
+save_fig(wrap_plots(p4, ncol = 1), "fig04_forcing_maps", 19, 11.5)
 
 ## Figure 5: energy balance and ETa per configuration -----------------------------
 runs_files <- list.files(p("results", "maps"), pattern = "^metric_.*\\.tif$", full.names = TRUE)
@@ -133,7 +133,7 @@ p5 <- ggplot(long_e, aes(x, y, fill = value)) + geom_raster() + aoi_layer +
   scale_fill_gradientn("W/m²", colours = hcl.colors(11, "Spectral", rev = TRUE),
                        limits = c(-50, 800), oob = scales::squish, na.value = "white") +
   coord_fixed(1.2) + map_theme
-save_fig(p5, "fig05_energy_balance", 18, 17)
+save_fig(p5, "fig05_energy_balance", 18, 10.5)
 
 ## Figure 6: ETa maps and differences against C1 ------------------------------------
 eta_lim <- stats::quantile(ed$eta, c(0.01, 0.99), na.rm = TRUE)
@@ -152,7 +152,7 @@ p6b <- ggplot(dd, aes(x, y, fill = diff)) + geom_raster() + aoi_layer +
   scale_fill_gradientn("ΔETa vs C1\n(mm/d)", colours = hcl.colors(11, "RdBu"),
                        limits = c(-lim, lim), oob = scales::squish, na.value = "white") +
   coord_fixed(1.2) + map_theme
-save_fig(p6a / p6b, "fig06_eta_maps", 18, 12)
+save_fig(p6a / p6b, "fig06_eta_maps", 18, 8.5)
 
 ## Figure 7: one-at-a-time attribution ---------------------------------------------
 dv <- read("results", "tables", "metric_differences_vs_C1.csv")
@@ -168,7 +168,7 @@ if (nrow(oat) > 0) {
     geom_hline(yintercept = 0, linewidth = 0.3) +
     geom_hline(yintercept = full$mean_diff[full$config == "C3-GWR"], linetype = 2,
                colour = cfg_cols[["C3-GWR"]]) +
-    labs(x = "Entrada sustituida por su campo C3-GWR (resto = C1)",
+    labs(x = "Entrada sustituida por su campo regionalizado (C3-GWR; viento: C2-IDW); resto = C1",
          y = "ΔETa respecto de C1 (mm/d)\nmedia de la escena y P5–P95")
   save_fig(p7, "fig07_attribution", 15, 7.5, data = oat)
 }
@@ -204,18 +204,24 @@ tex_table <- function(file, header, rows, align, caption, label, notes = NULL, s
 vl <- c(air_temperature = "$T_a$ (\\si{\\celsius})", vapour_pressure = "$e_a$ (\\si{\\kilo\\pascal})",
         wind_speed_2m = "$u_2$ (\\si{\\metre\\per\\second})")
 met <- met[order(match(met$variable, names(vl)), met$config), ]
+dg <- ifelse(met$variable == "vapour_pressure", 3, 2)
+fv <- function(x) mapply(function(v, d) sub("^-(0,0*)$", "\\1", fmt(v, d)), x, dg)
 rows <- sprintf("%s & %s & %d & %s [%s; %s] & %s & %s [%s; %s] & %s & %d \\\\",
                 ifelse(duplicated(met$variable), "", vl[met$variable]), met$config, met$n_pred,
-                fmt(met$rmse), fmt(met$rmse_lo), fmt(met$rmse_hi), fmt(met$mae),
-                fmt(met$bias), fmt(met$bias_lo), fmt(met$bias_hi), fmt(met$r),
+                fv(met$rmse), fv(met$rmse_lo), fv(met$rmse_hi), fv(met$mae),
+                fv(met$bias), fv(met$bias_lo), fv(met$bias_hi), fmt(met$r),
                 met$n_failed_folds)
+pr <- read("results", "validation", "cv_predictions.csv")
+gw <- pr[pr$variable == "wind_speed_2m" & pr$config == "C3-GWR", ]
+if (nrow(gw) > 0 && all(gw$status == "failed"))
+  rows <- c(rows, sprintf(" & C3-GWR & 0 & \\multicolumn{4}{l}{no factible (sin ancho de banda factible)} & %d \\\\", nrow(gw)))
 tex_table("tab_cv_metrics.tex",
-          "Variable & Config. & $n$ & RMSE [IC 95\\,\\%] & MAE & Sesgo [IC 95\\,\\%] & $r$ & Pliegues fallidos \\\\",
+          "Variable & Config. & $n$ & RMSE [IC 95\\,\\%] & MAE & Sesgo [IC 95\\,\\%] & $r$ & Fallidas \\\\",
           rows, "llrlrlrr",
           "Validación cruzada espacial anidada de la regionalización a la hora del paso (14:00 UTC, enero--marzo de 2019).",
           "tab:cv",
           notes = c("$n$: predicciones fuera de muestra. Sesgo = predicho $-$ observado. IC: \\emph{bootstrap} de días completos ($B = 2000$).",
-                    "C1 no se evalúa en su propia estación. Pliegue fallido: el método no pudo ajustarse con las estaciones de entrenamiento (p.\\,ej., GWR o regresión global con menos estaciones que parámetros + 3)."),
+                    "C1 no se evalúa en su propia estación. Fallidas: predicciones cuyo pliegue no pudo ajustarse con las estaciones de entrenamiento (p.\\,ej., GWR o regresión global con menos estaciones que parámetros + 3)."),
           size = "\\footnotesize")
 
 summ <- read("results", "tables", "metric_summary.csv")
@@ -246,3 +252,35 @@ tex_table("tab_metric_summary.tex",
           "tab:metric", notes = "Flujos en \\si{\\watt\\per\\square\\metre}. Las celdas ancla son las mismas en todas las configuraciones.",
           size = "\\footnotesize")
 message("figures and tables written")
+
+## Figure 9: station density -----------------------------------------------------------
+dens <- read("results", "tables", "cv_station_density_summary.csv")
+dens$config <- factor(dens$config, cfg_levels)
+p9 <- ggplot(dens, aes(n_stations, rmse_mean, colour = config)) +
+  geom_line(linewidth = 0.4) + geom_point(size = 1.2) +
+  geom_errorbar(aes(ymin = rmse_mean - rmse_sd, ymax = rmse_mean + rmse_sd), width = 1.2,
+                linewidth = 0.3, na.rm = TRUE) +
+  facet_wrap(~variable, scales = "free_y", labeller = as_labeller(var_lab)) +
+  scale_colour_manual(NULL, values = cfg_cols) +
+  labs(x = "Estaciones disponibles", y = "RMSE fuera de muestra")
+save_fig(p9, "fig09_density", 15, 6.5, data = dens)
+
+## Table: verification of the components used --------------------------------------------
+vm <- utils::read.csv(p("config", "verification_map.csv"), stringsAsFactors = FALSE)
+tests <- read("results", "diagnostics", "package_tests.csv")
+count_tests <- function(files) {
+  pats <- trimws(strsplit(files, ";")[[1]])
+  sum(vapply(pats, function(pt) {
+    rx <- glob2rx(pt)
+    sum(grepl(rx, tests$file))
+  }, 0))
+}
+vm$n_tests <- vapply(vm$test_files, count_tests, 0)
+esc <- function(x) gsub("_", "\\\\_", gsub("&", "\\\\&", x))
+rows <- sprintf("%s & \\texttt{%s} & %s & %s & %d \\\\", esc(vm$component),
+                esc(gsub("\"", "", vm$functions)), esc(vm$status), esc(vm$source), vm$n_tests)
+writeLines(c("\\begin{tabularx}{\\textwidth}{>{\\raggedright\\arraybackslash}p{3.4cm}>{\\raggedright\\arraybackslash}X>{\\raggedright\\arraybackslash}p{2.9cm}>{\\raggedright\\arraybackslash}p{3.1cm}r}",
+             "\\toprule", "Componente & Funciones & Estado & Fuente & Pruebas \\\\", "\\midrule",
+             rows, "\\bottomrule", "\\end{tabularx}"),
+           file.path(tab_dir, "tab_verification.tex"))
+message("figure 9 and verification table written")

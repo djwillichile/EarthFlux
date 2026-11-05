@@ -1,0 +1,153 @@
+\section{Discusión}\label{sec:discussion}
+
+\subsection{¿Regionaliza mejor GWR?}
+
+En la red pública de la región del Maule, GWR mejoró de forma significativa
+a la estación representativa y a la regresión global para la temperatura y
+la presión de vapor, pero no superó a IDW, el interpolador más simple. Este
+resultado es coherente con revisiones que muestran que la ventaja de los
+métodos con covariables depende de que la relación con ellas sea fuerte y
+estable frente a la densidad de observaciones \parencite{li2014interpolation}.
+En este caso, la corrección por gradiente vertical no mejoró a C1, lo que
+indica que, a la hora del paso (10:00 hora local), la variación de la
+temperatura entre la costa, el secano y el valle no se explica
+principalmente por la elevación, sino por la influencia marina y la
+estructura de la capa límite, que la distancia a la costa solo captura de
+forma parcial. GWR, además, necesita más estaciones que IDW para alcanzar su
+rendimiento (figura~\ref{fig:density}) y, entre estaciones, puede producir
+campos fuera del rango observado por extrapolación local de los
+coeficientes \parencite{wheeler2005multicollinearity}; aquí afectó al
+\RangeTaCThreeGWRAbove\,\% de las celdas procesadas. Estas dos limitaciones
+no aparecen en las métricas de validación cruzada, que solo evalúan en las
+estaciones, y son relevantes para cualquier aplicación que use GWR como
+forzamiento de un modelo físico. Para el viento, medido en solo
+\NStationsWind{} estaciones, ni GWR ni la regresión global son utilizables;
+la regresión global extrapoló valores físicamente imposibles, que
+EarthFlux conservó y marcó en vez de truncarlos. En conjunto, H3 y H4 se
+confirman: la utilidad de GWR depende de la red y de la variable, y la mayor
+complejidad no garantizó mayor exactitud.
+
+\subsection{¿Cambia la $\ETa$?}
+
+Sí, y de forma sustancial: con el mismo estado de superficie, las mismas
+anclas y las mismas ecuaciones, la $\ETa$ media de la escena varió entre
+\MEtaCTwoIDWMean{} y \MEtaCOneLapMean~mm/d entre las configuraciones con
+cobertura completa. El experimento de sustitución explica el mecanismo. La calibración
+interna de METRIC absorbió casi por completo los cambios del forzamiento
+instantáneo: el ajuste de $a$ y $b$ en las anclas compensó el cambio de
+$R_{L\downarrow}$ y del viento, y la fracción $\ETrF$ con GWR quedó a menos de
+1\,\% de la de C1. Esta es la propiedad buscada por el diseño de METRIC
+\parencite{allen2007metric1}, y aquí se cuantifica de forma explícita. La
+diferencia de $\ETa$ entró por la extrapolación diaria $\ETa = \ETrF\cdot\ETr^{24}$:
+la $\ETr^{24}$ de la estación representativa, ubicada en el valle central a
+\RepStationDist~km, es mayor que la que los métodos espaciales asignan al
+secano y a la costa (\MFEtrDayCOneMean{} frente a \MFEtrDayCThreeGWRMean~mm/d
+con GWR). Esto confirma H2: la
+propagación no es uniforme entre vías de entrada, y la vía dominante es la
+menos discutida en la literatura sobre selección de anclas
+\parencite{long2013endmember,bhattarai2017endmember}. Una consecuencia
+práctica es que, en territorios con gradiente costa--interior, la
+representatividad de la $\ETr^{24}$ puede pesar más que el refinamiento de
+la calibración.
+
+El efecto del forzamiento fue robusto frente a las otras fuentes de
+incertidumbre evaluadas. La diferencia pareada GWR$-$C1 (\SAEffMean~mm/d)
+mantuvo su signo en todas las réplicas y fue \RatioSA{} veces mayor que la
+dispersión inducida por los criterios de anclas y las condiciones de borde
+(DE \SACOneSd~mm/d) y \RatioSB{} veces mayor que la inducida por el ruido de
+LST y albedo (DE \SBCOneSd~mm/d). Entre las alternativas estructurales, la
+agregación de las anclas por media en lugar de mediana tuvo un efecto mayor
+que la dispersión de los criterios (\SCAggregateMeanCOne{} frente a
+\SCBaseCOne~mm/d), lo que recuerda la fragilidad de la calibración a 1~km
+\parencite{tang2013scale,long2011sebalsensitivity}.
+
+\subsection{Cambio entre modelos no es mejora de exactitud}
+
+Ninguna de las diferencias de $\ETa$ puede calificarse como mejora o
+deterioro, porque no existen mediciones independientes de flujos para la
+escena. Sí puede afirmarse algo más débil pero útil: la elección del
+forzamiento introduce en la $\ETa$ una incertidumbre del orden de
+\DEtaCThreeGWRPct{} a \DEtaCTwoIDWPct\,\% de la media de la escena, mayor que
+la debida a los insumos satelitales y a la calibración evaluadas aquí, y esa
+incertidumbre debería reportarse junto con cualquier mapa de $\ETa$. Si la
+$\ETr^{24}$ espacial es más representativa del secano que la de una estación
+de valle ---lo que la validación meteorológica sugiere para sus insumos,
+temperatura y humedad---, la $\ETa$ convencional estaría sobrestimada en esta
+escena. Esa hipótesis queda planteada para ser contrastada con mediciones,
+no demostrada.
+
+\subsection{Contribución de EarthFlux y comparación con antecedentes}
+
+Las ecuaciones de METRIC, FAO-56, ASCE-EWRI y GWR no son nuevas. La
+contribución de EarthFlux está en la implementación y en lo que hace
+posible: (i) física independiente del sensor con verificación documentada
+contra fuente primaria; (ii) forzamiento intercambiable bajo una interfaz
+común, que permitió comparar cinco configuraciones cambiando un argumento;
+(iii) validación cruzada espacial anidada sin filtración; (iv) diagnósticos
+que conservaron y marcaron valores fuera de dominio, como las predicciones
+de viento de la regresión global; y (v) reproducibilidad completa de cada
+cifra. Frente a \pkg{water} \parencite{olmedo2016water}, que implementa METRIC
+para Landsat con una estación, EarthFlux agrega el forzamiento espacial y su
+evaluación. El propio estudio detectó un error en el script de análisis
+---covariables extraídas de una grilla que no cubría todas las estaciones---,
+gracias a que el paquete registra las estaciones excluidas y su motivo, en
+lugar de excluirlas en silencio.
+
+\subsection{Implicaciones para la gestión sostenible del agua}
+
+Para la gestión del uso consuntivo, la valoración del agua y la evaluación
+de programas de riego, el resultado más relevante es que la elección del
+forzamiento meteorológico cambia la $\ETa$ estimada en una magnitud similar
+a la de las decisiones que esos instrumentos buscan informar. En términos
+prácticos: (a) los mapas de $\ETa$ usados en fiscalización o contabilidad
+hídrica deberían declarar su forzamiento y acompañarse de un análisis de
+sensibilidad a esa elección; (b) en el secano costero e interior de Chile
+central, la densificación de estaciones con viento y radiación ---hoy
+escasas en las redes públicas--- es una inversión que reduce directamente
+esa incertidumbre; y (c) el software abierto y verificable reduce el costo
+de auditar las estimaciones. Estas diferencias \emph{no} deben convertirse en
+volúmenes de agua ahorrados ni en beneficios monetarios: eso requiere
+validar $\ETa$, agregarla en el tiempo y contar con datos económicos que no
+forman parte de este trabajo.
+
+\subsection{Limitaciones}
+
+El experimento de propagación usa una sola escena de verano y cielo
+despejado, a 1~km; la radiación de onda corta es modelada; dos componentes
+centrales siguen como candidatos; el viento no pudo regionalizarse con GWR;
+y las alturas de los sensores y la condición puntual de las observaciones
+son supuestos. La validación meteorológica, en cambio, cubre 90 días. Las
+limitaciones se detallan en el material suplementario
+(\texttt{docs/limitations.md}).
+
+\section{Conclusiones}\label{sec:conclusions}
+
+\begin{enumerate}
+  \item \textbf{Verificación (objetivo 1).} La cadena METRIC de EarthFlux
+  usada en el estudio se ejecutó solo con funciones públicas; \VerVerified{}
+  de \VerRows{} formulaciones del núcleo están verificadas contra fuente
+  primaria y las pruebas no registraron fallos numéricos. La transmisividad
+  particionada y los criterios de anclas siguen como candidatos.
+  \item \textbf{Integración reproducible (objetivo 2).} Se integraron
+  observaciones MODIS, \NStations{} estaciones públicas y un modelo de
+  elevación en un flujo que regenera cada tabla, figura y cifra.
+  \item \textbf{Regionalización (objetivo 3, H1, H3, H4).} GWR superó a la
+  estación representativa y a la regresión global, pero no a IDW (RMSE de
+  temperatura \CVTaCThreeGWRRmse{} frente a \CVTaCTwoIDWRmse~\si{\celsius}),
+  necesitó más estaciones y extrapoló fuera del rango observado en el
+  \RangeTaCThreeGWRAbove\,\% de las celdas. Para el viento no fue factible.
+  \item \textbf{Propagación (objetivo 4, H2).} Frente a C1, GWR redujo la
+  $\ETa$ media en \DEtaCThreeGWRPct\,\%, casi todo a través de la $\ETr^{24}$;
+  la calibración interna absorbió el efecto sobre el balance instantáneo
+  ($\ETrF$: \DEtrfCThreeGWRPct\,\%).
+  \item \textbf{Validación (objetivo 5).} La exactitud absoluta de $\ETa$ no
+  se demostró: no hay mediciones independientes públicas para la escena.
+  \item \textbf{Robustez (objetivo 6).} El efecto del forzamiento fue
+  \RatioSA{} veces mayor que la dispersión debida a la calibración y \RatioSB{}
+  veces mayor que la debida al ruido MODIS.
+  \item \textbf{Hipótesis principal.} El forzamiento espacial modifica de
+  forma robusta la $\ETa$ de METRIC, pero en esta red GWR no es el mejor
+  método de regionalización y no hay evidencia de que mejore la exactitud de
+  $\ETa$. La recomendación es tratar el forzamiento como una fuente explícita
+  de incertidumbre y priorizar la validación con mediciones de flujos.
+\end{enumerate}

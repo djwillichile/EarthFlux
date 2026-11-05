@@ -5,12 +5,12 @@
 En el instante del paso del satélite, el balance de energía de la superficie
 se escribe
 \begin{equation}
-  \Rn = G + H + LE \quad\Longrightarrow\quad LE = \Rn - G - H,
+  \Rnet = G + H + LE \quad\Longrightarrow\quad LE = \Rnet - G - H,
   \label{eq:balance}
 \end{equation}
 con todos los flujos en \si{\watt\per\square\metre}. La radiación neta es
 \begin{equation}
-  \Rn = (1-\alpha)\,R_{s\downarrow} + R_{L\downarrow} - R_{L\uparrow}
+  \Rnet = (1-\alpha)\,R_{s\downarrow} + R_{L\downarrow} - R_{L\uparrow}
         - (1-\varepsilon_0)\,R_{L\downarrow},
   \label{eq:rn}
 \end{equation}
@@ -35,7 +35,7 @@ con $r_{ah}$ la resistencia aerodinámica al transporte de calor entre
 depende de la velocidad de fricción $u_*$ y, a través de ella, del viento
 extrapolado logarítmicamente a una altura de mezcla de \SI{200}{\metre}
 ($u_{200}$; tercera vía de entrada). Los coeficientes $a$ y $b$ se obtienen
-imponiendo en el ancla caliente $H = \Rn - G - LE_{hot}$ con $LE_{hot}=0$ y
+imponiendo en el ancla caliente $H = \Rnet - G - LE_{hot}$ con $LE_{hot}=0$ y
 en el ancla fría $LE_{cold} = 1{,}05\,\lambda\,\ETr$ (cuarta vía de entrada:
 $\ETr$ instantánea en el ancla fría), iterando la corrección de estabilidad
 de Monin--Obukhov hasta la convergencia \parencite{allen2007metric1,waters2002sebal}.

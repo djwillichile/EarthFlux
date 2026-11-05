@@ -1,0 +1,30 @@
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Balance de energía y $\mathrm{ET_a}$ de la escena de Cauquenes (15-02-2019) por configuración: media (desviación estándar espacial) y parámetros de calibración.}\label{tab:metric}
+\begin{threeparttable}
+\begin{tabular}{lrrrrr}
+\toprule
+Variable & C1 & C1-lap & C2-OLS & C2-IDW & C3-GWR \\
+\midrule
+$R_n$ & 475 (55) & 477 (56) & 449 (62) & 478 (49) & 483 (54) \\
+$G$ & 58 (15) & 59 (15) & 66 (10) & 59 (16) & 59 (15) \\
+$H$ & 267 (73) & 266 (74) & 325 (31) & 278 (79) & 271 (72) \\
+$LE$ & 149 (135) & 153 (137) & 58 (87) & 140 (133) & 152 (132) \\
+$\mathrm{ET_rF}$ & 0,40 (0,36) & 0,40 (0,37) & 0,15 (0,23) & 0,37 (0,38) & 0,40 (0,37) \\
+$\mathrm{ET_a}$ (mm/d) & 3,45 (3,12) & 3,54 (3,17) & 1,04 (1,51) & 2,48 (2,26) & 2,76 (2,25) \\
+$\mathrm{ET_r^{24}}$ (mm/d) & 8,56 (0,01) & 8,72 (0,26) & 6,95 (0,30) & 7,38 (0,86) & 7,56 (0,85) \\
+\midrule
+$a$ (K) & -65,73 & -67,00 & -30,77 & -73,83 & -64,94 \\
+$b$ (--) & 0,231 & 0,236 & 0,115 & 0,258 & 0,229 \\
+Iteraciones & 9 & 9 & 6 & 7 & 9 \\
+$\mathrm{ET_r}$ inst. ancla fría (mm/h) & 0,544 & 0,554 & 0,563 & 0,535 & 0,535 \\
+$u_{200}$ ancla fría (m/s) & 2,99 & 2,99 & 8,69 & 4,65 & 2,99 \\
+Celdas con $\mathrm{ET_a} < 0$ & 77 & 74 & 156 & 102 & 58 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Flujos en \si{\watt\per\square\metre}. Las celdas ancla son las mismas en todas las configuraciones.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

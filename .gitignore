@@ -53,7 +53,3 @@ research/cedes2027/presentation/*.vrb
 research/cedes2027/data/raw/cache/
 research/cedes2027/**/*.aux.json
 research/cedes2027/data/processed/*.rds
-# TEMPORARY while the experiments run (removed before the final commit)
-research/cedes2027/results/
-research/cedes2027/data/processed/
-research/cedes2027/data/raw/manifest.csv

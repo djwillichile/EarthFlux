@@ -122,11 +122,21 @@ configs <- names(methods("air_temperature"))
 
 # Regionalize one variable for one configuration; returns an array
 # [row, col, hour] on the MODIS grid, plus the fit diagnostics.
+# Covariates at the stations from the regional grid (the same values as in
+# experiment R): most stations lie outside the prediction grid of the scene,
+# so they must not be extracted from it (they would be excluded with a
+# missing covariate).
+cov_region <- terra::rast(p("data", "processed", "covariates_region.tif"))
+st_xy <- terra::project(cbind(meta$lon, meta$lat), from = "EPSG:4326", to = study_crs)
+station_cov <- data.frame(station_id = meta$station_id,
+                          terra::extract(cov_region, st_xy))
+station_cov <- station_cov[stats::complete.cases(station_cov), ]
 regionalize_scene <- function(variable, config) {
   r <- ef_regionalize(inputs[[variable]], variable, covariates = cov_scene,
                       method = methods(variable)[[config]],
                       use_qc = c("ok", "warning"),
-                      surface_covariates = character(0))
+                      surface_covariates = character(0),
+                      station_covariates = station_cov)
   surf <- r$surface
   # Out-of-domain predictions are masked before the core (flag bit 6).
   bit <- r$flag_bits$bit[r$flag_bits$code == "EF_GWR_OUT_OF_DOMAIN"]
@@ -224,9 +234,14 @@ for (cf in names(forcings)) {
 }
 # One-at-a-time substitution from the C1 baseline with the C3-GWR fields.
 if (all(c("C1", "C3-GWR") %in% names(forcings))) {
+  # Wind: GWR is not feasible with the stations that measure wind (D-14),
+  # so the u2 substitution uses the C2-IDW field, the only spatial
+  # alternative that could be fitted; recorded in the label.
+  gwr_wind_fallback <- "C3-GWR wind_speed_2m" %in% names(fallback)
   for (v in c("ta", "ea", "u2", "etr_inst", "etr_24")) {
     f <- forcings[["C1"]]
-    f[[v]] <- forcings[["C3-GWR"]][[v]]
+    src <- if (v == "u2" && gwr_wind_fallback) "C2-IDW" else "C3-GWR"
+    f[[v]] <- forcings[[src]][[v]]
     lab <- paste0("C1+GWR:", v)
     message(format(Sys.time()), " METRIC ", lab)
     runs[[lab]] <- run_metric(s, f, opts)
@@ -276,7 +291,8 @@ calib <- do.call(rbind, lapply(names(runs), function(cf) {
              n_cells = sum(r$valid),
              n_eta_negative = sum(r$layers$eta[r$valid] < 0),
              n_h_gt_available = sum((r$layers$h > r$layers$rn - r$layers$g)[r$valid]),
-             n_zom_floor = r$n_zom_floor, same_anchor_cells = same_anchors)
+             n_zom_floor = r$n_zom_floor,
+             same_anchor_cells = identical(anchor_cells[[cf]], anchor_cells[["C1"]]))
 }))
 write_csv(calib, p("results", "tables", "metric_calibration.csv"))
 

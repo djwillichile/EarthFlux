@@ -1,0 +1,6 @@
+"grid","layer","min","mean","max","n_cells"
+"region_utm18s_1km","elevation",-0.125583752989769,932.341672725121,4647.85791015625,122781
+"region_utm18s_1km","distance_to_coast",1,115.558095683937,304.00165625,122781
+"scene_utm18s_1km","elevation",0,229.602031172872,1320.06115722656,11987
+"scene_utm18s_1km","distance_to_coast",1,54.2798089712237,124.0362890625,11987
+"scene_modis_sinusoidal","elevation",0,179.118636974206,863.015930175781,9592

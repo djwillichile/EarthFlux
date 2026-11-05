@@ -1,0 +1,152 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.7cm,top=1.5cm,bottom=1.6cm]{geometry}
+\input{../manuscript/preamble.tex}
+\addbibresource{../references/references.bib}
+\input{../results/tables/numbers.tex}
+\input{../manuscript/stationtext.tex}
+\usepackage{multicol}
+\setlength{\columnsep}{6mm}
+\usepackage{titlesec}
+\titleformat{\section}{\normalsize\bfseries\color{teal!60!black}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{5pt}{2pt}
+\setlength{\parskip}{2pt}
+\setlength{\parindent}{0pt}
+\renewcommand*{\bibfont}{\scriptsize}
+\setlength\bibitemsep{0pt}
+\pagestyle{empty}
+
+\begin{document}
+\begin{center}
+{\large\bfseries EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data}\\[2pt]
+{\small Efecto de la regionalización del forzamiento meteorológico en la evapotranspiración estimada con METRIC y MODIS}\\[4pt]
+{\small\textbf{Guillermo S. Fuentes-Jaque} · \AuthorAffiliation{} · ORCID 0000-0002-7864-4899 · gfuentesj@correo.uss.cl}\\[1pt]
+{\scriptsize 3rd International Workshop CEDES 2027 --- Economics and Sustainability · Presentación oral}
+\end{center}
+\vspace{-2pt}
+\begin{multicols}{2}
+\small
+
+\section{Motivación y problema}
+La evapotranspiración real ($\ETa$) mide el uso consuntivo del agua y es
+insumo de balances hídricos, fiscalización y valoración del agua, temas
+centrales en Chile tras la megasequía y la reforma del Código de Aguas
+\parencite{garreaud2020megadrought,ley21435}. METRIC estima $\ETa$ con
+datos satelitales y una calibración interna \parencite{allen2007metric1},
+pero suele forzarse con una sola estación meteorológica. No se sabe cuánto
+cambia la $\ETa$ si ese forzamiento se representa en el espacio, ni si la
+regresión geográficamente ponderada (GWR) es la mejor forma de hacerlo.
+
+\section{Objetivos e hipótesis}
+Evaluar, con el paquete de R de código abierto EarthFlux, si la
+regionalización del forzamiento (C1 estación representativa; C2 regresión
+global e IDW; C3 GWR) (H1) produce campos distintos, (H2) se propaga de forma
+no uniforme a la $\ETa$, (H3) depende de la red de estaciones y (H4) mejora
+la exactitud con mayor complejidad.
+
+\section{Datos y métodos}
+Escena MODIS (LST, albedo, NDVI, LAI) de la provincia de Cauquenes,
+15-02-2019 (\num[round-precision=0]{\SceneCellsValid} celdas de 1~km);
+\NStations{} estaciones públicas horarias (DMC, INIA, FDF, NOAA); elevación
+Copernicus. (R) Validación cruzada espacial \emph{anidada} (bloques de
+50~km; ancho de banda re-seleccionado en cada pliegue) en \NCVDays{} días
+(enero--marzo de 2019). (M) METRIC con las mismas ecuaciones, criterios y
+celdas ancla (salvo C2-OLS, de dominio reducido); sustitución completa y de una
+variable por vez. (S) \NMC{} réplicas Monte Carlo de criterios de anclas y
+ruido MODIS. Cada cifra se genera desde las tablas de resultados.
+
+\section{Resultados}
+\textbf{Regionalización.} GWR superó a C1 y a la regresión global, pero no
+a IDW (tabla~\ref{tab:ea}, figura~\ref{fig:cv}). La diferencia pareada GWR$-$IDW en error
+cuadrático fue positiva (temperatura: IC [\PairTaCTwoIDWLo;
+\PairTaCTwoIDWHi]~\si{\celsius\squared}). Con el 25\,\% de las estaciones,
+el RMSE de GWR subió a \DensTaCThreeGWRQuarter~\si{\celsius} y el de IDW se
+mantuvo en \DensTaCTwoIDWQuarter~\si{\celsius}. GWR extrapoló temperaturas
+sobre el máximo observado en el \RangeTaCThreeGWRAbove\,\% de la escena
+(hasta \RangeTaCThreeGWRMax~\si{\celsius}) y no fue factible para el viento,
+que solo miden \NStationsWind{} estaciones.
+
+\textbf{Propagación.} Con anclas idénticas, GWR redujo la $\ETa$ media en
+\DEtaCThreeGWRPct\,\% respecto de C1, e IDW en \DEtaCTwoIDWPct\,\%. La
+calibración interna absorbió el forzamiento instantáneo ($\ETrF$:
+\DEtrfCThreeGWRPct\,\%). La diferencia entró por la $\ETr$ diaria, que por sí
+sola explicó \DEtaOatEtrDayMean{} de los \DEtaCThreeGWRMean~mm/d
+(figura~\ref{fig:ea}).
+
+\textbf{Robustez.} El efecto GWR$-$C1 (\SAEffMean~mm/d) conservó su signo en
+el 100\,\% de las réplicas. Fue \RatioSA{} veces la dispersión por
+calibración (DE \SACOneSd~mm/d) y \RatioSB{} veces la del ruido MODIS (DE
+\SBCOneSd~mm/d).
+
+\textbf{Validación de $\ETa$.} No hay mediciones públicas de flujos para la
+escena, por lo que la exactitud de $\ETa$ \emph{no} se evaluó.
+
+\vspace{2pt}
+\noindent\begin{minipage}{\columnwidth}
+\centering
+\footnotesize
+\captionof{table}{Comparación C1--C3 (validación cruzada de $T_a$ y efecto en METRIC).}\label{tab:ea}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccc}
+\toprule
+ & C1 & C1-lap & C2-OLS & C2-IDW & C3-GWR \\
+\midrule
+RMSE $T_a$ (\si{\celsius}) & \CVTaCOneRmse & \CVTaCOneLapRmse & \CVTaCTwoOLSRmse & \CVTaCTwoIDWRmse & \CVTaCThreeGWRRmse \\
+RMSE $e_a$ (kPa) & \CVEaCOneRmse & -- & \CVEaCTwoOLSRmse & \CVEaCTwoIDWRmse & \CVEaCThreeGWRRmse \\
+$\ETr^{24}$ (mm/d) & \MFEtrDayCOneMean & \MFEtrDayCOneLapMean & \MFEtrDayCTwoOLSMean$^{a}$ & \MFEtrDayCTwoIDWMean & \MFEtrDayCThreeGWRMean \\
+$\ETa$ media (mm/d) & \MEtaCOneMean & \MEtaCOneLapMean & \MEtaCTwoOLSMean$^{a}$ & \MEtaCTwoIDWMean & \MEtaCThreeGWRMean \\
+$\Delta\ETa$ vs C1 (\%) & -- & \DEtaCOneLapPct & \DEtaCTwoOLSPct$^{a}$ & \DEtaCTwoIDWPct & \DEtaCThreeGWRPct \\
+\bottomrule
+\multicolumn{6}{l}{\scriptsize $^{a}$ Solo \OLSValidCells{} celdas: el viento por regresión global salió del dominio físico.}
+\end{tabular}
+\end{minipage}
+
+\vspace{4pt}
+\noindent\begin{minipage}{\columnwidth}
+\centering
+\includegraphics[width=\columnwidth]{fig03_cv_rmse.pdf}
+\captionof{figure}{RMSE fuera de muestra (IC 95\,\%) por variable y
+configuración. GWR del viento no fue factible.}\label{fig:cv}
+\end{minipage}
+
+\vspace{4pt}
+\noindent\begin{minipage}{\columnwidth}
+\centering
+\includegraphics[width=\columnwidth]{fig07_attribution.pdf}
+\captionof{figure}{Cambio de la $\ETa$ media al sustituir una entrada de C1
+por su campo regionalizado. Línea discontinua: GWR completo.}\label{fig:ea}
+\end{minipage}
+
+\section{Implicaciones para la sostenibilidad}
+La elección del forzamiento cambia la $\ETa$ en una magnitud comparable a la
+de las decisiones de gestión que la usan. Los mapas de $\ETa$ para
+contabilidad o fiscalización deberían declarar su forzamiento y su
+sensibilidad a él. Densificar las estaciones con viento y radiación en el
+secano reduce directamente esa incertidumbre. Estas diferencias \emph{no}
+equivalen a ahorros de agua ni a beneficios económicos.
+
+\section{Limitaciones y conclusiones}
+Una escena estival a 1~km, radiación modelada y componentes aún
+candidatos. El forzamiento espacial modifica de forma robusta la $\ETa$ de
+METRIC. En esta red, GWR no es el mejor regionalizador y no hay evidencia de
+que mejore la exactitud. La complejidad no garantizó exactitud (H4), y el
+próximo paso es validar con torres de flujo.
+
+\section{Reproducibilidad}
+{\footnotesize EarthFlux \EarthFluxVersion{} (commit \texttt{\EarthFluxCommit}),
+MIT, \url{https://github.com/djwillichile/EarthFlux}; DOI
+10.5281/zenodo.23981325. Estudio completo, datos públicos y registro de
+cifras en \texttt{research/cedes2027/}.}
+
+\section{Referencias principales}
+\nocite{allen2007metric1,waters2002sebal,brunsdon1996gwr,roberts2017cv,olmedo2016water,fuentesjaque2026earthflux}
+\printbibliography[heading=none]
+\end{multicols}
+
+\begin{center}
+\includegraphics[width=0.92\textwidth]{fig06_eta_maps.pdf}
+\captionof{figure}{Arriba: $\ETa$ diaria (mm/d) de la provincia de Cauquenes
+(15-02-2019) por configuración. Abajo: diferencia respecto de C1. C2-OLS
+solo tiene datos donde el viento regionalizado quedó dentro del dominio
+físico.}
+\end{center}
+\end{document}

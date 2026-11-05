@@ -1,0 +1,188 @@
+% Slides: every number comes from ../results/tables/numbers.tex.
+% Structure adaptable: optional slides are marked [opcional] in the title
+% comment and can be skipped if the time slot is short.
+
+\begin{frame}
+\titlepage
+\vfill
+\centering\scriptsize EarthFlux \EarthFluxVersion{} · \url{https://github.com/djwillichile/EarthFlux} · DOI 10.5281/zenodo.23981325
+\end{frame}
+
+\begin{frame}{Problema: ¿cuánta agua se consume realmente?}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\begin{itemize}
+  \item La evapotranspiración real ($\ETa$) mide el \textbf{uso consuntivo} del agua: insumo de balances hídricos, fiscalización y valoración.
+  \item METRIC estima $\ETa$ con satélites y una calibración interna\ldots
+  \item \ldots pero suele usar \textbf{una sola estación} meteorológica para toda la escena.
+  \item En territorios heterogéneos (costa--secano--valle), ¿cuánto depende la $\ETa$ de ese supuesto?
+\end{itemize}
+\end{column}
+\begin{column}{0.43\textwidth}
+\includegraphics[width=\textwidth]{fig01_area.pdf}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Pregunta e hipótesis}
+\textbf{¿En qué medida regionalizar el forzamiento con GWR modifica la $\ETa$ de METRIC frente a alternativas convencionales?}
+\vspace{4mm}
+\begin{description}[H4]
+  \item[H1] Los métodos producen campos meteorológicos distintos.
+  \item[H2] Las diferencias se propagan de forma no uniforme a $R_n$, $G$, $H$, $LE$ y $\ETa$.
+  \item[H3] La utilidad de GWR depende de la red de estaciones.
+  \item[H4] Más complejidad no garantiza más exactitud.
+\end{description}
+\vspace{3mm}
+\textcolor{gray}{No se asume que GWR sea mejor.}
+\end{frame}
+
+\begin{frame}{Contribución: EarthFlux}
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+  \item Paquete de R abierto (MIT): METRIC \textbf{independiente del sensor}.
+  \item Forzamiento \textbf{intercambiable}: C1, C2-OLS, C2-IDW y C3-GWR bajo una sola interfaz.
+  \item Validación cruzada espacial \textbf{anidada}.
+  \item Diagnósticos: lo anómalo se \textbf{marca}, no se corrige en silencio.
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\small
+\begin{itemize}
+  \item \VerVerified{}/\VerRows{} formulaciones verificadas contra la fuente primaria; \VerDiscrepancies{} discrepancias halladas, \VerFixed{} corregidas.
+  \item \NExpectations{} expectativas en \NTests{} pruebas; \NTestsFailed{} fallos.
+  \item GWR = \pkg{GWmodel} hasta $10^{-10}$.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Diseño experimental}
+\begin{itemize}
+  \item \textbf{Datos}: MODIS de Cauquenes (15-02-2019, 1~km); \NStations{} estaciones públicas (DMC, INIA, FDF, NOAA); DEM Copernicus.
+  \item \textbf{Exp. R}: validación cruzada espacial anidada, \NCVDays{} días, bloques de 50~km.
+  \item \textbf{Exp. M}: METRIC con las \textbf{mismas anclas} (salvo C2-OLS); sustitución completa y de una variable por vez.
+  \item \textbf{Exp. S}: \NMC{} réplicas Monte Carlo (anclas, ruido MODIS).
+\end{itemize}
+\vspace{2mm}
+\small Cada cifra de esta presentación se genera desde las tablas de resultados.
+\end{frame}
+
+\begin{frame}{Resultado 1: GWR no fue el mejor regionalizador}
+\begin{columns}[T]
+\begin{column}{0.6\textwidth}
+\includegraphics[width=\textwidth]{fig03_cv_rmse.pdf}
+\end{column}
+\begin{column}{0.38\textwidth}
+\small
+RMSE de $T_a$ (\si{\celsius}):\\
+C1 \CVTaCOneRmse{} · OLS \CVTaCTwoOLSRmse{}\\
+\textbf{GWR \CVTaCThreeGWRRmse{}} · \textbf{IDW \CVTaCTwoIDWRmse}
+\begin{itemize}
+  \item GWR $>$ C1 y OLS, pero \textbf{IDW $>$ GWR} (IC excluye 0).
+  \item Viento: \NStationsWind{} estaciones $\Rightarrow$ GWR no factible.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Resultado 2: GWR depende de la red y extrapola}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\includegraphics[width=\textwidth]{fig09_density.pdf}
+\end{column}
+\begin{column}{0.43\textwidth}
+\small
+\begin{itemize}
+  \item 25\,\% de las estaciones: GWR \DensTaCThreeGWRQuarter{} \si{\celsius} frente a IDW \DensTaCTwoIDWQuarter.
+  \item GWR supera el máximo observado (\RangeTaCThreeGWRObsMax~\si{\celsius}) en el \textbf{\RangeTaCThreeGWRAbove\,\%} de la escena, hasta \RangeTaCThreeGWRMax~\si{\celsius}.
+  \item La validación cruzada en estaciones \textbf{no} detecta esto.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Campos meteorológicos a la hora del paso (H1)}
+\centering
+\includegraphics[height=0.82\textheight]{fig04_forcing_maps.pdf}
+\end{frame}
+
+\begin{frame}{Resultado 3: la $\ETa$ cambia, y cambia por la $\ETr$ diaria}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\includegraphics[width=\textwidth]{fig07_attribution.pdf}
+\end{column}
+\begin{column}{0.43\textwidth}
+\small
+\begin{itemize}
+  \item $\ETa$ media: C1 \MEtaCOneMean{} → GWR \MEtaCThreeGWRMean{} mm/d (\textbf{\DEtaCThreeGWRPct\,\%}); IDW \DEtaCTwoIDWPct\,\%.
+  \item $\ETrF$ casi no cambia (\DEtrfCThreeGWRPct\,\%): la calibración absorbe el forzamiento instantáneo.
+  \item $\ETr^{24}$ sola: \DEtaOatEtrDayMean{} mm/d (H2).
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Mapas de $\ETa$}
+\centering
+\includegraphics[width=\textwidth]{fig06_eta_maps.pdf}
+\end{frame}
+
+\begin{frame}{Resultado 4: el efecto es robusto}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\includegraphics[width=\textwidth]{fig08_sensitivity.pdf}
+\end{column}
+\begin{column}{0.43\textwidth}
+\small
+\begin{itemize}
+  \item Efecto GWR$-$C1: \SAEffMean{} mm/d, mismo signo en el \SAEffSign\,\% de las réplicas.
+  \item \RatioSA{}× la dispersión por anclas y condiciones de borde.
+  \item \RatioSB{}× la dispersión por ruido MODIS.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Validación: lo que no pudimos demostrar}
+\begin{itemize}
+  \item No hay mediciones públicas de flujos (covarianza de torbellinos, lisímetros) para Cauquenes en febrero de 2019.
+  \item \textbf{Cambio entre modelos $\neq$ mejora de exactitud.}
+  \item Validado: las variables meteorológicas, fuera de muestra, en \NCVDays{} días.
+  \item Próximo paso: torres de flujo (p.\,ej., ChileFlux) y más escenas.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Implicaciones para la gestión hídrica}
+\begin{itemize}
+  \item La elección del forzamiento cambia la $\ETa$ entre \DEtaCThreeGWRPct{} y \DEtaCTwoIDWPct\,\%: magnitud comparable a la de las decisiones que la usan.
+  \item Los mapas de $\ETa$ usados en contabilidad o fiscalización deberían \textbf{declarar su forzamiento} y su sensibilidad.
+  \item Las estaciones con viento y radiación en el secano son una \textbf{inversión directa} en certidumbre.
+  \item El software abierto y verificable reduce el costo de auditar.
+\end{itemize}
+\vspace{2mm}
+\small\textcolor{gray}{No se traducen diferencias de $\ETa$ en ahorros ni en beneficios monetarios.}
+\end{frame}
+
+\begin{frame}{Limitaciones}
+\begin{itemize}
+  \item Una escena estival despejada, a 1~km.
+  \item Radiación de onda corta modelada.
+  \item Transmisividad y criterios de anclas aún en estado candidato.
+  \item Viento: no regionalizable con GWR en la red pública.
+  \item Supuestos de altura de sensores y de observaciones puntuales.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusiones}
+\begin{enumerate}
+  \item El forzamiento espacial \textbf{modifica de forma robusta} la $\ETa$ de METRIC (H1, H2).
+  \item El efecto entra por la $\ETr$ diaria; la calibración absorbe el resto.
+  \item En esta red, \textbf{GWR no es el mejor} regionalizador: depende de la densidad y extrapola (H3, H4).
+  \item La exactitud de $\ETa$ \textbf{no está demostrada}: hace falta validar con flujos.
+  \item EarthFlux hace explícitas y reproducibles estas decisiones.
+\end{enumerate}
+\vfill
+\centering\small Guillermo S. Fuentes-Jaque · gfuentesj@correo.uss.cl · \url{https://github.com/djwillichile/EarthFlux}
+\end{frame}

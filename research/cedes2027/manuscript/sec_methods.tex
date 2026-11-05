@@ -13,6 +13,17 @@ mediterráneo, la superficie presenta un contraste marcado entre vegetación
 con acceso a agua y laderas secas, condición favorable para la calibración
 interna de METRIC.
 
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig01_area.pdf}
+\caption{(a) Red de estaciones meteorológicas sobre el relieve (Copernicus
+GLO-90); el rectángulo rojo es la extensión de la escena y el asterisco la
+estación representativa de C1. (b--d) Temperatura superficial, NDVI y albedo
+MODIS del 15-02-2019 en la provincia de Cauquenes. Coordenadas geográficas
+(WGS~84) solo para visualización.}\label{fig:area}
+\end{figure}
+
 \subsection{Observaciones satelitales}
 
 Se usa la escena de ejemplo \code{cauquenes\_modis} de EarthFlux: el estado
@@ -91,6 +102,31 @@ independientes de flujos, no disponible en este estudio.
 
 El estudio comprende tres experimentos (figura~\ref{fig:workflow}).
 
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=4mm and 6mm, font=\footnotesize,
+  box/.style={draw, rounded corners, align=center, fill=#1, minimum height=9mm, text width=3.1cm},
+  box/.default=white, arr/.style={-{Stealth[length=2mm]}, thick}]
+\node[box=gray!12] (st) {\NStations{} estaciones horarias\\(DMC, INIA, FDF, NOAA)};
+\node[box=gray!12, below=of st] (dem) {Elevación y distancia\\a la costa (1 km)};
+\node[box=gray!12, below=of dem] (modis) {Escena MODIS\\15-02-2019 (1 km)};
+\node[box=teal!12, right=of st, yshift=-6.5mm] (reg) {Regionalización\\C1, C1-lap, C2-OLS,\\C2-IDW, C3-GWR};
+\node[box=teal!12, right=of reg] (cv) {\textbf{Exp. R}: validación\\cruzada espacial\\anidada (90 días)};
+\node[box=orange!15, below=of reg, yshift=-5mm] (metric) {METRIC: $R_n$, $G$, anclas,\\$r_{ah}$, $H$, $LE$, $\mathrm{ET_rF}$};
+\node[box=orange!15, right=of metric] (m) {\textbf{Exp. M}: sustitución\\completa y de una\\variable por vez};
+\node[box=orange!15, below=of m] (s) {\textbf{Exp. S}: Monte Carlo\\anclas, ruido MODIS,\\alternativas};
+\node[box=gray!5, below=of metric] (eta) {$\mathrm{ET_a} = \mathrm{ET_rF}\cdot\mathrm{ET_r^{24}}$};
+\draw[arr] (st) -- (reg); \draw[arr] (dem) -- (reg); \draw[arr] (reg) -- (cv);
+\draw[arr] (reg) -- node[left, font=\scriptsize]{$T_a, e_a, u_2, \mathrm{ET_r}$} (metric);
+\draw[arr] (modis) -- (metric); \draw[arr] (metric) -- (eta);
+\draw[arr] (metric) -- (m); \draw[arr] (m) -- (s);
+\end{tikzpicture}
+\caption{Diseño del estudio. Los tres experimentos comparten estaciones,
+covariables, escena, ecuaciones y criterios de calibración; solo cambia la
+representación espacial del forzamiento meteorológico.}\label{fig:workflow}
+\end{figure}
+
+
 \paragraph{Experimento R: regionalización meteorológica.} Para cada hora
 de paso (14:00~UTC) de los \NCVDays{} días entre el 1 de enero y el 31 de
 marzo de 2019, y para la temperatura del aire, la presión de vapor y la
@@ -122,14 +158,39 @@ modelada, igual para todas las configuraciones (D-04); $\ETr^{24}$ es la
 suma de las 24 horas. METRIC se ejecutó con idénticas ecuaciones, máscaras,
 insumos MODIS, criterios de anclas y condiciones de borde
 (tabla~\ref{tab:options}). Las anclas se seleccionan solo con variables de
-superficie (D-08); por construcción son las mismas celdas en todas las
-corridas, lo que se verificó, de modo que los cambios de calibración se
-deben exclusivamente al forzamiento evaluado en esas celdas. Se realizaron
+superficie (D-08) dentro de las celdas con todos los insumos válidos; si
+el forzamiento es válido en toda la escena, las anclas son las mismas celdas
+en todas las corridas (se verificó corrida por corrida), de modo que los
+cambios de calibración se deben exclusivamente al forzamiento evaluado en
+esas celdas. Se realizaron
 dos tipos de corrida: (a) \emph{sustitución completa}, con cada
 configuración; y (b) \emph{sustitución de una variable por vez}, partiendo de
 C1 y reemplazando una sola entrada ($T_a$, $e_a$, $u_2$, $\ETr$ instantánea
 o $\ETr^{24}$) por su campo C3-GWR. La comparación usa C1 como línea base
 porque representa la práctica convencional, no porque se suponga correcta.
+
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Opciones de METRIC comunes a todas las configuraciones (decisiones
+del estudio; ver \texttt{docs/decisions.md}).}\label{tab:options}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.3cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.6cm}}
+\toprule
+Componente & Elección & Estado / decisión \\
+\midrule
+Onda corta incidente & Transmisividad particionada de Allen ($K_t = 1$), terreno plano & CANDIDATA \\
+Flujo de calor del suelo & Bastiaanssen ($G/R_n$ en función de $T_s$, $\alpha$, NDVI) & VERIFICADA; D-05 \\
+Rugosidad & $z_{om} = 0{,}018\,\mathrm{LAI}$, mínimo \SI{0,005}{\metre} & D-06 \\
+Viento a la altura de mezcla & Perfil logarítmico desde \SI{2}{\metre}, $z_{om}$ de la estación \SI{0,015}{\metre}, $z_b = \SI{200}{\metre}$ & VERIFICADA \\
+Estabilidad & Monin--Obukhov iterativa; $\psi_m$ estable a \SI{2}{\metre}; tolerancia 0,01; máx. 20 iteraciones & VERIFICADA; P0-10 \\
+Anclas & Frías: NDVI $\ge P_{95}$ y 20\,\% más frío; calientes: NDVI $\le P_{10}$ y 20\,\% más cálido; mediana & CANDIDATA; D-08 \\
+Condiciones de borde & $\mathrm{ET_rF}_{cold} = 1{,}05$; $LE_{hot} = 0$ & D-07 \\
+Corrección de $T_s$ & $\Gamma = \SI{6,5}{\kelvin\per\kilo\metre}$ a la elevación mediana & VERIFICADA (forma) \\
+Calor latente de vaporización & Constante, \SI{2,45}{\mega\joule\per\kilo\gram} & P0-7 \\
+ET de referencia & Alfalfa, ASCE-EWRI horaria; $\mathrm{ET_r^{24}}$ = suma de 24 horas & VERIFICADA; D-04 \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \paragraph{Experimento S: sensibilidad y robustez.} Con los forzamientos C1
 y C3-GWR (o la mejor alternativa espacial factible) se realizaron

@@ -1,11 +1,12 @@
 # Run the whole CEDES 2027 study from the root of the EarthFlux sources:
+Sys.setenv(LC_ALL = "C.UTF-8", LANG = "C.UTF-8") # UTF-8 labels in figures and tables
 #   Rscript research/cedes2027/scripts/run_all.R
 # Optional: CEDES_SKIP_DOWNLOAD=1 to reuse the cache; CEDES_WORKERS=n to set a
 # future plan for the cross-validation (results are identical for any plan).
 
 steps <- c("01_download_data.R", "02_covariates.R", "03_stations.R",
            "04_regionalization_cv.R", "04b_residuals_density.R",
-           "05_metric_experiment.R",
+           "05_metric_experiment.R", "05b_forcing_range.R",
            "06_sensitivity.R", "07_figures_tables.R", "08_numbers.R")
 if (nzchar(Sys.getenv("CEDES_SKIP_DOWNLOAD"))) steps <- steps[-1]
 root <- file.path("research", "cedes2027")
