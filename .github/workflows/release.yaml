@@ -4,8 +4,9 @@ name: release
 # pushed, when a release is published from the GitHub interface (which
 # creates the tag), or manually from main (Actions > release > Run workflow),
 # in which case the tag v<Version> is created on the current commit. The tag must match the Version field of
-# DESCRIPTION; the release notes are the NEWS.md section of that version and
-# the source tarball is attached (an existing release is updated).
+# DESCRIPTION and the source tarball is attached (an existing release is
+# updated). Release notes written on GitHub are kept; only a release without
+# notes gets the NEWS.md section of that version.
 
 on:
   push:
@@ -52,12 +53,33 @@ jobs:
         run: |
           R CMD build .
           R CMD check --no-manual "EarthFlux_${VERSION}.tar.gz"
-      - name: Release notes from NEWS.md
+      - name: Release notes (kept if written on GitHub, else from NEWS.md)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          awk -v v="# EarthFlux ${VERSION}" '
-            index($0, v) == 1 {on = 1; next}
-            on && /^# EarthFlux / {exit}
-            on {print}' NEWS.md > release-notes.md
+          # Only a missing release (HTTP 404) or an empty body falls back to
+          # NEWS.md; any other lookup failure stops the job so that notes
+          # written on GitHub are never overwritten.
+          if existing=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" \
+            --jq '.body // ""' 2> lookup-error.txt); then
+            :
+          elif grep -q "HTTP 404" lookup-error.txt; then
+            existing=""
+          else
+            cat lookup-error.txt
+            echo "Could not look up the release ${TAG}; re-run the job"
+            exit 1
+          fi
+          if [ -n "$(printf '%s' "${existing}" | tr -d '[:space:]')" ]; then
+            echo "Keeping the release notes written on GitHub"
+            printf '%s\n' "${existing}" > release-notes.md
+          else
+            echo "Release notes from the NEWS.md section of ${VERSION}"
+            awk -v v="# EarthFlux ${VERSION}" '
+              index($0, v) == 1 {on = 1; next}
+              on && /^# EarthFlux / {exit}
+              on {print}' NEWS.md > release-notes.md
+          fi
           test -s release-notes.md
       - uses: softprops/action-gh-release@v2
         with:
