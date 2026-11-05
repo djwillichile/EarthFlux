@@ -21,9 +21,16 @@ en el commit que se etiqueta, se cumple todo lo siguiente:
 ## Pasos
 
 1. En una rama `code/release-vX.Y.Z`, fijar `Version: X.Y.Z` en
-   `DESCRIPTION` y `version` en `CITATION.cff`, y convertir el encabezado de
-   desarrollo de `NEWS.md` en `# EarthFlux X.Y.Z` con su resumen. Abrir un
-   PR hacia `main` (commit `release: EarthFlux X.Y.Z`).
+   `DESCRIPTION`, `version` en `CITATION.cff` y en `.zenodo.json`, y
+   convertir el encabezado de desarrollo de `NEWS.md` en
+   `# EarthFlux X.Y.Z` con su resumen. `inst/CITATION` toma la versión de
+   `DESCRIPTION` (`meta$Version`) y no se edita. Abrir un PR hacia `main`
+   (commit `release: EarthFlux X.Y.Z`).
+
+   `date-released` de `CITATION.cff` no se fija en este paso: el formato
+   CFF 1.2.0 no lo exige y la fecha real solo se conoce al publicar. Se
+   agrega con la fecha del GitHub Release (`date-released: "YYYY-MM-DD"`)
+   en el commit posterior al release que registra el DOI (paso 4).
 2. Tras la fusión, crear el tag `vX.Y.Z` sobre el commit de merge de `main`:
 
    ```sh
@@ -38,16 +45,90 @@ en el commit que se etiqueta, se cumple todo lo siguiente:
 3. El workflow `release` comprueba que el tag coincide con `DESCRIPTION`,
    construye y verifica el paquete y crea o actualiza el GitHub Release con
    la sección de `NEWS.md` como notas y el tarball adjunto.
-4. **Zenodo** (pendiente de activar en el primer release): con la
-   integración de GitHub activada, cada release publicado se archiva y
-   obtiene un DOI de versión. El DOI de concepto (siempre la última
-   versión) se usa en `CITATION.cff`, `inst/CITATION` y el badge del README;
-   el DOI de versión se agrega a la sección de `NEWS.md` y a `identifiers`
-   en `CITATION.cff`. Requiere un `.zenodo.json` con metadatos del autor
-   (afiliación a confirmar por el autor).
+4. **Zenodo**: con la integración de GitHub activada (*zenodo.org →
+   Account → GitHub*, interruptor del repositorio `djwillichile/EarthFlux`
+   en *On*; debe hacerse **antes** de publicar el release, Zenodo solo
+   archiva los releases publicados después de activarla), cada release
+   publicado se archiva y obtiene un DOI de versión. Los metadatos salen de
+   `.zenodo.json` (tiene prioridad sobre `CITATION.cff`; excluido del
+   paquete en `.Rbuildignore`): título, descripción de `DESCRIPTION`,
+   autor con nombre y ORCID, licencia MIT, tipo `software`, palabras clave
+   de `CITATION.cff` y enlaces al repositorio y al sitio pkgdown. El DOI de
+   concepto (siempre la última versión) se usa en `CITATION.cff`,
+   `inst/CITATION` y el badge del README; el DOI de versión se agrega a la
+   sección de `NEWS.md` y a `identifiers` en `CITATION.cff`.
+
+   **Afiliación pendiente:** `.zenodo.json` no incluye `affiliation`
+   porque el autor no la ha confirmado. Si la quiere, la agrega como
+   `"affiliation": "..."` en `creators` **antes** del release (PR aparte
+   antes de crear el tag) o **después**, editando el registro en Zenodo y
+   `.zenodo.json` para las versiones siguientes.
 5. En `main`, abrir la siguiente versión de desarrollo en una rama
    `code/dev-X.Y.Z.9000` (`Version: X.Y.Z.9000`, encabezado
    `# EarthFlux X.Y.Z.9000 (development version)` en `NEWS.md`; commit
    `dev: start X.Y.Z.9000`).
 
 El paquete no se envía a CRAN sin autorización explícita del mantenedor.
+
+## Estado de 0.1.0 (rama `code/release-v0.1.0`)
+
+Primer release (`DECISIONS.md` §1.4, M4-00). Paso 1 hecho en la rama
+`code/release-v0.1.0`; sin tag ni publicación.
+
+Lista de verificación, comprobada localmente el 2026-11-05 (Linux, R 4.3.3,
+roxygen2 8.1.1, terra 1.9.50):
+
+- [x] Tests: `devtools::test()` con 4706 expectativas, 0 fallos, 0
+      warnings y 3 omitidos (el test del pipeline, pendiente de M5, y dos
+      de paralelismo que necesitan el paquete instalado y corren en
+      `R CMD check`). Incluye los tests de extremo a extremo de la cadena
+      METRIC, del forzamiento y de la superficie MODIS.
+- [ ] `R CMD check` multiplataforma: local `devtools::check()`
+      (`_R_CHECK_SYSTEM_CLOCK_=FALSE`, `--no-manual`) con 0 errores,
+      0 warnings y 0 notes; tarball de 0,75 MB. **Falta** la CI del PR
+      (Ubuntu release, devel, oldrel; Windows) y macOS en `main` sobre el
+      commit de merge.
+- [x] Documentación regenerada (`devtools::document()` sin cambios
+      pendientes; `README.md` con `devtools::build_readme()`);
+      `pkgdown::check_pkgdown()` sin problemas y `pkgdown::build_site()`
+      local sin errores. Falta la CI `document` y `pkgdown` del PR.
+- [x] `NEWS.md` con `# EarthFlux 0.1.0`, resumen y secciones
+      `## New features`, `## Changes`, `## Documentation` (sin cambios
+      incompatibles: es la primera versión).
+- [ ] *Definition of Done*: el estado de verificación está declarado en
+      roxygen (`CANDIDATA`/`VERIFICADA`), README, NEWS y artículos, pero la
+      condición 1 de `DEVELOPMENT.md` §3 (ecuación `VERIFICADA`) **no** se
+      cumple para las formulaciones `CANDIDATA` del núcleo METRIC: se
+      publican por la regla provisional de `DECISIONS.md` §1.0 (P0-1 …
+      P0-3 abiertas; hallazgo M2-07 sobre SH-11) y la decisión M4-00. El
+      autor confirma esta excepción al fusionar.
+- [ ] Decisiones `DECIDIDA (provisional)` (P0-4 … P0-12, §1.2 – §1.4),
+      declaradas "revisables por el autor antes de `0.1.0`": el autor
+      confirma que se mantienen provisionales en 0.1.0 o las revisa.
+
+Pasos restantes para el autor, en este orden:
+
+1. Revisar el PR de `code/release-v0.1.0` (confirmar las dos excepciones
+   de arriba) y esperar la CI del PR en verde (R-CMD-check, document,
+   pkgdown).
+2. Activar el repositorio en Zenodo (paso 4) **antes** de publicar el
+   release. Si se quiere la afiliación en el primer archivo, agregarla
+   antes a `.zenodo.json` (PR aparte).
+3. Fusionar el PR con commit de merge.
+4. Comprobar en *Actions* que `R-CMD-check` del commit de merge en `main`
+   está en verde **incluido macOS**; si macOS no corrió o se canceló por
+   falta de runner, lanzarlo con *Run workflow* sobre `main` y esperar el
+   verde antes de seguir.
+5. Crear el tag y el release `v0.1.0` sobre el commit de merge (paso 2;
+   desde *Releases → Draft a new release*, tag `v0.1.0`, target `main`,
+   título `EarthFlux 0.1.0`, o con `git tag -a v0.1.0 -m "EarthFlux 0.1.0"`
+   y `git push origin v0.1.0`).
+6. Verificar que el workflow `release` terminó (notas de `NEWS.md` y
+   `EarthFlux_0.1.0.tar.gz` adjunto), que el badge *GitHub release* del
+   README muestra 0.1.0 y que Zenodo creó el registro con su DOI.
+7. Abrir la versión de desarrollo (paso 5): rama `code/dev-0.1.0.9000`,
+   `Version: 0.1.0.9000`, encabezado
+   `# EarthFlux 0.1.0.9000 (development version)` en `NEWS.md`, commit
+   `dev: start 0.1.0.9000`; en un commit `docs:` aparte, registrar el DOI
+   (paso 4) y `date-released` en `CITATION.cff`, y marcar en `ROADMAP.md`
+   el release 0.1.0 y la integración con Zenodo como hechos.

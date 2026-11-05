@@ -13,3 +13,4 @@
 ^vignettes/articles$
 ^branding$
 ^data-raw$
+^\.zenodo\.json$
