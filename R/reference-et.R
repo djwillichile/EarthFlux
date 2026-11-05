@@ -1016,7 +1016,7 @@ ef_flags_reference_et <- function() {
              "dev/specs/weather-forcing.md 5.4",
              "dev/specs/weather-forcing.md 3.2 (QC-10), 5.6",
              "dev/specs/weather-forcing.md 5.5"),
-    since = rep("0.0.0.9000", 4L)
+    since = rep("0.1.0", 4L)
   )
 }
 

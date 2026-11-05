@@ -505,7 +505,7 @@ ef_flags_surface <- function() {
       "dev/specs/flags.md 4.2 (C12); dev/specs/modis-products.md 8.1",
       "dev/specs/flags.md 4.2; dev/specs/modis-products.md 5.7, 15 (MP-06)"
     ),
-    since = rep("0.0.0.9000", n)
+    since = rep("0.1.0", n)
   )
 }
 

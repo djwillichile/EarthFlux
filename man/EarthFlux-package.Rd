@@ -18,12 +18,21 @@ geographically weighted regression (GWR) is investigated as a way to
 represent spatially varying meteorological forcing.
 }
 \details{
-\strong{Development status.} The first METRIC component,
-\code{\link[=ef_net_radiation]{ef_net_radiation()}}, is available; its equation form is corroborated by
-secondary sources and verification against the primary reference is
-pending. The remaining components are being specified. The use of GWR for
-meteorological forcing is treated as a research hypothesis that has not
-been validated.
+\strong{Development status.} Version 0.1.0 is the first, experimental
+release. It provides the METRIC core physics as numeric functions, from
+net radiation to daily actual evapotranspiration; the meteorological
+forcing (weather station tables, quality control, reference
+evapotranspiration) and its regionalization over the working grid
+(representative station, global regression, inverse distance weighting
+and GWR); the internal MODIS preprocessing into the surface state; and
+the example scene \link{cauquenes_modis}. The integrated workflow
+\code{earthflux()} does not exist yet. Most METRIC formulations are candidates
+pending verification against the primary reference (Allen et al., 2007);
+the reference evapotranspiration (FAO-56, ASCE-EWRI 2005), the unit
+conversions and the MODIS product facts are verified. No result has been
+validated: EarthFlux is not for operational or scientific production
+use. The use of GWR for meteorological forcing is treated as a research
+hypothesis that has not been validated.
 
 \strong{Design principles.}
 \itemize{

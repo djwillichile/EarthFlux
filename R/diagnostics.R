@@ -267,7 +267,7 @@ ef_flags_core <- function() {
     description =
       "A required input value is missing; the output is NA at this location.",
     spec = "dev/specs/flags.md 4.2",
-    since = "0.0.0.9000"
+    since = "0.1.0"
   )
 }
 

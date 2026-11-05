@@ -11,7 +11,9 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 - [x] CI: R CMD check multiplataforma, pkgdown, control de documentación,
       sincronización del About, limpieza de ramas fusionadas.
 - [x] Proceso de release documentado (`RELEASING.md`) y automatizado.
-- [ ] Integración con Zenodo (primer release).
+- [ ] Integración con Zenodo (primer release): `.zenodo.json` listo (sin
+      afiliación, a confirmar por el autor); falta activar el repositorio
+      en Zenodo antes del release `0.1.0`.
 
 ## M1 — Scientific specification
 - [x] Radiación neta (`ef_net_radiation()` implementada; ecuación
@@ -106,7 +108,11 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 - [ ] Primer release experimental `0.1.0` al cierre de M4, con la escena de
       ejemplo de Cauquenes (opción B, decisión del autor del 2026-11-04;
       `DECISIONS.md` §1.4, M4-00); antes previsto al cierre de M2 con el
-      pipeline parcial testeado.
+      pipeline parcial testeado. **Listo, pendiente del tag**: preparado en
+      la rama `code/release-v0.1.0` (`Version: 0.1.0`, `NEWS.md`, README
+      con la escena de ejemplo, artículo *Example scene: Cauquenes*,
+      `.zenodo.json`); faltan la fusión, macOS en `main`, la activación de
+      Zenodo y el tag `v0.1.0` (`RELEASING.md`, "Estado de 0.1.0").
 
 ## M5 — Integrated pipeline
 - [ ] `earthflux()` sobre el núcleo; objeto de resultado con diagnósticos y

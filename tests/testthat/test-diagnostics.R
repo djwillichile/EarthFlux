@@ -134,7 +134,7 @@ test_that("the registry build rejects duplicated codes and bit clashes", {
       code = "EF_ET_TEST_CLASH", stage = "ET", severity = "info",
       scope = "cell", bit = et_rows$bit[1L], error_class = NA_character_,
       description = "A test condition holds.",
-      spec = "dev/specs/flags.md 4.2", since = "0.0.0.9000"
+      spec = "dev/specs/flags.md 4.2", since = "0.1.0"
     )
     testthat::local_mocked_bindings(ef_flags_et = function() {
       rbind(et_rows, clash)
@@ -163,7 +163,7 @@ valid_row <- list(
   code = "EF_RAD_TEST_CONDITION", stage = "RAD", severity = "warning",
   scope = "cell", bit = 5L, error_class = NA_character_,
   description = "A test condition holds.", spec = "dev/specs/flags.md 4.2",
-  since = "0.0.0.9000"
+  since = "0.1.0"
 )
 row_with <- function(...) do.call(ef_flag_rows,
                                   utils::modifyList(valid_row, list(...)))

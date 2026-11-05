@@ -1,0 +1,35 @@
+{
+  "title": "EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data",
+  "version": "0.1.0",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "description": "<p>Tools for estimating spatially distributed actual evapotranspiration from Earth observation data using the METRIC (Mapping EvapoTranspiration at high Resolution with Internalized Calibration) surface energy balance framework, combined with meteorological forcing that may vary in space, for example through geographically weighted regression (GWR). The package is designed for reproducible processing, diagnostics, validation and scientific analysis. It is under active development and its methods have not yet been scientifically validated.</p>",
+  "creators": [
+    {
+      "name": "Fuentes-Jaque, Guillermo Servando",
+      "orcid": "0000-0002-7864-4899"
+    }
+  ],
+  "keywords": [
+    "evapotranspiration",
+    "METRIC",
+    "surface energy balance",
+    "MODIS",
+    "geographically weighted regression",
+    "remote sensing",
+    "R"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/djwillichile/EarthFlux",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://djwillichile.github.io/EarthFlux/",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    }
+  ]
+}

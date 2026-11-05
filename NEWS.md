@@ -1,16 +1,39 @@
-# EarthFlux 0.0.0.9000 (development version)
+# EarthFlux 0.1.0
 
-First development version. It sets up the package infrastructure and
-provides the core physics of the METRIC surface energy balance chain as
-numeric functions, from net radiation to daily actual evapotranspiration
-(milestone M2), and the meteorological forcing of that chain: weather
-station tables and their quality control, reference evapotranspiration at
-the stations and the regionalization of station variables over the working
-grid by geographically weighted regression and its baselines (milestone
-M3), and the preprocessing of MODIS products into the surface state of
-that chain (milestone M4). Most formulations are candidates pending
-verification against the primary references; no scientific result has
-been validated yet.
+First release of EarthFlux. It is **experimental and not for operational or
+scientific production use**: no result has been validated. It includes the
+METRIC core physics as numeric functions, from net radiation to daily
+actual evapotranspiration (milestone M2); the meteorological forcing of
+that chain, with weather station tables and their quality control, derived
+variables and reference evapotranspiration at the stations, and the
+regionalization of station variables over the working grid by a
+representative station (C1), global regression and inverse distance
+weighting (C2) and geographically weighted regression on an internal GWR
+core (C3), with exact block prediction, optional parallel execution and
+spatial block cross-validation (milestone M3); and the preprocessing of
+MODIS products into the surface state of the chain (internal, not exported
+yet) with the example dataset `cauquenes_modis`, the MODIS surface state of
+the Cauquenes province (Chile) on 15 February 2019 (milestone M4). The
+integrated `earthflux()` workflow, its presets, the automatic download of
+MODIS products, elevation model and weather forcing, and any validation
+results are not part of this release.
+
+Verified against the primary sources (`VERIFICADA`): the reference
+evapotranspiration of FAO-56 (worked examples 18 and 19 reproduced) and of
+the ASCE-EWRI (2005) standardized equation (equations and constants checked
+against the 2005 Task Committee report; its worked examples are not
+reproduced yet), the unit conversions and the MODIS product facts, each
+with its citation to the official user guide or file specification. Most
+METRIC formulations are candidates (`CANDIDATA`): corroborated by secondary
+sources, with verification against Allen, Tasumi & Trezza (2007) pending.
+The key open items are the height of the stable momentum correction
+psi_m (decision SH-11, argument `stable_psi_m_height` without default),
+which decides whether the sensible heat calibration converges when the
+cold anchor is stable (finding M2-07); the specific heat of air c_p
+(1004 J kg-1 K-1, candidate); the temperature used in the incoming
+longwave radiation (left to the caller of `ef_rl_in()`); and the
+emissivity of non-vegetated pixels, derived from a LAI assigned with the
+option `lai_nonveg` of the surface state.
 
 ## New features
 
@@ -546,9 +569,18 @@ been validated yet.
 
 ## Documentation
 
-* README and introductory vignette describe the development status, show
-  the package title from `DESCRIPTION` and include an executable
-  `ef_net_radiation()` example.
+* README with the status of 0.1.0 (what is included, what is not, and the
+  verification status), an executable example on the packaged scene
+  (`cauquenes_modis`: layers, units and a map of the emitted longwave
+  radiation from `ef_rl_out()`) and the executable `ef_net_radiation()`
+  example; the package title is read from `DESCRIPTION`.
+
+* Package help (`?EarthFlux`), introductory vignette and the *Design and
+  development status* article updated to the contents of 0.1.0.
+
+* New website article *Example scene: Cauquenes* (not part of the package
+  tarball): maps of the surface state, how to read the flag words, the
+  provenance of the scene and what is not in 0.1.0.
 
 * pkgdown site at <https://djwillichile.github.io/EarthFlux/>, rebuilt on
   every change to `main`.
@@ -556,4 +588,8 @@ been validated yet.
 * Continuous integration: `R CMD check` on Linux (release, devel, oldrel),
   Windows and macOS; a check that the roxygen2 documentation and
   `README.md` are up to date; repository settings synchronised from
-  `DESCRIPTION`.
+  `DESCRIPTION`; GitHub releases built from the version tag with the
+  `NEWS.md` section as notes.
+
+* Zenodo metadata (`.zenodo.json`, excluded from the package build) for
+  archiving the GitHub releases.

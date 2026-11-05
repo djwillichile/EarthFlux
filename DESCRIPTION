@@ -1,6 +1,6 @@
 Package: EarthFlux
 Title: Land-Surface Energy and Water Fluxes from Earth Observation Data
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R:
     person("Guillermo Servando", "Fuentes-Jaque", , "gfuentesj@correo.uss.cl", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0002-7864-4899"))

@@ -2104,6 +2104,6 @@ ef_flags_anchors <- function() {
       "Anchor pixels of one class have different overpass times."
     ),
     spec = rep(spec, 10L),
-    since = rep("0.0.0.9000", 10L)
+    since = rep("0.1.0", 10L)
   )
 }
