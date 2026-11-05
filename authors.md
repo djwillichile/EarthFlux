@@ -9,7 +9,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/djwillichile/EarthFlux/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/djwillichile/EarthFlux/blob/v0.1.0/inst/CITATION)
 
 Fuentes-Jaque, G. S. (2026). EarthFlux: Land-Surface Energy and Water
 Fluxes from Earth Observation Data. R package version 0.1.0.

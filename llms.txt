@@ -163,17 +163,10 @@ terra::global(rl_out, c("min", "mean", "max"), na.rm = TRUE)
 #>             min     mean      max
 #> rl_out 383.4013 458.0683 489.6118
 
-# Computed on the native grid; shown in geographic coordinates (EPSG:4326)
-rl_out_lonlat <- terra::project(rl_out, "EPSG:4326", method = "bilinear")
-terra::plot(rl_out_lonlat,
-            main = "Emitted longwave radiation (W m-2), 2019-02-15")
+terra::plot(rl_out, main = "Emitted longwave radiation (W m-2), 2019-02-15")
 ```
 
 ![](reference/figures/README-example-rl-out-1.png)
-
-The map is projected to geographic coordinates (WGS 84, EPSG:4326) for
-display only; the scene and every computation stay on the native MODIS
-grid.
 
 The article [Example scene:
 Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.html)

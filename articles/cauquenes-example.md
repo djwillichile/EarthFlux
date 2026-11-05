@@ -71,18 +71,6 @@ data.frame(layer = names(r), unit = terra::units(r))
 The grid is the native 1 km sinusoidal grid of the MOD11A1 file. Cells
 outside the province are `NA` in every layer, flag words included.
 
-Every computation in this article runs on that native grid. The maps are
-projected to geographic coordinates (WGS 84, EPSG:4326) for display
-only: continuous layers with bilinear interpolation and flag layers with
-the nearest neighbour, so that no flag is interpolated.
-
-``` r
-
-to_lonlat <- function(x, method = "bilinear") {
-  terra::project(x, "EPSG:4326", method = method)
-}
-```
-
 ``` r
 
 vars <- c("lst", "albedo", "ndvi", "lai", "emissivity", "utc_hour")
@@ -107,7 +95,7 @@ longitude of the cell).
 ``` r
 
 terra::plot(
-  to_lonlat(r[[vars]]),
+  r[[vars]],
   main = c("LST (K)", "Albedo (-)", "NDVI (-)", "LAI (m2 m-2)",
            "Emissivity (-)", "Overpass (UTC hour)"),
   nc = 3, axes = FALSE
@@ -248,8 +236,7 @@ counts[rowSums(counts) > 0, , drop = FALSE]
 
 flagged <- c(cloud, lai_assigned)
 names(flagged) <- c("EF_SURF_CLOUD (LST)", "EF_SURF_LAI_ASSIGNED (LAI)")
-terra::plot(to_lonlat(flagged, method = "near"),
-            col = c("grey85", "#00606F"), legend = FALSE, nc = 2)
+terra::plot(flagged, col = c("grey85", "#00606F"), legend = FALSE, nc = 2)
 ```
 
 ![](cauquenes-example_files/figure-html/flag-maps-1.png)
@@ -273,7 +260,7 @@ names(rl_out) <- "rl_out"
 terra::global(rl_out, c("min", "max", "mean"), na.rm = TRUE)
 #>             min      max     mean
 #> rl_out 383.4013 489.6118 458.0683
-terra::plot(to_lonlat(rl_out), main = "Emitted longwave radiation (W m-2)")
+terra::plot(rl_out, main = "Emitted longwave radiation (W m-2)")
 ```
 
 ![](cauquenes-example_files/figure-html/rl-out-1.png)
