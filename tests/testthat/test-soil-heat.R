@@ -2,9 +2,10 @@
 # ef_g_tasumi() and the cell diagnostics of the stage.
 #
 # Specification: dev/specs/soil-heat-flux.md (numeric cases in section 8,
-# test design in section 9). Both formulations are CANDIDATA: the cases
-# check the implementation of the candidate equations, not their scientific
-# validity, and must be recomputed if the primary sources change them.
+# test design in section 9). Bastiaanssen is VERIFICADA (SEBAL-Idaho 2002;
+# literal check in test-verification.R) and Tasumi CANDIDATA: the cases
+# check the implementation of the equations, not their scientific validity,
+# and must be recomputed if the primary sources change them.
 #
 # Tolerance: the expected values below were recomputed from the inputs of
 # section 8 with `bc -l` at 30 decimal digits (an arbitrary-precision

@@ -333,9 +333,14 @@ test_that("SH-14.5: phase B is block-size invariant (property 7)", {
 test_that("SH-11: both stable_psi_m_height options with a stable cold anchor", {
   stable <- scene_anchors
   stable$le_target <- c(600, 0) # H_target = -50 W m-2 at the cold anchor
-  ctrl2 <- ef_h_control(2, 200, 0.1, 2, tol = 1e-8, maxit = 100L)
+  # Default of ef_h_control(): 2 m (Waters et al., 2002, Eq. 38)
+  ctrl2 <- ef_h_control(tol = 1e-8, maxit = 100L)
   cal <- calibrate(stable, control = ctrl2)
   expect_true(cal$converged)
+  # Values of the independent script of the author (forms of the manual)
+  expect_identical(cal$iterations, 19L)
+  expect_lt(abs(cal$a - (-120.328834)), 5e-6)
+  expect_lt(abs(cal$b - 0.39688192), 5e-8)
   cold <- cal$anchors[cal$anchors$type == "cold", ]
   expect_gt(cold$obukhov_length, 0)
   expect_lt(abs(cold$h / -50 - 1), 1e-9)
@@ -344,9 +349,8 @@ test_that("SH-11: both stable_psi_m_height options with a stable cold anchor", {
                     psi_m = ef_psi_m(2, cold$obukhov_length))
   expect_equal(cold$u_star, u_fix, tolerance = 1e-6)
 
-  # With z_b / L the iteration of this synthetic scene diverges (observed
-  # behaviour of the CANDIDATA forms, reported with a classed error and the
-  # trace, never silently)
+  # With z_b / L the iteration of this synthetic scene diverges (finding
+  # M2-07; reported with a classed error and the trace, never silently)
   ctrl200 <- ef_h_control(200, 200, 0.1, 2, tol = 1e-8, maxit = 100L)
   err <- tryCatch(calibrate(stable, control = ctrl200), error = function(e) e)
   expect_s3_class(err, "earthflux_calibration_error")
