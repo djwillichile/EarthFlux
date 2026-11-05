@@ -554,8 +554,26 @@ inutilizable fuera de la investigación.
 | Estado de superficie MODIS | Sí | Descarga automática (CMR + LP DAAC, token Earthdata del entorno; M4-26) |
 | Elevación | Sí (presión, Ts,datum) | Descarga automática del MDE (M5-06) |
 | Pendiente y orientación | Solo con relieve | Derivadas del mismo MDE; opción explícita de terreno plano |
-| Meteorología a la hora de paso y diaria | Sí (ETr de calibración) | Usuario: una estación, o fuente grillada (M5-07) |
+| Meteorología a la hora de paso y diaria | Sí (ETr de calibración) | Usuario: una estación; o, sin estaciones, **ERA5 vía Open-Meteo** descargado por el paquete (M5-07) |
 | Cobertura de suelo | **No** | Opcional, solo como máscara de exclusión (M5-05) |
+
+**Forzamiento sin estaciones (M5-07, decisión del autor del 2026-11-05).**
+La fuente predeterminada del nivel básico cuando el usuario no entrega
+estaciones es **ERA5 vía la API histórica de Open-Meteo**
+(`archive-api.open-meteo.com`, modelo `era5`; nunca `era5_land` solo, que
+no entrega radiación, viento ni presión): temperatura y punto de rocío a
+2 m, viento a 10 m, radiación de onda corta y presión en superficie,
+horarios, sin credencial. Condiciones: (1) licencia CC BY 4.0 con
+atribución en la procedencia; el plan gratuito es solo **no comercial**
+(< 10 000 llamadas por día), por lo que `earthflux()` acepta una clave
+opcional (`apikey`) para uso comercial; (2) el ajuste por elevación que
+aplica la API es una opción explícita registrada en la procedencia;
+(3) ERA5 comprime la amplitud diaria (en el contraste del 2019-02-15,
+Tmax 2–3 K bajo y Tmin 3–4 K alto) y su celda (0,25°) da un forzamiento
+casi uniforme a escala de valle: el resultado lleva un flag de forzamiento
+grillado y no reemplaza a las estaciones en la validación; (4) viento y
+valores a la hora de paso quedan sin evaluar hasta tener datos horarios de
+estaciones.
 
 **Presets (M5-04).** Un preset es un conjunto nombrado y documentado de
 todas las opciones científicas de la cadena; `earthflux()` lo exige como
