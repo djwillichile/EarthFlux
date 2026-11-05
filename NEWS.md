@@ -1,3 +1,5 @@
+# EarthFlux 0.1.0.9000 (development version)
+
 # EarthFlux 0.1.0
 
 First release of EarthFlux. It is **experimental and not for operational or
