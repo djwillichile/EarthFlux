@@ -93,6 +93,7 @@ roxygen2 8.1.1, terra 1.9.50):
       `pkgdown::check_pkgdown()` sin problemas y `pkgdown::build_site()`
       local sin errores. Falta la CI `document` y `pkgdown` del PR.
 - [x] `NEWS.md` con `# EarthFlux 0.1.0`, resumen y secciones
+      `## Verification against the SEBAL Idaho manual` (2026-11-05),
       `## New features`, `## Changes`, `## Documentation` (sin cambios
       incompatibles: es la primera versión).
 - [ ] *Definition of Done*: el estado de verificación está declarado en

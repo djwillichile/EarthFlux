@@ -20,8 +20,10 @@ preprocessing. This article shows its layers, how to read its flag words
 and where it comes from.
 
 > **Experimental.** EarthFlux 0.1.0 is an experimental release. Most of the
-> options used to build the scene (albedo, emissivity, assigned LAI of the
-> non-vegetated classes, aggregation) are candidates pending verification.
+> options used to build the scene (albedo, assigned LAI of the
+> non-vegetated classes, aggregation) are candidates pending verification;
+> the LAI-based emissivity follows the SEBAL Idaho manual (Waters et al.,
+> 2002).
 > The scene is meant for examples, tests and documentation, not for
 > scientific results.
 

@@ -90,15 +90,19 @@ Verification status:
   reproduced yet), the unit conversions and the MODIS product facts
   (scale factors, fill values, quality bits, with citations to the
   official user guides).
-- **Candidate** (corroborated by secondary sources, verification against
-  Allen, Tasumi & Trezza, 2007, pending): most METRIC formulations. Open
-  points include the height of the stable momentum correction
-  (`stable_psi_m_height`, decision SH-11), which decides whether the
-  sensible heat calibration converges when the cold anchor is stable;
-  the specific heat of air; the temperature used for the incoming
-  longwave radiation; and the emissivity of non-vegetated pixels,
-  derived from a LAI assigned by the user (option `lai_nonveg`; LAI 0 in
-  the example scene).
+- **Verified against the SEBAL Idaho manual** of the METRIC authors
+  (Waters et al., 2002), the direct predecessor of METRIC, with page and
+  equation: most METRIC formulations, from net radiation to daily ET,
+  including the stable momentum correction of the blending height
+  (decision SH-11, default 2 m). The cross-check with Allen, Tasumi &
+  Trezza (2007) remains desirable.
+- **Candidate** (not covered by that manual): among others the
+  partitioned shortwave transmissivity and its terrain projection, the
+  soil heat flux of Tasumi and the anchor selection criteria. Open
+  points include the temperature used for the incoming longwave
+  radiation and the emissivity of non-vegetated pixels, derived from a
+  LAI assigned by the user (option `lai_nonveg`; LAI 0 in the example
+  scene).
 
 ## Design principles
 
