@@ -118,8 +118,10 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       cobertura de suelo opcional.
 - [ ] Presets de `earthflux()` (M5-04): nombres, contenido y estado.
 - [ ] Descarga y preparación automática del MDE (NASADEM, M5-06).
-- [ ] Forzamiento sin estaciones (M5-07): elegir la fuente tras la
-      evaluación.
+- [ ] Forzamiento sin estaciones (M5-07): evaluado el 2026-11-05
+      (recomendación provisional: Open-Meteo ERA5, CR2MET diario en Chile,
+      MCD18A1 v062 para Rs); falta la decisión del autor y evaluar viento y
+      hora de paso con datos horarios de estaciones.
 
 ## M6 — Scientific validation
 - [ ] Experimento C1 vs. C2 vs. C3 según `VALIDATION_PLAN.md`.
