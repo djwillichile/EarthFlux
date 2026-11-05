@@ -1069,7 +1069,7 @@ ef_flags_radiation <- function() {
       "dev/specs/radiation-components.md 6.4; dev/specs/flags.md 4.2",
       "dev/specs/ef_net_radiation.md 10.1; dev/specs/flags.md 4.2"
     ),
-    since = rep("0.0.0.9000", 4L)
+    since = rep("0.1.0", 4L)
   )
 }
 

@@ -453,6 +453,6 @@ ef_flags_soil_heat <- function() {
       "dev/specs/flags.md 4.2",
       "dev/specs/soil-heat-flux.md 6.3"
     ),
-    since = rep("0.0.0.9000", 4L)
+    since = rep("0.1.0", 4L)
   )
 }

@@ -75,7 +75,7 @@ ef_flags_stations <- function() {
       "The temperature and humidity sensors are not at the standard height of 2 m."
     ),
     spec = rep(spec, 9L),
-    since = rep("0.0.0.9000", 9L)
+    since = rep("0.1.0", 9L)
   )
 }
 

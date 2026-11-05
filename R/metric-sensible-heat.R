@@ -1054,7 +1054,7 @@ ef_flags_sensible_heat <- function() {
     ),
     spec = paste(spec, c("11.6", "11.6", "9.4", "9.4", "9.4", "16", "11.6",
                          "9.3")),
-    since = rep("0.0.0.9000", 8L)
+    since = rep("0.1.0", 8L)
   )
 }
 

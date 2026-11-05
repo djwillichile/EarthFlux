@@ -576,6 +576,6 @@ ef_flags_et <- function() {
       "the value is reported unchanged."
     ),
     spec = "dev/specs/evapotranspiration.md 7.1",
-    since = "0.0.0.9000"
+    since = "0.1.0"
   )
 }
