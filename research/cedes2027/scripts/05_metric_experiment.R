@@ -197,6 +197,22 @@ build_forcing <- function(f) {
   list(ta = ta[, , k_over], ea = ea[, , k_over], u2 = pmax(u2[, , k_over], 0.5),
        etr_inst = etr[, , k_over], etr_24 = apply(etr, c(1, 2), sum))
 }
+# Study decision D-14: when a configuration cannot be fitted for a variable
+# (e.g. too few stations measure wind for the global regression or GWR), the
+# C1 field of that variable is used and the substitution is recorded in
+# results/diagnostics/scene_forcing_fallbacks.csv; the configuration is then
+# reported as such in the tables.
+fallback <- list()
+for (cf in setdiff(configs, "C1")) for (v in names(inputs)) {
+  if (is.null(fields[[cf]][[v]]) && !is.null(fields[["C1"]][[v]])) {
+    fields[[cf]][[v]] <- fields[["C1"]][[v]]
+    fallback[[paste(cf, v)]] <- data.frame(config = cf, variable = v,
+                                           used = "C1 field")
+  }
+}
+write_csv(if (length(fallback)) do.call(rbind, fallback) else
+            data.frame(config = character(), variable = character(), used = character()),
+          p("results", "diagnostics", "scene_forcing_fallbacks.csv"))
 complete_cfg <- names(fields)[vapply(fields, length, 1L) == 3L]
 forcings <- lapply(fields[complete_cfg], build_forcing)
 

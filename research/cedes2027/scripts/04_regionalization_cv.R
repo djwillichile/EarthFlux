@@ -105,6 +105,11 @@ run_cv <- function(variable, label) {
   d
 }
 
+# Optional parallel plan (EarthFlux never sets one; results are identical
+# for any plan, dev/specs/parallel-processing.md).
+workers <- as.integer(Sys.getenv("CEDES_WORKERS", "1"))
+if (workers > 1) future::plan(future::multisession, workers = workers)
+
 t0 <- Sys.time()
 res <- list()
 for (v in names(inputs)) for (lab in names(methods)) {

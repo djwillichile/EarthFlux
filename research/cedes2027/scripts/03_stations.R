@@ -81,6 +81,56 @@ obs_isd <- data.frame(
   stringsAsFactors = FALSE
 )
 
+## DMC SACLIM (DMC, INIA and FDF automatic stations) -------------------------------
+
+# Hourly sheet RE1022: values at HH:00 UTC (treated as spot values, like
+# the airport reports). Air temperature (degC), dew point (degC), relative
+# humidity (%), wind speed (kt, DMC airports only). Vapour pressure from the
+# dew point when reported, else from RH and air temperature (FAO-56 Eq. 10,
+# ef_es()). Radiation (RE1019) is the hourly MAXIMUM of instantaneous
+# readings, not an hourly mean: it is not used as forcing (D-04).
+read_dmc <- function(dir) {
+  st <- utils::read.csv(file.path(dir, "dmc_stations_box.csv"),
+                        stringsAsFactors = FALSE)
+  files <- list.files(dir, pattern = "^dmc_RE1022_hourly_2019\\d{2}\\.csv$",
+                      full.names = TRUE)
+  h <- do.call(rbind, lapply(files, utils::read.csv, stringsAsFactors = FALSE,
+                             colClasses = "character"))
+  num <- function(x) suppressWarnings(as.numeric(x))
+  time <- as.POSIXct(paste(h$date_utc, h$hour_utc), format = "%Y-%m-%d %H:%M",
+                     tz = "UTC")
+  ta <- num(h$t_air_c); td <- num(h$t_dew_c); rh <- num(h$rh_pct)
+  ea <- ifelse(!is.na(td), ef_ea_dewpoint(td),
+               ifelse(!is.na(rh) & !is.na(ta) & rh > 0 & rh <= 100,
+                      rh / 100 * ef_es(ta), NA_real_))
+  ws <- num(h$wind_speed_kt) * 0.514444
+  obs <- data.frame(station_id = paste0("DMC", h$station_id), time = time,
+                    air_temperature = ta, vapour_pressure = ea,
+                    wind_speed = ws, solar_radiation = NA_real_,
+                    stringsAsFactors = FALSE)
+  obs <- obs[!is.na(obs$time) & (!is.na(obs$air_temperature) |
+                                  !is.na(obs$vapour_pressure)), ]
+  obs <- obs[!duplicated(obs[, c("station_id", "time")]), ]
+  meta <- data.frame(station_id = paste0("DMC", st$id), name = st$name,
+                     lon = st$lon, lat = st$lat, elevation = st$elevation_m,
+                     network = paste0("DMC SACLIM (", st$owner, ")"),
+                     height_temp_rh = 2,
+                     height_wind = ifelse(st$owner == "DMC", 10, NA_real_),
+                     stringsAsFactors = FALSE)
+  meta <- meta[meta$station_id %in% obs$station_id, ]
+  list(meta = meta, obs = obs)
+}
+dmc_dir <- file.path(cache_dir, "dmc")
+dmc <- if (file.exists(file.path(dmc_dir, "dmc_stations_box.csv"))) read_dmc(dmc_dir) else NULL
+if (!is.null(dmc)) {
+  # Airports reported by both sources: keep the DMC record (complete hours).
+  d <- terra::distance(cbind(meta_isd$lon, meta_isd$lat),
+                       cbind(dmc$meta$lon, dmc$meta$lat), lonlat = TRUE)
+  dup <- apply(d, 1, min) < 3000
+  meta_isd <- meta_isd[!dup, , drop = FALSE]
+  obs_isd <- obs_isd[obs_isd$station_id %in% meta_isd$station_id, , drop = FALSE]
+}
+
 ## Other networks (optional) ----------------------------------------------------
 
 # A network enters the study only if its harmonised files exist:
@@ -98,11 +148,14 @@ read_network_extra <- function(dir) {
   list(meta = m, obs = h[, names(obs_isd)])
 }
 extra_dirs <- list.dirs(cache_dir, recursive = FALSE)
-extra_dirs <- extra_dirs[file.exists(file.path(extra_dirs, "hourly.csv"))]
+extra_dirs <- extra_dirs[file.exists(file.path(extra_dirs, "hourly.csv")) &
+                           basename(extra_dirs) != "dmc"]
 extra <- lapply(extra_dirs, read_network_extra)
 
-meta <- do.call(rbind, c(list(meta_isd), lapply(extra, `[[`, "meta")))
-obs <- do.call(rbind, c(list(obs_isd), lapply(extra, `[[`, "obs")))
+meta <- do.call(rbind, c(list(meta_isd), if (!is.null(dmc)) list(dmc$meta),
+                         lapply(extra, `[[`, "meta")))
+obs <- do.call(rbind, c(list(obs_isd), if (!is.null(dmc)) list(dmc$obs),
+                        lapply(extra, `[[`, "obs")))
 meta <- meta[meta$lat >= box$lat_min & meta$lat <= box$lat_max &
                meta$lon >= box$lon_min & meta$lon <= box$lon_max, ]
 obs <- obs[obs$station_id %in% meta$station_id & obs$time >= period[1] &

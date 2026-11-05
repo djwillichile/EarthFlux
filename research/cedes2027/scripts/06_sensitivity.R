@@ -10,8 +10,8 @@
 #   S-B  MODIS inputs: LST + N(0, 1 K) spatially independent noise plus a
 #        scene-wide bias N(0, 0.5 K) (MOD11 accuracy of about 1 K; Wan,
 #        2014), albedo x (1 + N(0, 0.05)), NDVI and LAI unchanged;
-#   S-C  structural alternatives (deterministic): soil heat flux of
-#        Bastiaanssen vs Tasumi; zom floor 0.005 vs 0.01 m; aggregate mean vs
+#   S-C  structural alternatives (deterministic): soil heat flux of Tasumi
+#        (CANDIDATA) instead of Bastiaanssen; zom floor 0.005 vs 0.01 m; aggregate mean vs
 #        median;
 #   S-D  station network (only when GWR is feasible): the forcing at the
 #        overpass is regionalized again with a random 75 % of the stations
@@ -75,7 +75,7 @@ sb <- do.call(rbind, lapply(seq_len(R), function(i) {
 write_csv(sb, p("results", "tables", "sensitivity_SB_modis.csv"))
 
 ## S-C structural alternatives ---------------------------------------------------
-alts <- list(base = list(), g_bastiaanssen = list(g_method = "bastiaanssen"),
+alts <- list(base = list(), g_tasumi = list(g_method = "tasumi"),
              zom_floor_0.01 = list(zom_min = 0.01), aggregate_mean = list(aggregate = "mean"))
 sc <- do.call(rbind, lapply(names(alts), function(nm) {
   o <- do.call(metric_options, alts[[nm]])

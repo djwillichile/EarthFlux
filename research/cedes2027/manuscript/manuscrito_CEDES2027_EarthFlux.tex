@@ -1,0 +1,55 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.4cm]{geometry}
+\input{preamble.tex}
+\addbibresource{../references/references.bib}
+\input{../results/tables/numbers.tex}
+\input{stationtext.tex}
+\usepackage{setspace}
+\setstretch{1.08}
+
+\title{\textbf{EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data}\\[4pt]
+\large Efecto de la regionalización del forzamiento meteorológico en la
+evapotranspiración real estimada con METRIC y MODIS en la provincia de
+Cauquenes, Chile}
+\author{Guillermo S. Fuentes-Jaque\\[2pt]
+\small \AuthorAffiliation\\
+\small ORCID 0000-0002-7864-4899 · \href{mailto:gfuentesj@correo.uss.cl}{gfuentesj@correo.uss.cl}}
+\date{\small 3rd International Workshop CEDES 2027 --- Economics and Sustainability\\
+Universidad San Sebastián, Valdivia, 21--22 de enero de 2027}
+
+\begin{document}
+\maketitle
+
+\input{sec_abstract.tex}
+
+\input{sec_intro.tex}
+\input{sec_theory.tex}
+\input{sec_methods.tex}
+\input{sec_results.tex}
+\input{sec_discussion.tex}
+
+\section*{Disponibilidad de datos y código}
+EarthFlux es software libre (licencia MIT):
+\url{https://github.com/djwillichile/EarthFlux}; documentación en
+\url{https://djwillichile.github.io/EarthFlux/}. Este estudio usó la versión
+\EarthFluxVersion{} (commit \texttt{\EarthFluxCommit}; la versión publicada
+0.1.0 tiene el DOI \href{https://doi.org/10.5281/zenodo.23981326}{10.5281/zenodo.23981326}
+y el DOI de concepto es \href{https://doi.org/10.5281/zenodo.23981325}{10.5281/zenodo.23981325}).
+Los scripts, la configuración, las tablas, las figuras, el registro de
+decisiones y el registro de afirmaciones cuantitativas están en
+\texttt{research/cedes2027/} del mismo repositorio. Los datos meteorológicos
+son públicos (Dirección Meteorológica de Chile, portal SACLIM; NOAA ISD) y
+se descargan con los scripts, que registran sus sumas de verificación.
+
+\section*{Material suplementario}
+En \texttt{research/cedes2027/results/} se encuentran: todas las
+predicciones fuera de muestra (\texttt{validation/cv\_predictions.csv}), las
+tablas completas de validación cruzada, balance de energía, calibración y
+sensibilidad (\texttt{tables/}), los mapas en GeoTIFF (\texttt{maps/}), los
+diagnósticos (pruebas del paquete, pliegues, rellenos de vacíos, ajustes de
+regionalización) y \texttt{tables/claims\_register.csv}, que traza cada cifra
+del texto a su archivo y cálculo.
+
+\printbibliography[heading=bibintoc,title={Referencias}]
+
+\end{document}

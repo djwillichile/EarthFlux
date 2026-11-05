@@ -17,7 +17,7 @@
 metric_options <- function(...) {
   o <- list(
     turbidity = 1,                 # Kt of Allen (1996) / ASCE: clean air
-    g_method = "tasumi",           # soil heat flux (D-05)
+    g_method = "bastiaanssen",     # soil heat flux, VERIFICADA (D-05)
     zom_method = "lai",            # momentum roughness from LAI (D-06)
     zom_station = 0.015,           # weather station (grass) roughness [m]
     zom_min = 0.005,               # bare-soil floor of zom [m] (D-06)
