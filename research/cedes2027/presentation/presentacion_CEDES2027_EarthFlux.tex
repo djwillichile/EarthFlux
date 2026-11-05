@@ -1,0 +1,31 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{default}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{\hfill\scriptsize\insertframenumber/\inserttotalframenumber\hspace{2mm}\vspace{1mm}}
+\definecolor{ef}{HTML}{00695C}
+\setbeamercolor{frametitle}{fg=ef}
+\setbeamercolor{title}{fg=ef}
+\setbeamercolor{structure}{fg=ef}
+\setbeamerfont{frametitle}{series=\bfseries}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands,es-tabla]{babel}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage[group-separator={\,},output-decimal-marker={,},per-mode=symbol]{siunitx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\graphicspath{{../results/figures/}}
+\input{../results/tables/numbers.tex}
+\newcommand{\ETa}{\mathrm{ET_a}}
+\newcommand{\ETr}{\mathrm{ET_r}}
+
+\title{EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data}
+\subtitle{¿Cambia la evapotranspiración de METRIC cuando el forzamiento meteorológico se regionaliza con GWR?}
+\author{Guillermo S. Fuentes-Jaque}
+\date{3rd International Workshop CEDES 2027 · Valdivia, 21--22 de enero de 2027}
+
+\begin{document}
+\input{slides_body.tex}
+\end{document}
