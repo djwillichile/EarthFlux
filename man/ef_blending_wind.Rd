@@ -4,7 +4,13 @@
 \alias{ef_blending_wind}
 \title{Wind speed at the blending height}
 \usage{
-ef_blending_wind(wind_speed, height, zom_station, d_station, blending_height)
+ef_blending_wind(
+  wind_speed,
+  height,
+  zom_station,
+  d_station,
+  blending_height = 200
+)
 }
 \arguments{
 \item{wind_speed}{Numeric. Wind speed measured at \code{height} [m s-1].
@@ -25,8 +31,8 @@ implementations use 0, FAO-56 gives 2 h / 3 = 0.08 m for grass 0.12 m
 tall (SH-04).}
 
 \item{blending_height}{Numeric. Blending height \eqn{z_b}{z_b} [m]. Must
-be finite and greater than \code{d_station + zom_station}. No default: the
-METRIC value of 200 m is \code{CANDIDATA}.}
+be finite and greater than \code{d_station + zom_station}. Default 200 m
+(Waters et al., 2002, p. 26, Eq. 29).}
 }
 \value{
 A numeric vector of wind speed at the blending height

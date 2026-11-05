@@ -26,9 +26,11 @@
 #   - a wind floor (SH-06) and the elevation adjustment of the wind (SH-07).
 #
 # Conventions: those of ef_net_radiation() (dev/ARCHITECTURE.md section 3.1).
-#   Unverified numeric choices (blending height, z1, z2, station roughness and
-#   displacement) are explicit arguments without defaults (DECISIONS.md
-#   section 1.0).
+#   The blending height (200 m) and the heights of rah (0.1 m and 2 m) are
+#   defaults since their verification against the SEBAL Idaho manual
+#   (Waters et al., 2002; dev/VERIFICATION.md). The roughness and
+#   displacement of the station surface stay explicit arguments without
+#   defaults (decision SH-04).
 
 # Shared input checks (check_core_args(), check_condition(), check_scalar())
 # are in R/utils.R.
@@ -308,8 +310,8 @@ ef_zom_height <- function(height) {
 #'   implementations use 0, FAO-56 gives 2 h / 3 = 0.08 m for grass 0.12 m
 #'   tall (SH-04).
 #' @param blending_height Numeric. Blending height \eqn{z_b}{z_b} \[m\]. Must
-#'   be finite and greater than `d_station + zom_station`. No default: the
-#'   METRIC value of 200 m is `CANDIDATA`.
+#'   be finite and greater than `d_station + zom_station`. Default 200 m
+#'   (Waters et al., 2002, p. 26, Eq. 29).
 #'
 #' @return A numeric vector of wind speed at the blending height
 #'   \eqn{u_b}{u_b} \[m s-1\], with the common length of the inputs and
@@ -357,7 +359,7 @@ ef_zom_height <- function(height) {
 #' ef_blending_wind(3, height = 2, zom_station = 0.01476, d_station = 0.08,
 #'                  blending_height = 200)
 ef_blending_wind <- function(wind_speed, height, zom_station, d_station,
-                             blending_height) {
+                             blending_height = 200) {
   call <- sys.call()
   check_core_args(
     list(wind_speed = wind_speed, height = height, zom_station = zom_station,
@@ -399,8 +401,8 @@ ef_blending_wind <- function(wind_speed, height, zom_station, d_station,
 #'   (see [ef_zom()]). Must be finite, `> 0` and lower than
 #'   `blending_height`.
 #' @param blending_height Numeric. Blending height \eqn{z_b}{z_b} \[m\].
-#'   Must be finite and `> 0`. No default: the METRIC value of 200 m is
-#'   `CANDIDATA`.
+#'   Must be finite and `> 0`. Default 200 m (Waters et al., 2002, p. 26,
+#'   Eqs. 30 and 40).
 #' @param psi_m Numeric. Stability correction for momentum at the blending
 #'   height \eqn{\psi_m(z_b)}{psi_m(z_b)} \[-\]. Must be finite. The default
 #'   0 is the neutral case.
@@ -444,7 +446,7 @@ ef_blending_wind <- function(wind_speed, height, zom_station, d_station,
 #'
 #' # With an unstable correction psi_m(z_b) = 4.18
 #' ef_ustar(5.823611, zom = 0.005, blending_height = 200, psi_m = 4.178174)
-ef_ustar <- function(u_blend, zom, blending_height, psi_m = 0) {
+ef_ustar <- function(u_blend, zom, blending_height = 200, psi_m = 0) {
   call <- sys.call()
   check_core_args(
     list(u_blend = u_blend, zom = zom, blending_height = blending_height,
@@ -488,8 +490,8 @@ ustar_core <- function(u_blend, log_blend, psi_m) {
 #' @param u_star Numeric. Friction velocity \eqn{u_*}{u*} \[m s-1\] (see
 #'   [ef_ustar()]). Must be finite and `> 0`.
 #' @param z1,z2 Numeric. Lower and upper heights of the resistance
-#'   \[m\]. Must be finite with `0 < z1 < z2`. No defaults: the METRIC
-#'   values 0.1 m and 2 m are `CANDIDATA`.
+#'   \[m\]. Must be finite with `0 < z1 < z2`. Defaults 0.1 m and 2 m
+#'   (Waters et al., 2002, p. 30 and Eq. 41).
 #' @param psi_h_z2,psi_h_z1 Numeric. Stability corrections for heat at
 #'   `z2` and `z1` \[-\]. Must be finite. The default 0 is the neutral case.
 #'
@@ -530,7 +532,7 @@ ustar_core <- function(u_blend, log_blend, psi_m) {
 #' # Unstable corrections at both heights
 #' ef_rah(0.372002, z1 = 0.1, z2 = 2, psi_h_z2 = 1.719595,
 #'        psi_h_z1 = 0.263944)
-ef_rah <- function(u_star, z1, z2, psi_h_z2 = 0, psi_h_z1 = 0) {
+ef_rah <- function(u_star, z1 = 0.1, z2 = 2, psi_h_z2 = 0, psi_h_z1 = 0) {
   call <- sys.call()
   check_core_args(
     list(u_star = u_star, z1 = z1, z2 = z2, psi_h_z2 = psi_h_z2,
@@ -603,8 +605,9 @@ ef_monin_obukhov_length <- function(air_density, u_star, lst, h, cp) {
 #' 0.
 #'
 #' The height at which the caller evaluates the stable branch for the
-#' blending height is the open decision SH-11 (`stable_psi_m_height` of
-#' `ef_h_control()`); this function evaluates whatever `z` it receives.
+#' blending height is decision SH-11 (`stable_psi_m_height` of
+#' `ef_h_control()`, default 2 m after Waters et al., 2002, Eq. 38); this
+#' function evaluates whatever `z` it receives.
 #'
 #' Status: `CANDIDATA` (`water`, `rahStep()`; corroborated by `bigleaf`;
 #' Paulson, 1970, and Webb, 1970, not consulted).

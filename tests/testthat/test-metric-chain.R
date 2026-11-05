@@ -28,16 +28,18 @@
 #     the cells where H exceeds the (positive) available energy;
 #   * block invariance of the per-pixel phase: processing the pixels as two
 #     halves gives results identical to the whole scene (strategy P2);
-#   * both values of the open decision SH-11 (`stable_psi_m_height` 2 and
-#     200 m) on this all-unstable scene, where they must coincide, and a
-#     variant with a stable cold anchor where 2 m converges and 200 m stops
-#     with `earthflux_calibration_error` (finding recorded with P0-2).
+#   * both values of decision SH-11 (`stable_psi_m_height` 2 m, the default
+#     after Waters et al., 2002, Eq. 38, and 200 m) on this all-unstable
+#     scene, where they must coincide, and a variant with a stable cold
+#     anchor where 2 m converges and 200 m stops with
+#     `earthflux_calibration_error` (finding M2-07, P0-2).
 #
-# What is NOT verified: the physical realism of any value (all METRIC forms
-# are CANDIDATA and the coefficients of the anchor conditions and criteria
-# are test values, not defaults), agreement with Allen et al. (2007) or any
-# published case, terrain effects (flat scene), spatially varying weather,
-# and the behaviour of real MODIS inputs.
+# What is NOT verified: the physical realism of any value (the METRIC forms
+# are VERIFICADA against the SEBAL Idaho manual or CANDIDATA, see
+# dev/VERIFICATION.md, and the coefficients of the anchor conditions and
+# criteria are test values, not defaults), agreement with Allen et al.
+# (2007) or any published case, terrain effects (flat scene), spatially
+# varying weather, and the behaviour of real MODIS inputs.
 
 deg <- pi / 180
 
@@ -126,9 +128,9 @@ chain_surface <- function(scene = chain_scene(), weather = chain_weather) {
 }
 
 chain_control <- function(stable_psi_m_height = 2) {
-  # Tight tolerance so that phase B reproduces the anchor closure closely.
-  ef_h_control(stable_psi_m_height = stable_psi_m_height,
-               blending_height = 200, z1 = 0.1, z2 = 2, tol = 1e-10,
+  # Tight tolerance so that phase B reproduces the anchor closure closely;
+  # heights from the defaults (Waters et al., 2002).
+  ef_h_control(stable_psi_m_height = stable_psi_m_height, tol = 1e-10,
                maxit = 200L)
 }
 
@@ -276,7 +278,7 @@ test_that("the per-pixel phase is invariant to splitting the scene", {
   expect_identical(chain_et(s, h_blocks)$eta$eta_24, et$eta$eta_24)
 })
 
-test_that("both values of SH-11 are run (open decision P0-2)", {
+test_that("both values of SH-11 are run (decision P0-2, default 2 m)", {
   # The scene is unstable everywhere (H > 0, Obukhov length < 0), where the
   # height of the stable momentum correction is not used: identical results.
   expect_true(all(cal$pixels$h > 0))

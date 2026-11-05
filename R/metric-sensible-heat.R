@@ -8,8 +8,9 @@
 #
 # Specification: dev/specs/sensible-heat.md sections 2, 8, 11-13 and 16;
 #   decisions SH-08, SH-10, SH-14 to SH-19 and P0-6, P0-9, P0-10 (provisional,
-#   dev/DECISIONS.md section 1.0); SH-11 (P0-2) is open and blocking, hence
-#   `stable_psi_m_height` of ef_h_control() has no default. Flags:
+#   dev/DECISIONS.md section 1.0); SH-11 (P0-2) is resolved with the SEBAL
+#   Idaho manual (Waters et al., 2002, p. 33, Eq. 38): `stable_psi_m_height`
+#   of ef_h_control() defaults to 2 m. Flags:
 #   dev/specs/flags.md section 4.2 (EF_H_).
 #
 # Implemented (exported): ef_air_density(), ef_sensible_heat(),
@@ -165,32 +166,34 @@ ef_sensible_heat <- function(air_density, dt, rah, cp) {
 #' @description
 #' Builds and validates the settings of [ef_calibrate_h()]: the heights of
 #' the aerodynamic formulation, the height at which the stable stability
-#' correction for momentum is evaluated (open decision SH-11) and the
-#' convergence settings of the iteration.
+#' correction for momentum of the blending height is evaluated (decision
+#' SH-11) and the convergence settings of the iteration.
 #'
 #' @param stable_psi_m_height Numeric scalar. Height \[m\] at which the
 #'   stability correction for momentum \eqn{\psi_m}{psi_m} of the blending
 #'   height is evaluated **under stable conditions** (\eqn{L > 0}{L > 0}).
-#'   No default: this is the open and blocking decision SH-11 (P0-2). METRIC
-#'   implementations (`water`) use 2 m, i.e.
-#'   \eqn{\psi_m = -5 \cdot 2/L}{psi_m = -5 * 2 / L}; the alternative is the
-#'   blending height itself (e.g. 200 m,
-#'   \eqn{\psi_m = -5 \cdot 200/L}{psi_m = -5 * 200 / L}). With
+#'   Default 2 m, i.e.
+#'   \eqn{\psi_m(200\,m) = -5 \cdot 2/L}{psi_m(200 m) = -5 * 2 / L}, as
+#'   written in Waters et al. (2002), p. 33, Eq. 38 (decision SH-11,
+#'   resolved). Another height may still be chosen explicitly, e.g. the
+#'   blending height itself (`stable_psi_m_height = 200`,
+#'   \eqn{\psi_m = -5 \cdot 200/L}{psi_m = -5 * 200 / L}); with
 #'   \eqn{L = 41.97}{L = 41.97} m the two choices give -0.238 and -23.8.
 #'   Under unstable conditions \eqn{\psi_m}{psi_m} is always evaluated at
-#'   `blending_height`. Must be finite, `> 0` and `<= blending_height`.
+#'   `blending_height` (Eqs. 35 and 37a). Must be finite, `> 0` and
+#'   `<= blending_height`.
 #' @param blending_height Numeric scalar. Blending height \eqn{z_b}{z_b}
-#'   \[m\]. No default (200 m in METRIC, `CANDIDATA`). Must be finite and
+#'   \[m\]. Default 200 m (Waters et al., 2002, p. 26). Must be finite and
 #'   greater than `z2`.
 #' @param z1,z2 Numeric scalars. Lower and upper heights of the aerodynamic
-#'   resistance \[m\], `0 < z1 < z2`. No defaults (0.1 m and 2 m in METRIC,
-#'   `CANDIDATA`).
+#'   resistance \[m\], `0 < z1 < z2`. Defaults 0.1 m and 2 m (Waters et al.,
+#'   2002, p. 30 and Eq. 41).
 #' @param tol Numeric scalar. Convergence tolerance on the relative change
 #'   of \eqn{r_{ah}}{rah} between iterations, applied to every anchor
 #'   (phase A) and to every pixel (phase B). Must be `> 0`. Default 0.01
 #'   (decision P0-10; value of METRIC implementations, without a primary
 #'   source). The value matters: in the synthetic case of the specification,
-#'   `tol = 0.01` stops 0.7 % away from the fixed point of the intercept.
+#'   `tol = 0.01` stops 0.6 % away from the fixed point of the intercept.
 #' @param maxit Integer scalar. Maximum number of iterations, `>= 1`.
 #'   Default 20 (P0-10; a design choice).
 #' @param damping Numeric scalar. Damping factor \eqn{\omega}{omega} in
@@ -203,40 +206,44 @@ ef_sensible_heat <- function(air_density, dt, rah, cp) {
 #'   `blending_height`, `z1`, `z2`, `tol`, `maxit` (integer) and `damping`.
 #'
 #' @details
-#' A missing `stable_psi_m_height`, `blending_height`, `z1` or `z2` raises an
-#' error of class `earthflux_missing_input`; invalid values raise
-#' `earthflux_domain_error` or `earthflux_input_error`.
+#' Invalid values raise `earthflux_domain_error` or `earthflux_input_error`
+#' (e.g. a `stable_psi_m_height` above the blending height, or `z2 <= z1`).
 #'
-#' Verification status: all heights are `CANDIDATA`; `tol`, `maxit` and
-#' `damping` are design choices adopted provisionally (P0-10).
+#' Why 2 m under stable conditions: the manual evaluates the stable
+#' correction of the momentum at the blending height with the ratio
+#' \eqn{2/L}{2 / L}, not \eqn{200/L}{200 / L}; the `water` package does the
+#' same. With a stable cold anchor (\eqn{H < 0}{H < 0}, advection) the
+#' calibration converges with 2 m and diverges with 200 m in the synthetic
+#' scene of the specification (finding M2-07 of `dev/DECISIONS.md`).
+#'
+#' Verification status: `blending_height`, `z1`, `z2` and
+#' `stable_psi_m_height = 2` are `VERIFICADA (SEBAL-Idaho 2002)` (Waters et
+#' al., 2002, pp. 26, 30 and 33, Eqs. 38-41); the cross-check with Allen,
+#' Tasumi and Trezza (2007) is desirable but no longer blocking
+#' (`dev/VERIFICATION.md`). `tol`, `maxit` and `damping` are design choices
+#' adopted provisionally (P0-10).
+#'
+#' @references
+#' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+#' (2002). *SEBAL (Surface Energy Balance Algorithms for Land): Idaho
+#' implementation. Advanced training and users manual* (Version 1.0).
+#' University of Idaho and Idaho Department of Water Resources.
 #'
 #' @family aerodynamics and sensible heat functions
 #' @export
 #'
 #' @examples
-#' # Explicit choice of the open decision SH-11 (2 m, as in `water`)
-#' ef_h_control(stable_psi_m_height = 2, blending_height = 200,
-#'              z1 = 0.1, z2 = 2)
-ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
-                         tol = 0.01, maxit = 20L, damping = 0) {
+#' # Defaults of the SEBAL Idaho manual (z_b = 200 m, z1 = 0.1 m, z2 = 2 m,
+#' # stable psi_m of the blending height with 2 / L)
+#' ef_h_control()
+#'
+#' # The blending height in the stable correction, chosen explicitly
+#' ef_h_control(stable_psi_m_height = 200)
+ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
+                         z1 = 0.1, z2 = 2, tol = 0.01, maxit = 20L,
+                         damping = 0) {
   call <- sys.call()
   required <- c("stable_psi_m_height", "blending_height", "z1", "z2")
-  absent <- required[c(missing(stable_psi_m_height), missing(blending_height),
-                       missing(z1), missing(z2))]
-  if (length(absent) > 0L) {
-    ef_abort(
-      sprintf(
-        paste0(
-          "%s must be supplied explicitly (no verified default; ",
-          "`stable_psi_m_height` is the open decision SH-11: 2 m as in ",
-          "`water`, or the blending height)."
-        ),
-        paste0("`", absent, "`", collapse = ", ")
-      ),
-      class = c("earthflux_missing_input", "earthflux_input_error"),
-      call = call
-    )
-  }
   for (nm in c(required, "tol", "maxit", "damping")) {
     check_scalar(get(nm), nm, call = call)
   }
@@ -297,8 +304,11 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'   An optional column `anchor_id` is carried to the result; other columns
 #'   are ignored. Missing values at an anchor raise
 #'   `earthflux_calibration_error`.
-#' @param control The list returned by [ef_h_control()] (heights, the open
-#'   decision SH-11 and the convergence settings). It is validated again.
+#' @param control The list returned by [ef_h_control()] (heights, the
+#'   height of the stable momentum correction of decision SH-11 and the
+#'   convergence settings), e.g. `ef_h_control()` for its defaults. It is
+#'   validated again; elements not given take the defaults of
+#'   [ef_h_control()].
 #' @param lapse_rate Numeric scalar. Lapse rate of the surface temperature
 #'   with elevation \[K m-1\] (see [ef_ts_datum()]). No default (SH-13).
 #' @param datum_elevation Numeric scalar. Elevation of the temperature datum
@@ -446,8 +456,8 @@ ef_h_control <- function(stable_psi_m_height, blending_height, z1, z2,
 #'   u_blend = u_b,
 #'   pressure = ef_air_pressure(c(500, 700))
 #' )
-#' ctrl <- ef_h_control(stable_psi_m_height = 2, blending_height = 200,
-#'                      z1 = 0.1, z2 = 2)
+#' # Heights of the SEBAL Idaho manual (the defaults of ef_h_control())
+#' ctrl <- ef_h_control()
 #' cal <- ef_calibrate_h(anchors, control = ctrl, lapse_rate = 0.00649,
 #'                       datum_elevation = 500,
 #'                       pixels = list(lst = 308, elevation = 500, zom = 0.02,

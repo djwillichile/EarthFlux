@@ -154,10 +154,20 @@ test_that("ef_dt_coef() rejects swapped or equal anchor temperatures", {
 
 # Control -----------------------------------------------------------------------------
 
-test_that("ef_h_control() has no default for the open decision SH-11", {
-  expect_error(ef_h_control(blending_height = 200, z1 = 0.1, z2 = 2),
-               class = "earthflux_missing_input")
-  expect_error(ef_h_control(2), class = "earthflux_missing_input")
+test_that("ef_h_control() defaults follow the SEBAL Idaho manual (SH-11)", {
+  # Waters et al. (2002): z_b = 200 m (p. 26), z1 = 0.1 m and z2 = 2 m
+  # (p. 30, Eq. 41), stable psi_m(200 m) = -5 (2 / L) (p. 33, Eq. 38)
+  defaults <- ef_h_control()
+  expect_identical(defaults$stable_psi_m_height, 2)
+  expect_identical(defaults$blending_height, 200)
+  expect_identical(defaults$z1, 0.1)
+  expect_identical(defaults$z2, 2)
+  expect_identical(defaults, ctrl_for())
+  # The blending height can still be chosen explicitly
+  expect_identical(ef_h_control(stable_psi_m_height = 200)$stable_psi_m_height,
+                   200)
+  expect_error(ef_h_control(stable_psi_m_height = NULL),
+               class = "earthflux_input_error")
   ctrl <- ctrl_for()
   expect_identical(
     ctrl,
@@ -389,8 +399,8 @@ test_that("ef_calibrate_h() validates control, lapse rate and datum", {
   expect_error(ef_calibrate_h(scene_anchors, lapse_rate = 0.0065,
                               datum_elevation = 500),
                class = "earthflux_missing_input")
-  expect_error(calibrate(control = list(tol = 0.01)),
-               class = "earthflux_missing_input")
+  # A partial control list is completed with the defaults of ef_h_control()
+  expect_identical(calibrate(control = list(tol = 0.01))$control, ctrl_for())
   expect_error(calibrate(control = c(ctrl_for(), list(foo = 1))),
                class = "earthflux_input_error")
   expect_error(ef_calibrate_h(scene_anchors, ctrl_for(), lapse_rate = -1,

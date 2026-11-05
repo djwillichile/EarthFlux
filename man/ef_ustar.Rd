@@ -4,7 +4,7 @@
 \alias{ef_ustar}
 \title{Friction velocity}
 \usage{
-ef_ustar(u_blend, zom, blending_height, psi_m = 0)
+ef_ustar(u_blend, zom, blending_height = 200, psi_m = 0)
 }
 \arguments{
 \item{u_blend}{Numeric. Wind speed at the blending height \eqn{u_b}{u_b}
@@ -15,8 +15,8 @@ ef_ustar(u_blend, zom, blending_height, psi_m = 0)
 \code{blending_height}.}
 
 \item{blending_height}{Numeric. Blending height \eqn{z_b}{z_b} [m].
-Must be finite and \verb{> 0}. No default: the METRIC value of 200 m is
-\code{CANDIDATA}.}
+Must be finite and \verb{> 0}. Default 200 m (Waters et al., 2002, p. 26,
+Eqs. 30 and 40).}
 
 \item{psi_m}{Numeric. Stability correction for momentum at the blending
 height \eqn{\psi_m(z_b)}{psi_m(z_b)} [-]. Must be finite. The default

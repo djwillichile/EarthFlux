@@ -101,10 +101,10 @@ every pixel with the calibrated coefficients (phase B, strategy P2).
    rho_k * cp * (a_k + b_k * Ts_datum) / rah_(k-1)} (equal to the target
 by construction);
 \item Monin-Obukhov length
-\eqn{L = -\rho c_p u_*^3 T_a / (k g H)}{L = -rho * cp * u*^3 * Ta /
-   (k * g * H)} with \eqn{u_{*,k-1}}{u*_(k-1)},
-\eqn{T_a = T_s - dT_k}{Ta = Ts - dT_k} and \eqn{\rho_k}{rho_k} (SH-10;
-\eqn{L = \infty}{L = Inf}, neutral, when \eqn{H = 0}{H = 0});
+\eqn{L = -\rho c_p u_*^3 T_s / (k g H)}{L = -rho * cp * u*^3 * Ts /
+   (k * g * H)} with \eqn{u_{*,k-1}}{u*_(k-1)}, the surface temperature
+\eqn{T_s}{Ts} and \eqn{\rho_k}{rho_k} (Waters et al., 2002, Eq. 34;
+SH-10; \eqn{L = \infty}{L = Inf}, neutral, when \eqn{H = 0}{H = 0});
 \item stability corrections (unstable: Paulson-type forms with coefficient
 16; stable: log-linear form \eqn{-5 z/L}{-5 * z / L}), with
 \eqn{\psi_m}{psi_m} at the blending height (or at
@@ -153,7 +153,7 @@ iterate and gets \code{EF_H_PIXEL_NOT_CONVERGED}.
 }
 
 Constants: von Karman constant \code{EF_VON_KARMAN} (0.41), gravity
-\code{EF_GRAVITY} (9.807 m s-2, \code{CANDIDATA}) and specific heat of air
+\code{EF_GRAVITY} (9.81 m s-2, Waters et al., 2002, p. 32) and specific heat of air
 \code{EF_SPECIFIC_HEAT_AIR} (1004 J kg-1 K-1, \code{CANDIDATA}, decision SH-09
 open); they are recorded in \code{constants}.
 

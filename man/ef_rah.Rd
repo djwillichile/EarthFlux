@@ -4,15 +4,15 @@
 \alias{ef_rah}
 \title{Aerodynamic resistance to heat transport}
 \usage{
-ef_rah(u_star, z1, z2, psi_h_z2 = 0, psi_h_z1 = 0)
+ef_rah(u_star, z1 = 0.1, z2 = 2, psi_h_z2 = 0, psi_h_z1 = 0)
 }
 \arguments{
 \item{u_star}{Numeric. Friction velocity \eqn{u_*}{u*} [m s-1] (see
 \code{\link[=ef_ustar]{ef_ustar()}}). Must be finite and \verb{> 0}.}
 
 \item{z1, z2}{Numeric. Lower and upper heights of the resistance
-[m]. Must be finite with \verb{0 < z1 < z2}. No defaults: the METRIC
-values 0.1 m and 2 m are \code{CANDIDATA}.}
+[m]. Must be finite with \verb{0 < z1 < z2}. Defaults 0.1 m and 2 m
+(Waters et al., 2002, p. 30 and Eq. 41).}
 
 \item{psi_h_z2, psi_h_z1}{Numeric. Stability corrections for heat at
 \code{z2} and \code{z1} [-]. Must be finite. The default 0 is the neutral case.}
