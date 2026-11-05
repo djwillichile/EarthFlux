@@ -96,12 +96,16 @@ roxygen2 8.1.1, terra 1.9.50):
       `## New features`, `## Changes`, `## Documentation` (sin cambios
       incompatibles: es la primera versión).
 - [ ] *Definition of Done*: el estado de verificación está declarado en
-      roxygen (`CANDIDATA`/`VERIFICADA`), README, NEWS y artículos, pero la
-      condición 1 de `DEVELOPMENT.md` §3 (ecuación `VERIFICADA`) **no** se
-      cumple para las formulaciones `CANDIDATA` del núcleo METRIC: se
-      publican por la regla provisional de `DECISIONS.md` §1.0 (P0-1 …
-      P0-3 abiertas; hallazgo M2-07 sobre SH-11) y la decisión M4-00. El
-      autor confirma esta excepción al fusionar.
+      roxygen (`CANDIDATA`/`VERIFICADA`), README, NEWS y artículos. Desde
+      la revisión del 2026-11-05 ([`VERIFICATION.md`](VERIFICATION.md);
+      `DECISIONS.md` M2-08 … M2-10) la mayoría de las formas del núcleo
+      METRIC son `VERIFICADA (SEBAL-Idaho 2002)` y SH-11 está resuelta (2 m);
+      la condición 1 de `DEVELOPMENT.md` §3 (ecuación `VERIFICADA`) **no**
+      se cumple para las 9 formulaciones que siguen `CANDIDATA` (G de
+      Tasumi, τ particionada, Rs↓ en laderas, cos θ en plano inclinado,
+      ρ_air en METRIC, entre otras): se publican por la regla provisional
+      de `DECISIONS.md` §1.0 y la decisión M4-00. El autor confirma esta
+      excepción al fusionar.
 - [ ] Decisiones `DECIDIDA (provisional)` (P0-4 … P0-12, §1.2 – §1.4),
       declaradas "revisables por el autor antes de `0.1.0`": el autor
       confirma que se mantienen provisionales en 0.1.0 o las revisa.

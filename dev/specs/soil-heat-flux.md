@@ -14,6 +14,16 @@ Componente: `metric` · Archivo: `R/metric-soil-heat.R` · Tests:
 > *Enmienda (2026-11-04):* por la regla de M2 de `DECISIONS.md` §1.0, las
 > dos formulaciones se implementaron como `CANDIDATA`, rotuladas así en
 > roxygen y sin método por defecto (§13).
+>
+> *Verificación (2026-11-05, `DECISIONS.md` M2-08):* la formulación de
+> Bastiaanssen pasa a **`VERIFICADA (SEBAL-Idaho 2002)`**: Waters et al.
+> (2002), p. 24, Ec. 24, imprimen G/Rn = Ts/α·(0,0038·α + 0,0074·α²)·(1 −
+> 0,98·NDVI⁴) con Ts en °C, "values near midday", algebraicamente idéntica
+> a la forma de §3.1 para α > 0. El manual asigna además G/Rn = 0,5 a agua
+> (NDVI < 0) y nieve (Ts < 4 °C y α > 0,45) (p. 25; ap. 10), evidencia para
+> D4 (no implementado). La de Tasumi sigue `CANDIDATA` (no cubierta). El
+> despachador conserva `method` sin defecto (regla de diseño T-15).
+> Registro: [`../VERIFICATION.md`](../VERIFICATION.md), filas 14–15.
 
 Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 `CANDIDATA`, `VERIFICADA`).
