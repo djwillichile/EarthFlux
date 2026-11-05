@@ -15,6 +15,7 @@ version](https://img.shields.io/github/r-package/v/djwillichile/EarthFlux?label=
 [![R-CMD-check](https://github.com/djwillichile/EarthFlux/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/djwillichile/EarthFlux/actions/workflows/R-CMD-check.yaml)
 [![License:
 MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23981325.svg)](https://doi.org/10.5281/zenodo.23981325)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
@@ -223,7 +224,38 @@ results.
 
 ## Citation
 
-Citation information is available with `citation("EarthFlux")`.
+If you use EarthFlux, please cite it. Every release is archived on
+Zenodo: the concept DOI
+[10.5281/zenodo.23981325](https://doi.org/10.5281/zenodo.23981325)
+always resolves to the latest release, and each version has its own DOI
+(0.1.0:
+[10.5281/zenodo.23981326](https://doi.org/10.5281/zenodo.23981326));
+cite the version you used when reproducibility matters.
+
+``` r
+citation("EarthFlux")
+```
+
+    To cite package 'EarthFlux' in publications use:
+
+      Fuentes-Jaque, G. S. (2026). EarthFlux: Land-Surface Energy and Water
+      Fluxes from Earth Observation Data. R package version 0.1.0.9000.
+      https://doi.org/10.5281/zenodo.23981325
+
+    A BibTeX entry for LaTeX users is
+
+      @Manual{EarthFlux,
+        title = {{EarthFlux}: Land-Surface Energy and Water Fluxes from Earth Observation Data},
+        author = {Guillermo Servando Fuentes-Jaque},
+        year = {2026},
+        note = {R package version 0.1.0.9000},
+        url = {https://github.com/djwillichile/EarthFlux},
+        doi = {10.5281/zenodo.23981325},
+      }
+
+The same metadata are in `CITATION.cff` (GitHub’s *Cite this
+repository*). When you use the METRIC formulations, please also cite the
+methodological sources listed in the documentation of each function.
 
 ## License
 

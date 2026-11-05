@@ -74,8 +74,15 @@ El paquete no se envía a CRAN sin autorización explícita del mantenedor.
 
 ## Estado de 0.1.0 (rama `code/release-v0.1.0`)
 
-Primer release (`DECISIONS.md` §1.4, M4-00). Paso 1 hecho en la rama
-`code/release-v0.1.0`; sin tag ni publicación.
+Primer release (`DECISIONS.md` §1.4, M4-00). **Publicado el 2026-11-05**:
+tag `v0.1.0` sobre `13b6da8` (merge de la verificación contra el manual
+SEBAL-Idaho), tarball adjunto por el workflow `release`. Zenodo:
+DOI de la versión `10.5281/zenodo.23981326`, DOI de concepto
+`10.5281/zenodo.23981325` (registrado en `CITATION.cff`, `inst/CITATION`
+y el README). La integración con Zenodo se activó después de la primera
+publicación, por lo que el release se volvió a publicar (borrador →
+publicado) para que Zenodo lo archivara: activar Zenodo **antes** de
+publicar (paso 4). Versión de desarrollo `0.1.0.9000` abierta.
 
 Lista de verificación, comprobada localmente el 2026-11-05 (Linux, R 4.3.3,
 roxygen2 8.1.1, terra 1.9.50):
@@ -85,11 +92,10 @@ roxygen2 8.1.1, terra 1.9.50):
       de paralelismo que necesitan el paquete instalado y corren en
       `R CMD check`). Incluye los tests de extremo a extremo de la cadena
       METRIC, del forzamiento y de la superficie MODIS.
-- [ ] `R CMD check` multiplataforma: local `devtools::check()`
+- [x] `R CMD check` multiplataforma: local `devtools::check()`
       (`_R_CHECK_SYSTEM_CLOCK_=FALSE`, `--no-manual`) con 0 errores,
-      0 warnings y 0 notes; tarball de 0,75 MB. **Falta** la CI del PR
-      (Ubuntu release, devel, oldrel; Windows) y macOS en `main` sobre el
-      commit de merge.
+      0 warnings y 0 notes; tarball de 0,75 MB. CI en verde en Ubuntu
+      (release, devel, oldrel), Windows y macOS sobre `13b6da8`.
 - [x] Documentación regenerada (`devtools::document()` sin cambios
       pendientes; `README.md` con `devtools::build_readme()`);
       `pkgdown::check_pkgdown()` sin problemas y `pkgdown::build_site()`
@@ -98,7 +104,7 @@ roxygen2 8.1.1, terra 1.9.50):
       `## Verification against the SEBAL Idaho manual` (2026-11-05),
       `## New features`, `## Changes`, `## Documentation` (sin cambios
       incompatibles: es la primera versión).
-- [ ] *Definition of Done*: el estado de verificación está declarado en
+- [x] *Definition of Done*: el estado de verificación está declarado en
       roxygen (`CANDIDATA`/`VERIFICADA`), README, NEWS y artículos. Desde
       la revisión del 2026-11-05 ([`VERIFICATION.md`](VERIFICATION.md);
       `DECISIONS.md` M2-08 … M2-10) la mayoría de las formas del núcleo
@@ -107,11 +113,12 @@ roxygen2 8.1.1, terra 1.9.50):
       se cumple para las 9 formulaciones que siguen `CANDIDATA` (G de
       Tasumi, τ particionada, Rs↓ en laderas, cos θ en plano inclinado,
       ρ_air en METRIC, entre otras): se publican por la regla provisional
-      de `DECISIONS.md` §1.0 y la decisión M4-00. El autor confirma esta
-      excepción al fusionar.
-- [ ] Decisiones `DECIDIDA (provisional)` (P0-4 … P0-12, §1.2 – §1.4),
+      de `DECISIONS.md` §1.0 y la decisión M4-00. Excepción confirmada por
+      el autor el 2026-11-05 (`DECISIONS.md` M4-31).
+- [x] Decisiones `DECIDIDA (provisional)` (P0-4 … P0-12, §1.2 – §1.4),
       declaradas "revisables por el autor antes de `0.1.0`": el autor
       confirma que se mantienen provisionales en 0.1.0 o las revisa.
+      Confirmado el 2026-11-05: se mantienen provisionales (M4-31).
 
 Pasos restantes para el autor, en este orden:
 

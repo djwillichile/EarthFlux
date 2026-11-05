@@ -11,9 +11,9 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 - [x] CI: R CMD check multiplataforma, pkgdown, control de documentación,
       sincronización del About, limpieza de ramas fusionadas.
 - [x] Proceso de release documentado (`RELEASING.md`) y automatizado.
-- [ ] Integración con Zenodo (primer release): `.zenodo.json` listo (sin
-      afiliación, a confirmar por el autor); falta activar el repositorio
-      en Zenodo antes del release `0.1.0`.
+- [x] Integración con Zenodo (primer release): `.zenodo.json` (sin
+      afiliación); DOI de concepto `10.5281/zenodo.23981325`, DOI de 0.1.0
+      `10.5281/zenodo.23981326` (2026-11-05).
 
 ## M1 — Scientific specification
 - [x] Radiación neta (`ef_net_radiation()` implementada; ecuación
@@ -105,14 +105,11 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       `QC_Day`, grilla de MCD43A3, nombres SDS entre comillas, escala
       recíproca de MOD13, tolerancia de anidamiento 1 km/500 m; NEWS).
       Detalle en `specs/modis-products.md` §12.
-- [ ] Primer release experimental `0.1.0` al cierre de M4, con la escena de
+- [x] Primer release experimental `0.1.0` al cierre de M4, con la escena de
       ejemplo de Cauquenes (opción B, decisión del autor del 2026-11-04;
-      `DECISIONS.md` §1.4, M4-00); antes previsto al cierre de M2 con el
-      pipeline parcial testeado. **Listo, pendiente del tag**: preparado en
-      la rama `code/release-v0.1.0` (`Version: 0.1.0`, `NEWS.md`, README
-      con la escena de ejemplo, artículo *Example scene: Cauquenes*,
-      `.zenodo.json`); faltan la fusión, macOS en `main`, la activación de
-      Zenodo y el tag `v0.1.0` (`RELEASING.md`, "Estado de 0.1.0").
+      `DECISIONS.md` §1.4, M4-00). Publicado el 2026-11-05 (tag `v0.1.0`,
+      DOI `10.5281/zenodo.23981326`); excepciones confirmadas por el autor
+      (M4-31). Detalle en `RELEASING.md`, "Estado de 0.1.0".
 
 ## M5 — Integrated pipeline
 - [ ] `earthflux()` sobre el núcleo; objeto de resultado con diagnósticos y
