@@ -57,8 +57,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          existing=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" \
-            --jq '.body // ""' 2>/dev/null || true)
+          # Only a missing release (HTTP 404) or an empty body falls back to
+          # NEWS.md; any other lookup failure stops the job so that notes
+          # written on GitHub are never overwritten.
+          if existing=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" \
+            --jq '.body // ""' 2> lookup-error.txt); then
+            :
+          elif grep -q "HTTP 404" lookup-error.txt; then
+            existing=""
+          else
+            cat lookup-error.txt
+            echo "Could not look up the release ${TAG}; re-run the job"
+            exit 1
+          fi
           if [ -n "$(printf '%s' "${existing}" | tr -d '[:space:]')" ]; then
             echo "Keeping the release notes written on GitHub"
             printf '%s\n' "${existing}" > release-notes.md
