@@ -44,7 +44,9 @@ en el commit que se etiqueta, se cumple todo lo siguiente:
    `release` desde `main` (crea el tag `vX.Y.Z` a partir de `DESCRIPTION`).
 3. El workflow `release` comprueba que el tag coincide con `DESCRIPTION`,
    construye y verifica el paquete y crea o actualiza el GitHub Release con
-   la sección de `NEWS.md` como notas y el tarball adjunto.
+   el tarball adjunto. Las notas escritas en GitHub al publicar se
+   conservan; solo un release sin notas recibe la sección de `NEWS.md`
+   (extensa: conviene escribir un resumen al publicar).
 4. **Zenodo**: con la integración de GitHub activada (*zenodo.org →
    Account → GitHub*, interruptor del repositorio `djwillichile/EarthFlux`
    en *On*; debe hacerse **antes** de publicar el release, Zenodo solo
