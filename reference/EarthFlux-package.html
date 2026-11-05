@@ -21,7 +21,7 @@ represent spatially varying meteorological forcing."><meta property="og:image" c
 
     <a class="navbar-brand me-2" href="../index.html">EarthFlux</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,12 +61,21 @@ represent spatially varying meteorological forcing.</p>
 
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Development status.</strong> The first METRIC component,
-<code><a href="ef_net_radiation.html">ef_net_radiation()</a></code>, is available; its equation form is corroborated by
-secondary sources and verification against the primary reference is
-pending. The remaining components are being specified. The use of GWR for
-meteorological forcing is treated as a research hypothesis that has not
-been validated.</p>
+    <p><strong>Development status.</strong> Version 0.1.0 is the first, experimental
+release. It provides the METRIC core physics as numeric functions, from
+net radiation to daily actual evapotranspiration; the meteorological
+forcing (weather station tables, quality control, reference
+evapotranspiration) and its regionalization over the working grid
+(representative station, global regression, inverse distance weighting
+and GWR); the internal MODIS preprocessing into the surface state; and
+the example scene <a href="cauquenes_modis.html">cauquenes_modis</a>. The integrated workflow
+<code>earthflux()</code> does not exist yet. Most METRIC formulations are candidates
+pending verification against the primary reference (Allen et al., 2007);
+the reference evapotranspiration (FAO-56, ASCE-EWRI 2005), the unit
+conversions and the MODIS product facts are verified. No result has been
+validated: EarthFlux is not for operational or scientific production
+use. The use of GWR for meteorological forcing is treated as a research
+hypothesis that has not been validated.</p>
 <p><strong>Design principles.</strong></p><ul><li><p>The physical core (METRIC) does not depend on any specific sensor.
 Sensor modules (MODIS first) convert products into standardised
 physical variables with documented units.</p></li>

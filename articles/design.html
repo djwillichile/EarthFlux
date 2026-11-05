@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">EarthFlux</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -418,21 +418,49 @@ end-to-end test runs a synthetic scene through the whole chain.</p>
 <tbody>
 <tr class="odd">
 <td><code><a href="../reference/ef_station_table.html">ef_station_table()</a></code></td>
-<td>Standard station and observation tables (explicit time zone,
-measurement heights)</td>
-<td>Planned</td>
+<td>Standard station and observation tables (UTC timestamps, contract
+units, measurement heights, provenance)</td>
+<td><strong>Available</strong></td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ef_station_qc.html">ef_station_qc()</a></code></td>
 <td>Station quality control (values are flagged, never deleted)</td>
-<td>Planned</td>
+<td>
+<strong>Available</strong>; tests that need a threshold without a
+documented reference are not evaluated</td>
 </tr>
 <tr class="odd">
-<td><code><a href="../reference/ef_ref_et.html">ef_ref_et()</a></code></td>
-<td>Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and
-daily</td>
-<td>Planned; FAO-56 grass reference verified, alfalfa constants
-candidate</td>
+<td>
+<code><a href="../reference/ef_psychrometric.html">ef_psychrometric()</a></code>, <code><a href="../reference/ef_es.html">ef_es()</a></code>,
+<code><a href="../reference/ef_es_slope.html">ef_es_slope()</a></code>, <code><a href="../reference/ef_ea.html">ef_ea_dewpoint()</a></code>,
+<code><a href="../reference/ef_ea.html">ef_ea_rh()</a></code>, <code><a href="../reference/ef_ea.html">ef_ea_daily()</a></code>,
+<code><a href="../reference/ef_ea.html">ef_ea_tmin()</a></code>, <code><a href="../reference/ef_dewpoint.html">ef_dewpoint()</a></code>,
+<code><a href="../reference/ef_wind_2m.html">ef_wind_2m()</a></code>, <code><a href="../reference/ef_ra_daily.html">ef_ra_daily()</a></code>,
+<code><a href="../reference/ef_ra_period.html">ef_ra_period()</a></code>, <code><a href="../reference/ef_rso.html">ef_rso()</a></code>
+</td>
+<td>Derived meteorological variables</td>
+<td>
+<strong>Available</strong>; verified (FAO-56; ASCE-EWRI 2005
+forms)</td>
+</tr>
+<tr class="even">
+<td>
+<code><a href="../reference/ef_ref_net_radiation.html">ef_ref_net_radiation()</a></code>,
+<code><a href="../reference/ef_ref_soil_heat_flux.html">ef_ref_soil_heat_flux()</a></code>, <code><a href="../reference/ef_ref_et.html">ef_ref_et()</a></code>
+</td>
+<td>Grass (FAO-56, ASCE-EWRI) and alfalfa (ASCE-EWRI) reference ET,
+hourly and daily</td>
+<td>
+<strong>Available</strong>; verified (FAO-56 examples 18 and 19
+reproduced; ASCE-EWRI 2005 equations and constants checked, its worked
+examples not reproduced yet)</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/ef_station_ref_et.html">ef_station_ref_et()</a></code></td>
+<td>Reference ET series of every station, at the overpass and as daily
+sums</td>
+<td>
+<strong>Available</strong>; open choices are explicit arguments</td>
 </tr>
 </tbody>
 </table>
@@ -454,24 +482,49 @@ candidate</td>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td><code><a href="../reference/ef_regionalize.html">ef_regionalize()</a></code></td>
+<td>One surface per variable and target time over the working grid, with
+a flag word per cell, the fitted models and provenance; exact prediction
+by raster blocks, optionally in parallel</td>
+<td><strong>Available</strong></td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/ef_method_gwr.html">ef_method_gwr()</a></code></td>
+<td>C3: geographically weighted regression (explicit kernel, bandwidth
+and criterion)</td>
 <td>
-<code><a href="../reference/ef_gwr_fit.html">ef_gwr_fit()</a></code>, <code><a href="../reference/ef_gwr_predict.html">ef_gwr_predict()</a></code>
+<strong>Available</strong>; candidate (agrees with
+<code>GWmodel</code>)</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/ef_method_ols.html">ef_method_ols()</a></code>, <code><a href="../reference/ef_method_idw.html">ef_method_idw()</a></code>
 </td>
-<td>GWR with documented kernel, bandwidth and AICc conventions;
-block-wise prediction</td>
-<td>Planned</td>
+<td>C2: global regression and inverse distance weighting</td>
+<td><strong>Available</strong></td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/ef_method_station.html">ef_method_station()</a></code></td>
+<td>C1: single representative station</td>
+<td><strong>Available</strong></td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/ef_gwr_fit.html">ef_gwr_fit()</a></code>, <code><a href="../reference/ef_gwr_bandwidth.html">ef_gwr_bandwidth()</a></code>,
+<code><a href="../reference/ef_gwr_predict.html">ef_gwr_predict()</a></code>, <code><a href="../reference/ef_gwr_diagnostics.html">ef_gwr_diagnostics()</a></code>
+</td>
+<td>Numeric GWR core on plain vectors and matrices</td>
+<td>
+<strong>Available</strong>; candidate</td>
 </tr>
 <tr class="even">
 <td>
-<code>ef_ols_fit()</code>, <code>ef_idw_fit()</code>
+<code><a href="../reference/ef_spatial_folds.html">ef_spatial_folds()</a></code>,
+<code><a href="../reference/ef_regionalize_cv.html">ef_regionalize_cv()</a></code>
 </td>
-<td>Simple spatial alternatives (C2)</td>
-<td>Planned</td>
-</tr>
-<tr class="odd">
-<td><code>ef_station_forcing()</code></td>
-<td>Single representative station (C1)</td>
-<td>Planned</td>
+<td>Spatial block cross-validation with the same folds for every
+method</td>
+<td><strong>Available</strong></td>
 </tr>
 </tbody>
 </table>
@@ -480,11 +533,16 @@ block-wise prediction</td>
 <div class="section level3">
 <h3 id="modis-preprocessing-milestone-m4">MODIS preprocessing (milestone M4)<a class="anchor" aria-label="anchor" href="#modis-preprocessing-milestone-m4"></a>
 </h3>
-<p>Internal functions that read MODIS products, apply scale factors and
-quality flags, and convert view times to UTC, producing
-sensor-independent surface variables. Product metadata (layers, scale
-factors, fill values, quality bits) are verified against the official
-user guides.</p>
+<p>Internal functions (not exported yet) read MODIS products from local
+files, apply scale factors and quality flags, convert view times to UTC
+and assemble the surface state (LST, albedo, NDVI, LAI, emissivity and
+the overpass instant, each with a flag word). Product metadata (layers,
+scale factors, fill values, quality bits) are verified against the
+official user guides; the conversions (albedo, emissivity, aggregation)
+are candidates. The dataset <code>cauquenes_modis</code> is the output
+of this preprocessing for the Cauquenes province on 15 February 2019;
+see the article <a href="cauquenes-example.html">Example scene:
+Cauquenes</a>.</p>
 <p>Specification: <a href="https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/modis-products.md" class="external-link">modis-products.md</a>.</p>
 </div>
 <div class="section level3">
@@ -503,8 +561,10 @@ user guides.</p>
 </tr></thead>
 <tbody><tr class="odd">
 <td><code>earthflux()</code></td>
-<td>Complete workflow built on the same low-level functions, returning
-all intermediate components, diagnostics and provenance</td>
+<td>Complete workflow built on the same low-level functions, with
+automatic inputs (MODIS, elevation model, gridded weather forcing) and
+presets, returning all intermediate components, diagnostics and
+provenance</td>
 <td>Planned</td>
 </tr></tbody>
 </table>

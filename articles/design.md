@@ -121,9 +121,11 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| [`ef_station_table()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_table.md) | Standard station and observation tables (explicit time zone, measurement heights) | Planned |
-| [`ef_station_qc()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_qc.md) | Station quality control (values are flagged, never deleted) | Planned |
-| [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md) | Grass (FAO-56) and alfalfa (ASCE) reference ET, hourly and daily | Planned; FAO-56 grass reference verified, alfalfa constants candidate |
+| [`ef_station_table()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_table.md) | Standard station and observation tables (UTC timestamps, contract units, measurement heights, provenance) | **Available** |
+| [`ef_station_qc()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_qc.md) | Station quality control (values are flagged, never deleted) | **Available**; tests that need a threshold without a documented reference are not evaluated |
+| [`ef_psychrometric()`](https://djwillichile.github.io/EarthFlux/reference/ef_psychrometric.md), [`ef_es()`](https://djwillichile.github.io/EarthFlux/reference/ef_es.md), [`ef_es_slope()`](https://djwillichile.github.io/EarthFlux/reference/ef_es_slope.md), [`ef_ea_dewpoint()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md), [`ef_ea_rh()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md), [`ef_ea_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md), [`ef_ea_tmin()`](https://djwillichile.github.io/EarthFlux/reference/ef_ea.md), [`ef_dewpoint()`](https://djwillichile.github.io/EarthFlux/reference/ef_dewpoint.md), [`ef_wind_2m()`](https://djwillichile.github.io/EarthFlux/reference/ef_wind_2m.md), [`ef_ra_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_daily.md), [`ef_ra_period()`](https://djwillichile.github.io/EarthFlux/reference/ef_ra_period.md), [`ef_rso()`](https://djwillichile.github.io/EarthFlux/reference/ef_rso.md) | Derived meteorological variables | **Available**; verified (FAO-56; ASCE-EWRI 2005 forms) |
+| [`ef_ref_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_net_radiation.md), [`ef_ref_soil_heat_flux()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_soil_heat_flux.md), [`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md) | Grass (FAO-56, ASCE-EWRI) and alfalfa (ASCE-EWRI) reference ET, hourly and daily | **Available**; verified (FAO-56 examples 18 and 19 reproduced; ASCE-EWRI 2005 equations and constants checked, its worked examples not reproduced yet) |
+| [`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md) | Reference ET series of every station, at the overpass and as daily sums | **Available**; open choices are explicit arguments |
 
 Specification:
 [weather-forcing.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/weather-forcing.md).
@@ -132,20 +134,28 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| [`ef_gwr_fit()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_fit.md), [`ef_gwr_predict()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_predict.md) | GWR with documented kernel, bandwidth and AICc conventions; block-wise prediction | Planned |
-| `ef_ols_fit()`, `ef_idw_fit()` | Simple spatial alternatives (C2) | Planned |
-| `ef_station_forcing()` | Single representative station (C1) | Planned |
+| [`ef_regionalize()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize.md) | One surface per variable and target time over the working grid, with a flag word per cell, the fitted models and provenance; exact prediction by raster blocks, optionally in parallel | **Available** |
+| [`ef_method_gwr()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_gwr.md) | C3: geographically weighted regression (explicit kernel, bandwidth and criterion) | **Available**; candidate (agrees with `GWmodel`) |
+| [`ef_method_ols()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_ols.md), [`ef_method_idw()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_idw.md) | C2: global regression and inverse distance weighting | **Available** |
+| [`ef_method_station()`](https://djwillichile.github.io/EarthFlux/reference/ef_method_station.md) | C1: single representative station | **Available** |
+| [`ef_gwr_fit()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_fit.md), [`ef_gwr_bandwidth()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_bandwidth.md), [`ef_gwr_predict()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_predict.md), [`ef_gwr_diagnostics()`](https://djwillichile.github.io/EarthFlux/reference/ef_gwr_diagnostics.md) | Numeric GWR core on plain vectors and matrices | **Available**; candidate |
+| [`ef_spatial_folds()`](https://djwillichile.github.io/EarthFlux/reference/ef_spatial_folds.md), [`ef_regionalize_cv()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize_cv.md) | Spatial block cross-validation with the same folds for every method | **Available** |
 
 Specification:
 [gwr-forcing.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/gwr-forcing.md).
 
 ### MODIS preprocessing (milestone M4)
 
-Internal functions that read MODIS products, apply scale factors and
-quality flags, and convert view times to UTC, producing
-sensor-independent surface variables. Product metadata (layers, scale
-factors, fill values, quality bits) are verified against the official
-user guides.
+Internal functions (not exported yet) read MODIS products from local
+files, apply scale factors and quality flags, convert view times to UTC
+and assemble the surface state (LST, albedo, NDVI, LAI, emissivity and
+the overpass instant, each with a flag word). Product metadata (layers,
+scale factors, fill values, quality bits) are verified against the
+official user guides; the conversions (albedo, emissivity, aggregation)
+are candidates. The dataset `cauquenes_modis` is the output of this
+preprocessing for the Cauquenes province on 15 February 2019; see the
+article [Example scene:
+Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md).
 
 Specification:
 [modis-products.md](https://github.com/djwillichile/EarthFlux/blob/main/dev/specs/modis-products.md).
@@ -154,7 +164,7 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| `earthflux()` | Complete workflow built on the same low-level functions, returning all intermediate components, diagnostics and provenance | Planned |
+| `earthflux()` | Complete workflow built on the same low-level functions, with automatic inputs (MODIS, elevation model, gridded weather forcing) and presets, returning all intermediate components, diagnostics and provenance | Planned |
 
 ## More information
 

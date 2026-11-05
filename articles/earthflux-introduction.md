@@ -15,11 +15,16 @@ chain
 
 **MODIS + METRIC + GWR → ETa**
 
-This vignette describes the planned workflow. EarthFlux is in early
-development: the METRIC core physics (net radiation, soil heat flux,
-anchor pixels, sensible and latent heat flux, instantaneous and daily
-ET) is available as numeric functions, mostly as candidate formulations,
-and the remaining modules are being specified. No result shown in the
+This vignette describes the workflow that EarthFlux implements step by
+step. Version 0.1.0 is the first, experimental release: the METRIC core
+physics (net radiation, soil heat flux, anchor pixels, sensible and
+latent heat flux, instantaneous and daily ET), the meteorological
+forcing (station tables, quality control, reference ET) and its
+regionalization (including GWR) are available as functions, and the
+MODIS preprocessing is internal, with an example scene shipped as the
+dataset `cauquenes_modis`. The integrated `earthflux()` workflow does
+not exist yet. Most METRIC formulations are candidates pending
+verification against the primary reference, and no result shown in the
 package documentation should be interpreted as validated.
 
 ## Conceptual workflow
@@ -64,10 +69,29 @@ ef_net_radiation(
 #> [1] 503.5154
 ```
 
+## Example scene
+
+The dataset `cauquenes_modis` holds the MODIS surface state of the
+Cauquenes province (Maule Region, Chile) for 15 February 2019. The
+emitted longwave radiation of its cells follows from the land surface
+temperature (K) and the broadband emissivity:
+
+``` r
+
+r <- terra::unwrap(cauquenes_modis)
+rl_out <- ef_rl_out(
+  lst = terra::values(r[["lst"]], mat = FALSE),
+  emissivity = terra::values(r[["emissivity"]], mat = FALSE)
+)
+summary(rl_out) # W m-2; NA outside the province and where LST is missing
+#>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.     NAs 
+#>   383.4   444.1   467.8   458.1   476.2   489.6    5937
+```
+
 ## Next steps
 
-The METRIC components that follow net radiation (soil heat flux, anchor
-pixels, aerodynamic resistance and sensible heat flux, latent heat flux
-and evapotranspiration), the spatial forcing module and MODIS
-preprocessing are being specified, with their equations, units and
-domain of validity, before implementation.
+The integrated `earthflux()` workflow (milestone M5) will chain these
+components with automatic inputs (MODIS products, elevation model and
+gridded weather forcing) and documented presets. The scientific
+comparison of a single station, simple interpolation and GWR as
+meteorological forcing (milestone M6) comes after it.

@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">EarthFlux</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,7 +65,7 @@
 </h3>
 <p><strong>MODIS + METRIC + GWR → ETa</strong></p>
 <p>EarthFlux is an R package for modelling land-surface energy and water fluxes from Earth observation data. Its first target is spatially distributed actual evapotranspiration (ETa) estimated with the METRIC (Mapping EvapoTranspiration at high Resolution with Internalized Calibration) surface energy balance framework.</p>
-<p>Its methodological focus is the <strong>meteorological forcing</strong> of METRIC. Instead of relying only on a single weather station assumed to be representative of the whole scene, EarthFlux will make it possible to represent weather variables as spatial surfaces, for example with geographically weighted regression (GWR), and to compare that choice against simpler alternatives.</p>
+<p>Its methodological focus is the <strong>meteorological forcing</strong> of METRIC. Instead of relying only on a single weather station assumed to be representative of the whole scene, EarthFlux represents weather variables as spatial surfaces, for example with geographically weighted regression (GWR), so that this choice can be compared against simpler alternatives.</p>
 <pre class="text"><code>MODIS surface state  +  weather stations
                               │
                  spatial forcing (GWR or alternatives)
@@ -78,12 +78,25 @@
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>EarthFlux is in <strong>active early development</strong> and is <strong>not on CRAN</strong>.</p>
+<p>EarthFlux 0.1.0 is the <strong>first, experimental release</strong>. It is <strong>not on CRAN</strong> and it is <strong>not for operational or scientific production use</strong>: no result has been validated.</p>
+<p>What 0.1.0 includes:</p>
 <ul>
-<li>The METRIC core physics is available as numeric functions, from net radiation (<code><a href="reference/ef_net_radiation.html">ef_net_radiation()</a></code> and its radiation components) through soil heat flux (<code><a href="reference/ef_g.html">ef_g()</a></code>), anchor pixel selection (<code><a href="reference/ef_select_anchors.html">ef_select_anchors()</a></code>), the iterative calibration of the sensible heat flux (<code><a href="reference/ef_calibrate_h.html">ef_calibrate_h()</a></code>) and the latent heat flux, to daily actual evapotranspiration (<code><a href="reference/ef_et_daily.html">ef_et_daily()</a></code>). Most formulations are candidates: corroborated by secondary sources, with verification against the primary reference (Allen et al., 2007) pending.</li>
-<li>The spatial forcing module (GWR), MODIS preprocessing and the <code>earthflux()</code> workflow are being specified before implementation.</li>
-<li>Equations are implemented only after their reference, units, assumptions, domain of validity and a verifiable test case are documented.</li>
-<li>No validation results exist yet. Do not use EarthFlux for operational or decision-making purposes.</li>
+<li>
+<strong>METRIC core physics</strong> as numeric functions, from net radiation (<code><a href="reference/ef_net_radiation.html">ef_net_radiation()</a></code> and its radiation components) through soil heat flux (<code><a href="reference/ef_g.html">ef_g()</a></code>), anchor pixel selection (<code><a href="reference/ef_select_anchors.html">ef_select_anchors()</a></code>), the iterative calibration of the sensible heat flux (<code><a href="reference/ef_calibrate_h.html">ef_calibrate_h()</a></code>) and the latent heat flux, to daily actual evapotranspiration (<code><a href="reference/ef_et_daily.html">ef_et_daily()</a></code>).</li>
+<li>
+<strong>Meteorological forcing</strong>: weather station tables and their quality control (<code><a href="reference/ef_station_table.html">ef_station_table()</a></code>, <code><a href="reference/ef_station_qc.html">ef_station_qc()</a></code>), derived variables and reference evapotranspiration (<code><a href="reference/ef_ref_et.html">ef_ref_et()</a></code>, <code><a href="reference/ef_station_ref_et.html">ef_station_ref_et()</a></code>; grass ETo of FAO-56 and grass or alfalfa reference of the ASCE-EWRI standardized equation).</li>
+<li>
+<strong>Spatial regionalization</strong> of station variables over the working grid (<code><a href="reference/ef_regionalize.html">ef_regionalize()</a></code>): representative station (C1), global regression and inverse distance weighting (C2) and geographically weighted regression (C3, internal GWR core), with exact prediction by raster blocks, optionally in parallel, and spatial block cross-validation.</li>
+<li>
+<strong>MODIS preprocessing</strong> (internal, not exported yet) into the surface state of the METRIC chain, and the example scene <code>cauquenes_modis</code> (Cauquenes province, Chile, 15 February 2019).</li>
+</ul>
+<p>What 0.1.0 does <strong>not</strong> include: the integrated <code>earthflux()</code> workflow and its presets, the automatic download of MODIS products, the elevation model and gridded weather forcing, and any validation results.</p>
+<p>Verification status:</p>
+<ul>
+<li>
+<strong>Verified</strong> against the primary sources: the reference evapotranspiration chain of FAO-56 (worked examples reproduced) and of ASCE-EWRI (2005) (equations and constants; its worked examples are not reproduced yet), the unit conversions and the MODIS product facts (scale factors, fill values, quality bits, with citations to the official user guides).</li>
+<li>
+<strong>Candidate</strong> (corroborated by secondary sources, verification against Allen, Tasumi &amp; Trezza, 2007, pending): most METRIC formulations. Open points include the height of the stable momentum correction (<code>stable_psi_m_height</code>, decision SH-11), which decides whether the sensible heat calibration converges when the cold anchor is stable; the specific heat of air; the temperature used for the incoming longwave radiation; and the emissivity of non-vegetated pixels, derived from a LAI assigned by the user (option <code>lai_nonveg</code>; LAI 0 in the example scene).</li>
 </ul>
 </div>
 <div class="section level2">
@@ -99,25 +112,55 @@
 <li>
 <strong>Diagnostics instead of silent corrections.</strong> Physically anomalous values are reported and flagged, never silently modified.</li>
 <li>
-<strong>Scalable.</strong> Raster processing will be based on <a href="https://CRAN.R-project.org/package=terra" class="external-link">terra</a>, with optional parallel processing that gives identical results to sequential runs.</li>
+<strong>Scalable.</strong> Raster processing is based on <a href="https://CRAN.R-project.org/package=terra" class="external-link">terra</a>, with optional parallel processing (under the user’s <code>future</code> plan) that gives identical results to sequential runs.</li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the development version of EarthFlux from GitHub with:</p>
+<p>You can install the latest release of EarthFlux from GitHub with:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"djwillichile/EarthFlux"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"djwillichile/EarthFlux@*release"</span><span class="op">)</span></span></code></pre></div>
+<p>or the development version with <code>pak::pak("djwillichile/EarthFlux")</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
-<p>Net radiation for two pixels, with illustrative input values (not observations). <code>rl_out</code> is the longwave radiation emitted by the surface and <code>emissivity</code> must be the emissivity used to compute it; a scalar <code>rl_in</code> is recycled.</p>
+<p>The packaged scene <code>cauquenes_modis</code> is the MODIS surface state of the Cauquenes province (Maule Region, Chile) on 15 February 2019 (Terra overpass), on the 1 km sinusoidal grid. It is a packed <code>terra</code> raster:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/djwillichile/EarthFlux" class="external-link">EarthFlux</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="reference/ef_net_radiation.html">ef_net_radiation</a></span><span class="op">(</span></span>
+<span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">cauquenes_modis</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>layer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span>, unit <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/units.html" class="external-link">units</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt;        layer   unit</span></span>
+<span><span class="co">#&gt; 1        lst      K</span></span>
+<span><span class="co">#&gt; 2     albedo      -</span></span>
+<span><span class="co">#&gt; 3       ndvi      -</span></span>
+<span><span class="co">#&gt; 4        lai m2 m-2</span></span>
+<span><span class="co">#&gt; 5 emissivity      -</span></span>
+<span><span class="co">#&gt; 6    emis_31      -</span></span>
+<span><span class="co">#&gt; 7    emis_32      -</span></span>
+<span><span class="co">#&gt; 8        doy      -</span></span>
+<span><span class="co">#&gt; 9   utc_hour      h</span></span></code></pre></div>
+<p>The longwave radiation emitted by the surface follows from the land surface temperature (K) and the broadband emissivity of every cell (<code>NA</code> outside the province and where the LST is missing):</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rl_out</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"lst"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">rl_out</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ef_rl_out.html">ef_rl_out</a></span><span class="op">(</span></span>
+<span>  lst <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"lst"</span><span class="op">]</span><span class="op">]</span>, mat <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  emissivity <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"emissivity"</span><span class="op">]</span><span class="op">]</span>, mat <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">rl_out</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"rl_out"</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/global.html" class="external-link">global</a></span><span class="op">(</span><span class="va">rl_out</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"min"</span>, <span class="st">"mean"</span>, <span class="st">"max"</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             min     mean      max</span></span>
+<span><span class="co">#&gt; rl_out 383.4013 458.0683 489.6118</span></span>
+<span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">rl_out</span>, main <span class="op">=</span> <span class="st">"Emitted longwave radiation (W m-2), 2019-02-15"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-example-rl-out-1.png" alt="" width="70%"></p>
+<p>The article <a href="https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.html">Example scene: Cauquenes</a> on the package website shows every layer, the flag words and the provenance of the scene.</p>
+<p>Net radiation for two pixels, with illustrative input values (not observations). <code>rl_out</code> is the longwave radiation emitted by the surface and <code>emissivity</code> must be the emissivity used to compute it; a scalar <code>rl_in</code> is recycled.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/ef_net_radiation.html">ef_net_radiation</a></span><span class="op">(</span></span>
 <span>  rs_in <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">800</span>, <span class="fl">650</span><span class="op">)</span>,        <span class="co"># incoming shortwave [W m-2]</span></span>
 <span>  albedo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.20</span>, <span class="fl">0.25</span><span class="op">)</span>,     <span class="co"># broadband albedo [-]</span></span>
 <span>  rl_in <span class="op">=</span> <span class="fl">320</span>,                <span class="co"># incoming longwave [W m-2]</span></span>
@@ -126,7 +169,7 @@
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 503.52 367.40</span></span></code></pre></div>
 <p>Invalid inputs are rejected with classed errors instead of being silently corrected:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/ef_net_radiation.html">ef_net_radiation</a></span><span class="op">(</span>rs_in <span class="op">=</span> <span class="fl">800</span>, albedo <span class="op">=</span> <span class="fl">1.2</span>, rl_in <span class="op">=</span> <span class="fl">320</span>, rl_out <span class="op">=</span> <span class="fl">450</span>, emissivity <span class="op">=</span> <span class="fl">0.98</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in `ef_net_radiation()`:</span></span>
 <span><span class="co">#&gt; ! `albedo` must lie in [0, 1]; found 1 value(s) outside this interval.</span></span></code></pre></div>

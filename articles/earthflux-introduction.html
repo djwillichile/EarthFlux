@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">EarthFlux</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,12 +75,18 @@ Data</em></p>
 spatially distributed actual evapotranspiration (ETa) following the
 conceptual chain</p>
 <p><strong>MODIS + METRIC + GWR → ETa</strong></p>
-<p>This vignette describes the planned workflow. EarthFlux is in early
-development: the METRIC core physics (net radiation, soil heat flux,
-anchor pixels, sensible and latent heat flux, instantaneous and daily
-ET) is available as numeric functions, mostly as candidate formulations,
-and the remaining modules are being specified. No result shown in the
-package documentation should be interpreted as validated.</p>
+<p>This vignette describes the workflow that EarthFlux implements step
+by step. Version 0.1.0 is the first, experimental release: the METRIC
+core physics (net radiation, soil heat flux, anchor pixels, sensible and
+latent heat flux, instantaneous and daily ET), the meteorological
+forcing (station tables, quality control, reference ET) and its
+regionalization (including GWR) are available as functions, and the
+MODIS preprocessing is internal, with an example scene shipped as the
+dataset <code>cauquenes_modis</code>. The integrated
+<code>earthflux()</code> workflow does not exist yet. Most METRIC
+formulations are candidates pending verification against the primary
+reference, and no result shown in the package documentation should be
+interpreted as validated.</p>
 </div>
 <div class="section level2">
 <h2 id="conceptual-workflow">Conceptual workflow<a class="anchor" aria-label="anchor" href="#conceptual-workflow"></a>
@@ -133,13 +139,30 @@ values below are illustrative.</p>
 <span><span class="co">#&gt; [1] 503.5154</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="example-scene">Example scene<a class="anchor" aria-label="anchor" href="#example-scene"></a>
+</h2>
+<p>The dataset <code>cauquenes_modis</code> holds the MODIS surface
+state of the Cauquenes province (Maule Region, Chile) for 15 February
+2019. The emitted longwave radiation of its cells follows from the land
+surface temperature (K) and the broadband emissivity:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">cauquenes_modis</span><span class="op">)</span></span>
+<span><span class="va">rl_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ef_rl_out.html">ef_rl_out</a></span><span class="op">(</span></span>
+<span>  lst <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"lst"</span><span class="op">]</span><span class="op">]</span>, mat <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  emissivity <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"emissivity"</span><span class="op">]</span><span class="op">]</span>, mat <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">rl_out</span><span class="op">)</span> <span class="co"># W m-2; NA outside the province and where LST is missing</span></span>
+<span><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.     NAs </span></span>
+<span><span class="co">#&gt;   383.4   444.1   467.8   458.1   476.2   489.6    5937</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="next-steps">Next steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
 </h2>
-<p>The METRIC components that follow net radiation (soil heat flux,
-anchor pixels, aerodynamic resistance and sensible heat flux, latent
-heat flux and evapotranspiration), the spatial forcing module and MODIS
-preprocessing are being specified, with their equations, units and
-domain of validity, before implementation.</p>
+<p>The integrated <code>earthflux()</code> workflow (milestone M5) will
+chain these components with automatic inputs (MODIS products, elevation
+model and gridded weather forcing) and documented presets. The
+scientific comparison of a single station, simple interpolation and GWR
+as meteorological forcing (milestone M6) comes after it.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

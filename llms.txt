@@ -12,10 +12,10 @@ Calibration) surface energy balance framework.
 
 Its methodological focus is the **meteorological forcing** of METRIC.
 Instead of relying only on a single weather station assumed to be
-representative of the whole scene, EarthFlux will make it possible to
-represent weather variables as spatial surfaces, for example with
-geographically weighted regression (GWR), and to compare that choice
-against simpler alternatives.
+representative of the whole scene, EarthFlux represents weather
+variables as spatial surfaces, for example with geographically weighted
+regression (GWR), so that this choice can be compared against simpler
+alternatives.
 
 ``` text
 MODIS surface state  +  weather stations
@@ -33,10 +33,13 @@ this package.
 
 ## Status
 
-EarthFlux is in **active early development** and is **not on CRAN**.
+EarthFlux 0.1.0 is the **first, experimental release**. It is **not on
+CRAN** and it is **not for operational or scientific production use**:
+no result has been validated.
 
-- The METRIC core physics is available as numeric functions, from net
-  radiation
+What 0.1.0 includes:
+
+- **METRIC core physics** as numeric functions, from net radiation
   ([`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md)
   and its radiation components) through soil heat flux
   ([`ef_g()`](https://djwillichile.github.io/EarthFlux/reference/ef_g.md)),
@@ -46,16 +49,46 @@ EarthFlux is in **active early development** and is **not on CRAN**.
   ([`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md))
   and the latent heat flux, to daily actual evapotranspiration
   ([`ef_et_daily()`](https://djwillichile.github.io/EarthFlux/reference/ef_et_daily.md)).
-  Most formulations are candidates: corroborated by secondary sources,
-  with verification against the primary reference (Allen et al., 2007)
-  pending.
-- The spatial forcing module (GWR), MODIS preprocessing and the
-  `earthflux()` workflow are being specified before implementation.
-- Equations are implemented only after their reference, units,
-  assumptions, domain of validity and a verifiable test case are
-  documented.
-- No validation results exist yet. Do not use EarthFlux for operational
-  or decision-making purposes.
+- **Meteorological forcing**: weather station tables and their quality
+  control
+  ([`ef_station_table()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_table.md),
+  [`ef_station_qc()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_qc.md)),
+  derived variables and reference evapotranspiration
+  ([`ef_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_ref_et.md),
+  [`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md);
+  grass ETo of FAO-56 and grass or alfalfa reference of the ASCE-EWRI
+  standardized equation).
+- **Spatial regionalization** of station variables over the working grid
+  ([`ef_regionalize()`](https://djwillichile.github.io/EarthFlux/reference/ef_regionalize.md)):
+  representative station (C1), global regression and inverse distance
+  weighting (C2) and geographically weighted regression (C3, internal
+  GWR core), with exact prediction by raster blocks, optionally in
+  parallel, and spatial block cross-validation.
+- **MODIS preprocessing** (internal, not exported yet) into the surface
+  state of the METRIC chain, and the example scene `cauquenes_modis`
+  (Cauquenes province, Chile, 15 February 2019).
+
+What 0.1.0 does **not** include: the integrated `earthflux()` workflow
+and its presets, the automatic download of MODIS products, the elevation
+model and gridded weather forcing, and any validation results.
+
+Verification status:
+
+- **Verified** against the primary sources: the reference
+  evapotranspiration chain of FAO-56 (worked examples reproduced) and of
+  ASCE-EWRI (2005) (equations and constants; its worked examples are not
+  reproduced yet), the unit conversions and the MODIS product facts
+  (scale factors, fill values, quality bits, with citations to the
+  official user guides).
+- **Candidate** (corroborated by secondary sources, verification against
+  Allen, Tasumi & Trezza, 2007, pending): most METRIC formulations. Open
+  points include the height of the stable momentum correction
+  (`stable_psi_m_height`, decision SH-11), which decides whether the
+  sensible heat calibration converges when the cold anchor is stable;
+  the specific heat of air; the temperature used for the incoming
+  longwave radiation; and the emissivity of non-vegetated pixels,
+  derived from a LAI assigned by the user (option `lai_nonveg`; LAI 0 in
+  the example scene).
 
 ## Design principles
 
@@ -69,21 +102,72 @@ EarthFlux is in **active early development** and is **not on CRAN**.
   and ET are separate, individually tested components.
 - **Diagnostics instead of silent corrections.** Physically anomalous
   values are reported and flagged, never silently modified.
-- **Scalable.** Raster processing will be based on
+- **Scalable.** Raster processing is based on
   [terra](https://CRAN.R-project.org/package=terra), with optional
-  parallel processing that gives identical results to sequential runs.
+  parallel processing (under the user’s `future` plan) that gives
+  identical results to sequential runs.
 
 ## Installation
 
-You can install the development version of EarthFlux from GitHub with:
+You can install the latest release of EarthFlux from GitHub with:
 
 ``` r
 
 # install.packages("pak")
-pak::pak("djwillichile/EarthFlux")
+pak::pak("djwillichile/EarthFlux@*release")
 ```
 
+or the development version with `pak::pak("djwillichile/EarthFlux")`.
+
 ## Example
+
+The packaged scene `cauquenes_modis` is the MODIS surface state of the
+Cauquenes province (Maule Region, Chile) on 15 February 2019 (Terra
+overpass), on the 1 km sinusoidal grid. It is a packed `terra` raster:
+
+``` r
+
+library(EarthFlux)
+
+r <- terra::unwrap(cauquenes_modis)
+data.frame(layer = names(r), unit = terra::units(r))[1:9, ]
+#>        layer   unit
+#> 1        lst      K
+#> 2     albedo      -
+#> 3       ndvi      -
+#> 4        lai m2 m-2
+#> 5 emissivity      -
+#> 6    emis_31      -
+#> 7    emis_32      -
+#> 8        doy      -
+#> 9   utc_hour      h
+```
+
+The longwave radiation emitted by the surface follows from the land
+surface temperature (K) and the broadband emissivity of every cell (`NA`
+outside the province and where the LST is missing):
+
+``` r
+
+rl_out <- terra::rast(r[["lst"]])
+terra::values(rl_out) <- ef_rl_out(
+  lst = terra::values(r[["lst"]], mat = FALSE),
+  emissivity = terra::values(r[["emissivity"]], mat = FALSE)
+)
+names(rl_out) <- "rl_out"
+terra::global(rl_out, c("min", "mean", "max"), na.rm = TRUE)
+#>             min     mean      max
+#> rl_out 383.4013 458.0683 489.6118
+
+terra::plot(rl_out, main = "Emitted longwave radiation (W m-2), 2019-02-15")
+```
+
+![](reference/figures/README-example-rl-out-1.png)
+
+The article [Example scene:
+Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.html)
+on the package website shows every layer, the flag words and the
+provenance of the scene.
 
 Net radiation for two pixels, with illustrative input values (not
 observations). `rl_out` is the longwave radiation emitted by the surface
@@ -91,8 +175,6 @@ and `emissivity` must be the emissivity used to compute it; a scalar
 `rl_in` is recycled.
 
 ``` r
-
-library(EarthFlux)
 
 ef_net_radiation(
   rs_in = c(800, 650),        # incoming shortwave [W m-2]
@@ -379,6 +461,8 @@ Atmospheric and thermodynamic quantities used by several modules
 
 - [Introduction to
   EarthFlux](https://djwillichile.github.io/EarthFlux/articles/earthflux-introduction.md):
+- [Example scene: Cauquenes, 15 February
+  2019](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md):
 
 ### Development
 

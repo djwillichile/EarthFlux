@@ -14,12 +14,23 @@ represent spatially varying meteorological forcing.
 
 ## Details
 
-**Development status.** The first METRIC component,
-[`ef_net_radiation()`](https://djwillichile.github.io/EarthFlux/reference/ef_net_radiation.md),
-is available; its equation form is corroborated by secondary sources and
-verification against the primary reference is pending. The remaining
-components are being specified. The use of GWR for meteorological
-forcing is treated as a research hypothesis that has not been validated.
+**Development status.** Version 0.1.0 is the first, experimental
+release. It provides the METRIC core physics as numeric functions, from
+net radiation to daily actual evapotranspiration; the meteorological
+forcing (weather station tables, quality control, reference
+evapotranspiration) and its regionalization over the working grid
+(representative station, global regression, inverse distance weighting
+and GWR); the internal MODIS preprocessing into the surface state; and
+the example scene
+[cauquenes_modis](https://djwillichile.github.io/EarthFlux/reference/cauquenes_modis.md).
+The integrated workflow `earthflux()` does not exist yet. Most METRIC
+formulations are candidates pending verification against the primary
+reference (Allen et al., 2007); the reference evapotranspiration
+(FAO-56, ASCE-EWRI 2005), the unit conversions and the MODIS product
+facts are verified. No result has been validated: EarthFlux is not for
+operational or scientific production use. The use of GWR for
+meteorological forcing is treated as a research hypothesis that has not
+been validated.
 
 **Design principles.**
 
