@@ -1,3 +1,16 @@
+# EarthFlux 0.1.0.9000 (development version)
+
+## Documentation
+
+* `citation("EarthFlux")` and `CITATION.cff` give the Zenodo DOI of the
+  package (concept DOI 10.5281/zenodo.23981325, which resolves to the
+  latest release; 0.1.0 is 10.5281/zenodo.23981326), and the README shows
+  how to cite it.
+
+* The maps of the README and of the *Example scene: Cauquenes* article are
+  shown in geographic coordinates (EPSG:4326); the computations stay on the
+  native MODIS grid.
+
 # EarthFlux 0.1.0
 
 First release of EarthFlux. It is **experimental and not for operational or

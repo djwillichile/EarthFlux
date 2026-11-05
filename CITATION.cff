@@ -11,6 +11,15 @@ authors:
     given-names: "Guillermo Servando"
     orcid: "https://orcid.org/0000-0002-7864-4899"
 version: "0.1.0"
+date-released: "2026-11-05"
+doi: "10.5281/zenodo.23981325"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23981325"
+    description: "Concept DOI: all versions, resolves to the latest release"
+  - type: doi
+    value: "10.5281/zenodo.23981326"
+    description: "Version DOI of EarthFlux 0.1.0"
 license: MIT
 repository-code: "https://github.com/djwillichile/EarthFlux"
 keywords:

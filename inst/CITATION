@@ -1,19 +1,23 @@
 # Citation for EarthFlux.
-# Update when available: Zenodo DOI (add `doi =`), CRAN version, and the
+# The DOI is the Zenodo concept DOI, which always resolves to the latest
+# archived release; each release also has its own version DOI (see
+# CITATION.cff and the README). Update when available: CRAN version and the
 # associated software/methods article (add a second bibentry of type
 # "Article").
 
 bibentry(
   bibtype = "Manual",
+  key = "EarthFlux",
   title = "{EarthFlux}: Land-Surface Energy and Water Fluxes from Earth Observation Data",
   author = person("Guillermo Servando", "Fuentes-Jaque",
                   comment = c(ORCID = "0000-0002-7864-4899")),
   year = "2026",
   note = paste("R package version", meta$Version),
   url = "https://github.com/djwillichile/EarthFlux",
+  doi = "10.5281/zenodo.23981325",
   textVersion = paste0(
     "Fuentes-Jaque, G. S. (2026). EarthFlux: Land-Surface Energy and ",
     "Water Fluxes from Earth Observation Data. R package version ",
-    meta$Version, ". https://github.com/djwillichile/EarthFlux"
+    meta$Version, ". https://doi.org/10.5281/zenodo.23981325"
   )
 )
