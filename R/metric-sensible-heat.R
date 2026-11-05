@@ -380,7 +380,8 @@ ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
 #' 6. stability corrections (unstable: Paulson-type forms with coefficient
 #'    16; stable: log-linear form \eqn{-5 z/L}{-5 * z / L}), with
 #'    \eqn{\psi_m}{psi_m} at the blending height (or at
-#'    `stable_psi_m_height` when \eqn{L > 0}{L > 0}, open decision SH-11)
+#'    `stable_psi_m_height` when \eqn{L > 0}{L > 0}: 2 m by default,
+#'    Waters et al., 2002, Eq. 38, decision SH-11)
 #'    and \eqn{\psi_h}{psi_h} at `z2` and `z1`; then \eqn{u_{*,k}}{u*_k} and
 #'    the new \eqn{r_{ah}}{rah};
 #' 7. damping: \eqn{r_{ah,k} = (1 - \omega) r_{ah,new} + \omega

@@ -111,7 +111,8 @@ SH-10; \eqn{L = \infty}{L = Inf}, neutral, when \eqn{H = 0}{H = 0});
 \item stability corrections (unstable: Paulson-type forms with coefficient
 16; stable: log-linear form \eqn{-5 z/L}{-5 * z / L}), with
 \eqn{\psi_m}{psi_m} at the blending height (or at
-\code{stable_psi_m_height} when \eqn{L > 0}{L > 0}, open decision SH-11)
+\code{stable_psi_m_height} when \eqn{L > 0}{L > 0}: 2 m by default,
+Waters et al., 2002, Eq. 38, decision SH-11)
 and \eqn{\psi_h}{psi_h} at \code{z2} and \code{z1}; then \eqn{u_{*,k}}{u*_k} and
 the new \eqn{r_{ah}}{rah};
 \item damping: \eqn{r_{ah,k} = (1 - \omega) r_{ah,new} + \omega
