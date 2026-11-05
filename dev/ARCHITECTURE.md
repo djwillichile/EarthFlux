@@ -24,6 +24,11 @@ superficie), §6.3 con el estado de M3 (2026-11-04) · Complementa `SCIENTIFIC_S
 8. **Los errores físicos generan errors, warnings o flags apropiados**,
    siempre con clase de condición (`earthflux_error`, `earthflux_warning`,
    subclases específicas).
+9. **Lo que pide la validación no lo pide el producto.** Los datos que
+   necesita la validación científica (muchas estaciones, torres EC,
+   cobertura de suelo local) nunca son requisitos de `earthflux()`; el
+   usuario básico entrega solo área, fecha y forzamiento meteorológico
+   (§6.7).
 
 ## 2. Módulos
 
@@ -524,3 +529,39 @@ autor y licencia, sus convenciones se adoptan como estilo de la casa.
 | `.zenodo.json`, `CITATION.cff`, `inst/WORDLIST` | `CITATION.cff` creado; `.zenodo.json` y `WORDLIST` con el primer release |
 | `Language: en-GB` | Adoptado |
 | Sin paralelismo explícito | EarthFlux lo incorpora (6.3) con verificación de equivalencia |
+
+### 6.7 Carga de entradas de la API de usuario — **DECIDIDO** (2026-11-05)
+
+Decisión del autor (`DECISIONS.md` §1.5, M5-01 … M5-07). Motivo: al
+preparar la escena de validación del Maule (2019-02-15) se acumularon
+MODIS, MDE, cobertura de suelo, ~40 estaciones horarias y ~15 opciones
+científicas; exigir todo eso para obtener un mapa de ETa haría el paquete
+inutilizable fuera de la investigación.
+
+**Tres niveles de uso**, todos sobre el mismo núcleo (principio 4):
+
+| Nivel | Llamada (forma prevista) | Entradas del usuario | Lo demás |
+|---|---|---|---|
+| Básico | `earthflux(aoi, date, weather, preset)` | Área, fecha, **una** fuente meteorológica (una estación o una fuente grillada, M5-07) y el nombre de un preset | MODIS y MDE descargados y preparados por el paquete |
+| Avanzado | Ídem con `weather` = tabla de estaciones y forzamiento GWR | Tabla de estaciones (C3) | Covariables derivadas del MDE (elevación) |
+| Experto | Funciones `ef_*()` y `modis_*()` | Todas las opciones explícitas, como hoy | — |
+
+**Entradas mínimas del producto** (nivel básico):
+
+| Entrada | Requisito | Fuente |
+|---|---|---|
+| Área y fecha | Sí | Usuario |
+| Estado de superficie MODIS | Sí | Descarga automática (CMR + LP DAAC, token Earthdata del entorno; M4-26) |
+| Elevación | Sí (presión, Ts,datum) | Descarga automática del MDE (M5-06) |
+| Pendiente y orientación | Solo con relieve | Derivadas del mismo MDE; opción explícita de terreno plano |
+| Meteorología a la hora de paso y diaria | Sí (ETr de calibración) | Usuario: una estación, o fuente grillada (M5-07) |
+| Cobertura de suelo | **No** | Opcional, solo como máscara de exclusión (M5-05) |
+
+**Presets (M5-04).** Un preset es un conjunto nombrado y documentado de
+todas las opciones científicas de la cadena; `earthflux()` lo exige como
+argumento (una elección explícita en lugar de ~15), y cada opción efectiva
+queda en la procedencia del resultado. El núcleo conserva la regla de
+métodos sin defecto (§3.1, T-15); un preset solo se rotula `VERIFICADA` si
+todas sus formulaciones lo están, y si no, su estado se declara en su
+nombre y documentación.
+

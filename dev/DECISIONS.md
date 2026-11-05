@@ -322,6 +322,24 @@ estado del final de §13.2 en la armonización de M4)
 | A-M4-6 | Emisividad en clases no vegetadas: E3 da `NA` donde el LAI es `NA` (clases 249–254: suelo desnudo, urbano, agua), y con ello Rn y G `NA` en esas celdas. **Actualizada 2026-11-04:** el autor adoptó la asignación explícita (M4-28, M4-29; la escena de Cauquenes usa `lai_nonveg = 0`, ε₀ = 0,95 en esas clases). **Sigue abierto:** (a) E1/E2 (MP-04): implementar la emisividad de banda ancha desde las emisividades del producto LST requiere la lista de §8.2 (forma funcional, coeficientes con su fuente primaria, intervalo espectral, rango de validez, casos de prueba); las bandas 31/32 ya viajan en el estado (M4-30); (b) si agua (254), nieve/hielo (252) y humedales (251) necesitan un valor o una regla propia en lugar del LAI 0 común (con LAI 0 también entran en la rama de suelo desnudo de G de Tasumi, `soil-heat-flux.md`), lo que la asignación por clase ya permite expresar | Sin la opción: `NA` + `EF_INPUT_NA` en `flags_emissivity` (M4-22); con `lai_nonveg`: valor asignado + `EF_SURF_LAI_ASSIGNED` (M4-28, M4-29); E1 → `earthflux_method_not_implemented` | `specs/modis-products.md` §8.2; MP-04, MP-06 |
 | A-M4-7 | Umbral de `min_valid_fraction` (y de `EF_SURF_AGG_INCOMPLETE`, clase II) | Argumento sin defecto; el script de ejemplo usa 1 (solo celdas con todas las subceldas válidas) | `specs/modis-products.md` §9.2 |
 
+### 1.5 Decisiones de diseño de la API de usuario (2026-11-05)
+
+Tomadas por el autor al revisar la carga de entradas de la escena de
+validación del Maule (2019-02-15). M5-01 … M5-05 son decisiones del autor
+(`DECIDIDA`); M5-06 es `DECIDIDA (provisional)`; M5-07 sigue `ABIERTA`
+(evaluada el 2026-11-05; recomendación provisional en la fila). Documento dueño: `ARCHITECTURE.md` §1 (principio 9)
+y §6.7.
+
+| ID | Decisión | Motivo | Documento |
+|---|---|---|---|
+| M5-01 | **Producto ≠ validación.** Los datos que necesita la validación (muchas estaciones horarias, torres EC, cobertura de suelo local, control de metadatos de estaciones) no son requisitos de `earthflux()` | Exigirlos para obtener un mapa de ETa haría el paquete inutilizable fuera de la investigación | `ARCHITECTURE.md` §1 (9), §6.7 |
+| M5-02 | **Tres niveles de uso** sobre el mismo núcleo: básico (`earthflux()` con área, fecha, una fuente meteorológica y un preset), avanzado (tabla de estaciones y GWR, C3) y experto (`ef_*()`, `modis_*()` con todas las opciones) | Separar la facilidad de uso del control fino sin duplicar ecuaciones (principio 4) | `ARCHITECTURE.md` §6.7 |
+| M5-03 | **Entradas mínimas del nivel básico:** área, fecha y forzamiento meteorológico; el estado de superficie MODIS y el MDE los descarga y prepara el paquete (token Earthdata solo desde el entorno, como en M4-26) | El usuario no debe reunir productos satelitales a mano | `ARCHITECTURE.md` §6.7 |
+| M5-04 | **Presets obligatorios en `earthflux()`:** un argumento `preset` nombra un conjunto documentado de todas las opciones científicas; cada opción efectiva queda en la procedencia; el núcleo mantiene métodos sin defecto (T-15); un preset es `VERIFICADA` solo si todas sus formulaciones lo son | Una elección explícita en lugar de ~15, sin defectos ocultos | `ARCHITECTURE.md` §6.7; T-15; P0-7, P0-8 |
+| M5-05 | **Cobertura de suelo opcional**, solo como máscara de exclusión (agua, urbano, nieve); la selección de anclas usa criterios de superficie (NDVI, Ts, albedo; `anchor-pixels.md`) y el agua ya se marca con `EF_SURF_WATER`. Evidencia: MCD12Q1 2019 clasifica solo 1,6 % de la Región del Maule como cultivo (IGBP; 2,1 % en `LC_Prop2`, 1,9 % + 0,2 % en `LC_Type5`), lo que lo hace inadecuado como máscara agrícola de anclas en el valle central | Evitar una entrada costosa sin fuente global adecuada | `ARCHITECTURE.md` §6.7; `anchor-pixels.md` (cobertura `TODO`) |
+| M5-06 | **MDE automático:** NASADEM_HGT v001 (1″, LP DAAC, DOI 10.5067/MEASURES/NASADEM/NASADEM_HGT.001, mismo token); cadena candidata del preset: media 3×3 a 3″ (~90 m) → pendiente y orientación a ~90 m → media de las componentes del vector normal por celda de 1 km (da el coseno de incidencia medio exacto, sin sombras) → pendiente y orientación efectivas más la longitud del normal medio; opción explícita de terreno plano | Elevación obligatoria (presión, Ts,datum, T-20); relieve solo donde importa | `ARCHITECTURE.md` §6.7; T-20 |
+| M5-07 | **Forzamiento sin estaciones** (fuente grillada) como opción del nivel básico: **`ABIERTA`**. Evaluación del 2026-11-05 (Región del Maule, 2019-02-15, contraste con 10–39 estaciones DMC/INIA/FDF; **un solo día despejado de verano: evidencia débil**; sesgo / RMSE, grillado − estación): Open-Meteo ERA5 (sin credencial, CC BY 4.0) Tmean +0,49 / 1,37 K, HR −4,3 / 7,7 %, Rs (solo piranómetros DMC + INIA, n = 14) +0,86 / 2,33 MJ m⁻² d⁻¹; ECMWF IFS 9 km Tmean +0,51 / 1,11 K, HR −8,3 / 11,2 %; ERA5-Land vía Open-Meteo **sin Rs, viento ni presión**; NASA POWER (MERRA-2 + CERES) HR −27,8 / 30,3 % (cálido y seco); CR2MET v2.5 (Chile, solo diario, CC BY 4.0) Tmean −0,59 / 1,19 K (no independiente: calibrado con estas redes); MCD18A1 v062 (token Earthdata; v061 retirado) Rs +1,78 / 2,83. Todas las fuentes comprimen la amplitud diaria (Tmax 2–3 K bajo, Tmin 3–4 K alto). MERRA-2 y GLDAS exigen además aprobar una vez la aplicación GES DISC en Earthdata Login; ERA5 en CDS exige cuenta y clave. **No evaluados:** viento y valores a la hora de paso (sin datos horarios de estaciones), días nublados, invierno, montaña. **Recomendación provisional:** Open-Meteo `era5` como fuente sin credencial (con opción `apikey`: el plan gratuito es solo no comercial, < 10 000 llamadas por día), CR2MET como complemento diario en Chile y MCD18A1 v062 para Rs con el token del paquete | Permitir ETa sin datos de estaciones | `ARCHITECTURE.md` §6.7; `weather-forcing.md` |
+
 ### 1.1 Preguntas P0
 
 Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
@@ -453,7 +471,7 @@ GW-22, GW-23 y ARCH-6.3b para M3): 101 `ABIERTA`, 58 `DECIDIDA`, 3
 `CERRADA`; las de M4 (§1.4) pasan **3 filas** más (MP-10, MP-11 y
 MP-13): 98 `ABIERTA`, 61 `DECIDIDA`, 3 `CERRADA`; y las decisiones del
 autor del 2026-11-04 posteriores a M4 (M4-27, M4-28) pasan **2 filas** más
-(MP-06 y MP-12): 96 `ABIERTA`, 63 `DECIDIDA`, 3 `CERRADA`. Las tablas de esta sección y de §5 conservan el recuento
+(MP-06 y MP-12): 96 `ABIERTA`, 63 `DECIDIDA`, 3 `CERRADA`. Las decisiones de diseño de la API de usuario del 2026-11-05 (§1.5, M5-01 … M5-07) son nuevas y no cambian el recuento. Las tablas de esta sección y de §5 conservan el recuento
 original salvo en la columna de estado.
 
 Decisiones abiertas por prioridad:
@@ -510,6 +528,7 @@ Por documento:
 | GW-15 | Referencia cruzada solo con `GWmodel` en `tests/` | CERRADA, 2026-11-04 | `gwr-forcing.md` §13 | = BK-3 |
 | MP-06 | LAI de clases no vegetadas: `NA` + flag por defecto; asignación explícita como opción declarada (`lai_nonveg`, un valor o uno por clase), con `EF_SURF_LAI_ASSIGNED`; la escena de ejemplo usa 0 | DECIDIDA, 2026-11-04 | §1.4, M4-28, M4-29; `specs/modis-products.md` §5.7, §15 | Valor asignado `CANDIDATA`; reglas propias para agua/nieve (A-M4-6) |
 | MP-12 | Datos de ejemplo: provincia de Cauquenes; **2019-02-15**, Terra, MOD11A1/MCD43A3/MOD13A2/MCD15A2H, tesela h12v12 | DECIDIDA, 2026-11-04 | §1.4, M4-26, M4-27; `specs/modis-products.md` §12, §15 | Ejecutar `data-raw/modis-example.R` con token y versionar `inst/extdata/modis-example/` (`ROADMAP.md` M4) |
+| M5-01 … M5-05 | API de usuario en tres niveles; producto ≠ validación; nivel básico con área, fecha, una fuente meteorológica y `preset` obligatorio; MODIS y MDE automáticos; cobertura de suelo opcional (M5-06 provisional; M5-07 abierta) | DECIDIDA, 2026-11-05 | §1.5; `ARCHITECTURE.md` §1 (9), §6.7 | Presets (contenido y estado), fuente meteorológica grillada (M5-07) |
 
 **Evidencia previa del autor (registrada; las decisiones siguen abiertas).**
 

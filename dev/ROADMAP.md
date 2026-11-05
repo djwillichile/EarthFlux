@@ -111,6 +111,17 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 ## M5 — Integrated pipeline
 - [ ] `earthflux()` sobre el núcleo; objeto de resultado con diagnósticos y
       procedencia; paralelismo.
+- [x] Diseño de la carga de entradas (decisión del autor, 2026-11-05;
+      `ARCHITECTURE.md` §6.7, `DECISIONS.md` §1.5, M5-01 … M5-07): tres
+      niveles de uso; nivel básico con área, fecha, una fuente
+      meteorológica y un preset obligatorio; MODIS y MDE automáticos;
+      cobertura de suelo opcional.
+- [ ] Presets de `earthflux()` (M5-04): nombres, contenido y estado.
+- [ ] Descarga y preparación automática del MDE (NASADEM, M5-06).
+- [ ] Forzamiento sin estaciones (M5-07): evaluado el 2026-11-05
+      (recomendación provisional: Open-Meteo ERA5, CR2MET diario en Chile,
+      MCD18A1 v062 para Rs); falta la decisión del autor y evaluar viento y
+      hora de paso con datos horarios de estaciones.
 
 ## M6 — Scientific validation
 - [ ] Experimento C1 vs. C2 vs. C3 según `VALIDATION_PLAN.md`.
