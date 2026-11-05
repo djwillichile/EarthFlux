@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">EarthFlux</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,7 +58,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Example scene: Cauquenes, 15 February 2019</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/djwillichile/EarthFlux/blob/v0.1.0/vignettes/articles/cauquenes-example.Rmd" class="external-link"><code>vignettes/articles/cauquenes-example.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/djwillichile/EarthFlux/blob/main/vignettes/articles/cauquenes-example.Rmd" class="external-link"><code>vignettes/articles/cauquenes-example.Rmd</code></a></small>
       <div class="d-none name"><code>cauquenes-example.Rmd</code></div>
     </div>
 
@@ -127,7 +127,15 @@ documentation, not for scientific results.</p>
 <p>The grid is the native 1 km sinusoidal grid of the MOD11A1 file.
 Cells outside the province are <code>NA</code> in every layer, flag
 words included.</p>
+<p>Every computation in this article runs on that native grid. The maps
+are projected to geographic coordinates (WGS 84, EPSG:4326) for display
+only: continuous layers with bilinear interpolation and flag layers with
+the nearest neighbour, so that no flag is interpolated.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">to_lonlat</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">method</span> <span class="op">=</span> <span class="st">"bilinear"</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/project.html" class="external-link">project</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"EPSG:4326"</span>, method <span class="op">=</span> <span class="va">method</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lst"</span>, <span class="st">"albedo"</span>, <span class="st">"ndvi"</span>, <span class="st">"lai"</span>, <span class="st">"emissivity"</span>, <span class="st">"utc_hour"</span><span class="op">)</span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/global.html" class="external-link">global</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="va">vars</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"min"</span>, <span class="st">"max"</span>, <span class="st">"mean"</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  min       max        mean</span></span>
@@ -147,9 +155,9 @@ LAI (m2 m-2, MCD15A2H 8-day composite), broadband emissivity from LAI
 and the UTC hour of the overpass of each cell (from
 <code>Day_view_time</code>, local solar time, and the longitude of the
 cell).</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span></span>
-<span>  <span class="va">r</span><span class="op">[[</span><span class="va">vars</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>  <span class="fu">to_lonlat</span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="va">vars</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>  main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"LST (K)"</span>, <span class="st">"Albedo (-)"</span>, <span class="st">"NDVI (-)"</span>, <span class="st">"LAI (m2 m-2)"</span>,</span>
 <span>           <span class="st">"Emissivity (-)"</span>, <span class="st">"Overpass (UTC hour)"</span><span class="op">)</span>,</span>
 <span>  nc <span class="op">=</span> <span class="fl">3</span>, axes <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -170,7 +178,7 @@ surface stage are documented in <code><a href="../reference/cauquenes_modis.html
 as <code>flag_bits</code> in the provenance file of the scene
 (<code>data-raw/cauquenes_modis.yml</code> of the source
 repository):</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">flag_bits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  bit <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">15</span>,</span>
 <span>  code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
@@ -203,7 +211,7 @@ repository):</p>
 <p>A bit is tested with <code>bitwAnd(value, 2^b) &gt; 0</code>. The
 small helper below returns a logical raster (<code>NA</code> outside the
 province) for one flag code:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">has_flag</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">words</span>, <span class="va">code</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">bit</span> <span class="op">&lt;-</span> <span class="va">flag_bits</span><span class="op">$</span><span class="va">bit</span><span class="op">[</span><span class="va">flag_bits</span><span class="op">$</span><span class="va">code</span> <span class="op">==</span> <span class="va">code</span><span class="op">]</span></span>
 <span>  <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/app.html" class="external-link">app</a></span><span class="op">(</span><span class="va">words</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/bitwise.html" class="external-link">bitwAnd</a></span><span class="op">(</span><span class="va">x</span>, <span class="fl">2</span><span class="op">^</span><span class="va">bit</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span></span>
@@ -211,7 +219,7 @@ province) for one flag code:</p>
 <p>Cells of the province (cells with a flag word) and cells whose LST
 quality control reports clouds (<code>EF_SURF_CLOUD</code>); in those
 cells the LST is <code>NA</code>:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_province</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/global.html" class="external-link">global</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"flags_lst"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"sum"</span><span class="op">)</span><span class="op">$</span><span class="va">sum</span></span>
 <span><span class="va">cloud</span> <span class="op">&lt;-</span> <span class="fu">has_flag</span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"flags_lst"</span><span class="op">]</span><span class="op">]</span>, <span class="st">"EF_SURF_CLOUD"</span><span class="op">)</span></span>
 <span><span class="va">n_cloud</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/global.html" class="external-link">global</a></span><span class="op">(</span><span class="va">cloud</span>, <span class="st">"sum"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">sum</span></span>
@@ -224,7 +232,7 @@ retrieved (<code>EF_SURF_LAI_ASSIGNED</code>), wholly or in some of the
 500 m sub-cells aggregated to the cell. The flag is raised in the LAI
 layer and in the emissivity layer derived from it, so the emissivity of
 those cells also rests on an assigned value:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lai_assigned</span> <span class="op">&lt;-</span> <span class="fu">has_flag</span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"flags_lai"</span><span class="op">]</span><span class="op">]</span>, <span class="st">"EF_SURF_LAI_ASSIGNED"</span><span class="op">)</span></span>
 <span><span class="va">emis_assigned</span> <span class="op">&lt;-</span> <span class="fu">has_flag</span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"flags_emissivity"</span><span class="op">]</span><span class="op">]</span>, <span class="st">"EF_SURF_LAI_ASSIGNED"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
@@ -235,7 +243,7 @@ those cells also rests on an assigned value:</p>
 <span><span class="co">#&gt;        120        120</span></span></code></pre></div>
 <p>The same test applies to every code and layer. For example, the
 number of cells of each layer where each flag applies:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">word_layers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^flags_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">word_layers</span>, <span class="kw">function</span><span class="op">(</span><span class="va">l</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">w</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="va">l</span><span class="op">]</span><span class="op">]</span>, mat <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -268,10 +276,11 @@ number of cells of each layer where each flag applies:</p>
 <span><span class="co">#&gt; EF_SURF_LAI_BACKUP              10                0             0             0</span></span>
 <span><span class="co">#&gt; EF_SURF_ALBEDO_MAGNITUDE         0                0             0             0</span></span>
 <span><span class="co">#&gt; EF_SURF_LAI_ASSIGNED           120              120             0             0</span></span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">flagged</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cloud</span>, <span class="va">lai_assigned</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">flagged</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"EF_SURF_CLOUD (LST)"</span>, <span class="st">"EF_SURF_LAI_ASSIGNED (LAI)"</span><span class="op">)</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">flagged</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"grey85"</span>, <span class="st">"#00606F"</span><span class="op">)</span>, legend <span class="op">=</span> <span class="cn">FALSE</span>, nc <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu">to_lonlat</span><span class="op">(</span><span class="va">flagged</span>, method <span class="op">=</span> <span class="st">"near"</span><span class="op">)</span>,</span>
+<span>            col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"grey85"</span>, <span class="st">"#00606F"</span><span class="op">)</span>, legend <span class="op">=</span> <span class="cn">FALSE</span>, nc <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="cauquenes-example_files/figure-html/flag-maps-1.png" class="r-plt" alt="" width="100%"></p>
 </div>
 <div class="section level2">
@@ -281,7 +290,7 @@ number of cells of each layer where each flag applies:</p>
 depends on the surface state alone. <code><a href="../reference/ef_rl_out.html">ef_rl_out()</a></code> works on
 numeric vectors, so the values of the layers are passed and the result
 is written back into a raster with the same grid:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rl_out</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"lst"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">rl_out</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ef_rl_out.html">ef_rl_out</a></span><span class="op">(</span></span>
 <span>  lst <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">r</span><span class="op">[[</span><span class="st">"lst"</span><span class="op">]</span><span class="op">]</span>, mat <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
@@ -291,7 +300,7 @@ is written back into a raster with the same grid:</p>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/global.html" class="external-link">global</a></span><span class="op">(</span><span class="va">rl_out</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"min"</span>, <span class="st">"max"</span>, <span class="st">"mean"</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             min      max     mean</span></span>
 <span><span class="co">#&gt; rl_out 383.4013 489.6118 458.0683</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">rl_out</span>, main <span class="op">=</span> <span class="st">"Emitted longwave radiation (W m-2)"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu">to_lonlat</span><span class="op">(</span><span class="va">rl_out</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">"Emitted longwave radiation (W m-2)"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="cauquenes-example_files/figure-html/rl-out-1.png" class="r-plt" alt="" width="100%"></p>
 </div>
 <div class="section level2">

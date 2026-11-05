@@ -163,10 +163,17 @@ terra::global(rl_out, c("min", "mean", "max"), na.rm = TRUE)
 #>             min     mean      max
 #> rl_out 383.4013 458.0683 489.6118
 
-terra::plot(rl_out, main = "Emitted longwave radiation (W m-2), 2019-02-15")
+# Computed on the native grid; shown in geographic coordinates (EPSG:4326)
+rl_out_lonlat <- terra::project(rl_out, "EPSG:4326", method = "bilinear")
+terra::plot(rl_out_lonlat,
+            main = "Emitted longwave radiation (W m-2), 2019-02-15")
 ```
 
 ![](reference/figures/README-example-rl-out-1.png)
+
+The map is projected to geographic coordinates (WGS 84, EPSG:4326) for
+display only; the scene and every computation stay on the native MODIS
+grid.
 
 The article [Example scene:
 Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.html)
@@ -211,7 +218,41 @@ results.
 
 ## Citation
 
-Citation information is available with `citation("EarthFlux")`.
+If you use EarthFlux, please cite it. Every release is archived on
+Zenodo: the concept DOI
+[10.5281/zenodo.23981325](https://doi.org/10.5281/zenodo.23981325)
+always resolves to the latest release, and each version has its own DOI
+(0.1.0:
+[10.5281/zenodo.23981326](https://doi.org/10.5281/zenodo.23981326));
+cite the version you used when reproducibility matters.
+
+``` r
+
+citation("EarthFlux")
+```
+
+``` R
+To cite package 'EarthFlux' in publications use:
+
+  Fuentes-Jaque, G. S. (2026). EarthFlux: Land-Surface Energy and Water
+  Fluxes from Earth Observation Data. R package version 0.1.0.9000.
+  https://doi.org/10.5281/zenodo.23981325
+
+A BibTeX entry for LaTeX users is
+
+  @Manual{EarthFlux,
+    title = {{EarthFlux}: Land-Surface Energy and Water Fluxes from Earth Observation Data},
+    author = {Guillermo Servando Fuentes-Jaque},
+    year = {2026},
+    note = {R package version 0.1.0.9000},
+    url = {https://github.com/djwillichile/EarthFlux},
+    doi = {10.5281/zenodo.23981325},
+  }
+```
+
+The same metadata are in `CITATION.cff` (GitHub’s *Cite this
+repository*). When you use the METRIC formulations, please also cite the
+methodological sources listed in the documentation of each function.
 
 ## License
 
