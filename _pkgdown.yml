@@ -162,6 +162,9 @@ reference:
     contents:
       - ef_air_pressure
       - ef_lambda
+  - title: Datasets
+    contents:
+      - cauquenes_modis
 
 # Reference index. Sections are added as functions are exported, to avoid
 # empty documentation. Planned sections (in this order):
