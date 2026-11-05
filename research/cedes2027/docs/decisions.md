@@ -1,0 +1,28 @@
+# Registro de decisiones metodológicas del estudio CEDES 2027
+
+Estado: vigente · Autor: Guillermo S. Fuentes-Jaque · Ámbito: solo este
+estudio (`research/cedes2027/`); no modifica los defectos ni las decisiones
+del paquete EarthFlux (`dev/DECISIONS.md`).
+
+Cada decisión se fijó **antes** de mirar los resultados de validación
+cruzada o de METRIC, salvo cuando se indica lo contrario (en ese caso se
+reporta como decisión *a posteriori*). La columna «Estado» usa la
+convención del paquete: `VERIFICADA` (contrastada con fuente primaria),
+`CANDIDATA` (forma razonable, no verificada) o `DECISIÓN DEL ESTUDIO`
+(elección metodológica sin fuente única).
+
+| ID | Decisión | Justificación | Estado |
+|---|---|---|---|
+| D-01 | Sistema de coordenadas de trabajo: WGS 84 / UTM 18S (EPSG:32718) para distancias (GWR, IDW, pliegues espaciales); la escena se procesa en su grilla MODIS sinusoidal nativa (≈ 926,6 m). | La escena (≈ 72,3° O) está a 1,7–3,5° del meridiano central (75° O); la proyección sinusoidal distorsiona las distancias a 72° O (cizalle), por lo que no se usa para distancias. Los campos regionalizados se proyectan a la grilla MODIS con interpolación bilineal. | DECISIÓN DEL ESTUDIO |
+| D-02 | Estación representativa (C1): la más cercana al centroide de la provincia de Cauquenes entre las estaciones con ≥ 90 % de los registros a la hora del paso del período de estudio para Ta, eₐ y u. | Regla objetiva, fijada antes de ver errores; replica la práctica habitual de usar la estación cercana con datos completos. | DECISIÓN DEL ESTUDIO |
+| D-03 | Validación cruzada por bloques espaciales cuadrados de 50 km (EPSG:32718); ancho de banda GWR (k adaptativo, AICc) y potencia IDW ({1, 2, 3}, LOOCV) re-seleccionados dentro de cada conjunto de entrenamiento (CV anidada). | Evita filtración de información del conjunto de evaluación (Roberts et al., 2017). 50 km supera la separación típica entre estaciones vecinas y se mantiene compatible con el número de estaciones. | DECISIÓN DEL ESTUDIO |
+| D-04 | ETr de alfalfa (ASCE-EWRI, horaria) calculada por píxel a partir de los campos regionalizados de Ta, eₐ y u₂ y de la radiación de onda corta **modelada** (transmisividad de Allen, 1996; cielo despejado, escena con 3 % de nubosidad). ETr₂₄ = suma de las 24 horas del día local (UTC−3). Observaciones puntuales a hh:00 representan la hora centrada en hh:00. | Ninguna estación de la red NOAA ISD mide radiación; usar Rs modelada en todas las configuraciones mantiene la comparabilidad y aísla el efecto del forzamiento de Ta, eₐ y u. Corresponde a la opción «regionalizar los insumos» de la decisión 5.1 del paquete. | DECISIÓN DEL ESTUDIO (formulación ASCE `VERIFICADA` en el paquete) |
+| D-05 | Flujo de calor del suelo: método de Tasumi (`ef_g(method = "tasumi")`). | Forma METRIC citada en la especificación del paquete; disponible y probada. | CANDIDATA |
+| D-06 | Rugosidad: zom = 0,018·LAI (`ef_zom(method = "lai")`) con piso de 0,005 m en suelo desnudo (LAI = 0 daría zom = 0, inválido para rah). Las celdas con piso se cuentan (`n_zom_floor`). | Valor de suelo desnudo usado en aplicaciones de METRIC; el piso es explícito y contado, no silencioso. | DECISIÓN DEL ESTUDIO |
+| D-07 | Condiciones de borde: ETrF del ancla fría = 1,05; ETrF del ancla caliente = 0 (LE_hot = 0). | Valores habituales de METRIC (Allen et al., 2007; P0-8 del paquete exige darlos explícitamente). El antecedente del autor mostró que este coeficiente es sensible a 1 km, por lo que se somete a análisis de sensibilidad (experimento S). | CANDIDATA |
+| D-08 | Selección automática de anclas por percentiles sobre variables de superficie: candidatas frías NDVI ≥ P95 y, entre ellas, el 20 % más frío en LST; candidatas calientes NDVI ≤ P10 y, entre ellas, el 20 % más caliente; un punto de calibración por clase (mediana). Dominio de percentiles: celdas terrestres (NDVI > 0). | Usa solo el estado de superficie, de modo que las celdas ancla son **idénticas en todas las configuraciones meteorológicas** (control experimental: las diferencias de calibración se deben al forzamiento en las anclas, no a cambios en la selección). Inspirado en Allen et al. (2007) y Bhattarai et al. (2017). | DECISIÓN DEL ESTUDIO |
+| D-09 | Relleno de vacíos horarios de cada estación por interpolación lineal en el tiempo solo para huecos ≤ 6 h; los valores rellenados reciben estado de QC `warning` y se cuentan (`scene_day_gap_filling.csv`). | Las estaciones de aeropuerto no reportan todas las horas nocturnas; ETr₂₄ requiere 24 horas. Huecos mayores quedan faltantes. | DECISIÓN DEL ESTUDIO |
+| D-10 | Velocidad del viento mínima de 0,5 m s⁻¹ a 2 m en el cálculo de METRIC y de ETr. | Evita divisiones por valores cercanos a cero en la extrapolación logarítmica; práctica estándar en FAO-56 para periodos de calma. | DECISIÓN DEL ESTUDIO |
+| D-11 | Covariables de regionalización: elevación media (Copernicus GLO-90 a 1 km) y distancia a la costa (Natural Earth 1:10 m). No se usan covariables de superficie (LST, NDVI). | Evita la circularidad Ta–LST identificada en el prototipo del autor (decisión GW-07 abierta en el paquete). | DECISIÓN DEL ESTUDIO |
+| D-12 | GWR: kernel bisquare adaptativo, selección de k por AICc con búsqueda exhaustiva (`ef_gwr_search()`), covariables escaladas. | Kernel compacto con k adaptativo, adecuado para redes de densidad irregular (Fotheringham et al., 2002); el kernel y el criterio no tienen defecto en el paquete (GW-04, GW-05). | DECISIÓN DEL ESTUDIO |
+| D-13 | Intervalos de confianza de las métricas de validación cruzada por bootstrap de bloques temporales (se remuestrean días completos, B = 2000). | Mantiene juntas las predicciones de un mismo instante, cuyos errores están correlacionados espacialmente. | DECISIÓN DEL ESTUDIO |
