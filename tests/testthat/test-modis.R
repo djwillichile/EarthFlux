@@ -62,7 +62,7 @@ test_that("rows carry the verified facts of the sheets", {
                    "MODIS_Grid_Daily_1km_LST21")
   a <- row_of("MCD43A3", "Albedo_WSA_shortwave")
   expect_identical(a$conversion, "offset_scale")
-  expect_identical(a$grid, "MODIS_Grid_BRDF")
+  expect_identical(a$grid, "MOD_Grid_BRDF")
   expect_identical(c(a$scale, a$valid_max, a$fill), c(0.001, 32766, 32767))
   q <- row_of("MOD09GA", "QC_500m_1")
   expect_identical(q$data_type, "uint32")

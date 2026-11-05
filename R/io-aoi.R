@@ -66,10 +66,12 @@ aoi_crop_extent <- function(x, aoi) {
              class = c("earthflux_modis_grid_error", "earthflux_input_error"))
   }
   # An AOI edge that falls on a cell edge up to rounding must not add a row
-  # or column when the crop snaps outwards: shrink by 1e-6 cell when the
-  # extent is wide enough.
+  # or column when the crop snaps outwards: shrink by 1e-3 cell when the
+  # extent is wide enough. The edges of the 1 km and 500 m MODIS grids of a
+  # tile differ by about 1e-6 of a 500 m cell in the official files
+  # (floating point), so a smaller tolerance breaks the nesting of the grids.
   v <- as.vector(common)
-  eps <- 1e-6 * terra::res(x)
+  eps <- 1e-3 * terra::res(x)
   if (v[["xmax"]] - v[["xmin"]] > 4 * eps[1L]) {
     v[c("xmin", "xmax")] <- v[c("xmin", "xmax")] + c(1, -1) * eps[1L]
   }

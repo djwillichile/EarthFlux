@@ -342,12 +342,12 @@ modis_product_table_build <- function() {
   mcd43a3 <- rbind(
     mp_rows("MCD43A3",
             c(paste0("Albedo_BSA_", bands43), paste0("Albedo_WSA_", bands43)),
-            "MODIS_Grid_BRDF", "500m", 2400, "int16", "value",
+            "MOD_Grid_BRDF", "500m", 2400, "int16", "value",
             "offset_scale", 0.001, 0, 0, 32766, 32767, "1", src43,
             note = paste("Values above 1 with a valid DN are kept",
                          "(modis-products.md 5.6 b).")),
     mp_rows("MCD43A3", "BRDF_Albedo_Band_Mandatory_Quality_shortwave",
-            "MODIS_Grid_BRDF", "500m", 2400, "uint8", "qa_code", "none", NA,
+            "MOD_Grid_BRDF", "500m", 2400, "uint8", "qa_code", "none", NA,
             NA, 0, 254, 255, "code", "D8 (modis-products.md 5.6 b-c)",
             qa_table = "MCD43_MANDATORY_NIR_SW")
   )
@@ -803,6 +803,8 @@ modis_parse_sds_name <- function(name) {
   eos <- startsWith(name, "HDF4_EOS:EOS_GRID:") & grepl(":", rest, fixed = TRUE)
   grid <- ifelse(eos, sub(":.*$", "", rest), NA_character_)
   sds <- ifelse(eos, sub("^[^:]*:", "", rest), rest)
+  # GDAL quotes SDS names that contain spaces (MOD13: "1 km 16 days NDVI")
+  sds <- sub('^"(.*)"$', "\\1", sds)
   data.frame(grid = grid, sds = sds, stringsAsFactors = FALSE)
 }
 
@@ -889,7 +891,8 @@ modis_nodata <- function(source) {
 #'
 #' MP-11 and section 16, item 12: GDAL may expose `scale_factor` and
 #' `add_offset`, under a convention that is `TODO` for HDF4. The values are
-#' never applied; the scale must equal the table (or be absent) and, for
+#' never applied; the scale must equal the table, its reciprocal (MOD13
+#' files declare 10000 for a table scale of 1e-4) or be absent and, for
 #' layers without an offset in the table, the offset must be zero. A
 #' non-zero offset of a layer with a non-zero table offset is only recorded.
 #'
@@ -915,8 +918,12 @@ modis_check_file_scaling <- function(so, row, scaled, call = sys.call(-1)) {
       call = call
     )
   }
+  # The official HDF4 files use both conventions: MOD11, MCD15 and MCD43
+  # declare the multiplier (DN * scale), MOD13 its reciprocal (DN / 10000).
+  # The declared value is never applied, so either form is accepted.
   scale_ok <- (is.na(row$scale) && isTRUE(all.equal(s, 1))) ||
-    (!is.na(row$scale) && isTRUE(all.equal(s, row$scale)))
+    (!is.na(row$scale) && (isTRUE(all.equal(s, row$scale)) ||
+                             isTRUE(all.equal(1 / s, row$scale))))
   zero_offset <- is.na(row$offset) || row$offset == 0
   offset_ok <- !zero_offset || isTRUE(all.equal(o, 0))
   if (!scale_ok || !offset_ok) {
@@ -942,7 +949,8 @@ modis_check_file_scaling <- function(so, row, scaled, call = sys.call(-1)) {
 #' @param row One row of the product table.
 #' @param aoi_ext `SpatExtent` or `NULL`.
 #' @param strict Logical. `TRUE` (official HDF files): a NoData value
-#'   different from the fill of the table is an error. `FALSE` (converted
+#'   different from the fill of the table is an error, except in bit-field
+#'   layers without fill value, where it is a valid bit pattern. `FALSE` (converted
 #'   files): it is taken as missing data.
 #' @param scaled Logical. Declaration of the values (converted files).
 #' @return A list with `raster` (single-layer `SpatRaster` in memory),
@@ -967,7 +975,11 @@ modis_read_source <- function(source, row, aoi_ext, strict, scaled,
   nd <- modis_nodata(source)
   if (!is.na(nd) && !scaled) {
     is_fill <- !is.na(row$fill) && nd == row$fill
-    if (strict && !is_fill) {
+    # A bit-field layer without fill value (e.g. MOD11A1 QC_Day, whose files
+    # declare _FillValue = 0 although 0 is the best-quality code): the
+    # declared NoData is a valid bit pattern, so its cells are restored.
+    is_bit_pattern <- is.na(row$fill) && identical(row$kind, "qa_bits")
+    if (strict && !is_fill && !is_bit_pattern) {
       ef_abort(
         sprintf(paste0("The file declares NoData %s for layer \"%s\", but the ",
                        "product table gives fill %s."),
@@ -976,7 +988,7 @@ modis_read_source <- function(source, row, aoi_ext, strict, scaled,
         layer = row$layer, nodata = nd, call = call
       )
     }
-    if (is_fill && integer_type) {
+    if ((is_fill || is_bit_pattern) && integer_type) {
       v[is.na(v)] <- nd
     }
   }

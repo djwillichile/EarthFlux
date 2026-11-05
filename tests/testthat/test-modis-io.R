@@ -334,11 +334,23 @@ test_that("the HDF4 reader restores the fill and checks the file", {
   r <- modis_read_raw(f, "LST_Day_1km", aoi = aoi)
   expect_equal(terra::values(r, mat = FALSE), c(0, 15000))
 
-  # NoData that contradicts the table (QC_Day has no fill value)
+  # QC_Day has no fill value, but official files declare _FillValue = 0
+  # (the best-quality code): the cells are restored, not an error
   local_mocked_bindings(
     modis_list_layers = function(path) fake_listing(path, "QC_Day")
   )
-  expect_error(modis_read_raw(f, "QC_Day", aoi = aoi),
+  qc_dn <- rep(81, n)
+  qc_dn[1] <- 0
+  dir.create(file.path(dir, "qc"))
+  fq <- write_hdf4_tile(file.path(dir, "qc"), cbind(qc_dn), nodata = 0)
+  qc <- modis_read_raw(fq, "QC_Day", aoi = aoi)
+  expect_equal(terra::values(qc, mat = FALSE), c(0, 81))
+
+  # NoData that contradicts the fill of a value layer is an error
+  local_mocked_bindings(
+    modis_list_layers = function(path) fake_listing(path, "Day_view_time")
+  )
+  expect_error(modis_read_raw(f, "Day_view_time", aoi = aoi),
                class = "earthflux_modis_metadata_error")
 
   # the tile named in the file must match the extent of the data
