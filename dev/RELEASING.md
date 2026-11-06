@@ -5,8 +5,8 @@ en el commit que se etiqueta, se cumple todo lo siguiente:
 
 - [ ] Tests unitarios, de aceptación (historias de usuario) e integración en
       verde, incluidos los grupos opcionales cuando existan.
-- [ ] `R CMD check` en verde en Ubuntu (release, devel, oldrel), Windows y
-      macOS (CI). macOS no corre en los PR: se exige la ejecución en `main`
+- [ ] `R CMD check` en verde en Ubuntu (release, devel, oldrel), Windows,
+      macOS y con el `terra` mínimo (job `min-terra`) (CI). macOS no corre en los PR: se exige la ejecución en `main`
       del commit que se etiqueta (o una ejecución manual del workflow
       `R-CMD-check` sobre ese commit, *Run workflow* en Actions).
 - [ ] Documentación regenerada (`devtools::document()`, `README.md`) y
