@@ -19,6 +19,17 @@
   1.7-55). A new CI job (`min-terra`) runs `R CMD check` with R 4.3 and
   that terra release, so regressions on the minimum are caught.
 
+### New features
+
+- Automatic search and download of the MODIS granules of the surface
+  state (internal, for the coming `earthflux()`): the sinusoidal tiles
+  under an area of interest, one NASA CMR granule per product, tile and
+  date (MOD11A1/MYD11A1, MCD43A3, MOD13A2, MCD15A2H; composite periods
+  from the granule metadata), and the LP DAAC download with the NASA
+  Earthdata token read only from `EARTHDATA_TOKEN`, into a validated
+  cache (`tools::R_user_dir("EarthFlux", "cache")` by default). Areas
+  that need more than one tile are not assembled yet.
+
 ### Documentation
 
 - `citation("EarthFlux")` and `CITATION.cff` give the Zenodo DOI of the

@@ -40,6 +40,10 @@
 <li><p><code>DESCRIPTION</code> now requires <code>terra (&gt;= 1.7-65)</code>, the oldest release on which the test suite has been run (<code>metags()</code> itself exists from 1.7-55). A new CI job (<code>min-terra</code>) runs <code>R CMD check</code> with R 4.3 and that terra release, so regressions on the minimum are caught.</p></li>
 </ul></div>
 <div class="section level3">
+<h3 id="new-features-0-1-0-9000">New features<a class="anchor" aria-label="anchor" href="#new-features-0-1-0-9000"></a></h3>
+<ul><li>Automatic search and download of the MODIS granules of the surface state (internal, for the coming <code>earthflux()</code>): the sinusoidal tiles under an area of interest, one NASA CMR granule per product, tile and date (MOD11A1/MYD11A1, MCD43A3, MOD13A2, MCD15A2H; composite periods from the granule metadata), and the LP DAAC download with the NASA Earthdata token read only from <code>EARTHDATA_TOKEN</code>, into a validated cache (<code>tools::R_user_dir("EarthFlux", "cache")</code> by default). Areas that need more than one tile are not assembled yet.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="documentation-0-1-0-9000">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-1-0-9000"></a></h3>
 <ul><li><p><code>citation("EarthFlux")</code> and <code>CITATION.cff</code> give the Zenodo DOI of the package (concept DOI 10.5281/zenodo.23981325, which resolves to the latest release; 0.1.0 is 10.5281/zenodo.23981326), and the README shows how to cite it.</p></li>
 <li><p>The maps of the README and of the <em>Example scene: Cauquenes</em> article are shown in geographic coordinates (EPSG:4326); the computations stay on the native MODIS grid.</p></li>
