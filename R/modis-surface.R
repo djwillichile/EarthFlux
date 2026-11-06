@@ -1095,20 +1095,3 @@ surface_exclusion <- function(x) {
   }
   list(exclude = exclude, counts = counts)
 }
-
-#' GDAL, PROJ and GEOS versions used by terra
-#'
-#' `terra::gdal(lib = "all")` returns a named character vector up to terra
-#' 1.9-45 and a one-row data frame (with an extra `TBB` column) from terra
-#' 1.9-46 onwards; `$` fails on the former. Both are normalised to a list.
-#' @param v The value of `terra::gdal(lib = "all")` (an argument so that both
-#'   shapes can be tested whatever terra is installed).
-#' @return A list with character elements `gdal`, `proj` and `geos`.
-#' @noRd
-modis_lib_versions <- function(v = terra::gdal(lib = "all")) {
-  v <- as.list(v)
-  lapply(c(gdal = "gdal", proj = "proj", geos = "geos"), function(k) {
-    x <- v[[k]]
-    if (is.null(x) || length(x) == 0L) NA_character_ else as.character(x[[1L]])
-  })
-}
