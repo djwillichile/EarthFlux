@@ -35,6 +35,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0.9000" id="earthflux-0109000-development-version">EarthFlux 0.1.0.9000 (development version)<a class="anchor" aria-label="anchor" href="#earthflux-0109000-development-version"></a></h2>
 <div class="section level3">
+<h3 id="bug-fixes-0-1-0-9000">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-0-9000"></a></h3>
+<ul><li><p>The MODIS readers and <code>modis_provenance()</code> now work with older and newer terra alike. <code><a href="https://rspatial.github.io/terra/reference/metags.html" class="external-link">terra::metags()</a></code> returns a named character vector up to terra 1.8-29 and a data frame (with metadata domains) from 1.8-42, and <code>terra::gdal(lib = "all")</code> returns a named character vector up to 1.9-45 and a data frame from 1.9-46; both shapes are now handled. With terra 1.7-65 the tag lookup failed (“missing value where TRUE/FALSE needed”) and the provenance record failed on <code>$</code>.</p></li>
+<li><p><code>DESCRIPTION</code> now requires <code>terra (&gt;= 1.7-65)</code>, the oldest release on which the test suite has been run (<code>metags()</code> itself exists from 1.7-55).</p></li>
+</ul></div>
+<div class="section level3">
 <h3 id="documentation-0-1-0-9000">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-1-0-9000"></a></h3>
 <ul><li><p><code>citation("EarthFlux")</code> and <code>CITATION.cff</code> give the Zenodo DOI of the package (concept DOI 10.5281/zenodo.23981325, which resolves to the latest release; 0.1.0 is 10.5281/zenodo.23981326), and the README shows how to cite it.</p></li>
 <li><p>The maps of the README and of the <em>Example scene: Cauquenes</em> article are shown in geographic coordinates (EPSG:4326); the computations stay on the native MODIS grid.</p></li>

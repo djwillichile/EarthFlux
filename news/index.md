@@ -2,6 +2,22 @@
 
 ## EarthFlux 0.1.0.9000 (development version)
 
+### Bug fixes
+
+- The MODIS readers and `modis_provenance()` now work with older and
+  newer terra alike.
+  [`terra::metags()`](https://rspatial.github.io/terra/reference/metags.html)
+  returns a named character vector up to terra 1.8-29 and a data frame
+  (with metadata domains) from 1.8-42, and `terra::gdal(lib = "all")`
+  returns a named character vector up to 1.9-45 and a data frame from
+  1.9-46; both shapes are now handled. With terra 1.7-65 the tag lookup
+  failed (“missing value where TRUE/FALSE needed”) and the provenance
+  record failed on `$`.
+
+- `DESCRIPTION` now requires `terra (>= 1.7-65)`, the oldest release on
+  which the test suite has been run (`metags()` itself exists from
+  1.7-55).
+
 ### Documentation
 
 - `citation("EarthFlux")` and `CITATION.cff` give the Zenodo DOI of the
