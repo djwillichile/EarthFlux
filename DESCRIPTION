@@ -23,7 +23,7 @@ Imports:
     future,
     future.apply,
     stats,
-    terra
+    terra (>= 1.7-65)
 Suggests:
     GWmodel,
     knitr,

@@ -417,3 +417,44 @@ test_that("the Cauquenes province boundary is shipped and usable as AOI", {
   expect_true(e[["xmin"]] > te[["xmin"]] && e[["xmax"]] < te[["xmax"]] &&
                 e[["ymin"]] > te[["ymin"]] && e[["ymax"]] < te[["ymax"]])
 })
+
+# terra version compatibility ------------------------------------------------------
+
+test_that("metadata tags are read with both shapes of terra::metags()", {
+  r <- terra::rast(nrows = 1, ncols = 1)
+  # terra <= 1.8-29: named character vector
+  old <- c(product = "MOD11A1", tile = "h12v12")
+  expect_identical(modis_metags(r, old), old)
+  # terra >= 1.8-42: data frame with metadata domains
+  new <- data.frame(name = c("product", "tile", "x"),
+                    value = c("MOD11A1", "h12v12", "other"),
+                    domain = c("", "", "OTHER_DOMAIN"))
+  expect_identical(modis_metags(r, new), old)
+  empty <- stats::setNames(character(0), character(0))
+  expect_identical(modis_metags(r, NULL), empty)
+  expect_identical(modis_metags(r, character(0)), empty)
+  expect_identical(modis_metags(r, new[0, ]), empty)
+  # round trip with the installed terra
+  r <- modis_tag(r, old)
+  expect_identical(modis_get_tag(r, "tile"), "h12v12")
+  expect_identical(modis_get_tag(r, "absent"), NA_character_)
+})
+
+test_that("library versions are read with both shapes of terra::gdal(lib =)", {
+  want <- list(gdal = "3.8.4", proj = "9.4.0", geos = "3.12.1")
+  # terra <= 1.9-45: named character vector
+  expect_identical(
+    modis_lib_versions(c(gdal = "3.8.4", proj = "9.4.0", geos = "3.12.1")),
+    want
+  )
+  # terra >= 1.9-46: one-row data frame with a TBB column
+  expect_identical(
+    modis_lib_versions(data.frame(gdal = "3.8.4", proj = "9.4.0",
+                                  geos = "3.12.1", TBB = TRUE)),
+    want
+  )
+  installed <- modis_lib_versions()
+  expect_named(installed, c("gdal", "proj", "geos"))
+  expect_true(all(vapply(installed, is.character, logical(1))))
+  expect_false(is.na(installed$gdal))
+})
