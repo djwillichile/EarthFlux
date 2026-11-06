@@ -104,7 +104,8 @@ mock_network <- function(archive = synthetic_archive, payload = hdf4_magic,
   log <- new.env()
   log$calls <- list()
   curl <- function(url, destfile, headers = NULL) {
-    log$calls[[length(log$calls) + 1L]] <- list(url = url, headers = headers)
+    log$calls[[length(log$calls) + 1L]] <- list(url = url, headers = headers,
+                                                destfile = destfile)
     if (startsWith(url, "https://cmr.earthdata.nasa.gov/")) {
       q <- url_query(url)
       tile <- regmatches(q[["readable_granule_name[]"]],
@@ -342,6 +343,28 @@ test_that("search arguments are checked", {
 })
 
 # Download (LP DAAC) -----------------------------------------------------------
+
+test_that("each download writes its own temporary file", {
+  # Two sessions fetching the same granule into a shared cache must not
+  # write, validate or rename each other's partial file.
+  dl_local_envvar("EARTHDATA_TOKEN", "fake-token-for-tests-0123")
+  log <- mock_network()
+  s <- modis_search("MOD11A1", day, "h12v12")
+  cache <- dl_test_dir()
+  dest <- file.path(cache, "modis", s$file)
+  dir.create(dirname(dest), recursive = TRUE)
+  modis_download_one(s$url, dest)
+  unlink(dest)
+  modis_download_one(s$url, dest)
+  parts <- vapply(Filter(function(x) !startsWith(x$url, "https://cmr."),
+                         log$calls), `[[`, character(1), "destfile")
+  expect_length(parts, 2L)
+  expect_false(identical(parts[1], parts[2]))
+  expect_true(all(dirname(parts) == dirname(dest)))
+  expect_true(all(endsWith(parts, ".part")))
+  expect_true(all(startsWith(basename(parts), paste0(basename(dest), "."))))
+  expect_true(file.exists(dest))
+})
 
 test_that("a valid HDF4 download is cached through a .part file", {
   dl_local_envvar("EARTHDATA_TOKEN", "fake-token-for-tests-0123")
