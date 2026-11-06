@@ -897,7 +897,7 @@ fuera del rango de registros → `NA` + flag `EF_WS_OVERPASS_OUTSIDE_RECORDS`
 
 | Opción | Descripción | Estado |
 |---|---|---|
-| D1 | Suma de 24 ETr horarias | FAO-56 cap. 4: las sumas horarias son en general equivalentes al cálculo de 24 h (`VERIFICADA` como afirmación para pasto). ASCE-EWRI (2005, p. 45): suma de ETos/ETrs horarias "sobre el período de 24 horas", conservando en general los valores negativos (`VERIFICADA` como procedimiento; EarthFlux conserva los negativos). Uso en METRIC: `TODO` (Allen et al., 2007) |
+| D1 | Suma de 24 ETr horarias | FAO-56 cap. 4: las sumas horarias son en general equivalentes al cálculo de 24 h (`VERIFICADA` como afirmación para pasto). ASCE-EWRI (2005, p. 45): suma de ETos/ETrs horarias "sobre el período de 24 horas", conservando en general los valores negativos (`VERIFICADA` como procedimiento; EarthFlux conserva los negativos). Uso en METRIC: `VERIFICADA (SEBAL-Idaho 2002)`: ETr_24 = suma de la ETr horaria de alfalfa del día (Waters et al., 2002, p. 35, Ec. 44; `VERIFICATION.md`, fila 46; sincronizado el 2026-11-06, M5); el contraste con Allen et al. (2007) sigue siendo deseable. El reloj del día sigue abierto (WF-11) |
 | D2 | Ecuación diaria (Cn = 1600, Cd = 0,38) con agregados diarios (Tmax, Tmin, eₐ, u₂, Rs) | Constantes `VERIFICADA` (ASCE-EWRI Tabla 1); agregación de datos horarios a diarios no implementada |
 
 Definición del día (decisión WF-11): **día civil local** (24 períodos
