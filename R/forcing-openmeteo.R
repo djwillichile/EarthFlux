@@ -1341,7 +1341,9 @@ openmeteo_cache_write <- function(response, dir, path) {
     return(response)
   }
   dir.create(dir, recursive = TRUE, showWarnings = FALSE)
-  part <- paste0(path, ".part")
+  # A per-call temporary name, so concurrent sessions never share it.
+  part <- tempfile(paste0(basename(path), "."), tmpdir = dir,
+                   fileext = ".part")
   on.exit(unlink(part), add = TRUE)
   writeLines(response$json, part, useBytes = TRUE)
   openmeteo_response(openmeteo_read_text(part), response$request)
