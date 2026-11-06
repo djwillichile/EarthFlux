@@ -84,9 +84,11 @@ y \CVWindCTwoIDWRmse{}~\si{\metre\per\second} de IDW.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{fig03_cv_rmse.pdf}
-\caption{RMSE fuera de muestra (validación cruzada espacial anidada) por
-variable y configuración, con IC~95\,\% por \emph{bootstrap} de días. GWR del
-viento no fue factible (sin punto).}\label{fig:cv}
+\caption{Error medio cuadrático fuera de muestra (RMSE) por variable y
+configuración, en validación cruzada espacial anidada de \NCVDays{} días, con
+IC~95\,\% por \emph{bootstrap} de días. GWR del viento no fue factible (sin
+ancho de banda factible en ningún pliegue); el gradiente vertical de C1-lap
+solo se aplica a la temperatura del aire.}\label{fig:cv}
 \end{figure}
 
 \input{../results/tables/tab_cv_metrics.tex}
