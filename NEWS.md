@@ -25,6 +25,13 @@
   read only from `EARTHDATA_TOKEN`, into a validated cache
   (`tools::R_user_dir("EarthFlux", "cache")` by default). Areas that need
   more than one tile are not assembled yet.
+* Automatic elevation model (internal, for the coming `earthflux()`;
+  decision M5-06): NASADEM_HGT v001 tiles are found with NASA CMR,
+  downloaded from LP DAAC with the Earthdata token of the environment,
+  validated and cached, and turned into elevation, slope, aspect, mean
+  normal length and valid fraction on the 1 km working grid, either flat
+  or with the `CANDIDATA` mean-normal chain (3 arc-second slopes averaged
+  as unit normal vectors). Water and missing tiles are never filled.
 
 ## Documentation
 
