@@ -17,7 +17,7 @@ ver "Trazabilidad de las cifras" al final antes de enviar.
 | **Afiliación** | [Unidad / Facultad], Universidad San Sebastián, Chile |
 | **Correo** | gfuentesj@correo.uss.cl |
 | **Modalidad** | Presentación oral |
-| **Ejes temáticos** | (4) Integración de la ciencia del clima en la toma de decisiones económicas · (9) Medición y valoración de servicios ecosistémicos |
+| **Eje temático** | (4) Integración de la ciencia del clima en la toma de decisiones económicas (*Integrating Climate Science into Economic Decision-Making*) |
 | **Idioma** | Español |
 | **Palabras clave** | evapotranspiración real; balance de energía superficial; METRIC; MODIS; regresión geográficamente ponderada; software científico abierto; contabilidad del agua |
 
@@ -143,9 +143,9 @@ accounting.
 > presentado en modalidad oral en el 3rd International Workshop CEDES
 > «Economics and Sustainability» (Valdivia, 21 y 22 de enero de 2027).
 >
-> El trabajo se inscribe en los ejes «Integrating Climate Science into
-> Economic Decision-Making» y «Measurement and Valuation of Ecosystem
-> Services». Se adjunta el resumen en español, con su versión en inglés.
+> El trabajo se inscribe en el eje «Integrating Climate Science into
+> Economic Decision-Making». Se adjuntan el resumen extendido y el resumen
+> de 250 palabras, en español.
 >
 > Autor: Guillermo Servando Fuentes-Jaque (ORCID 0000-0002-7864-4899),
 > [Unidad / Facultad], Universidad San Sebastián.

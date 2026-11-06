@@ -205,6 +205,26 @@ for (i in which(dv$variable %in% c("eta", "h", "rn", "etrf"))) {
         "100 x share of cells with |diff| > 0.5 mm/d", 0)
 }
 
+## ETa as a daily volume over the processed cells (scripts/05c_eta_volume.R) ------------
+vol <- read("results", "tables", "eta_volume.csv")
+vsel <- function(cf) sprintf("config == %s", cf)
+add("VolArea", round(vol$area_km2[1]), "results/tables/eta_volume.csv", "any row",
+    "area of the cells valid in every run (km2), rounded")
+for (cf in vol$config) {
+  k <- cfg_key[[cf]]
+  add(paste0("Vol", k), vol$volume_m3_d[vol$config == cf] / 1e6, "results/tables/eta_volume.csv",
+      vsel(cf), "daily ETa volume (hm3 d-1 = million m3 d-1)", 1)
+  if (cf != "C1") {
+    d <- vol$diff_vs_C1_m3_d[vol$config == cf]
+    add(paste0("VolDiff", k), d / 1e6, "results/tables/eta_volume.csv", vsel(cf),
+        "difference with C1 (hm3 d-1)", 2)
+    add(paste0("VolDiffAbs", k), abs(d) / 1e6, "results/tables/eta_volume.csv", vsel(cf),
+        "absolute difference with C1 (hm3 d-1)", 2)
+    add(paste0("VolDiffFlow", k), abs(d) / 86400, "results/tables/eta_volume.csv", vsel(cf),
+        "absolute difference with C1 as a mean daily flow (m3 s-1)", 0)
+  }
+}
+
 ## Experiment S -------------------------------------------------------------------------
 fe <- read("results", "tables", "sensitivity_forcing_effect.csv")
 ss <- read("results", "tables", "sensitivity_summary.csv")
