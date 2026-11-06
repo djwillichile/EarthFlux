@@ -25,6 +25,7 @@
 #     ef_flags_et()               R/metric-et.R            (EF_ET_*)
 #     ef_flags_reference_et()     R/reference-et.R         (EF_WS_*, reference ET)
 #     ef_flags_stations()         R/prep-qc.R              (EF_WS_*, station QC)
+#     ef_flags_gridded_forcing()  R/forcing-openmeteo.R    (EF_WS_*, gridded forcing)
 #     ef_flags_gwr()              R/gwr-diagnostics.R      (EF_GWR_*)
 #     ef_flags_surface()          R/modis-qa.R             (EF_SURF_*)
 #
@@ -317,6 +318,7 @@ ef_flag_registry_build <- function() {
     ef_flags_et(),
     ef_flags_reference_et(),
     ef_flags_stations(),
+    ef_flags_gridded_forcing(),
     ef_flags_gwr(),
     ef_flags_surface()
   )
