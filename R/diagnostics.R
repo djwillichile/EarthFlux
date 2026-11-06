@@ -28,6 +28,8 @@
 #     ef_flags_gridded_forcing()  R/forcing-openmeteo.R    (EF_WS_*, gridded forcing)
 #     ef_flags_gwr()              R/gwr-diagnostics.R      (EF_GWR_*)
 #     ef_flags_surface()          R/modis-qa.R             (EF_SURF_*)
+#     ef_flags_workflow()         R/api-run.R              (EF_H_ZOM_UNDEFINED,
+#                                                           raised by earthflux())
 #
 #   A new stage adds its own ef_flags_<stage>() in its module file when its
 #   first code is registered, and lists it in ef_flag_registry_build().
@@ -320,7 +322,8 @@ ef_flag_registry_build <- function() {
     ef_flags_stations(),
     ef_flags_gridded_forcing(),
     ef_flags_gwr(),
-    ef_flags_surface()
+    ef_flags_surface(),
+    ef_flags_workflow()
   )
   rownames(reg) <- NULL
 

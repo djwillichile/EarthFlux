@@ -202,9 +202,12 @@ states that hourly sums over 24 hours generally match the daily
 computation for the grass reference, and ASCE-EWRI (2005, p. 45) sums
 hourly ETos or ETrs over the 24-hour period and recommends retaining the
 negative values; neither source defines the clock of the day (UTC or
-local standard time, WF-11). Its use for METRIC (Allen et al., 2007) is
-\code{TODO}. For daily records \code{etr_24} is the daily value of the record
-(option D2 with daily data).
+local standard time, WF-11). Its use as the daily reference ET of the
+METRIC extrapolation is \verb{VERIFICADA (SEBAL-Idaho 2002)}: Waters et al.
+(2002), p. 35, Eq. 44, define ETr_24 as the sum of the hourly alfalfa
+reference ET of the day (dev/VERIFICATION.md, row 46); the manual does not
+define the clock of the day either. For daily records \code{etr_24} is the
+daily value of the record (option D2 with daily data).
 
 \strong{Instantaneous reference ET} (decision WF-09): \code{etr_inst} is a rate in
 mm h-1. An overpass time outside the time covered by the records of a
@@ -231,7 +234,9 @@ recorded in the provenance: \code{"before_sunset"} follows FAO-56 (chapter 4)
 with the selection of the last qualifying period as an implementation
 choice; \code{"low_sun"} (ASCE-EWRI Eq. 46) and \code{"rn_positive"} (ASCE-EWRI
 p. 5) are \code{VERIFICADA}; the day definition and the completeness rule are
-open decisions (WF-11); the daily sum is \code{TODO} for METRIC. The worked
+open decisions (WF-11); the daily sum of the hourly values (D1) is the
+ETr_24 of Waters et al. (2002, Eq. 44), \verb{VERIFICADA (SEBAL-Idaho 2002)}
+(dev/VERIFICATION.md, row 46). The worked
 examples of ASCE-EWRI (2005), Appendix C, are not reproduced: the copy of
 the report that was read does not include the appendices.
 }

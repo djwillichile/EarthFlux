@@ -83,6 +83,15 @@ What 0.1.0 does **not** include: the integrated `earthflux()` workflow
 and its presets, the automatic download of MODIS products, the elevation
 model and gridded weather forcing, and any validation results.
 
+The development version adds the integrated workflow
+`earthflux(aoi, date, weather, preset)`: it downloads and prepares the
+MODIS surface state and the NASADEM elevation model (NASA Earthdata token
+in `EARTHDATA_TOKEN`), takes a weather station table or hourly ERA5 data
+from the Open-Meteo historical weather API, and runs the METRIC chain
+with a named preset that sets every scientific option (`ef_presets()`,
+`ef_preset()`). Both current presets are **candidates**: `earthflux()`
+warns and lists their unverified elements.
+
 Verification status:
 
 - **Verified** against the primary sources: the reference

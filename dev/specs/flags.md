@@ -27,8 +27,8 @@ mayúsculas (`EF_*`); las descripciones del registro, en inglés (en-GB,
 |---|---|
 | Filas de inventario (propuestas por documento, §2) | 122 |
 | Códigos/condiciones distintos inventariados | 120 (119 con nombre + 1 sin nombre: "Rn negativo") |
-| Códigos tras normalizar (§3–§4) | **114** (112 de la normalización de M1 + `EF_SURF_LAI_ASSIGNED`, agregado en M4 con la opción `lai_nonveg`, MP-06, + `EF_WS_GRIDDED_FORCING`, agregado en M5 con el forzamiento ERA5 vía Open-Meteo, M5-07; §4.2) |
-| Clase I — inequívocos, sin umbral: registrables con su módulo | **75** (66 registrados + 9 pendientes al 2026-11-06, §4.4) |
+| Códigos tras normalizar (§3–§4) | **115** (112 de la normalización de M1 + `EF_SURF_LAI_ASSIGNED`, agregado en M4 con la opción `lai_nonveg`, MP-06, + `EF_WS_GRIDDED_FORCING`, agregado en M5 con el forzamiento ERA5 vía Open-Meteo, M5-07, + `EF_H_ZOM_UNDEFINED`, agregado en M5 con `earthflux()`, M5-13; §4.2) |
+| Clase I — inequívocos, sin umbral: registrables con su módulo | **76** (67 registrados + 9 pendientes al 2026-11-06, §4.4) |
 | Clase II — requieren umbral (o verificación de fuente): `TODO`, no registrar | **35** |
 | Clase III — imposibilidad física/lógica: **error** en el núcleo; flag `critical` solo en módulos de datos | **4** |
 | Fusiones (mismo hecho, nombres distintos) | 5 (eliminan 5 códigos) |
@@ -419,7 +419,7 @@ corrida); **Bit** = bit planificado en la palabra de la etapa (§6.4; solo
 bit libre al registrarse). **Sev.** marcada con `*` = cambia respecto de
 la fuente o la fuente no la indicaba (justificación en §5.4).
 
-### 4.2 Catálogo (114 códigos)
+### 4.2 Catálogo (115 códigos)
 
 **Estado de implementación (2026-11-04).** El registro se ensambla por
 etapa: `ef_flag_registry()` (`R/diagnostics.R`) une las filas que cada
@@ -471,7 +471,15 @@ lo significaba. Se deriva de la procedencia (`provenance$forcing$type ==
 "gridded"`, §6.1, R19) y viaja en `provenance$forcing$flags` de la tabla de
 estaciones virtuales (el elemento `flags` debe quedar vacío antes de
 `ef_station_qc()`, y `provenance$flags` lo reescribe el QC).
-Total registrado: 70 códigos (§4.4). Las demás filas de
+En la fase 2 de M5 (2026-11-06), `earthflux()` registra en
+`ef_flags_workflow()` (`R/api-run.R`) el código nuevo `EF_H_ZOM_UNDEFINED`
+(clase I, `info`, ámbito `cell`, bit 10 de `H`; `DECISIONS.md` M5-13): la
+rugosidad `ef_zom(method = "lai")` es 0 donde LAI = 0, `ef_ustar()` la
+rechaza y los presets no aplican un mínimo (SH-02, `EF_H_ZOM_FLOOR_APPLIED`
+sigue sin registrar); la celda queda `NA` desde H y se marca. Ningún código
+existente lo significaba. Lo levanta `workflow_metric()`; tests en
+`test-earthflux.R`.
+Total registrado: 71 códigos (§4.4). Las demás filas de
 este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
@@ -603,7 +611,7 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_ANCHOR_COLD_PARTIAL_COVER` | ídem | — | II | warning | record | — | `TODO` |
 | `EF_ANCHOR_HOT_RECENT_RAIN` | ídem | — | II | warning | object | — | Umbral y ventana `TODO` |
 
-#### `EF_H_` (13)
+#### `EF_H_` (14)
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
@@ -618,6 +626,7 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_H_GT_AVAILABLE` | `EF_H_EXCEEDS_AVAILABLE` | renombre (vocabulario) | I (registrado) | warning | cell | 9 | Causa de `EF_ET_NEGATIVE` cuando Rn − G > 0 |
 | `EF_H_CALIBRATION_NOT_CONVERGED` | `EF_H_NOT_CONVERGED` | renombre (C11) | I (registrado) | critical* | object | — | Además `earthflux_convergence_warning`; a, b o u* no finitos en un ancla: `earthflux_calibration_error` |
 | `EF_H_DT_SLOPE_NONPOSITIVE` | `EF_DT_SLOPE_NONPOSITIVE` | prefijo | I (registrado) | critical* | object | — | Ts_hot ≤ Ts_cold: error (anclas invertidas / b indefinida) |
+| `EF_H_ZOM_UNDEFINED` | — (nuevo, M5; `DECISIONS.md` M5-13) | nuevo | I (registrado en `ef_flags_workflow()`; lo levanta `earthflux()`, `R/api-run.R`) | info* | cell | 10 | z_om = 0 (LAI = 0) sin mínimo aplicado: z_om `NA` y la celda `NA` desde H (causa de `NA`); `ef_ustar()` rechaza z_om = 0 con `earthflux_domain_error` |
 | `EF_H_WIND_LOW` | `EF_LOW_WIND` | prefijo + orden | II | warning | cell, object | libre | u_b = 0 en un ancla: `earthflux_calibration_error` |
 | `EF_H_STABILITY_STRONG` | `EF_STRONGLY_STABLE` | prefijo + orden | II | warning | cell | libre | `TODO` |
 
@@ -658,9 +667,9 @@ división).
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
 | `G` | 4 | 2 | 0 | 6 | 4 |
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
-| `H` | 11 | 2 | 0 | 13 | 8 |
+| `H` | 12 | 2 | 0 | 14 | 9 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **75** | **35** | **4** | **114** | **70** |
+| **Total** | **76** | **35** | **4** | **115** | **71** |
 
 Registrados (M4, 2026-11-04, tras la opción `lai_nonveg`; recuento de
 `ef_flag_registry()`): **69 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
@@ -676,6 +685,11 @@ I, `warning`, ámbito `object`) se registra en
 `ef_flags_gridded_forcing()` (`R/forcing-openmeteo.R`) con su función y
 sus tests (`test-forcing-openmeteo.R`): **70 códigos** registrados, 66 de
 clase I.
+
+`earthflux()` (M5, fase 2, 2026-11-06): `EF_H_ZOM_UNDEFINED` (clase I,
+`info`, ámbito `cell`, bit 10 de `H`) se registra en `ef_flags_workflow()`
+(`R/api-run.R`) con sus tests positivo y negativo (`test-earthflux.R`):
+**71 códigos** registrados, 67 de clase I (`H` 9).
 
 Superficie (M4, 2026-11-04): los 14 `EF_SURF_*` de clase I y el de clase
 III están registrados en `ef_flags_surface()` (`R/modis-qa.R`): 12
@@ -901,16 +915,16 @@ reutiliza ni se renumera (aunque el código se retire).
 | 7 | `EF_SURF_CLOUD_ADJACENT` | libre | | | `EF_H_DT_EXTRAPOLATED_COLD` | |
 | 8 | `EF_SURF_SNOW` | | | | `EF_H_NEGATIVE` | |
 | 9 | `EF_SURF_WATER` | | | | `EF_H_GT_AVAILABLE` | |
-| 10 | `EF_SURF_SALT_PAN` | | | | libre | |
+| 10 | `EF_SURF_SALT_PAN` | | | | `EF_H_ZOM_UNDEFINED` | |
 | 11 | `EF_SURF_LAI_BACKUP` | | | | | |
 | 12 | `EF_SURF_ALBEDO_MAGNITUDE` | | | | | |
 | 13 | `EF_SURF_OVERPASS_MISSING` | | | | | |
 | 14 | `EF_SURF_ALBEDO_GT1` | | | | | |
 | 15 | `EF_SURF_LAI_ASSIGNED` | | | | | |
-| 16–30 | libres | 7–30 libres | 5–30 libres | 5–30 libres | 10–30 libres | 6–30 libres |
+| 16–30 | libres | 7–30 libres | 5–30 libres | 5–30 libres | 11–30 libres | 6–30 libres |
 
 Ocupación si se registraran **todos** los códigos `cell` (incluidos los
-de clase II): `SURF` 23/31, `GWR` 9/31, `RAD` 6/31, `G` 7/31, `H` 12/31,
+de clase II): `SURF` 23/31, `GWR` 9/31, `RAD` 6/31, `G` 7/31, `H` 13/31,
 `ET` 8/31 (contando el bit 0). Una sola palabra para toda la cadena
 `metric` (RAD + G + H + ET) ocuparía 30/31 bits: por eso las palabras son
 por etapa y por capa.

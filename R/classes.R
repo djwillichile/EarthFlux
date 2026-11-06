@@ -96,9 +96,18 @@
 #     section 4 (`lst`, `albedo`, `ndvi`, `lai`, `emissivity`,
 #     `overpass_time`, `lonlat`, `qa`, `units`, `flags`, `provenance`).
 #
-# Planned classes (created with their first constructor, not before):
-#   - earthflux_result         : all intermediate layers + diagnostics +
-#                                provenance (M5).
+# Downloads and workflow (M5)
+#   - earthflux_modis_fetch (R/download-modis.R): MODIS granules of a scene
+#     (modis_fetch(); files of modis_surface_state() and provenance).
+#   - earthflux_terrain (R/dem.R): elevation model on the working grid
+#     (dem_terrain(), dem_fetch()).
+#   - earthflux_openmeteo_response (R/forcing-openmeteo.R): parsed
+#     Open-Meteo response (openmeteo_response()).
+#   - earthflux_preset (R/api-presets.R): specification object of
+#     ef_preset() (every option of a preset of earthflux(); no `flags`).
+#   - earthflux_result (R/api-earthflux.R): output of earthflux() (`layers`,
+#     `units`, the objects of each stage, `qa`, `date`, `preset`, `flags`,
+#     `provenance`; dev/specs/presets.md section 5).
 #
 # Avoid premature class hierarchies: one class per object kind, inheriting
 # only from "list". The two exceptions above add one parent: a QC result is
