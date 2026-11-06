@@ -20,7 +20,7 @@ for (s in steps) {
   if (st != 0) stop("step failed: ", s)
 }
 for (d in c("manuscript", "extended-abstract", "presentation")) {
-  tex <- list.files(file.path(root, d), pattern = "^(manuscrito|resumen_extendido|presentacion).*\\.tex$")
+  tex <- list.files(file.path(root, d), pattern = "^(manuscrito|resumen_extendido|resumen_250|presentacion).*\\.tex$")
   for (f in tex) {
     st <- system2("latexmk", c("-pdf", "-interaction=nonstopmode", "-silent",
                                "-cd", file.path(root, d, f)))

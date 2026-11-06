@@ -1,6 +1,10 @@
 # EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data
 
-**Guillermo S. Fuentes-Jaque** · 3rd International Workshop CEDES 2027 — Economics and Sustainability (presentación oral)
+**Guillermo S. Fuentes-Jaque**<sup>1,2</sup>
+
+<sup>1</sup>Instituto de Ciencias y Tecnología Ambiental (ICTA Ltda.), Chile; <sup>2</sup>EARTH Lab (Environmental Analysis, Remote Sensing & Terrestrial Hydrology Laboratory), Universidad San Sebastián, Chile. ORCID: 0000-0002-7864-4899
+
+3rd International Workshop CEDES 2027 — Economics and Sustainability. Presentación oral. Temas: *Integrating Climate Science into Economic Decision-Making* y *Measurement and Valuation of Ecosystem Services*
 
 La evapotranspiración real (ETa) estimada con modelos de balance de energía como METRIC suele forzarse con una sola estación meteorológica, supuesto débil en territorios heterogéneos. Se evaluó si regionalizar ese forzamiento con regresión geográficamente ponderada (GWR) modifica la ETa frente a una estación representativa (C1), una regresión global y la interpolación por distancia inversa (IDW). Se usó EarthFlux, un paquete de R de código abierto, con una escena MODIS de la provincia de Cauquenes (Chile, 15-02-2019), {NStations} estaciones públicas y validación cruzada espacial anidada en {NCVDays} días. GWR superó a C1 y a la regresión global, pero no a IDW: el RMSE de la temperatura del aire fue {CVTaCOneRmse}, {CVTaCTwoOLSRmse}, {CVTaCThreeGWRRmse} y {CVTaCTwoIDWRmse} °C, respectivamente. GWR requirió más estaciones, extrapoló temperaturas fuera del rango observado en el {RangeTaCThreeGWRAbove} % de las celdas y no fue factible para el viento. En METRIC, con las mismas anclas, GWR redujo la ETa media en {DEtaCThreeGWRPct} % respecto de C1. La calibración interna absorbió el efecto sobre el balance instantáneo (ETrF: {DEtrfCThreeGWRPct} %), y la diferencia entró por la ETr diaria. Ese efecto superó {RatioSA} veces la incertidumbre por calibración y {RatioSB} veces la debida al ruido MODIS. Sin mediciones independientes de flujos, la exactitud de ETa no pudo evaluarse. El forzamiento meteorológico es una fuente de incertidumbre de primer orden que debe declararse en toda estimación de ETa usada para gestionar el agua; la mayor complejidad de GWR no garantizó mayor exactitud.
 

@@ -1,6 +1,6 @@
 "macro","value","source","selection","computation"
 "\EarthFluxVersion","0.1.0.9000","DESCRIPTION","Version","packageVersion('EarthFlux')"
-"\EarthFluxCommit","5672c70","git","HEAD","git rev-parse HEAD (short)"
+"\EarthFluxCommit","467fcbf","git","HEAD","git rev-parse HEAD (short)"
 "\Seed","20270121","config/study.json","seed","value"
 "\NMC","200","config/study.json","monte_carlo_replicates","value"
 "\NTests","614","results/diagnostics/package_tests.csv","all rows","number of test_that() blocks run"
