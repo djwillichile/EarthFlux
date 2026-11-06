@@ -22,11 +22,11 @@ ef_preset(name)
 ## Value
 
 An object of class `earthflux_preset` (a list): `name`, `version`,
-`status`, `description`, `source`, `decisions` and the option blocks
-`modis` (product and the options of the MODIS surface state), `terrain`,
-`weather` (quality control, ERA5 options, regionalization),
-`reference_et`, `radiation`, `soil_heat`, `roughness`, `wind`, `lambda`,
-`anchors` (criteria built with
+`status`, `description`, `source`, `decisions`, `changes` (what each
+version changed) and the option blocks `modis` (product and the options
+of the MODIS surface state), `terrain`, `weather` (quality control, ERA5
+options, regionalization), `reference_et`, `radiation`, `soil_heat`,
+`roughness`, `wind`, `lambda`, `anchors` (criteria built with
 [`ef_anchor_criteria()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_criteria.md),
 relaxation plan, aggregation, search area, anchor QA and boundary
 conditions), `sensible_heat` (with an
@@ -36,7 +36,7 @@ that are not `VERIFICADA`).
 
 ## Details
 
-The two presets (decisions M5-08 to M5-17, dev/specs/presets.md) share
+The two presets (decisions M5-08 to M5-24, dev/specs/presets.md) share
 every option except the treatment of elevation:
 
 |  |  |  |
@@ -64,9 +64,23 @@ elevation, trapezoid instantaneous values and the sea cells excluded;
 anchors selected before the net radiation (incoming longwave from the
 cold anchor, decision P0-3) with the criteria of dev/specs/presets.md
 section 4, `etrf_cold = 1.05` and `etrf_hot = 0`; soil heat flux of
-Bastiaanssen; z_om = 0.018 LAI, undefined where LAI = 0; wind at 200 m
-from a weather site with z_om,w = 0.0144 m and d = 0; constant latent
-heat; ETa_24 = ETrF x ETr_24.
+Bastiaanssen; z_om = 0.018 LAI with a minimum of 0.005 m (`CANDIDATA`,
+flagged with `EF_H_ZOM_FLOOR_APPLIED`); wind at 200 m from a weather
+site with z_om,w = 0.0144 m and d = 0; constant latent heat; ETa_24 =
+ETrF x ETr_24.
+
+Anchor criteria (version 2, decision M5-23, `CANDIDATA`): cold
+candidates with NDVI at or above the 90th percentile of the usable land
+cells and white-sky albedo in \[0.14, 0.26\]; hot candidates with NDVI
+at or below the 10th percentile, NDVI \> 0 and albedo in \[0.18, 0.35\];
+homogeneous LST (standard deviation \<= 1.5 K in 3 x 3 cells); the
+coldest 20 % of the cold and the hottest 20 % of the hot candidates,
+averaged; one relaxation step (percentiles 0.80 and 0.20), flagged with
+`EF_ANCHOR_CRITERIA_RELAXED`; no anchor on cells with a warning or
+critical surface flag or an assigned LAI.
+
+Versions: `"1"` (first presets); `"2"` (recalibrated anchor criteria,
+M5-23; minimum z_om, M5-24); see the element `changes`.
 
 ## Verification status
 
@@ -95,7 +109,7 @@ Other workflow functions:
 ``` r
 p <- ef_preset("idaho2002_elev")
 p
-#> <earthflux_preset> idaho2002_elev (version 1, CANDIDATA)
+#> <earthflux_preset> idaho2002_elev (version 2, CANDIDATA)
 #>   SEBAL-Idaho 2002 forms with the elevation adjustments of appendix 12
 #>   of the manual (datum surface temperature with a lapse rate of 0.0065
 #>   K/m, cold-pixel temperature of the incoming longwave adjusted by
@@ -152,7 +166,7 @@ p
 #> Soil heat flux, roughness, wind, lambda:
 #>   soil_heat              bastiaanssen
 #>   zom                    lai
-#>   zom_zero               NA + EF_H_ZOM_UNDEFINED
+#>   zom_min                0.005
 #>   zom_station            0.0144
 #>   d_station              0
 #>   lambda                 constant
@@ -167,17 +181,17 @@ p
 #> ET:
 #>   method                 etrf
 #>   reference              alfalfa
-#> Unverified elements (11): anchor_criteria, modis_albedo, modis_matching, lai_nonveg, reference_et_time, regionalization, era5, station_roughness, zom_zero, wind_time, flat_projection
+#> Unverified elements (11): anchor_criteria, modis_albedo, modis_matching, lai_nonveg, reference_et_time, regionalization, era5, station_roughness, zom_floor, wind_time, flat_projection
 #> Anchor criteria: x$anchors$criteria; relaxation: x$anchors$relax.
 p$anchors$criteria
-#> <earthflux_anchor_criteria> CANDIDATA - EarthFlux preset idaho2002 v1 (dev/specs/presets.md 4; DECISIONS.md M5-10): guides of Waters et al. (2002), appendix 7, widened for 1 km MODIS pixels without a source 
-#>   cold: lai >= 3 & albedo between [0.18, 0.25] & ndvi >= p0.9; pick: lowest_fraction lst 0.2
-#>   hot: lai <= 0.4 & ndvi > 0 & albedo between [0.10, 0.35]; pick: highest_fraction lst 0.2
+#> <earthflux_anchor_criteria> CANDIDATA - EarthFlux preset idaho2002 v2 (dev/specs/presets.md 4; DECISIONS.md M5-23): physical intent of Waters et al. (2002), pp. 23, 30-31 and appendix 7, with thresholds for 1 km MODIS pixels set from the Cauquenes and Maule scenes of 2019-02-15 (no primary source) 
+#>   cold: ndvi >= p0.9 & albedo between [0.14, 0.26]; pick: lowest_fraction lst 0.2
+#>   hot: ndvi <= p0.1 & ndvi > 0 & albedo between [0.18, 0.35]; pick: highest_fraction lst 0.2
 #>   homogeneity: sd(lst) <= 1.5 in 3 x 3 window (exclude)
 #>   percentile domain: land; quantile type: 7
 names(p$unverified)
 #>  [1] "anchor_criteria"   "modis_albedo"      "modis_matching"   
 #>  [4] "lai_nonveg"        "reference_et_time" "regionalization"  
-#>  [7] "era5"              "station_roughness" "zom_zero"         
+#>  [7] "era5"              "station_roughness" "zom_floor"        
 #> [10] "wind_time"         "flat_projection"  
 ```

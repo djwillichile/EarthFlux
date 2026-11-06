@@ -125,7 +125,10 @@ which MODIS does not provide.
 
 No minimum roughness (0.005 m in METRIC implementations, decision SH-02)
 and no mountainous-terrain adjustment (SH-03) are applied: both are
-unverified and values are never silently modified.
+unverified and values are never silently modified. The presets of
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+apply the 0.005 m minimum after `ef_zom()`, as a declared `CANDIDATA`
+option flagged with `EF_H_ZOM_FLOOR_APPLIED`.
 
 Missing values propagate. Arguments must be numeric, of length 1 or a
 common length (length 0 is rejected), and matrix or array arguments must

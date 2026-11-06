@@ -60,7 +60,8 @@ is recorded in the provenance of the result.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>earthflux_preset</code> (a list): <code>name</code>,
-<code>version</code>, <code>status</code>, <code>description</code>, <code>source</code>, <code>decisions</code> and the
+<code>version</code>, <code>status</code>, <code>description</code>, <code>source</code>, <code>decisions</code>, <code>changes</code>
+(what each version changed) and the
 option blocks <code>modis</code> (product and the options of the MODIS surface
 state), <code>terrain</code>, <code>weather</code> (quality control, ERA5 options,
 regionalization), <code>reference_et</code>, <code>radiation</code>, <code>soil_heat</code>,
@@ -72,7 +73,7 @@ of the elements that are not <code>VERIFICADA</code>).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The two presets (decisions M5-08 to M5-17, dev/specs/presets.md) share
+    <p>The two presets (decisions M5-08 to M5-24, dev/specs/presets.md) share
 every option except the treatment of elevation:</p><table class="table table"><tr><td>Option</td><td><code>idaho2002_elev</code></td><td><code>idaho2002_flat</code></td></tr><tr><td>Lapse rate of the datum surface temperature (Eq. 12-7)</td><td>0.0065 K m-1</td><td>0</td></tr><tr><td>Temperature of the incoming longwave</td><td>cold-anchor Ts adjusted by elevation (Eq. 12-8)</td><td>cold-anchor Ts</td></tr><tr><td>Shortwave transmissivity (Eq. 11)</td><td>per pixel, from the elevation model</td><td>one for the scene</td></tr></table><p>Neither uses the slope (forced to 0, flat projection, until decision
 RC-09 is resolved); both use the elevation of the elevation model for
 the air pressure, the anchors and the datum temperature.</p>
@@ -90,9 +91,21 @@ elevation, trapezoid instantaneous values and the sea cells excluded;
 anchors selected before the net radiation (incoming longwave from the
 cold anchor, decision P0-3) with the criteria of
 dev/specs/presets.md section 4, <code>etrf_cold = 1.05</code> and <code>etrf_hot = 0</code>;
-soil heat flux of Bastiaanssen; z_om = 0.018 LAI, undefined where
-LAI = 0; wind at 200 m from a weather site with z_om,w = 0.0144 m and
-d = 0; constant latent heat; ETa_24 = ETrF x ETr_24.</p>
+soil heat flux of Bastiaanssen; z_om = 0.018 LAI with a minimum of
+0.005 m (<code>CANDIDATA</code>, flagged with <code>EF_H_ZOM_FLOOR_APPLIED</code>); wind at
+200 m from a weather site with z_om,w = 0.0144 m and d = 0; constant
+latent heat; ETa_24 = ETrF x ETr_24.</p>
+<p>Anchor criteria (version 2, decision M5-23, <code>CANDIDATA</code>): cold
+candidates with NDVI at or above the 90th percentile of the usable land
+cells and white-sky albedo in [0.14, 0.26]; hot candidates with NDVI
+at or below the 10th percentile, NDVI &gt; 0 and albedo in
+[0.18, 0.35]; homogeneous LST (standard deviation &lt;= 1.5 K in 3 x 3
+cells); the coldest 20 % of the cold and the hottest 20 % of the hot
+candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
+flagged with <code>EF_ANCHOR_CRITERIA_RELAXED</code>; no anchor on cells with a
+warning or critical surface flag or an assigned LAI.</p>
+<p>Versions: <code>"1"</code> (first presets); <code>"2"</code> (recalibrated anchor criteria,
+M5-23; minimum z_om, M5-24); see the element <code>changes</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="verification-status">Verification status<a class="anchor" aria-label="anchor" href="#verification-status"></a></h2>
@@ -120,7 +133,7 @@ University of Idaho and Idaho Department of Water Resources.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">ef_preset</span><span class="op">(</span><span class="st">"idaho2002_elev"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_preset&gt; idaho2002_elev (version 1, CANDIDATA)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_preset&gt; idaho2002_elev (version 2, CANDIDATA)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SEBAL-Idaho 2002 forms with the elevation adjustments of appendix 12</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   of the manual (datum surface temperature with a lapse rate of 0.0065</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   K/m, cold-pixel temperature of the incoming longwave adjusted by</span>
@@ -177,7 +190,7 @@ University of Idaho and Idaho Department of Water Resources.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Soil heat flux, roughness, wind, lambda:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   soil_heat              bastiaanssen</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   zom                    lai</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   zom_zero               NA + EF_H_ZOM_UNDEFINED</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   zom_min                0.005</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   zom_station            0.0144</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   d_station              0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lambda                 constant</span>
@@ -192,18 +205,18 @@ University of Idaho and Idaho Department of Water Resources.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ET:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   method                 etrf</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   reference              alfalfa</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Unverified elements (11): anchor_criteria, modis_albedo, modis_matching, lai_nonveg, reference_et_time, regionalization, era5, station_roughness, zom_zero, wind_time, flat_projection</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Unverified elements (11): anchor_criteria, modis_albedo, modis_matching, lai_nonveg, reference_et_time, regionalization, era5, station_roughness, zom_floor, wind_time, flat_projection</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Anchor criteria: x$anchors$criteria; relaxation: x$anchors$relax.</span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">anchors</span><span class="op">$</span><span class="va">criteria</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_anchor_criteria&gt; CANDIDATA - EarthFlux preset idaho2002 v1 (dev/specs/presets.md 4; DECISIONS.md M5-10): guides of Waters et al. (2002), appendix 7, widened for 1 km MODIS pixels without a source </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   cold: lai &gt;= 3 &amp; albedo between [0.18, 0.25] &amp; ndvi &gt;= p0.9; pick: lowest_fraction lst 0.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   hot: lai &lt;= 0.4 &amp; ndvi &gt; 0 &amp; albedo between [0.10, 0.35]; pick: highest_fraction lst 0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_anchor_criteria&gt; CANDIDATA - EarthFlux preset idaho2002 v2 (dev/specs/presets.md 4; DECISIONS.md M5-23): physical intent of Waters et al. (2002), pp. 23, 30-31 and appendix 7, with thresholds for 1 km MODIS pixels set from the Cauquenes and Maule scenes of 2019-02-15 (no primary source) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   cold: ndvi &gt;= p0.9 &amp; albedo between [0.14, 0.26]; pick: lowest_fraction lst 0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   hot: ndvi &lt;= p0.1 &amp; ndvi &gt; 0 &amp; albedo between [0.18, 0.35]; pick: highest_fraction lst 0.2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   homogeneity: sd(lst) &lt;= 1.5 in 3 x 3 window (exclude)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   percentile domain: land; quantile type: 7</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">unverified</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "anchor_criteria"   "modis_albedo"      "modis_matching"   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [4] "lai_nonveg"        "reference_et_time" "regionalization"  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] "era5"              "station_roughness" "zom_zero"         </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] "era5"              "station_roughness" "zom_floor"        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [10] "wind_time"         "flat_projection"  </span>
 </code></pre></div>
     </div>

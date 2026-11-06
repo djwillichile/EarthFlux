@@ -122,13 +122,14 @@ An object of class `earthflux_result` (a list):
   cell flags of the METRIC chain on the cells of the grid (with `target`
   = layer);
 
-- `provenance`: the preset (name, version, status, unverified elements),
-  every effective option, the values derived for the scene (overpass
-  times, day and UTC offset of the daily reference ET, regionalization
-  method, datum elevation, ...), the counts of excluded cells, the MODIS
-  granules, the NASADEM tiles, the Open-Meteo request (without key) or
-  the station table, attributions, the codes evaluated, versions, the
-  `future` plan and timings.
+- `provenance`: the preset (name, version, changes between versions,
+  status, unverified elements), every effective option, the values
+  derived for the scene (overpass times, day and UTC offset of the daily
+  reference ET, regionalization method, datum elevation, ...), the
+  counts of excluded cells (and of cells raised to the minimum z_om),
+  the MODIS granules, the NASADEM tiles, the Open-Meteo request (without
+  key) or the station table, attributions, the codes evaluated,
+  versions, the `future` plan and timings.
 
 ## Details
 

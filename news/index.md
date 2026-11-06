@@ -65,6 +65,22 @@
   minimum is applied, so the cell is `NA` from the sensible heat flux
   on. New error class `earthflux_weather_coverage_error`.
 
+- Presets `idaho2002_elev` and `idaho2002_flat` version 2 (decisions
+  M5-23 and M5-24; the changes are listed in `ef_preset(name)$changes`
+  and in the provenance). Anchor criteria recalibrated for 1 km MODIS
+  pixels on the Cauquenes and Maule scenes of 2019-02-15: cold
+  candidates with NDVI at or above the 90th percentile and white-sky
+  albedo in \[0.14, 0.26\], hot candidates with NDVI at or below the
+  10th percentile and albedo in \[0.18, 0.35\] (no absolute LAI
+  thresholds), one relaxation step (percentiles 0.80 and 0.20), and no
+  anchor on cells whose LAI was assigned by `lai_nonveg`; still
+  `CANDIDATA`. The momentum roughness length now has a minimum of 0.005
+  m (`CANDIDATA`) where 0.018 LAI is below it, flagged with the new
+  `EF_H_ZOM_FLOOR_APPLIED` (info, cell scope, bit 1 of the H word), so
+  cells with LAI = 0 get an ETa. `EF_H_ZOM_UNDEFINED` is retired (no
+  function raises it any more); its bit 10 stays reserved and the
+  registry refuses retired codes and bits.
+
 ### Bug fixes
 
 - The MODIS readers and `modis_provenance()` now work with older and

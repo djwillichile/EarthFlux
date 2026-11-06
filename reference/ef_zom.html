@@ -186,7 +186,9 @@ roughness of the covers. The Perrier function needs a canopy height map,
 which MODIS does not provide.</p>
 <p>No minimum roughness (0.005 m in METRIC implementations, decision SH-02)
 and no mountainous-terrain adjustment (SH-03) are applied: both are
-unverified and values are never silently modified.</p>
+unverified and values are never silently modified. The presets of
+<code><a href="earthflux.html">earthflux()</a></code> apply the 0.005 m minimum after <code>ef_zom()</code>, as a declared
+<code>CANDIDATA</code> option flagged with <code>EF_H_ZOM_FLOOR_APPLIED</code>.</p>
 <p>Missing values propagate. Arguments must be numeric, of length 1 or a
 common length (length 0 is rejected), and matrix or array arguments must
 share their <code>dim</code>. Values outside the documented domain, or infinite
