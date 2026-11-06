@@ -1197,15 +1197,41 @@ modis_read_converted <- function(path, product, layer, scaled, aoi = NULL,
 
 # Tiles -------------------------------------------------------------------------------
 
+#' File-level metadata tags of a SpatRaster as a named character vector
+#'
+#' `terra::metags()` returns a named character vector up to terra 1.8-29 and
+#' a data frame with columns `name`, `value` and `domain` from terra 1.8-42
+#' onwards (metadata domains). Both are normalised here; for the data frame
+#' only the default domain (`""`) is kept, which is where `metags<-` with a
+#' named vector writes.
+#' @param r A `SpatRaster`.
+#' @param m The value of `terra::metags(r)` (an argument so that both shapes
+#'   can be tested whatever terra is installed).
+#' @return A named character vector (possibly empty).
+#' @noRd
+modis_metags <- function(r, m = terra::metags(r)) {
+  if (is.null(m) || length(m) == 0L) {
+    return(stats::setNames(character(0), character(0)))
+  }
+  if (is.data.frame(m) || is.matrix(m)) {
+    m <- as.data.frame(m, stringsAsFactors = FALSE)
+    if (nrow(m) == 0L) {
+      return(stats::setNames(character(0), character(0)))
+    }
+    if ("domain" %in% names(m)) {
+      m <- m[is.na(m$domain) | m$domain == "", , drop = FALSE]
+    }
+    return(stats::setNames(as.character(m$value), as.character(m$name)))
+  }
+  stats::setNames(as.character(m), names(m))
+}
+
 #' Value of a metadata tag of a SpatRaster (or NA)
 #' @noRd
 modis_get_tag <- function(r, name) {
-  m <- terra::metags(r)
-  if (is.null(m) || nrow(m) == 0L) {
-    return(NA_character_)
-  }
-  i <- match(name, m$name)
-  if (is.na(i)) NA_character_ else m$value[i]
+  m <- modis_metags(r)
+  i <- match(name, names(m))
+  if (is.na(i)) NA_character_ else unname(m[i])
 }
 
 #' Mosaic MODIS tiles of the same product and date
@@ -1280,10 +1306,8 @@ modis_mosaic_tiles <- function(rasters) {
   }
   out <- terra::merge(terra::sprc(rasters))
   names(out) <- names(first)
-  tags <- terra::metags(first)
   tiles <- vapply(rasters, modis_get_tag, character(1), name = "tile")
-  tagv <- if (is.null(tags) || nrow(tags) == 0L) character(0) else
-    stats::setNames(tags$value, tags$name)
+  tagv <- modis_metags(first)
   tagv <- tagv[setdiff(names(tagv), c("AREA_OR_POINT", "file"))]
   if (!all(is.na(tiles))) tagv["tile"] <- paste(tiles, collapse = ",")
   if (length(tagv) > 0L) out <- modis_tag(out, tagv)
