@@ -2,6 +2,39 @@
 
 ## EarthFlux 0.1.0.9000 (development version)
 
+### New features
+
+- Automatic search and download of the MODIS granules of the surface
+  state (internal, for the coming `earthflux()`): the sinusoidal tiles
+  under an area of interest, one NASA CMR granule per product, tile and
+  date (MOD11A1/MYD11A1, MCD43A3, MOD13A2, MCD15A2H; composite periods
+  from the granule metadata), and the LP DAAC download with the NASA
+  Earthdata token read only from `EARTHDATA_TOKEN`, into a validated
+  cache (`tools::R_user_dir("EarthFlux", "cache")` by default). Areas
+  that need more than one tile are not assembled yet.
+
+- Automatic elevation model (internal, for the coming `earthflux()`;
+  decision M5-06): NASADEM_HGT v001 tiles are found with NASA CMR,
+  downloaded from LP DAAC with the Earthdata token of the environment,
+  validated and cached, and turned into elevation, slope, aspect, mean
+  normal length and valid fraction on the 1 km working grid, either flat
+  or with the `CANDIDATA` mean-normal chain (3 arc-second slopes
+  averaged as unit normal vectors). Water and missing tiles are never
+  filled.
+
+- Station-free weather forcing (decision M5-07, internal for now):
+  hourly ERA5 data from the Open-Meteo historical weather API
+  (`models=era5`) for the ERA5 cells covering an area of interest plus a
+  one-cell buffer, each cell a virtual station of
+  [`ef_station_table()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_table.md)
+  (wind at 10 m, elevation from the API, UTC), so that QC, reference ET
+  and regionalization work unchanged. Explicit choices without defaults
+  for the elevation adjustment and the treatment of the instantaneous
+  values; optional `apikey` for the customer (commercial) API, never
+  stored; JSON cache; CC BY 4.0 and Copernicus attribution in the
+  provenance. New flag `EF_WS_GRIDDED_FORCING` (warning, object scope).
+  Adds `jsonlite` to Imports.
+
 ### Bug fixes
 
 - The MODIS readers and `modis_provenance()` now work with older and
@@ -18,17 +51,6 @@
   which the test suite has been run (`metags()` itself exists from
   1.7-55). A new CI job (`min-terra`) runs `R CMD check` with R 4.3 and
   that terra release, so regressions on the minimum are caught.
-
-### New features
-
-- Automatic search and download of the MODIS granules of the surface
-  state (internal, for the coming `earthflux()`): the sinusoidal tiles
-  under an area of interest, one NASA CMR granule per product, tile and
-  date (MOD11A1/MYD11A1, MCD43A3, MOD13A2, MCD15A2H; composite periods
-  from the granule metadata), and the LP DAAC download with the NASA
-  Earthdata token read only from `EARTHDATA_TOKEN`, into a validated
-  cache (`tools::R_user_dir("EarthFlux", "cache")` by default). Areas
-  that need more than one tile are not assembled yet.
 
 ### Documentation
 
