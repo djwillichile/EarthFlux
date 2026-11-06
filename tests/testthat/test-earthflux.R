@@ -220,13 +220,33 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   tab <- ef_presets()
   expect_s3_class(tab, "data.frame")
   expect_identical(tab$name, c("idaho2002_elev", "idaho2002_flat"))
-  expect_identical(tab$version, c("1", "1"))
+  expect_identical(tab$version, c("2", "2"))
   expect_identical(tab$status, c("CANDIDATA", "CANDIDATA"))
   e <- ef_preset("idaho2002_elev")
   f <- ef_preset("idaho2002_flat")
   expect_s3_class(e, "earthflux_preset")
   expect_s3_class(e$anchors$criteria, "earthflux_anchor_criteria")
   expect_identical(e$anchors$criteria$status, "CANDIDATA")
+  # anchor criteria of version 2 (M5-23): NDVI percentiles and albedo bands
+  rule <- function(cr, type, i) unclass(cr[[type]][[i]])[c("variable",
+                                                           "operator",
+                                                           "value", "scale")]
+  cr <- e$anchors$criteria
+  expect_identical(rule(cr, "cold", 1),
+                   list(variable = "ndvi", operator = ">=", value = 0.9,
+                        scale = "percentile"))
+  expect_identical(rule(cr, "cold", 2)$value, c(0.14, 0.26))
+  expect_identical(rule(cr, "hot", 1),
+                   list(variable = "ndvi", operator = "<=", value = 0.1,
+                        scale = "percentile"))
+  expect_identical(rule(cr, "hot", 3)$value, c(0.18, 0.35))
+  expect_false("lai" %in% c(vapply(cr$cold, `[[`, "", "variable"),
+                            vapply(cr$hot, `[[`, "", "variable")))
+  expect_length(e$anchors$relax, 1L)
+  expect_identical(c(rule(e$anchors$relax[[1]], "cold", 1)$value,
+                     rule(e$anchors$relax[[1]], "hot", 1)$value), c(0.8, 0.2))
+  expect_identical(e$anchors$qa_exclude_codes, "EF_SURF_LAI_ASSIGNED")
+  expect_identical(names(e$changes), c("1", "2"))
   expect_identical(e$modis$surface_options$lai_nonveg, 0)
   expect_identical(e$modis$surface_options$albedo_method, "white_sky")
   expect_identical(c(e$sensible_heat$lapse_rate, f$sensible_heat$lapse_rate),
@@ -321,6 +341,33 @@ test_that("LE is the residual of the energy balance and ETa = ETrF x ETr_24", {
   etrf <- v[px$cell, "etrf"]
   expect_lt(abs(mean(etrf[px$type == "cold"]) - 1.05), 0.01)
   expect_lt(abs(mean(etrf[px$type == "hot"]) - 0), 0.01)
+})
+
+test_that("the anchors satisfy the criteria of the preset (version 2)", {
+  px <- res_e$anchors$pixels
+  th <- res_e$anchors$thresholds
+  used <- res_e$anchors$search$used
+  for (t in c("cold", "hot")) {
+    u <- used[used$type == t, ]
+    tt <- th[th$type == t & th$stage == u$stage & th$step == u$step &
+               th$target == "rule", ]
+    p <- px[px$type == t, ]
+    expect_gt(nrow(p), 0L)
+    ndvi_thr <- tt$value_lower[tt$variable == "ndvi" & tt$scale ==
+                                 "percentile"]
+    if (t == "cold") {
+      expect_true(all(p$ndvi >= ndvi_thr))
+      expect_true(all(p$albedo >= 0.14 & p$albedo <= 0.26))
+    } else {
+      ndvi_thr <- tt$value_upper[tt$variable == "ndvi" & tt$scale ==
+                                   "percentile"]
+      expect_true(all(p$ndvi <= ndvi_thr & p$ndvi > 0))
+      expect_true(all(p$albedo >= 0.18 & p$albedo <= 0.35))
+    }
+  }
+  # the cold anchor is colder than the hot anchor and LAI is not a rule
+  cp <- res_e$anchors$calibration_points
+  expect_lt(cp$lst[cp$type == "cold"], cp$lst[cp$type == "hot"])
 })
 
 test_that("the flat preset uses one transmissivity and one longwave temperature", {
@@ -480,9 +527,10 @@ test_that("the provenance records every option of the preset", {
   pr <- res_e$provenance
   p <- ef_preset("idaho2002_elev")
   expect_identical(pr$preset$name, "idaho2002_elev")
-  expect_identical(pr$preset$version, "1")
+  expect_identical(pr$preset$version, "2")
   expect_identical(pr$preset$status, "CANDIDATA")
   expect_identical(pr$preset$unverified, p$unverified)
+  expect_identical(names(pr$preset$changes), c("1", "2"))
   expect_identical(names(pr$options), names(unclass(p)))
   for (nm in setdiff(names(unclass(p)), c("anchors", "sensible_heat"))) {
     expect_identical(pr$options[[nm]], unclass(p)[[nm]], info = nm)
@@ -539,16 +587,15 @@ test_that("the expert route takes a prepared surface and terrain", {
 # Several stations and ERA5 (C2) -------------------------------------------------------
 
 test_that("several stations are interpolated by inverse distance weighting", {
-  # A smaller AOI (the cold criteria find no candidate over the larger
-  # one: the NDVI percentile of the whole area is above the NDVI of the
-  # few cells with LAI >= 3 and albedo >= 0.18) and four stations around
-  # it, so that no cell is outside their hull.
-  aoi2 <- ewf_aoi(-72.5, -72.0, -36.2, -35.7)
-  sta3 <- ewf_stations(lon = c(-72.6, -71.9, -72.6, -71.9),
-                       lat = c(-35.6, -35.6, -36.3, -36.3),
+  # Four stations around the whole AOI, so that no cell is outside their
+  # hull. (With the anchor criteria of preset version 1 the cold set was
+  # empty over this AOI and a smaller one was used; version 2, M5-23,
+  # finds both anchors.)
+  sta3 <- ewf_stations(lon = c(-72.9, -71.8, -72.9, -71.8),
+                       lat = c(-35.5, -35.5, -36.4, -36.4),
                        elevation = c(120, 160, 220, 260))
   calls <- ewf_mock(st, ter)
-  res <- ewf_run(aoi2, ewf_date(), weather = sta3, preset = "idaho2002_elev")
+  res <- ewf_run(aoi, ewf_date(), weather = sta3, preset = "idaho2002_elev")
   expect_identical(res$forcing$method, "idw")
   expect_identical(res$forcing$surfaces$etr_inst$method_settings$power, 2)
   etr <- val(res$layers$etr_inst)

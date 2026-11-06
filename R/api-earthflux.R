@@ -89,11 +89,12 @@
 #'     `EF_GWR_SINGLE_STATION`), the anchors and the calibration, and the
 #'     cell flags of the METRIC chain on the cells of the grid (with
 #'     `target` = layer);
-#'   * `provenance`: the preset (name, version, status, unverified
-#'     elements), every effective option, the values derived for the scene
-#'     (overpass times, day and UTC offset of the daily reference ET,
-#'     regionalization method, datum elevation, ...), the counts of excluded
-#'     cells, the MODIS granules, the NASADEM tiles, the Open-Meteo request
+#'   * `provenance`: the preset (name, version, changes between versions,
+#'     status, unverified elements), every effective option, the values
+#'     derived for the scene (overpass times, day and UTC offset of the
+#'     daily reference ET, regionalization method, datum elevation, ...),
+#'     the counts of excluded cells (and of cells raised to the minimum
+#'     z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
 #'     (without key) or the station table, attributions, the codes
 #'     evaluated, versions, the `future` plan and timings.
 #'
@@ -459,7 +460,7 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
     fun = "earthflux",
     preset = list(name = p$name, version = p$version, status = p$status,
                   source = p$source, decisions = p$decisions,
-                  unverified = p$unverified),
+                  changes = p$changes, unverified = p$unverified),
     options = options,
     scene = list(
       date = format(date),
