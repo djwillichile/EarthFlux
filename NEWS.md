@@ -12,6 +12,8 @@
 
 * `DESCRIPTION` now requires `terra (>= 1.7-65)`, the oldest release on
   which the test suite has been run (`metags()` itself exists from 1.7-55).
+  A new CI job (`min-terra`) runs `R CMD check` with R 4.3 and that terra
+  release, so regressions on the minimum are caught.
 
 ## Documentation
 
