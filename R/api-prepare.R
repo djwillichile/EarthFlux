@@ -111,18 +111,28 @@ workflow_check_surface <- function(surface, preset, call) {
              class = "earthflux_input_error", call = call)
   }
   methods <- surface$provenance$methods
-  if (!is.null(methods)) {
-    want <- preset$modis$surface_options
-    for (nm in c("lst_product", "albedo_method", "emissivity_method",
-                 "ndvi_source", "qa_policy")) {
-      if (!identical(methods[[nm]], want[[nm]])) {
-        ef_abort(
-          sprintf(paste0("`surface` was built with %s = \"%s\"; preset `%s` ",
-                         "uses \"%s\"."), nm, format(methods[[nm]]),
-                  preset$name, format(want[[nm]])),
-          class = "earthflux_input_error", call = call
-        )
-      }
+  if (is.null(methods)) {
+    ef_abort(
+      paste0("`surface` has no record of its preparation options ",
+             "(`provenance$methods`), so it cannot be checked against ",
+             "preset `", preset$name, "`."),
+      class = "earthflux_input_error", call = call
+    )
+  }
+  # Every scientific preparation option must equal the preset's, in the
+  # normalized form that modis_surface_options() records: the result
+  # reports the preset options as effective.
+  want <- unclass(do.call(modis_surface_options,
+                          preset$modis$surface_options))
+  for (nm in names(want)) {
+    if (!identical(methods[[nm]], want[[nm]])) {
+      ef_abort(
+        sprintf(paste0("`surface` was built with %s = %s; preset `%s` ",
+                       "uses %s."), nm,
+                paste(format(methods[[nm]]), collapse = ", "),
+                preset$name, paste(format(want[[nm]]), collapse = ", ")),
+        class = "earthflux_input_error", call = call
+      )
     }
   }
   invisible(surface)
@@ -158,6 +168,20 @@ workflow_terrain <- function(aoi, grid, preset, cache_dir, terrain = NULL,
       !all(c("elevation", "valid_fraction") %in% names(terrain$terrain))) {
     ef_abort("`terrain` must be an `earthflux_terrain` (see dem_fetch()).",
              class = "earthflux_input_error", call = call)
+  }
+  # A terrain supplied by the user must have been prepared as the preset
+  # prepares it (the result reports the preset options as effective).
+  pv <- terrain$provenance
+  if (!identical(pv$method, preset$terrain$dem_method) ||
+      (!is.null(pv$water) && !identical(pv$water, preset$terrain$water))) {
+    ef_abort(
+      sprintf(paste0("`terrain` was prepared with method = %s and water = ",
+                     "%s; preset `%s` uses method = \"%s\" and water = ",
+                     "\"%s\"."),
+              format(pv$method), format(pv$water), preset$name,
+              preset$terrain$dem_method, preset$terrain$water),
+      class = "earthflux_input_error", call = call
+    )
   }
   if (!isTRUE(terra::compareGeom(terrain$terrain, grid, stopOnError = FALSE))) {
     ef_abort("The terrain is not on the working grid (the LST grid).",

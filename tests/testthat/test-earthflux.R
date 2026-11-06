@@ -476,6 +476,27 @@ test_that("the expert route takes a prepared surface and terrain", {
                          preset = "idaho2002_elev", surface = bad,
                          terrain = ter),
                class = "earthflux_input_error")
+  # The aggregation threshold is checked too, not only the methods.
+  loose <- st
+  loose$provenance$methods$min_valid_fraction <- 0.5
+  expect_error(earthflux(aoi, ewf_date(), weather = sta1,
+                         preset = "idaho2002_elev", surface = loose,
+                         terrain = ter),
+               "min_valid_fraction", class = "earthflux_input_error")
+  # A terrain prepared with another method is refused.
+  other <- ter
+  other$provenance$method <- "nasadem_normal_mean"
+  expect_error(suppressWarnings(
+    earthflux(aoi, ewf_date(), weather = sta1, preset = "idaho2002_elev",
+              surface = st, terrain = other)
+  ), "terrain", class = "earthflux_input_error")
+  # A surface without a record of its options cannot be checked.
+  bare <- st
+  bare$provenance$methods <- NULL
+  expect_error(earthflux(aoi, ewf_date(), weather = sta1,
+                         preset = "idaho2002_elev", surface = bare,
+                         terrain = ter),
+               class = "earthflux_input_error")
 })
 
 # Several stations and ERA5 (C2) -------------------------------------------------------
