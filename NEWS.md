@@ -30,6 +30,26 @@
   `EF_WS_GRIDDED_FORCING` (warning, object scope). Adds `jsonlite` to
   Imports.
 
+* `earthflux(aoi, date, weather, preset)`, the integrated workflow
+  (decisions M5-04 and M5-08 to M5-22): MODIS surface state and NASADEM
+  elevation downloaded and prepared on the 1 km MODIS grid, weather from a
+  station table (one station: its values everywhere; several: inverse
+  distance weighting) or from ERA5 via Open-Meteo, hourly alfalfa reference
+  ET and wind regionalized and interpolated to the overpass time of each
+  cell, anchors selected before the net radiation (incoming longwave from
+  the cold anchor), calibration of dT and daily ETa. Returns an
+  `earthflux_result` with every intermediate layer, the objects of each
+  stage, flag words per stage, flags and a provenance with every effective
+  option (`print()`, `summary()` and `plot()` methods). Two presets,
+  `idaho2002_elev` and `idaho2002_flat` (SEBAL Idaho manual forms with and
+  without its elevation adjustments, both `CANDIDATA`, version 1), listed
+  by `ef_presets()` and shown in full by `ef_preset()`; a preset that is
+  not verified raises one `earthflux_unverified_preset_warning` listing
+  its unverified elements. New flag `EF_H_ZOM_UNDEFINED` (info, cell scope,
+  bit 10 of the H word): the momentum roughness length is 0 where LAI is
+  0 and no minimum is applied, so the cell is `NA` from the sensible heat
+  flux on. New error class `earthflux_weather_coverage_error`.
+
 ## Bug fixes
 
 * The MODIS readers and `modis_provenance()` now work with older and newer
@@ -46,6 +66,11 @@
   release, so regressions on the minimum are caught.
 
 ## Documentation
+
+* `ef_station_ref_et()`: the daily sum of the hourly reference ET is the
+  daily reference ET of the METRIC extrapolation verified against the
+  SEBAL Idaho manual (Waters et al., 2002, Eq. 44); the documentation said
+  it was still to be checked.
 
 * `citation("EarthFlux")` and `CITATION.cff` give the Zenodo DOI of the
   package (concept DOI 10.5281/zenodo.23981325, which resolves to the

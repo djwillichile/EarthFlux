@@ -32,6 +32,14 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 > numéricas (frío: α 0,22–0,24, LAI 4–6; caliente: LAI 0–0,4, pendiente
 > < 1 % en montaña; cerca de la estación), evidencia para un preset futuro
 > (D-AP-01), no implementada.
+>
+> **Actualización M5 (2026-11-06, M5-08, M5-10).** Los presets de
+> `earthflux()` (`idaho2002_elev`, `idaho2002_flat`) fijan criterios
+> `CANDIDATA` derivados de esas guías, ensanchados para píxeles de 1 km, con
+> un paso de relajación y QA estricto (`specs/presets.md` §4). D-AP-01 se
+> reescribió: el núcleo sigue sin defectos y `earthflux()` admite un preset
+> no verificado, con su estado declarado en la documentación y la
+> procedencia y un aviso con los elementos no verificados.
 
 > **Estado de implementación (M2, 2026-11-04).** Implementado en
 > `R/metric-anchors.R` bajo las decisiones provisionales P0-8 y P0-9
@@ -587,7 +595,9 @@ crit <- ef_anchor_criteria(
   verificación cruzada, o uno de Allen et al., 2013, cuando se verifique)
   serían funciones que devuelven criterios con `source` y `status`
   rellenos; un preset `CANDIDATA` no debe usarse como defecto silencioso de
-  `earthflux()` (D-AP-01).
+  `earthflux()` (D-AP-01). *Desde M5-08:* `earthflux()` no tiene defecto
+  (el preset es obligatorio) y un preset `CANDIDATA` se usa solo si el
+  usuario lo nombra, con aviso y estado en la procedencia.
 
 ### 5.3 Selección automática: `ef_select_anchors()`
 
@@ -986,7 +996,7 @@ documento (no se edita aquí).
 
 | Id | Decisión | Opción recomendada (provisional) | Requiere |
 |---|---|---|---|
-| D-AP-01 | Valores por defecto de los criterios | Ninguno en el núcleo; presets con nombre, `source` y `status`; `earthflux()` solo podrá fijar un preset `VERIFICADA` | Ítems 9–14 |
+| D-AP-01 | Valores por defecto de los criterios | Ninguno en el núcleo; presets con nombre, `source` y `status`. **Reescrita (2026-11-06, M5-08):** `earthflux()` exige un preset y admite presets no verificados, con su estado declarado en la documentación y la procedencia (no en el nombre) y un aviso `earthflux_unverified_preset_warning` con los elementos no verificados | Ítems 9–14 |
 | D-AP-02 | Relajación automática | No por defecto; solo con plan explícito registrado | Confirmación del autor |
 | D-AP-03 | Dónde viven las condiciones de borde | Función propia de la etapa [B] (nombre a definir) que completa `conditions`; la selección no conoce la meteorología | Especificación de `metric-dt.R` |
 | D-AP-04 | k del ancla fría y reglas de cobertura parcial | k explícito sin defecto en el núcleo; sin reemplazos automáticos (Kc–NDVI) | Ítems 1–2, 25 |

@@ -112,21 +112,34 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       (M4-31). Detalle en `RELEASING.md`, "Estado de 0.1.0".
 
 ## M5 — Integrated pipeline
-- [ ] `earthflux()` sobre el núcleo; objeto de resultado con diagnósticos y
-      procedencia; paralelismo.
+- [x] `earthflux()` sobre el núcleo; objeto de resultado `earthflux_result`
+      con capas, objetos de cada etapa, palabras de flags por etapa y
+      procedencia; `print()`, `summary()`, `plot()`; ruta experta con
+      `surface`/`terrain` preparados (fase 2, 2026-11-06;
+      `specs/presets.md`). Test de equivalencia con la cadena paso a paso.
+- [ ] Paralelismo de `earthflux()` más allá de la regionalización (que ya
+      sigue el plan `future` del usuario); mosaicos de varias teselas
+      MODIS (M4-19).
 - [x] Diseño de la carga de entradas (decisión del autor, 2026-11-05;
       `ARCHITECTURE.md` §6.7, `DECISIONS.md` §1.5, M5-01 … M5-07): tres
       niveles de uso; nivel básico con área, fecha, una fuente
       meteorológica y un preset obligatorio; MODIS y MDE automáticos;
       cobertura de suelo opcional.
-- [ ] Presets de `earthflux()` (M5-04): nombres, contenido y estado.
-- [ ] Descarga y preparación automática del MDE (NASADEM, M5-06).
+- [x] Presets de `earthflux()` (M5-04, M5-08 … M5-17): `idaho2002_elev` e
+      `idaho2002_flat`, `CANDIDATA`, versión 1; `ef_presets()`,
+      `ef_preset()`; aviso `earthflux_unverified_preset_warning`.
+- [ ] Revisar los criterios de anclas de los presets con la escena del
+      Maule (M5-10; hallazgo de Cauquenes en `specs/presets.md` §8).
+- [x] Descarga automática de los granulos MODIS del estado de superficie
+      (CMR + LP DAAC, token `EARTHDATA_TOKEN`; fase 1).
+- [x] Descarga y preparación automática del MDE (NASADEM, M5-06; fase 1).
 - [x] Forzamiento sin estaciones (M5-07, decisión del autor del
       2026-11-05): ERA5 vía Open-Meteo como fuente predeterminada
       (`ARCHITECTURE.md` §6.7).
-- [ ] Implementar la descarga ERA5/Open-Meteo con `apikey` opcional,
-      atribución y flag de forzamiento grillado; evaluar viento y hora de
-      paso con datos horarios de estaciones.
+- [x] Implementar la descarga ERA5/Open-Meteo con `apikey` opcional,
+      atribución y flag de forzamiento grillado (fase 1).
+- [ ] Evaluar viento y hora de paso de ERA5 con datos horarios de
+      estaciones.
 
 ## M6 — Scientific validation
 - [ ] Experimento C1 vs. C2 vs. C3 según `VALIDATION_PLAN.md`.

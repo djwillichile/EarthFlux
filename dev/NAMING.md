@@ -204,6 +204,14 @@ nombre se mantiene.
 | `ef_spatial_forcing()` | 18 | = | 18 | **No creada** (GW-23, M3-27): la regionalización es `ef_regionalize()` |
 | `ef_station_forcing()` | 18 | = | 18 | **No creada** como pública (M3-33): C1 es `ef_method_station()` + `ef_regionalize()` (ajuste interno `rgn_station_fit()`, clase `earthflux_station_forcing`) |
 
+### Flujo de trabajo (`specs/presets.md`, M5)
+
+| Nombre en las especificaciones | Car. | Nombre propuesto | Car. | Nota |
+|---|---:|---|---:|---|
+| `earthflux()` | 9 | = | 9 | API simple sin prefijo (§1, punto 4); `ARCHITECTURE.md` §6.7; preset obligatorio (M5-04) |
+| — | — | **`ef_presets()`** | 12 | Nueva (M5, fase 2): tabla de los presets registrados (nombre, versión, estado, descripción) |
+| — | — | **`ef_preset()`** | 11 | Nueva (M5, fase 2): todas las opciones de un preset (`earthflux_preset`, imprimible); `name` sin defecto |
+
 ## 4. Resumen
 
 | | Especificaciones | Decisión |
@@ -226,6 +234,12 @@ función (`ef_etr_hourly()`, `ef_etr_daily()`, `ef_gwr_config()`,
 `ef_idw_fit()`). Por tabla de M3: forzamiento, 19 exportadas de 22 filas
 (incluida `ef_air_pressure()`, de la base de M2); regionalización, 13
 exportadas de 18 filas.
+
+Fase 2 de M5 (2026-11-06): se agregan las 3 filas del flujo de trabajo
+(`earthflux()`, `ef_presets()`, `ef_preset()`), las tres exportadas: **92
+filas**, **76** funciones exportadas. Las auxiliares del flujo
+(`workflow_*()`) y las de descarga (`modis_*()`, `dem_*()`,
+`openmeteo_*()`) son internas y no se rigen por §2 (N10).
 
 ## 5. Alternativas consideradas
 

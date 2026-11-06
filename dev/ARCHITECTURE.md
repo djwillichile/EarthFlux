@@ -216,6 +216,10 @@ cabecera de `R/utils.R`):
 | `earthflux_modis_metadata_error` | `earthflux_input_error` | MODIS (M4) | Escala, offset o NoData del archivo en contradicción con la tabla de producto |
 | `earthflux_modis_grid_error` | `earthflux_input_error` | MODIS (M4) | CRS, celda, extensión de tesela, solape con el AOI, mosaico o anidamiento de grillas inconsistente |
 | `earthflux_modis_driver_error` | `earthflux_error` | MODIS (M4) | Driver GDAL HDF4 no disponible (usar archivos convertidos, MP-10) |
+| `earthflux_credentials_error` | `earthflux_error` | descargas (M5) | Token de NASA Earthdata ausente de `EARTHDATA_TOKEN` (una sola clase para MODIS y MDE) |
+| `earthflux_download_error` | `earthflux_error` | descargas (M5) | Fallo HTTP o de transferencia (campos `status` y `url` sin secretos; MODIS, MDE, Open-Meteo) |
+| `earthflux_weather_coverage_error` | `earthflux_input_error` | `earthflux()` (M5) | La meteorología no cubre la hora de paso, el día de ETr₂₄ o las 24 h previas (campo `variables`; M5-22) |
+| `earthflux_unverified_preset_warning` | `earthflux_warning` | `earthflux()` (M5) | Preset no `VERIFICADA`; campos `preset` y `unverified` (M5-08) |
 
 Los errores de dimensión son `earthflux_input_error` en todo el paquete
 (como `check_same_dim()`); **no** se creó `earthflux_dimension_error`, que
@@ -239,6 +243,8 @@ evitar conflictos al desarrollar los módulos en paralelo
 | `ef_flags_stations()` | `prep-qc.R` | `EF_WS_` (QC de estaciones) |
 | `ef_flags_gwr()` | `gwr-diagnostics.R` | `EF_GWR_` (núcleo GWR y orquestación) |
 | `ef_flags_surface()` | `modis-qa.R` | `EF_SURF_` (QA de productos MODIS y estado de superficie, M4) |
+| `ef_flags_gridded_forcing()` | `forcing-openmeteo.R` | `EF_WS_` (forzamiento grillado, M5-07) |
+| `ef_flags_workflow()` | `api-run.R` | `EF_H_ZOM_UNDEFINED` (z_om indefinida en `earthflux()`, M5-13) |
 
 Cada función devuelve `ef_flag_rows(code, stage, severity, scope, bit,
 error_class, description, spec, since)` (sin argumentos: tabla de cero
@@ -247,7 +253,8 @@ tienen ya su función. Las columnas, la severidad `critical` y las reglas
 de validación están en `specs/flags.md` §4.2, §5 y §8. Recuento al
 2026-11-04 (M4, tras la opción `lai_nonveg`): 69 códigos (`INPUT` 1,
 `RAD` 4, `G` 4, `ANCHOR` 10, `H` 8, `ET` 1, `WS` 13, `GWR` 13, `SURF` 15;
-`specs/flags.md` §4.4).
+`specs/flags.md` §4.4). En M5: `EF_WS_GRIDDED_FORCING` (M5-07) y
+`EF_H_ZOM_UNDEFINED` (M5-13): 71 códigos (`WS` 14, `H` 9).
 
 El registro es estático: `ef_flag_registry_build()` une y valida las filas
 y `ef_flag_registry()` lo guarda en un entorno del paquete la primera vez
@@ -376,9 +383,16 @@ decisión es de `anchor-pixels.md`). Una llamada a `ef_regionalize()`
 regionaliza **una** variable (decisión 5.1 abierta: la orquestación decide
 si regionaliza ETr o sus insumos).
 
-**Resultado** (`earthflux_result`, futuro): capas Rn, G, rah, dT, H, LE,
-ET_inst, ETrF, ETa; registro de anclas; parámetros de GWR; flags;
-procedencia (versiones, productos, escenas, estaciones, parámetros, semilla).
+**Resultado** (`earthflux_result`, M5; `specs/presets.md` §5): `layers`
+(`SpatRaster` en la grilla de trabajo, `NA` fuera del polígono del AOI:
+`eta_24`, `etrf`, `et_inst`, `le`, `h`, `g`, `rn`, `rah`, `dt` e
+intermedios), `units`, los objetos de cada etapa (`surface`, `terrain`,
+`weather`, `forcing`, `anchors`, `h_calibration`), `qa` (palabras de flags
+por etapa, sin combinar bit a bit, y sus `flag_bits`), `flags` (objeto,
+registro y celda, con `target`), `preset` y `provenance` (preset, cada
+opción efectiva, valores derivados de la escena, conteos de exclusiones,
+fuentes sin secretos, atribuciones, códigos evaluados, versiones, plan
+`future`).
 
 ## 5. Unidades
 
@@ -575,11 +589,26 @@ grillado y no reemplaza a las estaciones en la validación; (4) viento y
 valores a la hora de paso quedan sin evaluar hasta tener datos horarios de
 estaciones.
 
-**Presets (M5-04).** Un preset es un conjunto nombrado y documentado de
-todas las opciones científicas de la cadena; `earthflux()` lo exige como
-argumento (una elección explícita en lugar de ~15), y cada opción efectiva
+**Presets (M5-04, M5-08 … M5-17; `specs/presets.md`).** Un preset es un
+conjunto nombrado, documentado y versionado de todas las opciones
+científicas de la cadena; `earthflux()` lo exige como argumento (una
+elección explícita en lugar de ~15, sin defecto), y cada opción efectiva
 queda en la procedencia del resultado. El núcleo conserva la regla de
 métodos sin defecto (§3.1, T-15); un preset solo se rotula `VERIFICADA` si
-todas sus formulaciones lo están, y si no, su estado se declara en su
-nombre y documentación.
+todas sus formulaciones lo están. **M5-08** (2026-11-06; reescribe
+D-AP-01): se admiten presets no verificados; su estado se declara en su
+documentación y en la procedencia (**no en el nombre**), y `earthflux()`
+emite un aviso `earthflux_unverified_preset_warning` con los elementos no
+verificados. Presets implementados (ambos `CANDIDATA`, versión `"1"`):
+`idaho2002_elev` (formas del manual SEBAL-Idaho 2002 con los ajustes por
+elevación del ap. 12) e `idaho2002_flat` (procedimiento base del manual);
+ninguno usa la pendiente hasta resolver RC-09. Se consultan con
+`ef_presets()` y `ef_preset(name)`.
+
+**Firma implementada** (M5, fase 2): `earthflux(aoi, date, weather, preset,
+cache_dir = tools::R_user_dir("EarthFlux", "cache"), apikey = NULL,
+surface = NULL, terrain = NULL)`; `weather` = `"era5"` o una tabla de
+`ef_station_table()` (una estación → C1; varias → C2 IDW); `surface` y
+`terrain` permiten la ruta experta con objetos ya preparados. Archivos:
+`R/api-presets.R`, `R/api-prepare.R`, `R/api-run.R`, `R/api-earthflux.R`.
 
