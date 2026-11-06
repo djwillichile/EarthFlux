@@ -62,10 +62,13 @@ jobs:
   # so a regression on the declared minimum would otherwise go unnoticed
   # (NEWS.md, 0.1.0.9000). R 4.3 is the R on which 1.7-65 was verified.
   # When the minimum in DESCRIPTION is raised, update `terra@` below.
+  # Pinned to ubuntu-24.04 (GDAL 3.8): terra 1.7-65 does not compile against
+  # GDAL 3.12 of ubuntu-latest (26.04), where OGRLayer::GetSpatialRef()
+  # returns a const pointer.
   min-terra:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
-    name: ubuntu-latest (R 4.3, terra 1.7-65)
+    name: ubuntu-24.04 (R 4.3, terra 1.7-65)
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
