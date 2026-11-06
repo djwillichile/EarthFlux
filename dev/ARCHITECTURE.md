@@ -244,7 +244,7 @@ evitar conflictos al desarrollar los módulos en paralelo
 | `ef_flags_gwr()` | `gwr-diagnostics.R` | `EF_GWR_` (núcleo GWR y orquestación) |
 | `ef_flags_surface()` | `modis-qa.R` | `EF_SURF_` (QA de productos MODIS y estado de superficie, M4) |
 | `ef_flags_gridded_forcing()` | `forcing-openmeteo.R` | `EF_WS_` (forzamiento grillado, M5-07) |
-| `ef_flags_workflow()` | `api-run.R` | `EF_H_ZOM_UNDEFINED` (z_om indefinida en `earthflux()`, M5-13) |
+| `ef_flags_workflow()` | `api-run.R` | `EF_H_ZOM_FLOOR_APPLIED` (mínimo de z_om de los presets de `earthflux()`, M5-24; reemplaza `EF_H_ZOM_UNDEFINED`, M5-13, retirado) |
 
 Cada función devuelve `ef_flag_rows(code, stage, severity, scope, bit,
 error_class, description, spec, since)` (sin argumentos: tabla de cero
@@ -254,7 +254,10 @@ de validación están en `specs/flags.md` §4.2, §5 y §8. Recuento al
 2026-11-04 (M4, tras la opción `lai_nonveg`): 69 códigos (`INPUT` 1,
 `RAD` 4, `G` 4, `ANCHOR` 10, `H` 8, `ET` 1, `WS` 13, `GWR` 13, `SURF` 15;
 `specs/flags.md` §4.4). En M5: `EF_WS_GRIDDED_FORCING` (M5-07) y
-`EF_H_ZOM_UNDEFINED` (M5-13): 71 códigos (`WS` 14, `H` 9).
+`EF_H_ZOM_UNDEFINED` (M5-13): 71 códigos (`WS` 14, `H` 9). M5-24 cambia
+`EF_H_ZOM_UNDEFINED` por `EF_H_ZOM_FLOOR_APPLIED` (siguen 71); los códigos
+retirados, con su bit ocupado, están en `ef_flag_retired()`
+(`diagnostics.R`; `specs/flags.md` §7, punto 6).
 
 El registro es estático: `ef_flag_registry_build()` une y valida las filas
 y `ef_flag_registry()` lo guarda en un entorno del paquete la primera vez

@@ -73,7 +73,7 @@ verifican aritmética y no física).
 | z_om "custom" | z_om = exp(a·NDVI/α + b) | `VERIFICADA (SEBAL-Idaho 2002)` | Waters et al. (2002), p. 28, Ec. 31b; también `water` (`"custom"`) |
 | z_om Perrier | z_om = (1 − e^(−p·LAI/2))·e^(−p·LAI/2)·h | `VERIFICADA (IAHS 2012)` | Allen et al. (2012), IAHS Publ. 352, p. 73; también `water` (`"Perrier"`), Santos et al. (2012), Pôças et al. (2014) |
 | z_om desde altura de cultivo | z_om = 0.123·h; d = 2/3·h | `VERIFICADA` como contenido de FAO-56 (Cap. 2, Recuadro 4); uso en METRIC `TODO` | FAO-56 |
-| Mínimo de z_om | 0.005 m | `CANDIDATA` | `water` (comentario "Allen et al., 2007, after Eq. 33") |
+| Mínimo de z_om | 0.005 m | `CANDIDATA` | `water` (comentario "Allen et al., 2007, after Eq. 33"); el manual SEBAL-Idaho no da z_om de suelo desnudo (ap. 2). Aplicado en los presets de `earthflux()` con `EF_H_ZOM_FLOOR_APPLIED` (M5-24) |
 | Ajuste por terreno de z_om | ×(1 + (s° − 5)/20), solo con s ≥ 5° | Forma `VERIFICADA (SEBAL-Idaho 2002)` e `(IAHS 2012)`; no implementada | Waters et al. (2002), ap. 12, Ec. 12-9; Allen et al. (2012), p. 74; `water` |
 | Viento a altura de mezcla | u_b = u_x·ln(z_b/z_om,w)/ln(z_x/z_om,w), z_b = 200 m | `VERIFICADA (SEBAL-Idaho 2002)` (con d_w = 0) | Waters et al. (2002), p. 26, Ecs. 27 y 29; `water`, `calcH()` |
 | Perfil logarítmico neutral | r_a = ln((z_m − d)/z_om)·ln((z_h − d)/z_oh)/(k²·u_z); k = 0.41 | `VERIFICADA` como contenido de FAO-56 (Cap. 2, Ec. 4) | FAO-56 |
@@ -348,6 +348,23 @@ requiere h por cobertura (§5.5).
   `EF_ZOM_FLOOR_APPLIED` en los píxeles afectados (SH-02).
 - Motivo físico adicional: con z_om → 0, ln(z_b/z_om) → ∞ y u* → 0. `water`
   reemplaza u* = 0 por 0.1 m s⁻¹; EarthFlux **no** sustituye valores (§13).
+- Manual SEBAL-Idaho (Waters et al., 2002): da z_om = 0,018·LAI solo
+  "for agricultural areas" (p. 27, Ec. 31a) y, para coberturas no
+  agrícolas, valores por uso del suelo en el ap. 2 (p. 44: agua 0,0005 m,
+  ciudades 0,2 m, bosques 0,5 m, pastizal 0,02 m, desierto con vegetación
+  0,1 m, nieve 0,005 m; "these values for zom can vary by region"). **No
+  da un valor para suelo desnudo**: 0,005 m coincide con el de la nieve,
+  no con una regla de suelo desnudo, y el mínimo sigue `CANDIDATA`.
+- **Implementación (2026-11-06, `DECISIONS.md` M5-24, aprobada por el
+  autor):** los presets de `earthflux()` aplican z_om = max(0,018·LAI;
+  0,005 m) con `EF_H_ZOM_FLOOR_APPLIED` (I-m, `info`, `cell`, bit 1 de
+  `H`) en las celdas elevadas al mínimo (`workflow_zom_floor()`,
+  `R/api-run.R`; opción `roughness$zom_min` del preset, registrada como
+  `CANDIDATA` en la procedencia). El núcleo `ef_zom()` **no cambia**: sigue
+  sin mínimo (z_om = 0 se devuelve tal cual y `ef_ustar()` lo rechaza),
+  porque el despachador solo reenvía argumentos (`NAMING.md` §2.1) y el
+  mínimo es una regla del preset, no de la fórmula. Reemplaza la regla
+  M5-13 (z_om `NA` + `EF_H_ZOM_UNDEFINED`, retirado).
 
 ### 5.7 Ajuste por terreno montañoso — `CANDIDATA`
 
@@ -1026,7 +1043,7 @@ forzarse:
 | ID | Decisión | Opciones | Recomendación provisional | Bloquea |
 |---|---|---|---|---|
 | SH-01 | Método de z_om por defecto con MODIS 1 km | LAI lineal / custom NDVI-α / Perrier / tabla por cobertura | LAI lineal como base; tabla por cobertura cuando exista fuente; Perrier solo con mapa de alturas | §5 |
-| SH-02 | Mínimo de z_om | Aplicar 0.005 m con flag / no aplicar | Aplicar con flag, tras verificar p. 386 | §5.6 |
+| SH-02 | Mínimo de z_om | Aplicar 0.005 m con flag / no aplicar | Aplicar con flag, tras verificar p. 386. *2026-11-06 (M5-24):* aplicado con flag en los presets de `earthflux()`, valor `CANDIDATA` (el manual no da z_om de suelo desnudo, ap. 2); el núcleo `ef_zom()` sigue sin mínimo | §5.6 |
 | SH-03 | Ajuste por terreno | Sin ajuste / factor / factor con mínimo 1 | Desactivado por defecto hasta verificar Eq. 35 y el manual. *2026-11-05:* forma con pendiente en grados y solo para pendiente ≥ 5° (Waters et al., 2002, Ec. 12-9; Allen et al., 2012, p. 74); no implementada | §5.7 |
 | SH-04 | Perfil de la estación | d_w = 0 (`water`) / d_w y z_om,w desde h (FAO-56) | Argumentos explícitos; defecto coherente con FAO-56 (h = 0.12 m) | §6.1 |
 | SH-05 | u_b uniforme vs espacial | Escalar de escena / superficie (GWR) | Aceptar ambos; registrar cuál (H1) | §6.1 |
@@ -1093,7 +1110,7 @@ las formas de FAO-56 indicadas en §1) hasta la revisión de verificación del
 
 | Elemento | Implementación |
 |---|---|
-| z_om | `ef_zom(..., method)` (despachador, N6; `method` último argumento y objeto `earthflux_roughness_length` desde la armonización M2) con `ef_zom_lai()`, `ef_zom_ndvi()` (§5.2, "custom"), `ef_zom_perrier()`, `ef_zom_height()` (§5.4). Sin mínimo de 0.005 m (SH-02) ni factor de terreno (SH-03): z_om = 0 se devuelve tal cual y `ef_ustar()` lo rechaza |
+| z_om | `ef_zom(..., method)` (despachador, N6; `method` último argumento y objeto `earthflux_roughness_length` desde la armonización M2) con `ef_zom_lai()`, `ef_zom_ndvi()` (§5.2, "custom"), `ef_zom_perrier()`, `ef_zom_height()` (§5.4). Sin mínimo de 0.005 m (SH-02) ni factor de terreno (SH-03): z_om = 0 se devuelve tal cual y `ef_ustar()` lo rechaza. El mínimo se aplica, con flag, en los presets de `earthflux()` (M5-24, §5.6) |
 | Viento, u*, rah | `ef_blending_wind()`, `ef_ustar()`, `ef_rah()`. z_om,w y d_w son argumentos **sin valor por defecto** (SH-04). z_b, z₁ y z₂ no tenían defecto en M2; desde el 2026-11-05 tienen defectos 200 m, 0.1 m y 2 m (`VERIFICADA (SEBAL-Idaho 2002)`, M2-09). Sin piso de viento (SH-06) ni ajuste por elevación (SH-07). u* con denominador ≤ 0 → `NA` |
 | Estabilidad | Internas (`ef_monin_obukhov_length()`, `ef_psi_m()`, `ef_psi_h()`); H = 0 → L = +∞ y ψ = 0. L con Ts y g = 9.81 desde el 2026-11-05 (M2-10). ψ_m(z_b) estable evaluada a `stable_psi_m_height` de `ef_h_control()`: sin defecto en M2, **defecto 2 m** desde el 2026-11-05 (SH-11, M2-09) |
 | ρ_air, Ts_datum, dT, H | `ef_air_density()` (§8.1 con T en K), `ef_ts_datum()` (exportada; Γ en K m⁻¹, sin defecto), `ef_dt_coef()` (Ts_datum,hot ≤ Ts_datum,cold → `earthflux_calibration_error`), `ef_sensible_heat()` (`cp` sin defecto; el driver usa `EF_SPECIFIC_HEAT_AIR`) |

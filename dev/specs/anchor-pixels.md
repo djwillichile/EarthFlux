@@ -40,6 +40,21 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 > reescribió: el núcleo sigue sin defectos y `earthflux()` admite un preset
 > no verificado, con su estado declarado en la documentación y la
 > procedencia y un aviso con los elementos no verificados.
+>
+> **Actualización M5-23 (2026-11-06).** Con las escenas reales de
+> Cauquenes y del Maule (2019-02-15) los criterios de los presets pasan a
+> la versión 2 (`specs/presets.md` §4; evaluación en
+> `verification/anchors-m5-23.md`): frío = NDVI ≥ percentil 0,90 y albedo
+> de cielo blanco en [0,14; 0,26]; caliente = NDVI ≤ percentil 0,10,
+> NDVI > 0 y albedo en [0,18; 0,35]; sin LAI absoluto; homogeneidad y
+> selección (20 % más frío / caliente) sin cambio; un paso de relajación
+> (percentiles 0,80 y 0,20); sin anclas en celdas con LAI asignado. Siguen
+> `CANDIDATA`. Respuesta parcial a Q-AP-01/Q-AP-02 (§4): a 1 km, el NDVI
+> más alto de estas escenas es bosque (albedo 0,10–0,13), no cultivo, y el
+> LAI MODIS ≤ 0,4 casi solo aparece en laderas andinas; una banda de albedo
+> separa ambos casos. Q-AP-10 (terreno) queda abierta: con un ancla
+> caliente en el valle, las laderas andinas sobre 1000 m quedan con
+> ETrF < 0 en el preset `elev`.
 
 > **Estado de implementación (M2, 2026-11-04).** Implementado en
 > `R/metric-anchors.R` bajo las decisiones provisionales P0-8 y P0-9
