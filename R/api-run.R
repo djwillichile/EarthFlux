@@ -9,12 +9,14 @@
 #     -> lambda -> anchor conditions -> H calibration (phases A and B)
 #     -> LE -> ET_inst -> ETrF -> ETa_24
 #   keeping each intermediate product and the flags of every stage. Only
-#   ef_*() functions compute; this file passes their outputs on, converts
-#   between the terra cell order and the wide matrices of the core, and
-#   builds the flag words of the result.
+#   ef_*() functions compute; this file passes their outputs on, applies the
+#   minimum z_om of the preset (workflow_zom_floor(), flagged, M5-24),
+#   converts between the terra cell order and the wide matrices of the core,
+#   and builds the flag words of the result.
 #
 # Contents (all internal):
 #   workflow_matrix(), workflow_cells()   cell order <-> wide matrices
+#   workflow_zom_floor()                  minimum z_om of the preset (M5-24)
 #   workflow_anchor_qa()                  strict QA of the anchor candidates
 #   workflow_metric()                     the chain
 #   workflow_cell_records()               flag records -> terra cells
@@ -133,52 +135,90 @@ workflow_flag_word <- function(records, evaluated) {
 
 #' Registry rows of the workflow
 #'
-#' `EF_H_ZOM_UNDEFINED` (decision M5-13): the momentum roughness length of
-#' `ef_zom(method = "lai")` is 0 where LAI = 0, which `ef_ustar()` rejects;
-#' the presets set it to `NA` (no minimum roughness, SH-02) and flag the
-#' cell. Class I, `info` (a cause of `NA`), cell scope, bit 10 of the `H`
-#' stage (the next free bit, dev/specs/flags.md 6.4). Raised by
-#' `workflow_metric()`.
+#' `EF_H_ZOM_FLOOR_APPLIED` (decision M5-24, dev/specs/sensible-heat.md
+#' SH-02): the presets raise the momentum roughness length of
+#' `ef_zom(method = "lai")` to the minimum of the preset (0.005 m,
+#' `CANDIDATA`) where 0.018 LAI is below it, and flag the cell. Class I-m
+#' (the minimum is part of the roughness rule of the preset), `info`, cell
+#' scope, bit 1 of the `H` stage (the bit planned in dev/specs/flags.md
+#' 6.4). Registered with a `CANDIDATA` rule by decision of the author, as
+#' `EF_G_LOW_LAI_BRANCH` (exception to dev/specs/flags.md 7, point 3).
+#' Raised by `workflow_zom_floor()`. It replaces `EF_H_ZOM_UNDEFINED`
+#' (M5-13, retired with its bit kept as occupied, `ef_flag_retired()`).
 #'
 #' @return A data frame built with `ef_flag_rows()`.
 #' @noRd
 ef_flags_workflow <- function() {
   ef_flag_rows(
-    code = "EF_H_ZOM_UNDEFINED",
+    code = "EF_H_ZOM_FLOOR_APPLIED",
     stage = "H",
     severity = "info",
     scope = "cell",
-    bit = 10L,
+    bit = 1L,
     error_class = NA_character_,
     description = paste0(
-      "The momentum roughness length is undefined (0 from LAI = 0, no ",
-      "minimum roughness applied); the cell is NA from the sensible heat ",
-      "flux onwards."
+      "The momentum roughness length of the method is below the minimum ",
+      "of the preset and was raised to that minimum."
     ),
-    spec = "dev/specs/flags.md 4.2; dev/specs/presets.md 3",
+    spec = "dev/specs/flags.md 4.2; dev/specs/sensible-heat.md 5.6",
     since = "0.1.0.9000"
+  )
+}
+
+#' Minimum momentum roughness length of a preset
+#'
+#' Raises the momentum roughness length to `zom_min` where the method gives
+#' less (z_om = 0.018 LAI is 0 where LAI = 0, which `ef_ustar()` rejects),
+#' and flags those cells with `EF_H_ZOM_FLOOR_APPLIED` (decision M5-24;
+#' dev/specs/sensible-heat.md 5.6, SH-02). The minimum is `CANDIDATA`: the
+#' SEBAL Idaho manual gives z_om = 0.018 LAI only for agricultural areas
+#' (p. 27, Eq. 31a) and land-use values in its appendix 2 (water 0.0005 m,
+#' snow 0.005 m, among others) with no value for bare soil. Missing values
+#' stay missing.
+#'
+#' @param zom Numeric (matrix) of z_om from `ef_zom()` \[m\].
+#' @param zom_min Numeric scalar \[m\], `> 0`.
+#' @return A list: `zom` (same shape), `floored` (logical, same shape) and
+#'   `flags` (the result of `ef_flag_set()`, cell scope, positions of
+#'   `as.vector(zom)`).
+#' @noRd
+workflow_zom_floor <- function(zom, zom_min) {
+  check_scalar(zom_min, "zom_min", lower = 0, lower_inclusive = FALSE)
+  floored <- !is.na(zom) & zom < zom_min
+  zom[floored] <- zom_min
+  list(
+    zom = zom,
+    floored = floored,
+    flags = ef_flag_set(list(EF_H_ZOM_FLOOR_APPLIED = as.vector(floored)),
+                        scope = "cell")
   )
 }
 
 #' Strict QA of the anchor candidates
 #'
-#' Decision M5-10 / M5-17 (dev/specs/presets.md 4): a cell may hold an
-#' anchor only if no `warning` or `critical` bit of the surface stage is set
-#' in the words of LST, albedo, NDVI, LAI and emissivity, every aggregated
-#' input has all its sub-cells valid, the forcing at its overpass time is
-#' neither extrapolated nor outside the hull or the domain of the fits (GWR
-#' bits 1, 3, 6), and every input of the chain at the anchor is defined
-#' (elevation, z_om, forcing, overpass time).
+#' Decisions M5-10 / M5-17 / M5-24 (dev/specs/presets.md 4): a cell may
+#' hold an anchor only if no `warning` or `critical` bit of the surface
+#' stage, nor any bit of `exclude_codes` (`EF_SURF_LAI_ASSIGNED` in the
+#' presets: LAI set by an option, not retrieved), is set in the words of
+#' LST, albedo, NDVI, LAI and emissivity, every aggregated input has all its
+#' sub-cells valid, the forcing at its overpass time is neither
+#' extrapolated nor outside the hull or the domain of the fits (GWR bits 1,
+#' 3, 6), and every input of the chain at the anchor is defined (elevation,
+#' z_om, forcing, overpass time).
 #'
 #' @param st The surface state.
 #' @param forcing Result of `workflow_forcing()`.
 #' @param defined Logical per cell: every input of the chain defined.
+#' @param exclude_codes Character. Surface codes that exclude a cell
+#'   whatever their severity.
 #' @return Logical per cell (no `NA`).
 #' @noRd
-workflow_anchor_qa <- function(st, forcing, defined) {
+workflow_anchor_qa <- function(st, forcing, defined,
+                               exclude_codes = character(0)) {
   words <- terra::values(st$qa$flag_word, mat = TRUE)
   bits <- st$qa$flag_bits
-  bad_codes <- bits$code[bits$severity %in% c("warning", "critical")]
+  bad_codes <- union(bits$code[bits$severity %in% c("warning", "critical")],
+                     intersect(exclude_codes, bits$code))
   ok <- defined
   for (l in paste0("flags_", c("lst", "albedo", "ndvi", "lai",
                                "emissivity"))) {
@@ -212,7 +252,8 @@ workflow_anchor_qa <- function(st, forcing, defined) {
 #'   point) and `etr_source`.
 #' @return A list with `layers` (named list of wide matrices), `objects`
 #'   (the classed results of the core) and `flags` (cell records on terra
-#'   cells per layer, `evaluated` codes) and `zom_undefined` (count).
+#'   cells per layer, `evaluated` codes) and `zom_floor_applied` (count of
+#'   cells raised to the minimum z_om).
 #' @noRd
 workflow_metric <- function(x, preset, grid, scene) {
   nr <- terra::nrow(grid)
@@ -235,11 +276,11 @@ workflow_metric <- function(x, preset, grid, scene) {
                            slope = preset$radiation$slope, aspect = 0)
   pressure <- ef_air_pressure(elevation)
 
-  # Roughness and wind at the blending height ---------------------------------
+  # Roughness (with the minimum of the preset, M5-24) and wind at the
+  # blending height ------------------------------------------------------------
   zom_obj <- ef_zom(lai = lai, method = preset$roughness$method)
-  zom <- zom_obj$zom
-  zom_undefined <- !is.na(zom) & zom == 0
-  zom[zom_undefined] <- NA_real_
+  zf <- workflow_zom_floor(zom_obj$zom, preset$roughness$zom_min)
+  zom <- zf$zom
   w <- preset$wind
   u_blend <- ef_blending_wind(wind, height = w$height,
                               zom_station = w$zom_station,
@@ -319,9 +360,7 @@ workflow_metric <- function(x, preset, grid, scene) {
                      method = preset$et$method)
 
   # Flags of the core on terra cells, per layer ---------------------------------
-  zu <- ef_flag_set(list(EF_H_ZOM_UNDEFINED = as.vector(zom_undefined)),
-                    scope = "cell")
-  zu_flags <- ef_flags_combine(zu)
+  zu_flags <- ef_flags_combine(zf$flags)
   recs <- list(
     rs_in = c(workflow_cell_records(tau$flags, "rs_in", nr, nc),
               workflow_cell_records(rs$flags, "rs_in", nr, nc)),
@@ -357,6 +396,6 @@ workflow_metric <- function(x, preset, grid, scene) {
     evaluated = evaluated,
     t_rl = c(t_cold = t_cold, z_cold = z_cold),
     datum_elevation = datum,
-    zom_undefined = sum(zom_undefined)
+    zom_floor_applied = sum(zf$floored)
   )
 }

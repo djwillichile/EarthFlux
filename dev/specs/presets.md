@@ -2,7 +2,8 @@
 
 Estado: **implementada (M5, fase 2, 2026-11-06)** · Autor y mantenedor:
 Guillermo Servando Fuentes-Jaque · Decisiones: `DECISIONS.md` §1.5, M5-04
-y **M5-08 … M5-22** · Documento dueño de la arquitectura:
+y **M5-08 … M5-24** (presets versión 2 desde M5-23 y M5-24) · Documento
+dueño de la arquitectura:
 `ARCHITECTURE.md` §6.7.
 
 Este documento fija la cadena que orquesta `earthflux()`, el contenido de
@@ -73,7 +74,7 @@ V#7; M5-11) las anclas se seleccionan **antes** de Rn (P0-3;
 | 9 | Hora de paso por celda | `workflow_interp_cells()` | Interpolación lineal por celda entre las capas de los puntos medios horarios que rodean su hora de paso (O3 por celda, M5-14, M5-18); bit 6 GWR → `NA`, contado |
 | 10 | Geometría solar | `ef_solar_geometry(doy, utc_hour, lat, lon, slope = 0, aspect = 0)` | Grados → radianes |
 | 11 | Presión | `ef_air_pressure(elevación)` | Por celda en ambos presets |
-| 12 | Rugosidad, viento | `ef_zom(lai, method = "lai")`; z_om = 0 → `NA` + `EF_H_ZOM_UNDEFINED`; `ef_blending_wind(u2, height = 2, zom_station = 0.0144, d_station = 0)` | M5-13, M5-14 |
+| 12 | Rugosidad, viento | `ef_zom(lai, method = "lai")`; z_om < 0,005 m → 0,005 m + `EF_H_ZOM_FLOOR_APPLIED` (`workflow_zom_floor()`); `ef_blending_wind(u2, height = 2, zom_station = 0.0144, d_station = 0)` | M5-24 (reemplaza M5-13), M5-14 |
 | 13 | Anclas | `ef_select_anchors(..., qa = QA estricto, search_area, criteria, relax, aggregate = "mean", cell_size, origin, crs)` | §4 |
 | 14 | Onda corta | `ef_tau_sw(elevation, method = "elevation")` → `ef_rs_in(..., tau_beam = τ_sw, tau_diffuse = 0, slope = 0, method = "modelled")` | Ec. 12 exacta en el plano (hueco 4, M5-19) |
 | 15 | Onda larga | `ef_atm_emissivity(τ_sw)`, `ef_rl_in(T, ε_a)`, `ef_rl_out(lst, ε₀)` | T = T_cold (+ 0,0065·(z_frío − z) en `elev`, Ec. 12-8) |
@@ -85,8 +86,15 @@ V#7; M5-11) las anclas se seleccionan **antes** de Rn (P0-3;
 
 ## 3. Presets
 
-Dos presets (M5-09), **`CANDIDATA`**, versión interna `"1"` (registrada en
-la procedencia; un cambio de cualquier valor es una versión nueva). El
+Dos presets (M5-09), **`CANDIDATA`**, versión interna **`"2"`** (registrada
+en la procedencia; un cambio de cualquier valor es una versión nueva).
+Versiones (elemento `changes` del preset y `provenance$preset$changes`):
+
+| Versión | Fecha | Cambios |
+|---|---|---|
+| `"1"` | 2026-11-06 | Primera versión (M5-08 … M5-22) |
+| `"2"` | 2026-11-06 | Criterios de anclas recalibrados para MODIS a 1 km (M5-23, reemplaza M5-10; §4); mínimo de z_om de 0,005 m con `EF_H_ZOM_FLOOR_APPLIED` (M5-24, reemplaza M5-13); ninguna ancla en celdas con LAI asignado (`EF_SURF_LAI_ASSIGNED`) |
+ El
 estado va en la documentación y en la procedencia, **no en el nombre**
 (M5-08, que reescribe D-AP-01). Ninguno usa la pendiente: se fuerza a 0
 (proyección plana) hasta resolver RC-09; ambos usan la elevación del MDE.
@@ -126,7 +134,7 @@ estado va en la documentación y en la procedencia, **no en el nombre**
 | | variables | `etr_inst` (tasa horaria en los puntos medios), `etr_24`, `wind_speed_2m` (opción C de SPEC-5.1); `surface_covariates = character(0)` | C; GW-07 (a) |
 | Radiación | `ef_tau_sw`; `ef_rs_in` | `"elevation"`; `"modelled"`, `slope = 0`, `tau_beam = τ_sw`, `tau_diffuse = 0` | V-I en plano (V#5) |
 | G | `method` | `"bastiaanssen"` | V-I (V#14) |
-| z_om | `method`; LAI = 0 | `"lai"`; `NA` + `EF_H_ZOM_UNDEFINED` (sin mínimo) | V-I agrícola (V#16); diseño (M5-13) |
+| z_om | `method`; mínimo (`zom_min`) | `"lai"`; **0,005 m** donde 0,018·LAI < 0,005 m (LAI < 0,28), con `EF_H_ZOM_FLOOR_APPLIED` | V-I agrícola (V#16); mínimo **C** (SH-02, V#20; el manual no da z_om de suelo desnudo, ap. 2, p. 44); M5-24 |
 | Viento | `zom_station`; `d_station`; altura | 0,0144 m (0,12·0,12 m, Ec. 28 sobre césped de 0,12 m); 0; u₂ a 2 m → u₂₀₀ por celda | V-I forma (V#23); h C (SH-04); M5-14 |
 | λ | `method` | `"constant"` | V (P0-7) |
 | Anclas | criterios, relajación, QA | §4 | **C** (M5-10) |
@@ -144,32 +152,55 @@ paso), `modis_matching` (MP-07, MP-08, umbral de `min_valid_fraction`),
 `lai_nonveg` (MP-06), `reference_et_time` (WF-09, WF-11), `regionalization`
 (IDW C), `era5` (forzamiento grillado, `instant_values`, elevación nativa,
 exclusión de celdas marinas), `station_roughness` (h = 0,12 m, SH-04),
-`zom_zero` (SH-02), `wind_time` (M5-14), `flat_projection` (RC-09).
+`zom_floor` (mínimo de 0,005 m, SH-02, M5-24), `wind_time` (M5-14),
+`flat_projection` (RC-09).
 
 No bloquean (formas V-I/V): Rn, τ, ε_a, RL↓/RL↑, G, z_om por LAI, u*, rah,
 ψ, L, dT, condiciones de borde, LE, ET_inst, ETrF, ETa₂₄, λ, Ecs. 12-7 y
 12-8, ETr₂₄ como suma horaria (Ec. 44).
 
-## 4. Criterios de anclas (ambos presets; `status = "CANDIDATA"`; M5-10)
+## 4. Criterios de anclas (ambos presets; `status = "CANDIDATA"`; M5-23)
 
-Fuente: guías del manual, ap. 7 (V#42: frío α 0,22–0,24, LAI 4–6 /
-cobertura plena LAI > 3; caliente LAI 0–0,4, cerca de la estación),
-ensanchadas para píxeles mixtos de 1 km (T-18) — **el ensanche no tiene
-fuente**. A revisar con la escena del Maule.
+Versión 2 (M5-23, reemplaza los criterios M5-10 de la versión 1).
+Intención física del manual (Waters et al., 2002, pp. 23 y 30–31; ap. 7,
+pp. 66–74; V#42): frío = vegetación agrícola de cobertura plena bien
+regada, "very cold, but not extremely cold"; caliente = suelo agrícola
+desnudo y seco, con albedo como el de otros campos secos, no desierto,
+asfalto ni ladera de montaña. Los umbrales para píxeles de 1 km se fijaron
+con la distribución de NDVI y albedo de las escenas de Cauquenes y del
+Maule (2019-02-15; `verification/anchors-m5-23.md`), **sin fuente
+primaria**.
 
-| Elemento | Valor |
-|---|---|
-| Frío | `lai >= 3` (abs.), `albedo between c(0.18, 0.25)` (abs.), `ndvi >= 0.90` (percentil) |
-| Caliente | `lai <= 0.4` (abs.), `ndvi > 0` (abs.), `albedo between c(0.10, 0.35)` (abs.) |
-| Homogeneidad | `ef_homogeneity("lst", window = 3, stat = "sd", max = 1.5, window_na = "exclude")` |
-| Selección | frío `ef_anchor_pick("lst", "lowest_fraction", 0.2)`; caliente `ef_anchor_pick("lst", "highest_fraction", 0.2)` |
-| Dominio / cuantil | `percentile_domain = "land"`, `quantile_type = 7` |
-| `relax` | un paso: frío `lai >= 2`, el resto igual → `EF_ANCHOR_CRITERIA_RELAXED` |
-| QA de anclas (estricto, MP-09) | sin bits `warning`/`critical` en `flags_lst`, `flags_albedo`, `flags_ndvi`, `flags_lai`, `flags_emissivity` (bits leídos del registro por severidad); todas las `valid_fraction` = 1; sin bits 1, 3 o 6 GWR en las palabras del forzamiento a la hora de paso; y la cadena definida en la celda (elevación, z_om > 0, forzamiento, hora de paso) — M5-22 |
+| Elemento | Valor (v2) | v1 (M5-10) |
+|---|---|---|
+| Frío | `ndvi >= 0.90` (percentil), `albedo between c(0.14, 0.26)` (abs.) | `lai >= 3`, `albedo between c(0.18, 0.25)`, `ndvi >= 0.90` (percentil) |
+| Caliente | `ndvi <= 0.10` (percentil), `ndvi > 0` (abs.), `albedo between c(0.18, 0.35)` (abs.) | `lai <= 0.4`, `ndvi > 0`, `albedo between c(0.10, 0.35)` |
+| Homogeneidad | `ef_homogeneity("lst", window = 3, stat = "sd", max = 1.5, window_na = "exclude")` | igual |
+| Selección | frío `ef_anchor_pick("lst", "lowest_fraction", 0.2)`; caliente `ef_anchor_pick("lst", "highest_fraction", 0.2)`; `aggregate = "mean"` | igual |
+| Dominio / cuantil | `percentile_domain = "land"`, `quantile_type = 7` | igual |
+| `relax` | **un** paso: frío `ndvi >= 0.80`, caliente `ndvi <= 0.20` (percentiles), el resto igual → `EF_ANCHOR_CRITERIA_RELAXED` | un paso: frío `lai >= 2` |
+| QA de anclas (estricto, MP-09) | sin bits `warning`/`critical` en `flags_lst`, `flags_albedo`, `flags_ndvi`, `flags_lai`, `flags_emissivity` (bits leídos del registro por severidad) **ni `EF_SURF_LAI_ASSIGNED`** (LAI asignado por `lai_nonveg`, no recuperado: clases urbana, desnuda, agua, nieve; `anchors$qa_exclude_codes`); todas las `valid_fraction` = 1; sin bits 1, 3 o 6 GWR en las palabras del forzamiento a la hora de paso; y la cadena definida en la celda (elevación, z_om, forzamiento, hora de paso) — M5-22 | sin la exclusión de LAI asignado (lo hacía, de hecho, z_om `NA` en LAI = 0, M5-13) |
 
-Consecuencia de M5-13 (z_om indefinida donde LAI = 0): el ancla caliente
-nunca cae en una celda con LAI = 0 (sin z_om no hay rah); se busca entre
-0 < LAI ≤ 0,4.
+Motivos (evidencia en `verification/anchors-m5-23.md` §3):
+
+- **Frío, albedo ≥ 0,14.** Las celdas de NDVI más alto de ambas escenas son
+  bosques y plantaciones (albedo 0,10–0,13); las del valle, de cultivo,
+  0,14–0,21. El manual pide cultivo agrícola (la rugosidad de los bosques,
+  0,5 m en su ap. 2, tampoco es la de 0,018·LAI). El límite 0,26 ensancha
+  la guía de 0,22–0,24 de la alfalfa.
+- **Sin LAI absoluto.** El LAI MODIS de 1 km no discrimina el frío (3–6 en
+  bosques y cultivos) y el LAI ≤ 0,4 del caliente lo alcanzan 1–3 % de las
+  celdas utilizables, en el Maule casi solo laderas andinas.
+- **Caliente, albedo ≥ 0,18.** Los campos secos de NDVI bajo del valle
+  (< 300 m) tienen albedo mediano 0,19–0,20; las laderas andinas secas,
+  percentil 95 de 0,165.
+
+Resultado (coherencia, no validación): las anclas de v2 caen en el valle en
+ambas escenas; en Cauquenes 20,6 % de las celdas sigue con ETrF > 1,05 (el
+ancla fría cae en el borde de plantaciones costeras: la escena casi no
+tiene cultivo regado de cobertura plena) y en el Maule las laderas sobre
+1000 m quedan con ETrF < 0 (Ts_datum extrapolado sobre el ancla caliente;
+31,9 % de la escena con `elev`, 14,0 % con `flat`). Ver §8.
 
 ## 5. Objeto `earthflux_result`
 
@@ -205,7 +236,7 @@ token de Earthdata nunca llega a ella y la clave de Open-Meteo solo como
 | 3 | Orden anclas → Rn; Ec. 12-8 | §2, pasos 13–15 |
 | 4 | τ "elevation" → Rs↓ | `tau_beam = τ_sw`, `tau_diffuse = 0`, `slope = 0`; la `diffuse_fraction` resultante no se reutiliza. M5-19 |
 | 5 | MDE → núcleo | Presión, `pressure` de anclas y píxeles, τ por píxel (`elev`), Ts_datum; `NA` del MDE contados; `aspect` 0 |
-| 6 | Exclusiones antes del núcleo | Críticos SURF, bit 6 GWR y z_om = 0 → `NA` contados; `EF_H_ZOM_UNDEFINED` registrado. `EF_ANCHOR_FORCING_EXTRAPOLATED` **no** se registra: el QA estricto excluye de las anclas las celdas con bits 1/3 (no puede darse) |
+| 6 | Exclusiones antes del núcleo | Críticos SURF y bit 6 GWR → `NA` contados; z_om bajo el mínimo → 0,005 m con `EF_H_ZOM_FLOOR_APPLIED` (contado en `counts$zom_floor_applied`; M5-24, que reemplaza el `NA` + `EF_H_ZOM_UNDEFINED` de M5-13). `EF_ANCHOR_FORCING_EXTRAPOLATED` **no** se registra: el QA estricto excluye de las anclas las celdas con bits 1/3 (no puede darse) |
 | 7 | Ráster ↔ núcleo | Vectores en orden de celdas de `terra`; matrices anchas para el núcleo (`workflow_matrix()`); índices de flags convertidos a celdas de `terra` |
 | 8 | AOI y multitesela | Máscara del polígono; rechazo de varias teselas en `workflow_check_aoi()` antes de descargar |
 | 9 | Flags y procedencia | §5; `reference` única en ETr, anclas, ETrF y ETa por construcción (todas leen `preset$et$reference`) |
@@ -218,8 +249,9 @@ orientación en la radiación (RC-09) y ajustes de montaña de z_om y viento
 (SH-03, SH-07); flags heredados en las anclas (`inherited_flags`); GWR (C3)
 como opción de un preset avanzado; distancia geodésica del ancla a la
 estación en `anchors$pixels` (hoy solo se usa para el área de búsqueda);
-regla de G y z_om para agua y nieve (G-D4); evaluación de los criterios de
-anclas con la escena del Maule (M5-10).
+regla de G y z_om para agua y nieve (G-D4); tratamiento del relieve en la
+calibración (laderas andinas con ETrF < 0 en el Maule, M5-23) y selección
+sobre Ts o Ts_datum (D-AP-07).
 
 ## 7. Tests (`tests/testthat/test-earthflux.R`, sin red)
 
@@ -231,9 +263,14 @@ estaciones y respuesta de Open-Meteo **sintéticos**
 (sin descargas); rechazo multitesela antes de descargar; opciones pasadas a
 cada descarga; equivalencia con la cadena paso a paso (`elev` y `flat`);
 τ y RL↓ constantes en `flat` y variables en `elev`; capas, objetos, palabras
-y métodos `print()`, `summary()`, `plot()`; máscara del AOI; z_om indefinida
-(caso positivo y negativo de `EF_H_ZOM_UNDEFINED`, bit 10); procedencia con
-cada opción; ruta experta; C2 con varias estaciones; ERA5 (opciones,
+y métodos `print()`, `summary()`, `plot()`; máscara del AOI; mínimo de
+z_om (caso positivo y negativo de `EF_H_ZOM_FLOOR_APPLIED`, bit 1; ninguna
+ancla en celdas con LAI asignado; `workflow_zom_floor()`); procedencia con
+cada opción y los cambios entre versiones; criterios de anclas de la
+versión 2 (reglas, paso de relajación, anclas que cumplen las bandas de
+albedo y los umbrales de NDVI calculados); ruta experta; C2 con varias
+estaciones sobre el AOI completo (con los criterios v1 el frío quedaba
+vacío y se usaba un AOI menor); ERA5 (opciones,
 celdas marinas excluidas, `EF_WS_GRIDDED_FORCING`, ni la clave ni el token
 en la procedencia ni en los flags); meteorología insuficiente.
 
@@ -249,7 +286,8 @@ en la procedencia ni en los flags); meteorología insuficiente.
    (≈ 290 K), y muchas celdas quedan más frías que el ancla
    (`EF_H_DT_EXTRAPOLATED_COLD`), con ETrF > 1,05. Evidencia para revisar
    M5-10 (en especial el límite inferior del albedo frío) con la escena del
-   Maule.
+   Maule. *Revisado por M5-23 (versión 2, §4; evaluación en
+   `verification/anchors-m5-23.md`).*
 2. **Corrida real** (2026-11-06; AOI −72,8…−71,9 / −36,3…−35,6, ERA5 vía
    Open-Meteo, `idaho2002_elev`): 7492 celdas en el AOI, 6583 con ETa₂₄;
    ETa₂₄ de −3,6 a 15,5 mm d⁻¹ (mediana 4,9); ETrF de −0,53 a 2,71
@@ -262,3 +300,17 @@ en la procedencia ni en los flags); meteorología insuficiente.
    recuperado nulo): z_om `NA` (`EF_H_ZOM_UNDEFINED`) y ETa₂₄ `NA` en ellas
    (M5-13 con M5-17). Si se quiere ETa en suelo desnudo, urbano o agua hace
    falta una regla de z_om para LAI = 0 (SH-02) o un `lai_nonveg` distinto.
+   *Precisión (2026-11-06):* 789 de esas 805 celdas no tienen LST (mar y
+   agua); solo 16 tenían LST y quedaban sin ETa por la rugosidad. Resuelto
+   por M5-24 (mínimo de 0,005 m con flag).
+4. **Evaluación de M5-23 y M5-24** (2026-11-06; Cauquenes y Maule
+   −72,8…−70,3 / −35,87…−34,7, `verification/anchors-m5-23.md`; coherencia,
+   no validación). Cauquenes v1 → v2: ancla fría 302,74 → 299,43 K (rango
+   en la escena 0,34 → 0,20), caliente 307,17 → 307,14 K; ETrF > 1,05
+   30,9 → 20,6 %, mediana 0,69 → 0,45, p99 2,26 → 1,92. Maule v1 → v2:
+   ancla caliente de laderas andinas (1931 m, 313,83 K) → campos del valle
+   (mediana 143 m, 307,24 K); ETrF del valle (< 300 m) mediana 1,04 → 0,97,
+   > 1,05 47 → 34 %; sobre 1000 m mediana 0,56 → −2,26 (84,7 % < 0): una
+   sola recta dT(Ts_datum) calibrada en el valle no representa la
+   cordillera. El mínimo de z_om agrega 15 celdas con ETa en Cauquenes y
+   4259 en el Maule (roca andina, ETrF mediana −2,97, marcadas).

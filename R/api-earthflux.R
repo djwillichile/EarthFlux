@@ -89,11 +89,12 @@
 #'     `EF_GWR_SINGLE_STATION`), the anchors and the calibration, and the
 #'     cell flags of the METRIC chain on the cells of the grid (with
 #'     `target` = layer);
-#'   * `provenance`: the preset (name, version, status, unverified
-#'     elements), every effective option, the values derived for the scene
-#'     (overpass times, day and UTC offset of the daily reference ET,
-#'     regionalization method, datum elevation, ...), the counts of excluded
-#'     cells, the MODIS granules, the NASADEM tiles, the Open-Meteo request
+#'   * `provenance`: the preset (name, version, changes between versions,
+#'     status, unverified elements), every effective option, the values
+#'     derived for the scene (overpass times, day and UTC offset of the
+#'     daily reference ET, regionalization method, datum elevation, ...),
+#'     the counts of excluded cells (and of cells raised to the minimum
+#'     z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
 #'     (without key) or the station table, attributions, the codes
 #'     evaluated, versions, the `future` plan and timings.
 #'
@@ -302,7 +303,8 @@ earthflux <- function(aoi, date, weather, preset,
   }
   defined_forcing <- !is.na(x$etr_inst) & !is.na(x$etr_24) &
     !is.na(x$wind_speed_2m)
-  x$anchor_qa <- workflow_anchor_qa(st, fc, in_aoi & defined_forcing)
+  x$anchor_qa <- workflow_anchor_qa(st, fc, in_aoi & defined_forcing,
+                                    p$anchors$qa_exclude_codes)
 
   # METRIC chain (datum of Ts: the station, or the cold calibration point
   # when there is no representative station, set after the selection)
@@ -458,7 +460,7 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
     fun = "earthflux",
     preset = list(name = p$name, version = p$version, status = p$status,
                   source = p$source, decisions = p$decisions,
-                  unverified = p$unverified),
+                  changes = p$changes, unverified = p$unverified),
     options = options,
     scene = list(
       date = format(date),
@@ -504,7 +506,7 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
       surface_critical_excluded = sum(ex$exclude & in_aoi),
       ter$counts,
       fc$counts,
-      zom_undefined = mt$zom_undefined,
+      zom_floor_applied = mt$zom_floor_applied,
       eta_24_valid = cnt_eta
     ),
     surface_critical_by_code = ex$counts,

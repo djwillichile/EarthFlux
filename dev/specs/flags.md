@@ -27,8 +27,8 @@ mayúsculas (`EF_*`); las descripciones del registro, en inglés (en-GB,
 |---|---|
 | Filas de inventario (propuestas por documento, §2) | 122 |
 | Códigos/condiciones distintos inventariados | 120 (119 con nombre + 1 sin nombre: "Rn negativo") |
-| Códigos tras normalizar (§3–§4) | **115** (112 de la normalización de M1 + `EF_SURF_LAI_ASSIGNED`, agregado en M4 con la opción `lai_nonveg`, MP-06, + `EF_WS_GRIDDED_FORCING`, agregado en M5 con el forzamiento ERA5 vía Open-Meteo, M5-07, + `EF_H_ZOM_UNDEFINED`, agregado en M5 con `earthflux()`, M5-13; §4.2) |
-| Clase I — inequívocos, sin umbral: registrables con su módulo | **76** (67 registrados + 9 pendientes al 2026-11-06, §4.4) |
+| Códigos tras normalizar (§3–§4) | **115** (112 de la normalización de M1 + `EF_SURF_LAI_ASSIGNED`, agregado en M4 con la opción `lai_nonveg`, MP-06, + `EF_WS_GRIDDED_FORCING`, agregado en M5 con el forzamiento ERA5 vía Open-Meteo, M5-07, + `EF_H_ZOM_UNDEFINED`, agregado en M5 con `earthflux()`, M5-13, y **retirado** por M5-24 con su bit ocupado; §4.2, §7) |
+| Clase I — inequívocos, sin umbral: registrables con su módulo | **76** (67 registrados + 8 pendientes + 1 retirado al 2026-11-06, §4.4) |
 | Clase II — requieren umbral (o verificación de fuente): `TODO`, no registrar | **35** |
 | Clase III — imposibilidad física/lógica: **error** en el núcleo; flag `critical` solo en módulos de datos | **4** |
 | Fusiones (mismo hecho, nombres distintos) | 5 (eliminan 5 códigos) |
@@ -479,6 +479,19 @@ rechaza y los presets no aplican un mínimo (SH-02, `EF_H_ZOM_FLOOR_APPLIED`
 sigue sin registrar); la celda queda `NA` desde H y se marca. Ningún código
 existente lo significaba. Lo levanta `workflow_metric()`; tests en
 `test-earthflux.R`.
+*Actualización (2026-11-06, `DECISIONS.md` M5-24):* los presets aplican el
+mínimo z_om = 0,005 m (SH-02, `CANDIDATA`) y `ef_flags_workflow()`
+registra en su lugar **`EF_H_ZOM_FLOOR_APPLIED`** (I-m, `info`, `cell`,
+bit 1 de `H`, el bit del plan §6.4), levantado por `workflow_zom_floor()`
+(`R/api-run.R`) con tests positivo y negativo (`test-earthflux.R`). Es
+una excepción explícita a §7, punto 3 (regla `CANDIDATA`, decisión del
+autor), como `EF_G_LOW_LAI_BRANCH`. `EF_H_ZOM_UNDEFINED` deja de poder
+levantarse (con el mínimo, z_om > 0 siempre) y se **retira**: sale del
+registro, su bit 10 queda ocupado y figura en la lista de retirados
+`ef_flag_retired()` (`R/diagnostics.R`; §7, punto 6; test R14). Se
+retira aunque nunca se publicó (solo existió en la versión de desarrollo
+0.1.0.9000), para no reutilizar un bit que pudo escribirse en palabras de
+resultados de esa versión.
 Total registrado: 71 códigos (§4.4). Las demás filas de
 este catálogo siguen sin registrar y se registran según §7.
 
@@ -615,7 +628,7 @@ este catálogo siguen sin registrar y se registran según §7.
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
-| `EF_H_ZOM_FLOOR_APPLIED` | `EF_ZOM_FLOOR_APPLIED` | prefijo | I-m | info | cell | 1 | Mínimo 0.005 m no verificado (SH-02): no se registra antes de verificarlo |
+| `EF_H_ZOM_FLOOR_APPLIED` | `EF_ZOM_FLOOR_APPLIED` | prefijo | I-m (registrado en `ef_flags_workflow()`; lo levanta `earthflux()`, `R/api-run.R`; M5-24) | info | cell | 1 | Mínimo 0,005 m de los presets, `CANDIDATA` (SH-02): registrado con la regla `CANDIDATA` por decisión del autor (excepción a §7, punto 3, como `EF_G_LOW_LAI_BRANCH`) |
 | `EF_H_ZOM_TERRAIN_ADJUSTED` | `EF_ZOM_TERRAIN_ADJUSTED` | prefijo | I | info | cell | 2 | Solo con el método de terreno |
 | `EF_H_WIND_FLOOR_APPLIED` | `EF_WIND_FLOOR_APPLIED` | prefijo + orden | I | warning | cell, object | 3 | Solo si SH-06 admite el piso; valor del usuario en la procedencia |
 | `EF_H_USTAR_INVALID` | `EF_USTAR_INVALID` | prefijo | I (registrado) | warning | cell | 4 | En un ancla: `earthflux_calibration_error` |
@@ -626,7 +639,7 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_H_GT_AVAILABLE` | `EF_H_EXCEEDS_AVAILABLE` | renombre (vocabulario) | I (registrado) | warning | cell | 9 | Causa de `EF_ET_NEGATIVE` cuando Rn − G > 0 |
 | `EF_H_CALIBRATION_NOT_CONVERGED` | `EF_H_NOT_CONVERGED` | renombre (C11) | I (registrado) | critical* | object | — | Además `earthflux_convergence_warning`; a, b o u* no finitos en un ancla: `earthflux_calibration_error` |
 | `EF_H_DT_SLOPE_NONPOSITIVE` | `EF_DT_SLOPE_NONPOSITIVE` | prefijo | I (registrado) | critical* | object | — | Ts_hot ≤ Ts_cold: error (anclas invertidas / b indefinida) |
-| `EF_H_ZOM_UNDEFINED` | — (nuevo, M5; `DECISIONS.md` M5-13) | nuevo | I (registrado en `ef_flags_workflow()`; lo levanta `earthflux()`, `R/api-run.R`) | info* | cell | 10 | z_om = 0 (LAI = 0) sin mínimo aplicado: z_om `NA` y la celda `NA` desde H (causa de `NA`); `ef_ustar()` rechaza z_om = 0 con `earthflux_domain_error` |
+| `EF_H_ZOM_UNDEFINED` | — (nuevo, M5; `DECISIONS.md` M5-13) | nuevo | **retirado** (M5-24, 2026-11-06; `ef_flag_retired()`) | info* | cell | 10 (ocupado) | Significaba: z_om = 0 (LAI = 0) sin mínimo aplicado, z_om `NA` y la celda `NA` desde H. Sustituto: `EF_H_ZOM_FLOOR_APPLIED` (los presets aplican el mínimo) |
 | `EF_H_WIND_LOW` | `EF_LOW_WIND` | prefijo + orden | II | warning | cell, object | libre | u_b = 0 en un ancla: `earthflux_calibration_error` |
 | `EF_H_STABILITY_STRONG` | `EF_STRONGLY_STABLE` | prefijo + orden | II | warning | cell | libre | `TODO` |
 
@@ -691,6 +704,13 @@ clase I.
 (`R/api-run.R`) con sus tests positivo y negativo (`test-earthflux.R`):
 **71 códigos** registrados, 67 de clase I (`H` 9).
 
+Mínimo de z_om de los presets (M5-24, 2026-11-06): `EF_H_ZOM_FLOOR_APPLIED`
+(I-m, `info`, `cell`, bit 1 de `H`) entra en `ef_flags_workflow()` y
+`EF_H_ZOM_UNDEFINED` se retira (bit 10 ocupado; lista de retirados en
+`ef_flag_retired()`, `R/diagnostics.R`): siguen **71 códigos**
+registrados, 67 de clase I (`H` 9); la clase I suma 76 = 67 registrados +
+8 pendientes + 1 retirado.
+
 Superficie (M4, 2026-11-04): los 14 `EF_SURF_*` de clase I y el de clase
 III están registrados en `ef_flags_surface()` (`R/modis-qa.R`): 12
 levantados por los decodificadores (bits 1–12), `EF_SURF_OVERPASS_MISSING`
@@ -706,7 +726,8 @@ M2 (armonización M2): 28 códigos, todos de clase I: `EF_INPUT_NA` y
 I (incluido el I-m `EF_G_LOW_LAI_BRANCH`, registrado con su método
 `CANDIDATA` como excepción a §7, punto 3; `DECISIONS.md` §1.2, M2-03), los
 10 `EF_ANCHOR_*` de clase I y 8 de los 11 `EF_H_*` de clase I. Sin
-registrar en M2: `EF_H_ZOM_FLOOR_APPLIED` (I-m, SH-02),
+registrar en M2: `EF_H_ZOM_FLOOR_APPLIED` (I-m, SH-02; registrado en M5,
+M5-24),
 `EF_H_ZOM_TERRAIN_ADJUSTED` (método de terreno no implementado),
 `EF_H_WIND_FLOOR_APPLIED` (SH-06) y los 4 `EF_ET_PERIOD_*` de clase I
 (`ef_et_period()` no implementada).
@@ -733,7 +754,7 @@ de clase III `EF_GWR_OUT_OF_DOMAIN` (celda, bit 6, `critical`, contraparte
 la guardia.
 
 De la clase I, 3 son I-m (`EF_WS_RS_RSO_LIMITED`, `EF_G_LOW_LAI_BRANCH`,
-`EF_H_ZOM_FLOOR_APPLIED`). Varios de clase I están además **condicionados
+`EF_H_ZOM_FLOOR_APPLIED`; los tres registrados). Varios de clase I están además **condicionados
 a una decisión** de su especificación (el flag solo existe si se adopta
 la opción): `EF_GWR_TRANSFORMED` (GW-12), `EF_H_WIND_FLOOR_APPLIED`
 (SH-06), `EF_H_ZOM_TERRAIN_ADJUSTED` (método de terreno),
@@ -915,7 +936,7 @@ reutiliza ni se renumera (aunque el código se retire).
 | 7 | `EF_SURF_CLOUD_ADJACENT` | libre | | | `EF_H_DT_EXTRAPOLATED_COLD` | |
 | 8 | `EF_SURF_SNOW` | | | | `EF_H_NEGATIVE` | |
 | 9 | `EF_SURF_WATER` | | | | `EF_H_GT_AVAILABLE` | |
-| 10 | `EF_SURF_SALT_PAN` | | | | `EF_H_ZOM_UNDEFINED` | |
+| 10 | `EF_SURF_SALT_PAN` | | | | `EF_H_ZOM_UNDEFINED` (retirado, ocupado) | |
 | 11 | `EF_SURF_LAI_BACKUP` | | | | | |
 | 12 | `EF_SURF_ALBEDO_MAGNITUDE` | | | | | |
 | 13 | `EF_SURF_OVERPASS_MISSING` | | | | | |
@@ -1005,7 +1026,7 @@ Cada resultado (`earthflux_result`, `earthflux_surface`,
    umbral se expone como parámetro registrado en la procedencia; sin
    referencia, el parámetro no tiene valor por defecto y el flag no se
    evalúa (`weather-forcing.md` §3.1, punto 3).
-3. **Clase I-m**: se registra con el método, que a su vez exige `VERIFICADA`.
+3. **Clase I-m**: se registra con el método, que a su vez exige `VERIFICADA`. Excepciones explícitas, decididas por el autor y registradas: `EF_G_LOW_LAI_BRANCH` (M2, `DECISIONS.md` §1.0) y `EF_H_ZOM_FLOOR_APPLIED` (M5-24), registrados con su regla `CANDIDATA`.
 4. **Clase III**: se registra junto con la contraparte de error del núcleo
    y la política que excluye por defecto; los tests cubren ambos caminos.
 5. **Nombres**: el código registrado es el de §4.2. Un nombre distinto
@@ -1014,7 +1035,9 @@ Cada resultado (`earthflux_result`, `earthflux_surface`,
    cambio de condición o de severidad es un código nuevo o una entrada
    explícita en `NEWS.md`; un código retirado conserva su bit como
    ocupado. La lista de retirados (código, etapa, bit, versión, sustituto)
-   se crea con el primer retiro.
+   se crea con el primer retiro. *Creada el 2026-11-06* con
+   `EF_H_ZOM_UNDEFINED` (M5-24): `ef_flag_retired()` en `R/diagnostics.R`;
+   `ef_flag_registry_build()` rechaza un código o un bit retirado (R14).
 7. **Guardia**: los códigos de clase II se listan en un vector de guardia
    del test (§8, R10) que verifica su **ausencia** del registro; el cambio
    que registra uno lo quita de la guardia (`soil-heat-flux.md` §9.5 ya pide
@@ -1076,7 +1099,8 @@ Notas:
   diagnósticos (`ef_flag_set()`, `ef_input_na_flags()`,
   `ef_flags_combine()`). R18 se garantiza en `ef_flag()`. R12–R14, R16 y R19 entran
   con la palabra de bits, la lista de retirados, `terra` y los flags de
-  procedencia.
+  procedencia. R14 está implementado desde el 2026-11-06 (primer retiro,
+  M5-24).
 - La expresión regular `^EF_[A-Z0-9_]+$` se sustituyó por la de R2
   (cerrada), que excluye por construcción las constantes `EF_*` de C9
   (`R/constants.R`).

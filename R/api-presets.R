@@ -34,26 +34,45 @@ workflow_preset_names <- function() {
 
 #' Anchor selection criteria of the idaho2002 presets
 #'
-#' Criteria of dev/specs/presets.md section 4 (decision M5-10, `CANDIDATA`):
-#' the guides of Waters et al. (2002), appendix 7 (cold: albedo 0.22-0.24,
-#' LAI 4-6, full cover with LAI > 3; hot: LAI 0-0.4), widened for mixed
-#' 1 km pixels without a source (T-18).
+#' Criteria of dev/specs/presets.md section 4 (decision M5-23, preset
+#' version 2, `CANDIDATA`), recalibrated for 1 km MODIS pixels on the
+#' Cauquenes and Maule scenes of 2019-02-15
+#' (dev/verification/anchors-m5-23.md). Physical intent of the SEBAL Idaho
+#' manual (Waters et al., 2002, pp. 23 and 30-31, appendix 7): cold =
+#' well-watered full-cover (agricultural) vegetation, very cold but not
+#' extremely cold; hot = dry bare agricultural soil, with an albedo similar
+#' to the other dry fields, not a desert, rock or mountain slope.
 #'
-#' @param cold_lai Numeric. Minimum LAI of the cold candidates (3 in the
-#'   criteria, 2 in the relaxation step).
+#' * cold: NDVI among the highest of the scene (percentile `cold_ndvi`),
+#'   white-sky albedo in \[0.14, 0.26\] (the alfalfa guide of 0.22-0.24
+#'   widened; the lower limit leaves out dark evergreen canopies, forest
+#'   plantations and native forest, albedo 0.10-0.13 in both scenes);
+#' * hot: NDVI among the lowest of the scene (percentile `hot_ndvi`),
+#'   NDVI > 0, albedo in \[0.18, 0.35\] (dry lowland fields: median
+#'   0.19-0.20; dark Andean slopes: 95th percentile 0.165);
+#' * the coldest 20 % of the cold candidates and the hottest 20 % of the hot
+#'   candidates, after the homogeneity filter (sd of LST <= 1.5 K in 3 x 3
+#'   cells).
+#'
+#' The absolute LAI guides of the manual (cold LAI > 3, hot LAI 0-0.4) are
+#' not used: with MODIS LAI at 1 km, LAI <= 0.4 is reached by 1-3 % of the
+#' usable cells and, in the Maule scene, mostly on Andean slopes.
+#'
+#' @param cold_ndvi,hot_ndvi Numeric. NDVI percentiles of the cold (lower
+#'   limit) and hot (upper limit) candidates: 0.90 and 0.10 in the criteria,
+#'   0.80 and 0.20 in the relaxation step.
 #' @return An `ef_anchor_criteria()` object.
 #' @noRd
-workflow_anchor_criteria <- function(cold_lai = 3) {
+workflow_anchor_criteria <- function(cold_ndvi = 0.90, hot_ndvi = 0.10) {
   ef_anchor_criteria(
     cold = list(
-      ef_anchor_rule("lai", ">=", cold_lai, scale = "absolute"),
-      ef_anchor_rule("albedo", "between", c(0.18, 0.25), scale = "absolute"),
-      ef_anchor_rule("ndvi", ">=", 0.90, scale = "percentile")
+      ef_anchor_rule("ndvi", ">=", cold_ndvi, scale = "percentile"),
+      ef_anchor_rule("albedo", "between", c(0.14, 0.26), scale = "absolute")
     ),
     hot = list(
-      ef_anchor_rule("lai", "<=", 0.4, scale = "absolute"),
+      ef_anchor_rule("ndvi", "<=", hot_ndvi, scale = "percentile"),
       ef_anchor_rule("ndvi", ">", 0, scale = "absolute"),
-      ef_anchor_rule("albedo", "between", c(0.10, 0.35), scale = "absolute")
+      ef_anchor_rule("albedo", "between", c(0.18, 0.35), scale = "absolute")
     ),
     homogeneity = ef_homogeneity("lst", window = 3, stat = "sd", max = 1.5,
                                  window_na = "exclude"),
@@ -62,9 +81,10 @@ workflow_anchor_criteria <- function(cold_lai = 3) {
     percentile_domain = "land",
     quantile_type = 7,
     source = paste0(
-      "EarthFlux preset idaho2002 v1 (dev/specs/presets.md 4; DECISIONS.md ",
-      "M5-10): guides of Waters et al. (2002), appendix 7, widened for 1 km ",
-      "MODIS pixels without a source"
+      "EarthFlux preset idaho2002 v2 (dev/specs/presets.md 4; DECISIONS.md ",
+      "M5-23): physical intent of Waters et al. (2002), pp. 23, 30-31 ",
+      "and appendix 7, with thresholds for 1 km MODIS pixels set from the ",
+      "Cauquenes and Maule scenes of 2019-02-15 (no primary source)"
     ),
     status = "CANDIDATA"
   )
@@ -82,9 +102,10 @@ workflow_preset_idaho2002 <- function(terrain) {
   lapse <- if (elev) 0.0065 else 0
   unverified <- c(
     anchor_criteria = paste0(
-      "anchor selection criteria (thresholds, widening for 1 km pixels, ",
-      "relaxation step, strict QA of the anchors): CANDIDATA (VERIFICATION ",
-      "row 42; M5-10)"
+      "anchor selection criteria (NDVI percentiles, albedo bands, ",
+      "relaxation step, strict QA of the anchors), set for 1 km MODIS ",
+      "pixels from two scenes without a primary source: CANDIDATA ",
+      "(VERIFICATION row 42; M5-23)"
     ),
     modis_albedo = paste0(
       "MODIS broadband white-sky albedo as the albedo of the energy balance ",
@@ -120,9 +141,13 @@ workflow_preset_idaho2002 <- function(terrain) {
       "28 of the manual over a 0.12 m reference grass): height CANDIDATA ",
       "(SH-04)"
     ),
-    zom_zero = paste0(
-      "z_om undefined (NA, EF_H_ZOM_UNDEFINED) where LAI = 0: design ",
-      "choice without verified rule (SH-02)"
+    zom_floor = paste0(
+      "minimum z_om of 0.005 m where 0.018 LAI is below it ",
+      "(EF_H_ZOM_FLOOR_APPLIED): value of METRIC implementations without a ",
+      "consulted primary source; the SEBAL Idaho manual gives 0.018 LAI only ",
+      "for agricultural areas and land-use values in its appendix 2 (water ",
+      "0.0005 m, snow 0.005 m) with no bare-soil value: CANDIDATA (SH-02, ",
+      "M5-24)"
     ),
     wind_time = paste0(
       "wind at the overpass time by linear interpolation between hourly ",
@@ -136,7 +161,7 @@ workflow_preset_idaho2002 <- function(terrain) {
   structure(
     list(
       name = name,
-      version = "1",
+      version = "2",
       status = "CANDIDATA",
       description = if (elev) {
         paste0(
@@ -156,10 +181,19 @@ workflow_preset_idaho2002 <- function(terrain) {
       },
       source = paste0(
         "Waters et al. (2002), SEBAL Idaho manual (pp. 10-38; appendices 7, ",
-        "8 and 12); dev/specs/presets.md; dev/DECISIONS.md M5-08 to M5-17"
+        "8 and 12); dev/specs/presets.md; dev/DECISIONS.md M5-08 to M5-24"
       ),
-      decisions = c("M5-04", "M5-08", "M5-09", "M5-10", "M5-11", "M5-12",
-                    "M5-13", "M5-14", "M5-15", "M5-16", "M5-17"),
+      decisions = c("M5-04", "M5-08", "M5-09", "M5-11", "M5-12", "M5-14",
+                    "M5-15", "M5-16", "M5-17", "M5-23", "M5-24"),
+      changes = c(
+        "1" = "first version (2026-11-06; M5-08 to M5-22)",
+        "2" = paste0(
+          "anchor criteria recalibrated for 1 km MODIS pixels (M5-23, ",
+          "replaces M5-10); minimum z_om of 0.005 m with ",
+          "EF_H_ZOM_FLOOR_APPLIED (M5-24, replaces M5-13); no anchor on ",
+          "cells with an assigned LAI (2026-11-06)"
+        )
+      ),
       modis = list(
         lst_product = "MOD11A1",
         collection = "061",
@@ -229,13 +263,15 @@ workflow_preset_idaho2002 <- function(terrain) {
         rl_in_lapse_rate = lapse
       ),
       soil_heat = list(method = "bastiaanssen"),
-      roughness = list(method = "lai", zero = "NA + EF_H_ZOM_UNDEFINED"),
+      roughness = list(method = "lai", zom_min = 0.005,
+                       zom_min_flag = "EF_H_ZOM_FLOOR_APPLIED",
+                       zom_min_status = "CANDIDATA (SH-02, M5-24)"),
       wind = list(zom_station = 0.0144, d_station = 0, height = 2,
                   blending_height = 200),
       lambda = list(method = "constant"),
       anchors = list(
-        criteria = workflow_anchor_criteria(3),
-        relax = list(workflow_anchor_criteria(2)),
+        criteria = workflow_anchor_criteria(0.90, 0.10),
+        relax = list(workflow_anchor_criteria(0.80, 0.20)),
         aggregate = "mean",
         search_radius_m = 30000,
         search_area = paste0(
@@ -244,10 +280,12 @@ workflow_preset_idaho2002 <- function(terrain) {
         ),
         qa = paste0(
           "strict: no warning or critical bit in flags_lst, flags_albedo, ",
-          "flags_ndvi, flags_lai, flags_emissivity; valid_fraction == 1; ",
-          "no bit 1, 3 or 6 of the GWR words of the forcing; elevation and ",
-          "z_om defined"
+          "flags_ndvi, flags_lai, flags_emissivity, and no ",
+          "EF_SURF_LAI_ASSIGNED (LAI set by lai_nonveg, not retrieved); ",
+          "valid_fraction == 1; no bit 1, 3 or 6 of the GWR words of the ",
+          "forcing; elevation and z_om defined"
         ),
+        qa_exclude_codes = "EF_SURF_LAI_ASSIGNED",
         etrf_cold = 1.05,
         etrf_hot = 0,
         conditions_source = "Waters et al. (2002), pp. 30-31 (steps 5a, 5b)",
@@ -313,7 +351,8 @@ ef_presets <- function() {
 #'   `"idaho2002_elev"` or `"idaho2002_flat"`. No default.
 #'
 #' @return An object of class `earthflux_preset` (a list): `name`,
-#'   `version`, `status`, `description`, `source`, `decisions` and the
+#'   `version`, `status`, `description`, `source`, `decisions`, `changes`
+#'   (what each version changed) and the
 #'   option blocks `modis` (product and the options of the MODIS surface
 #'   state), `terrain`, `weather` (quality control, ERA5 options,
 #'   regionalization), `reference_et`, `radiation`, `soil_heat`,
@@ -324,7 +363,7 @@ ef_presets <- function() {
 #'   of the elements that are not `VERIFICADA`).
 #'
 #' @details
-#' The two presets (decisions M5-08 to M5-17, dev/specs/presets.md) share
+#' The two presets (decisions M5-08 to M5-24, dev/specs/presets.md) share
 #' every option except the treatment of elevation:
 #'
 #' | Option | `idaho2002_elev` | `idaho2002_flat` |
@@ -351,9 +390,23 @@ ef_presets <- function() {
 #' anchors selected before the net radiation (incoming longwave from the
 #' cold anchor, decision P0-3) with the criteria of
 #' dev/specs/presets.md section 4, `etrf_cold = 1.05` and `etrf_hot = 0`;
-#' soil heat flux of Bastiaanssen; z_om = 0.018 LAI, undefined where
-#' LAI = 0; wind at 200 m from a weather site with z_om,w = 0.0144 m and
-#' d = 0; constant latent heat; ETa_24 = ETrF x ETr_24.
+#' soil heat flux of Bastiaanssen; z_om = 0.018 LAI with a minimum of
+#' 0.005 m (`CANDIDATA`, flagged with `EF_H_ZOM_FLOOR_APPLIED`); wind at
+#' 200 m from a weather site with z_om,w = 0.0144 m and d = 0; constant
+#' latent heat; ETa_24 = ETrF x ETr_24.
+#'
+#' Anchor criteria (version 2, decision M5-23, `CANDIDATA`): cold
+#' candidates with NDVI at or above the 90th percentile of the usable land
+#' cells and white-sky albedo in \[0.14, 0.26\]; hot candidates with NDVI
+#' at or below the 10th percentile, NDVI > 0 and albedo in
+#' \[0.18, 0.35\]; homogeneous LST (standard deviation <= 1.5 K in 3 x 3
+#' cells); the coldest 20 % of the cold and the hottest 20 % of the hot
+#' candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
+#' flagged with `EF_ANCHOR_CRITERIA_RELAXED`; no anchor on cells with a
+#' warning or critical surface flag or an assigned LAI.
+#'
+#' Versions: `"1"` (first presets); `"2"` (recalibrated anchor criteria,
+#' M5-23; minimum z_om, M5-24); see the element `changes`.
 #'
 #' @section Verification status:
 #' `CANDIDATA` (see [ef_presets()]); the unverified elements are in the

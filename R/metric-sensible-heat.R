@@ -1047,8 +1047,10 @@ h_phase_b <- function(inp, ts_datum, a, b, control, cp) {
 #' `ef_flag_rows()`, only in the change that implements the function raising
 #' it, its tests and its NEWS entry (dev/specs/flags.md section 7).
 #'
-#' Not registered: `EF_H_ZOM_FLOOR_APPLIED` (I-m, minimum of z_om not
-#' verified, SH-02), `EF_H_ZOM_TERRAIN_ADJUSTED` (terrain method not
+#' Not registered here: `EF_H_ZOM_FLOOR_APPLIED` (I-m, minimum of z_om not
+#' verified, SH-02; the core applies no minimum, the presets of
+#' `earthflux()` do and register it in `ef_flags_workflow()`, M5-24),
+#' `EF_H_ZOM_TERRAIN_ADJUSTED` (terrain method not
 #' implemented, SH-03), `EF_H_WIND_FLOOR_APPLIED` (no wind floor, SH-06),
 #' and the class II codes `EF_H_WIND_LOW` and `EF_H_STABILITY_STRONG`.
 #'

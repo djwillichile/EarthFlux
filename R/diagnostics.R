@@ -28,8 +28,11 @@
 #     ef_flags_gridded_forcing()  R/forcing-openmeteo.R    (EF_WS_*, gridded forcing)
 #     ef_flags_gwr()              R/gwr-diagnostics.R      (EF_GWR_*)
 #     ef_flags_surface()          R/modis-qa.R             (EF_SURF_*)
-#     ef_flags_workflow()         R/api-run.R              (EF_H_ZOM_UNDEFINED,
-#                                                           raised by earthflux())
+#     ef_flags_workflow()         R/api-run.R              (EF_H_*, raised
+#                                                           by earthflux())
+#   ef_flag_retired()             here: retired codes, whose bits stay
+#                                 occupied (dev/specs/flags.md section 7,
+#                                 point 6; test R14)
 #
 #   A new stage adds its own ef_flags_<stage>() in its module file when its
 #   first code is registered, and lists it in ef_flag_registry_build().
@@ -341,7 +344,51 @@ ef_flag_registry_build <- function() {
       paste(clash, collapse = ", ")
     ))
   }
+  retired <- ef_flag_retired()
+  back <- intersect(reg$code, retired$code)
+  if (length(back) > 0L) {
+    registry_abort(sprintf(
+      "Retired flag codes cannot be registered again: %s.",
+      paste(back, collapse = ", ")
+    ))
+  }
+  reused <- intersect(key, paste(retired$stage, retired$bit)[
+    !is.na(retired$bit)])
+  if (length(reused) > 0L) {
+    registry_abort(sprintf(
+      "Bits of retired codes stay occupied; reused (stage bit): %s.",
+      paste(reused, collapse = ", ")
+    ))
+  }
   reg
+}
+
+#' Retired diagnostic flag codes
+#'
+#' A registered code never changes meaning; a retired code keeps its bit
+#' as occupied, so that flag words written by earlier versions stay
+#' readable (dev/specs/flags.md section 7, point 6; test R14).
+#'
+#' `EF_H_ZOM_UNDEFINED` (bit 10 of `H`; registered in the development
+#' version 0.1.0.9000, decision M5-13, never released) marked z_om set to
+#' `NA` where LAI = 0 in `earthflux()`; decision M5-24 replaced that rule
+#' with the minimum z_om of the presets, flagged with
+#' `EF_H_ZOM_FLOOR_APPLIED`, so no function raises it any more.
+#'
+#' @return A data frame with columns `code`, `stage`, `bit` (integer, `NA`
+#'   without cell scope), `since` (version that registered it), `retired`
+#'   (version that retired it) and `replacement` (code or `NA`).
+#' @noRd
+ef_flag_retired <- function() {
+  data.frame(
+    code = "EF_H_ZOM_UNDEFINED",
+    stage = "H",
+    bit = 10L,
+    since = "0.1.0.9000",
+    retired = "0.1.0.9000",
+    replacement = "EF_H_ZOM_FLOOR_APPLIED",
+    stringsAsFactors = FALSE
+  )
 }
 
 #' Check a list of diagnostic flag records

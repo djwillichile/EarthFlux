@@ -12,7 +12,8 @@ ef_preset(name)
 }
 \value{
 An object of class \code{earthflux_preset} (a list): \code{name},
-\code{version}, \code{status}, \code{description}, \code{source}, \code{decisions} and the
+\code{version}, \code{status}, \code{description}, \code{source}, \code{decisions}, \code{changes}
+(what each version changed) and the
 option blocks \code{modis} (product and the options of the MODIS surface
 state), \code{terrain}, \code{weather} (quality control, ERA5 options,
 regionalization), \code{reference_et}, \code{radiation}, \code{soil_heat},
@@ -28,7 +29,7 @@ Returns every option that a preset sets, so that the choices made by
 is recorded in the provenance of the result.
 }
 \details{
-The two presets (decisions M5-08 to M5-17, dev/specs/presets.md) share
+The two presets (decisions M5-08 to M5-24, dev/specs/presets.md) share
 every option except the treatment of elevation:\tabular{lll}{
    Option \tab \code{idaho2002_elev} \tab \code{idaho2002_flat} \cr
    Lapse rate of the datum surface temperature (Eq. 12-7) \tab 0.0065 K m-1 \tab 0 \cr
@@ -55,9 +56,23 @@ elevation, trapezoid instantaneous values and the sea cells excluded;
 anchors selected before the net radiation (incoming longwave from the
 cold anchor, decision P0-3) with the criteria of
 dev/specs/presets.md section 4, \code{etrf_cold = 1.05} and \code{etrf_hot = 0};
-soil heat flux of Bastiaanssen; z_om = 0.018 LAI, undefined where
-LAI = 0; wind at 200 m from a weather site with z_om,w = 0.0144 m and
-d = 0; constant latent heat; ETa_24 = ETrF x ETr_24.
+soil heat flux of Bastiaanssen; z_om = 0.018 LAI with a minimum of
+0.005 m (\code{CANDIDATA}, flagged with \code{EF_H_ZOM_FLOOR_APPLIED}); wind at
+200 m from a weather site with z_om,w = 0.0144 m and d = 0; constant
+latent heat; ETa_24 = ETrF x ETr_24.
+
+Anchor criteria (version 2, decision M5-23, \code{CANDIDATA}): cold
+candidates with NDVI at or above the 90th percentile of the usable land
+cells and white-sky albedo in [0.14, 0.26]; hot candidates with NDVI
+at or below the 10th percentile, NDVI > 0 and albedo in
+[0.18, 0.35]; homogeneous LST (standard deviation <= 1.5 K in 3 x 3
+cells); the coldest 20 \% of the cold and the hottest 20 \% of the hot
+candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
+flagged with \code{EF_ANCHOR_CRITERIA_RELAXED}; no anchor on cells with a
+warning or critical surface flag or an assigned LAI.
+
+Versions: \code{"1"} (first presets); \code{"2"} (recalibrated anchor criteria,
+M5-23; minimum z_om, M5-24); see the element \code{changes}.
 }
 \section{Verification status}{
 
