@@ -1,0 +1,14 @@
+{
+  "study": "CEDES 2027 - EarthFlux: regionalization of the meteorological forcing of METRIC",
+  "seed": 20270121,
+  "crs_projected": "EPSG:32718",
+  "crs_note": "WGS 84 / UTM 18S: the scene (72.3 W) lies 1.7-3.5 degrees from the central meridian (75 W); distances for GWR, IDW and spatial folds are computed in this CRS",
+  "scene_date": "2019-02-15",
+  "station_box": {"lat_min": -38.5, "lat_max": -34.0, "lon_min": -73.6, "lon_max": -70.3},
+  "cv_period": {"start": "2019-01-01", "end": "2019-03-31"},
+  "cv_overpass_utc_hours": [14],
+  "grid_resolution_m": 1000,
+  "spatial_block_size_m": 50000,
+  "monte_carlo_replicates": 200,
+  "bootstrap_replicates": 2000
+}

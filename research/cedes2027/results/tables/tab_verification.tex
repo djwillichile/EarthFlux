@@ -1,0 +1,22 @@
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}p{3.1cm}r}
+\toprule
+Componente & Funciones & Estado & Fuente & Pruebas \\
+\midrule
+Radiación neta & \texttt{ef\_net\_radiation()} & VERIFICADA (SEBAL-Idaho 2002) & Waters et al. (2002), Ec. 2 & 63 \\
+Onda corta incidente, terreno plano & \texttt{ef\_rs\_in(method = modelled)} & VERIFICADA (SEBAL-Idaho 2002) & Waters et al. (2002), Ec. 12 & 67 \\
+Transmisividad particionada (Allen) & \texttt{ef\_tau\_sw(method = allen)} & CANDIDATA & ASCE-EWRI (2005), forma de Allen (1996) & 67 \\
+Emisividad atmosférica & \texttt{ef\_atm\_emissivity()} & VERIFICADA (SEBAL-Idaho 2002) & Waters et al. (2002), Ec. 22 & 67 \\
+Onda larga incidente y emitida & \texttt{ef\_rl\_in(), ef\_rl\_out()} & VERIFICADA (SEBAL-Idaho 2002) & Waters et al. (2002), Ecs. 20-23 & 67 \\
+Flujo de calor del suelo (Bastiaanssen) & \texttt{ef\_g(method = bastiaanssen)} & VERIFICADA (SEBAL-Idaho 2002) & Waters et al. (2002), Ec. 24 & 39 \\
+Flujo de calor del suelo (Tasumi) & \texttt{ef\_g(method = tasumi)} & CANDIDATA & Tasumi (2003) & 39 \\
+Rugosidad por LAI & \texttt{ef\_zom(method = lai)} & VERIFICADA (SEBAL-Idaho 2002) & Waters et al. (2002), Ec. 31a & 15 \\
+Viento a altura de mezcla y u* & \texttt{ef\_blending\_wind(), ef\_ustar()} & VERIFICADA (SEBAL-Idaho 2002) & Waters et al. (2002), Ecs. 27, 29, 30 & 15 \\
+Resistencia aerodinámica y estabilidad & \texttt{ef\_rah(), psi\_m, psi\_h, L} & VERIFICADA (SEBAL-Idaho 2002) & Waters et al. (2002), Ecs. 26, 34-41 & 39 \\
+Calibración dT y calor sensible & \texttt{ef\_calibrate\_h(), ef\_dt\_coef(), ef\_sensible\_heat()} & VERIFICADA (forma); procedimiento P0-10 & Waters et al. (2002), Ecs. 25, 32, 33 & 30 \\
+Condiciones de borde de las anclas & \texttt{ef\_anchor\_conditions()} & VERIFICADA (forma) & Waters et al. (2002), p. 30-31 & 9 \\
+Criterios de selección de anclas & \texttt{ef\_select\_anchors(), ef\_anchor\_criteria()} & CANDIDATA & Waters et al. (2002), ap. 7 & 28 \\
+Calor latente, ET instantánea, ETrF y ETa diaria & \texttt{ef\_latent\_heat(), ef\_et\_inst(), ef\_etrf(), ef\_et\_daily()} & VERIFICADA (FAO-56; SEBAL-Idaho 2002) & Waters et al. (2002), Ecs. 1, 42-44 & 44 \\
+ET de referencia ASCE-EWRI horaria & \texttt{ef\_ref\_et(), ef\_ref\_net\_radiation(), ef\_ref\_soil\_heat\_flux()} & VERIFICADA (ecuaciones y constantes) & ASCE-EWRI (2005) & 58 \\
+Regionalización C1/C2/C3 y núcleo GWR & \texttt{ef\_regionalize(), ef\_regionalize\_cv(), ef\_gwr\_*()} & CANDIDATA (corroborada con GWmodel a 1e-10) & Brunsdon et al. (1996); Gollini et al. (2015) & 75 \\
+\bottomrule
+\end{tabularx}

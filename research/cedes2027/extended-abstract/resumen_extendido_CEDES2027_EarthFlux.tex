@@ -1,0 +1,72 @@
+% Resumen extendido para el 3rd International Workshop CEDES 2027.
+% Formato del resumen extendido del autor sobre el desierto florido.
+% Las cifras provienen de ../results/tables/numbers.tex, generado por
+% scripts/08_numbers.R desde results/tables.
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{parskip}
+\usepackage[hidelinks]{hyperref}
+\graphicspath{{../results/figures/}}
+\input{../results/tables/numbers.tex}
+\newcommand{\ETa}{\mathrm{ET_a}}
+\newcommand{\ETr}{\mathrm{ET_r}}
+\newcommand{\ETrF}{\mathrm{ET_rF}}
+\pagestyle{plain}
+\begin{document}
+\begin{center}
+{\Large\bfseries EarthFlux: Land-Surface Energy and Water Fluxes from Earth Observation Data}\\[3pt]
+{\large Efecto del forzamiento meteorológico espacial en la evapotranspiración estimada con METRIC y MODIS}\\[6pt]
+Guillermo S. Fuentes-Jaque$^{1,2}$\\
+{\small $^{1}$Instituto de Ciencias y Tecnología Ambiental (ICTA Ltda.), Chile; $^{2}$EARTH Lab (Environmental Analysis, Remote Sensing \& Terrestrial Hydrology Laboratory), Universidad San Sebastián, Chile}\\[2pt]
+{\small ORCID: 0000-0002-7864-4899}\\[4pt]
+{\small Presentación oral. Tema: \textit{Integrating Climate Science into Economic Decision-Making}}
+\end{center}
+
+\textbf{Motivación.} La evapotranspiración real ($\ETa$) es la medida física del uso consuntivo del agua, y los mapas satelitales de $\ETa$ se usan cada vez más para balances hídricos, fiscalización y evaluación de programas de riego, sobre todo en Chile central tras la megasequía y la reforma del Código de Aguas de 2022. Pero esos mapas dependen de elecciones que rara vez se declaran. En METRIC, el modelo de balance de energía más usado para este fin, la más común es forzar toda la escena con una sola estación meteorológica. Sin una herramienta que permita cambiar esa elección dejando todo lo demás fijo, nadie puede saber cuánto pesa en el resultado, y quien decide recibe una cifra sin su incertidumbre.
+
+\textbf{EarthFlux, la contribución.} EarthFlux es un paquete de R de código abierto (licencia MIT), desarrollado por el autor, para estimar flujos de energía y agua desde observaciones de la Tierra. Su versión \EarthFluxVersion{} (\NExports{} funciones públicas; \NLinesR{} líneas de código R) implementa la cadena completa de METRIC con cuatro principios: (i) física independiente del sensor, con unidades documentadas; (ii) forzamiento meteorológico intercambiable bajo una sola interfaz, desde una estación representativa (C1) hasta regresión global, distancia inversa (C2) o regresión geográficamente ponderada (GWR, C3), con validación cruzada espacial; (iii) diagnósticos que marcan los valores físicamente anómalos en lugar de corregirlos en silencio; y (iv) trazabilidad, porque toda elección científica sin fuente única queda explícita y registrada. Su verificación también es pública: \VerVerified{} de \VerRows{} formulaciones del núcleo coinciden término a término con el manual de los autores del método, el contraste detectó \VerDiscrepancies{} discrepancias (\VerFixed{} corregidas en el código) y \NExpectations{} comprobaciones automáticas se ejecutan en cada revisión. El paquete es aún experimental: todavía no tiene el flujo integrado que encadena todas las etapas ni la descarga automática de escenas MODIS.
+
+\textbf{Caso de demostración.} Para mostrar qué hace visible la herramienta, se aplicó a una escena MODIS de la provincia de Cauquenes (15 de febrero de 2019; \SceneCellsValid{} celdas de 1~km) con \NStations{} estaciones horarias públicas (DMC, INIA, FDF y NOAA). Se compararon cinco configuraciones del forzamiento con las mismas ecuaciones, criterios y celdas ancla, y se evaluó cada regionalización fuera de muestra con validación cruzada espacial anidada en \NCVDays{} días.
+
+\textbf{Resultados.} La sola elección del forzamiento cambió la $\ETa$ media de la escena: \DEtaCThreeGWRPct\,\% con GWR y \DEtaCTwoIDWPct\,\% con IDW respecto de la estación representativa (tabla~\ref{tab:cfg}). En volumen, sobre las \VolArea~km² procesadas, la estimación diaria pasó de \VolCOne{} millones de m³ con C1 a \VolCThreeGWR{} millones con GWR: \VolDiffAbsCThreeGWR{} millones de m³ menos en un solo día, un caudal medio de unos \VolDiffFlowCThreeGWR~m³/s. Es un desacuerdo entre modelos, no agua ahorrada. La sustitución de una variable por vez mostró por dónde entra: la calibración interna de METRIC absorbió casi todo el cambio del balance instantáneo ($\ETrF$: \DEtrfCThreeGWRPct\,\%), y la diferencia se transmitió por la evapotranspiración de referencia diaria (figura~\ref{fig:attr}). El efecto mantuvo su signo en el \SAEffSign\,\% de las réplicas de Monte Carlo y fue \RatioSA{} veces la dispersión debida a los criterios de anclas y \RatioSB{} veces la debida al ruido MODIS. La herramienta también mostró que la técnica más compleja no es la mejor: GWR superó a la estación representativa y a la regresión global, pero no a IDW (error cuadrático medio de la temperatura del aire: \CVTaCOneRmse, \CVTaCTwoOLSRmse, \CVTaCThreeGWRRmse{} y \CVTaCTwoIDWRmse~°C; figura~\ref{fig:cv}), dependió más de la densidad de la red y, entre estaciones, asignó temperaturas sobre el máximo observado en el \RangeTaCThreeGWRAbove\,\% de las celdas. Para el viento, que solo miden \NStationsWind{} estaciones, no fue factible.
+
+\begin{table}[!htb]\centering\small
+\caption{Validación cruzada de la temperatura del aire y de la presión de vapor, y efecto en METRIC, por configuración.}\label{tab:cfg}
+\begin{tabular}{@{}lrrrrr@{}}\toprule
+ & C1 & C1 + gradiente & C2-OLS & C2-IDW & C3-GWR \\\midrule
+RMSE de $T_a$ (°C) & \CVTaCOneRmse & \CVTaCOneLapRmse & \CVTaCTwoOLSRmse & \CVTaCTwoIDWRmse & \CVTaCThreeGWRRmse \\
+RMSE de $e_a$ (kPa) & \CVEaCOneRmse & -- & \CVEaCTwoOLSRmse & \CVEaCTwoIDWRmse & \CVEaCThreeGWRRmse \\
+$\ETr$ diaria media (mm/d) & \MFEtrDayCOneMean & \MFEtrDayCOneLapMean & \MFEtrDayCTwoOLSMean$^{*}$ & \MFEtrDayCTwoIDWMean & \MFEtrDayCThreeGWRMean \\
+$\ETa$ media (mm/d) & \MEtaCOneMean & \MEtaCOneLapMean & \MEtaCTwoOLSMean$^{*}$ & \MEtaCTwoIDWMean & \MEtaCThreeGWRMean \\
+Cambio de $\ETa$ frente a C1 (\%) & -- & \DEtaCOneLapPct & \DEtaCTwoOLSPct$^{*}$ & \DEtaCTwoIDWPct & \DEtaCThreeGWRPct \\\bottomrule
+\multicolumn{6}{@{}l}{\footnotesize $^{*}$ Solo \OLSValidCells{} celdas: el viento estimado por regresión global salió del rango físico en el resto.}
+\end{tabular}\end{table}
+
+\textbf{Lo que el caso enseñó al paquete y límites.} El caso fija los próximos pasos de EarthFlux: (1) el flujo integrado, porque aquí hubo que encadenar a mano unas veinte funciones y declarar \NDecisions{} decisiones; (2) la descarga de múltiples escenas, porque el estudio usó una sola, la que trae el paquete; (3) un diagnóstico de la extrapolación de GWR entre estaciones, que la validación en las estaciones no detecta; y (4) la validación con torres de flujo. Dos límites no dependen del paquete sino de los datos: no hay mediciones públicas de flujos para la escena, de modo que la exactitud de la $\ETa$ \emph{no} se evaluó, y la red pública casi no mide viento ni radiación media. Además, dos decisiones sobre el viento se tomaron después de constatar que GWR no era factible; ambas se declaran en el registro de decisiones.
+
+\textbf{Implicaciones.} La elección del forzamiento meteorológico cambia la $\ETa$ en una magnitud comparable a la de las decisiones que la usan, y mayor que la incertidumbre de la calibración y de los insumos satelitales evaluada aquí. Esto plantea una pregunta de valor de la información: antes de invertir en mapas más finos o en más estaciones, conviene saber cuánto cambia la estimación y por qué vía. Un software abierto y verificable permite responderla y reduce el costo de auditar las cifras: los mapas de $\ETa$ usados en contabilidad hídrica o fiscalización deberían declarar su forzamiento y su sensibilidad a él. El trabajo no estima valor monetario ni volúmenes ahorrados; hacerlo requiere validar la $\ETa$, agregarla en la temporada y contar con datos económicos.
+
+{\footnotesize EarthFlux \EarthFluxVersion{} (licencia MIT): \url{https://github.com/djwillichile/EarthFlux}; DOI 10.5281/zenodo.23981325. El estudio completo, con datos públicos, scripts y el registro que traza cada cifra, está en \texttt{research/cedes2027/} del mismo repositorio. Referencias: Allen, R. G., Tasumi, M. y Trezza, R. (2007). Satellite-based energy balance for mapping evapotranspiration with internalized calibration (METRIC)---Model. \textit{Journal of Irrigation and Drainage Engineering}, 133(4), 380-394. Brunsdon, C., Fotheringham, A. S. y Charlton, M. E. (1996). Geographically weighted regression: a method for exploring spatial nonstationarity. \textit{Geographical Analysis}, 28(4), 281-298. Garreaud, R. D. et al. (2020). The Central Chile Mega Drought (2010-2018): a climate dynamics perspective. \textit{International Journal of Climatology}, 40(1), 421-439. Roberts, D. R. et al. (2017). Cross-validation strategies for data with temporal, spatial, hierarchical, or phylogenetic structure. \textit{Ecography}, 40(8), 913-929. Waters, R., Allen, R., Tasumi, M., Trezza, R. y Bastiaanssen, W. (2002). \textit{SEBAL: Surface Energy Balance Algorithms for Land. Idaho Implementation}. University of Idaho.}
+
+\begin{figure}[!htb]\centering
+\begin{minipage}[t]{0.57\textwidth}\centering
+\includegraphics[width=\linewidth]{fig03_cv_rmse.pdf}
+\caption{Error medio cuadrático fuera de muestra (IC~95\,\% por \emph{bootstrap} de días), validación cruzada espacial anidada de \NCVDays{} días. GWR del viento no fue factible; el gradiente de C1 solo se aplica a la temperatura.}\label{fig:cv}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.40\textwidth}\centering
+\includegraphics[width=\linewidth]{fig07_attribution.pdf}
+\caption{Cambio de la $\ETa$ media al reemplazar una sola entrada de C1 por su campo regionalizado (GWR; viento: IDW). Barras: P5--P95 por celda. Línea discontinua: GWR completo.}\label{fig:attr}
+\end{minipage}
+\end{figure}
+\begin{figure}[!htb]\centering
+\includegraphics[width=0.70\textwidth]{fig06_eta_maps.pdf}
+\caption{Arriba: evapotranspiración real diaria (mm/d) de la provincia de Cauquenes, 15 de febrero de 2019, por configuración. Abajo: diferencia respecto de C1. C2-OLS solo tiene datos donde el viento regionalizado quedó en el rango físico. Fuentes: MODIS C6.1, DMC, INIA, FDF, NOAA ISD, Copernicus GLO-90. Mostrado en WGS~84.}
+\end{figure}
+\end{document}
