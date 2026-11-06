@@ -136,23 +136,43 @@ p5 <- ggplot(long_e, aes(x, y, fill = value)) + geom_raster() + aoi_layer +
 save_fig(p5, "fig05_energy_balance", 18, 10.5)
 
 ## Figure 6: ETa maps and differences against C1 ------------------------------------
+# Legend titles vertical next to the colour bars; the difference row keeps the
+# five columns of the ETa row (C1, the reference, left empty) so that every
+# difference map sits under its ETa map; the height matches the panels.
+vbar <- function() guide_colourbar(title.position = "right",
+                                   title.theme = element_text(angle = 90, hjust = 0.5, size = 7),
+                                   barheight = unit(2.8, "cm"), barwidth = unit(0.3, "cm"))
+row_theme <- theme(plot.margin = margin(1, 2, 1, 2), legend.margin = margin(0, 0, 0, 2),
+                   strip.text = element_text(size = 7, margin = margin(1, 0, 1, 0)),
+                   axis.text = element_text(size = 5),
+                   panel.spacing.x = unit(1.5, "mm"))
+# Same extent, without padding, in both rows (the scene with valid ETa).
+okc <- !is.na(ed$eta)
+map_lims <- coord_fixed(1.2, xlim = range(ed$x[okc]) + c(-0.03, 0.03),
+                        ylim = range(ed$y[okc]) + c(-0.03, 0.03), expand = FALSE)
 eta_lim <- stats::quantile(ed$eta, c(0.01, 0.99), na.rm = TRUE)
 p6a <- ggplot(ed, aes(x, y, fill = eta)) + geom_raster() + aoi_layer +
   facet_grid(. ~ config) +
   scale_fill_gradientn("ETa (mm/d)", colours = hcl.colors(11, "YlGnBu", rev = TRUE),
                        limits = eta_lim, oob = scales::squish, na.value = "white") +
-  coord_fixed(1.2) + map_theme
+  guides(fill = vbar()) + map_lims + map_theme + row_theme +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
 base <- ed[ed$config == "C1", c("x", "y", "eta")]
 dd <- merge(ed[ed$config != "C1", c("x", "y", "config", "eta")], base, by = c("x", "y"),
             suffixes = c("", "_c1"))
 dd$diff <- dd$eta - dd$eta_c1
+dd$config <- factor(as.character(dd$config), levels(ed$config))
 lim <- max(abs(stats::quantile(dd$diff, c(0.01, 0.99), na.rm = TRUE)))
-p6b <- ggplot(dd, aes(x, y, fill = diff)) + geom_raster() + aoi_layer +
-  facet_grid(. ~ config) +
-  scale_fill_gradientn("ΔETa vs C1\n(mm/d)", colours = hcl.colors(11, "RdBu"),
+p6b <- ggplot(dd, aes(x, y, fill = diff)) + geom_raster() +
+  facet_grid(. ~ config, drop = FALSE,
+             labeller = as_labeller(function(x) ifelse(x == "C1", "C1 (referencia)", x))) +
+  geom_path(data = aoi_df[rep(seq_len(nrow(aoi_df)), 1), ], aes(x, y, group = interaction(geom, part, hole)),
+            inherit.aes = FALSE, linewidth = 0.25, colour = "black") +
+  scale_fill_gradientn("ΔETa vs C1 (mm/d)", colours = hcl.colors(11, "RdBu"),
                        limits = c(-lim, lim), oob = scales::squish, na.value = "white") +
-  coord_fixed(1.2) + map_theme
-save_fig(p6a / p6b, "fig06_eta_maps", 18, 8.5)
+  scale_x_continuous(breaks = c(-72.6, -72.2)) +
+  guides(fill = vbar()) + map_lims + map_theme + row_theme
+save_fig(p6a / p6b + plot_layout(heights = c(1, 1)), "fig06_eta_maps", 18, 8.4)
 
 ## Figure 7: one-at-a-time attribution ---------------------------------------------
 dv <- read("results", "tables", "metric_differences_vs_C1.csv")
