@@ -469,7 +469,8 @@ dem_cache_valid <- function(hgt, swb, f) {
 #' Download and cache NASADEM_HGT tiles
 #'
 #' For each tile, the zip of LP DAAC is downloaded with the Earthdata token
-#' (`dem_http_download()`) to `<cache_dir>/dem/NASADEM_HGT_<tile>.zip.part`,
+#' (`dem_http_download()`) to a per-call
+#' `<cache_dir>/dem/NASADEM_HGT_<tile>.zip.<random>.part`,
 #' validated (zip magic number `PK\\x03\\x04`; members `<tile>.hgt` of
 #' `2 n^2` bytes and `<tile>.swb` of `n^2` bytes), extracted to a temporary
 #' folder and only then moved to `<cache_dir>/dem/<tile>.hgt` and
@@ -515,8 +516,11 @@ dem_download <- function(tiles, cache_dir = dem_cache_dir()) {
 #' @return `NULL`, invisibly.
 #' @noRd
 dem_download_tile <- function(tile, url, hgt, swb, dir, f) {
-  part <- file.path(dir, paste0("NASADEM_HGT_", tile, ".zip.part"))
-  tmpdir <- file.path(dir, paste0(tile, ".part"))
+  # Per-call temporary names: concurrent sessions fetching the same tile
+  # into a shared cache never touch each other's partial files.
+  part <- tempfile(paste0("NASADEM_HGT_", tile, ".zip."), tmpdir = dir,
+                   fileext = ".part")
+  tmpdir <- tempfile(paste0(tile, "."), tmpdir = dir, fileext = ".part")
   on.exit(unlink(c(part, tmpdir), recursive = TRUE), add = TRUE)
   public <- dem_url_public(url)
   bad <- function(why) {
