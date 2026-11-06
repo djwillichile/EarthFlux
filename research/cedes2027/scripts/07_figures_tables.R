@@ -82,8 +82,24 @@ save_fig(p1a + (p1b / p1c / p1d) + plot_layout(widths = c(1.3, 1)), "fig01_area"
 ## Figure 3: cross-validation metrics ---------------------------------------------
 met <- read("results", "tables", "cv_metrics.csv")
 met$config <- factor(met$config, cfg_levels)
+# Configurations without a metric are labelled in place: "no factible" when
+# every fold failed (GWR of the wind), "no aplica" otherwise (the lapse rate
+# of C1-lap only applies to air temperature).
+pr3 <- read("results", "validation", "cv_predictions.csv")
+miss <- expand.grid(variable = unique(met$variable), config = cfg_levels,
+                    stringsAsFactors = FALSE)
+miss <- miss[!paste(miss$variable, miss$config) %in% paste(met$variable, met$config), ]
+miss$label <- ifelse(paste(miss$variable, miss$config) %in%
+                       paste(pr3$variable, pr3$config)[pr3$status == "failed"],
+                     "no factible", "no aplica")
+lo <- tapply(met$rmse_lo, met$variable, min); hi <- tapply(met$rmse_hi, met$variable, max)
+miss$y <- (lo[miss$variable] + hi[miss$variable]) / 2
+miss$config <- factor(miss$config, cfg_levels)
 p3 <- ggplot(met, aes(config, rmse, colour = config)) +
   geom_pointrange(aes(ymin = rmse_lo, ymax = rmse_hi), size = 0.3) +
+  geom_text(data = miss, aes(config, y, label = label), inherit.aes = FALSE,
+            angle = 90, size = 2.4, colour = "grey45", fontface = "italic") +
+  scale_x_discrete(drop = FALSE) +
   facet_wrap(~variable, scales = "free_y", labeller = as_labeller(var_lab)) +
   scale_colour_manual(values = cfg_cols, guide = "none") +
   labs(x = NULL, y = "RMSE fuera de muestra (IC 95 %)") +
