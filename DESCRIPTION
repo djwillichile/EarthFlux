@@ -22,6 +22,7 @@ Depends:
 Imports:
     future,
     future.apply,
+    jsonlite,
     stats,
     terra (>= 1.7-65)
 Suggests:
