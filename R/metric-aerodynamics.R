@@ -23,7 +23,8 @@
 #
 # Not implemented on purpose (decisions of section 18 of the spec):
 #   - the 0.005 m minimum of z_om (SH-02, not verified): z_om = 0 is returned
-#     unchanged and rejected downstream by ef_ustar();
+#     unchanged and rejected downstream by ef_ustar(); the presets of
+#     earthflux() apply it, flagged (workflow_zom_floor(), M5-24);
 #   - the mountainous-terrain factor of z_om (SH-03; form now documented in
 #     the SEBAL Idaho manual, Eq. 12-9, and in Allen et al., 2012, for slopes
 #     of 5 degrees or more; not implemented yet);
@@ -125,7 +126,9 @@
 #'
 #' No minimum roughness (0.005 m in METRIC implementations, decision SH-02)
 #' and no mountainous-terrain adjustment (SH-03) are applied: both are
-#' unverified and values are never silently modified.
+#' unverified and values are never silently modified. The presets of
+#' [earthflux()] apply the 0.005 m minimum after `ef_zom()`, as a declared
+#' `CANDIDATA` option flagged with `EF_H_ZOM_FLOOR_APPLIED`.
 #'
 #' Missing values propagate. Arguments must be numeric, of length 1 or a
 #' common length (length 0 is rejected), and matrix or array arguments must

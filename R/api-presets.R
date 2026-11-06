@@ -120,9 +120,13 @@ workflow_preset_idaho2002 <- function(terrain) {
       "28 of the manual over a 0.12 m reference grass): height CANDIDATA ",
       "(SH-04)"
     ),
-    zom_zero = paste0(
-      "z_om undefined (NA, EF_H_ZOM_UNDEFINED) where LAI = 0: design ",
-      "choice without verified rule (SH-02)"
+    zom_floor = paste0(
+      "minimum z_om of 0.005 m where 0.018 LAI is below it ",
+      "(EF_H_ZOM_FLOOR_APPLIED): value of METRIC implementations without a ",
+      "consulted primary source; the SEBAL Idaho manual gives 0.018 LAI only ",
+      "for agricultural areas and land-use values in its appendix 2 (water ",
+      "0.0005 m, snow 0.005 m) with no bare-soil value: CANDIDATA (SH-02, ",
+      "M5-24)"
     ),
     wind_time = paste0(
       "wind at the overpass time by linear interpolation between hourly ",
@@ -229,7 +233,9 @@ workflow_preset_idaho2002 <- function(terrain) {
         rl_in_lapse_rate = lapse
       ),
       soil_heat = list(method = "bastiaanssen"),
-      roughness = list(method = "lai", zero = "NA + EF_H_ZOM_UNDEFINED"),
+      roughness = list(method = "lai", zom_min = 0.005,
+                       zom_min_flag = "EF_H_ZOM_FLOOR_APPLIED",
+                       zom_min_status = "CANDIDATA (SH-02, M5-24)"),
       wind = list(zom_station = 0.0144, d_station = 0, height = 2,
                   blending_height = 200),
       lambda = list(method = "constant"),
@@ -244,10 +250,12 @@ workflow_preset_idaho2002 <- function(terrain) {
         ),
         qa = paste0(
           "strict: no warning or critical bit in flags_lst, flags_albedo, ",
-          "flags_ndvi, flags_lai, flags_emissivity; valid_fraction == 1; ",
-          "no bit 1, 3 or 6 of the GWR words of the forcing; elevation and ",
-          "z_om defined"
+          "flags_ndvi, flags_lai, flags_emissivity, and no ",
+          "EF_SURF_LAI_ASSIGNED (LAI set by lai_nonveg, not retrieved); ",
+          "valid_fraction == 1; no bit 1, 3 or 6 of the GWR words of the ",
+          "forcing; elevation and z_om defined"
         ),
+        qa_exclude_codes = "EF_SURF_LAI_ASSIGNED",
         etrf_cold = 1.05,
         etrf_hot = 0,
         conditions_source = "Waters et al. (2002), pp. 30-31 (steps 5a, 5b)",

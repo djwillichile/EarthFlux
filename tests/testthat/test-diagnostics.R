@@ -1,8 +1,9 @@
 # Tests for the flag registry and flag records
 #
 # Specification: dev/specs/flags.md (tests R1-R19 in section 8). Tests that
-# need a raster backend or a bit-word view (R12, R13, R16) and the list of
-# retired codes (R14) are added with the code that introduces them.
+# need a raster backend or a bit-word view (R12, R13, R16) are added with
+# the code that introduces them; R14 checks the list of retired codes
+# (ef_flag_retired(), first retirement in decision M5-24).
 
 # The registry tests run on a fresh, uncached build, so that the cross-row
 # checks of ef_flag_registry_build() are exercised on the current stage
@@ -99,6 +100,53 @@ test_that("R11: every registered code is exercised by a module test", {
                 collapse = "\n")
   used <- vapply(reg$code, grepl, logical(1), x = text, fixed = TRUE)
   expect_identical(reg$code[!used], character(0))
+})
+
+test_that("R14: retired codes and their bits do not reappear", {
+  ret <- ef_flag_retired()
+  expect_identical(names(ret), c("code", "stage", "bit", "since", "retired",
+                                 "replacement"))
+  expect_true("EF_H_ZOM_UNDEFINED" %in% ret$code)
+  expect_identical(intersect(reg$code, ret$code), character(0))
+  used <- paste(reg$stage, reg$bit)[!is.na(reg$bit)]
+  kept <- paste(ret$stage, ret$bit)[!is.na(ret$bit)]
+  expect_identical(intersect(used, kept), character(0))
+  expect_true(all(is.na(ret$replacement) | ret$replacement %in% reg$code))
+  # the registry build refuses a retired code or a retired bit
+  et_rows <- ef_flags_et()
+  local({
+    back <- ef_flag_rows(
+      code = "EF_ET_TEST_BACK", stage = "ET", severity = "info",
+      scope = "cell", bit = 20L, error_class = NA_character_,
+      description = "A test condition holds.",
+      spec = "dev/specs/flags.md 4.2", since = "0.1.0"
+    )
+    testthat::local_mocked_bindings(
+      ef_flags_et = function() rbind(et_rows, back),
+      ef_flag_retired = function() {
+        data.frame(code = c("EF_H_ZOM_UNDEFINED", "EF_ET_TEST_BACK"),
+                   stage = c("H", "ET"), bit = c(10L, 21L),
+                   since = "0.1.0.9000", retired = "0.1.0.9000",
+                   replacement = NA_character_)
+      }
+    )
+    expect_error(ef_flag_registry_build(), "EF_ET_TEST_BACK",
+                 class = "earthflux_registry_error")
+  })
+  local({
+    reuse <- ef_flag_rows(
+      code = "EF_H_TEST_REUSE", stage = "H", severity = "info",
+      scope = "cell", bit = 10L, error_class = NA_character_,
+      description = "A test condition holds.",
+      spec = "dev/specs/flags.md 4.2", since = "0.1.0"
+    )
+    testthat::local_mocked_bindings(
+      ef_flags_et = function() rbind(et_rows, reuse)
+    )
+    expect_error(ef_flag_registry_build(), "H 10",
+                 class = "earthflux_registry_error")
+  })
+  expect_identical(ef_flag_registry(), reg)
 })
 
 test_that("R15: no code coincides with an object of the package", {

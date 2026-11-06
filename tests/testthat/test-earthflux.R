@@ -128,13 +128,15 @@ ewf_manual <- function(st, ter, aoi, stations, name) {
   geo <- ef_solar_geometry(mat(doy), mat(hour), mat(lat) * pi / 180,
                            mat(lon) * pi / 180)
   pressure <- ef_air_pressure(mat(z))
-  zom <- ef_zom(lai = mat(lai), method = "lai")$zom
-  zom[!is.na(zom) & zom == 0] <- NA
+  # minimum z_om of the preset (M5-24)
+  zom <- pmax(ef_zom(lai = mat(lai), method = "lai")$zom,
+              p$roughness$zom_min)
   u_b <- ef_blending_wind(mat(wind), height = 2, zom_station = 0.0144,
                           d_station = 0)
   # strict anchor QA, read from the registry by severity
   bits <- st$qa$flag_bits
-  bad <- bits$bit[bits$severity %in% c("warning", "critical")]
+  bad <- bits$bit[bits$severity %in% c("warning", "critical") |
+                    bits$code == "EF_SURF_LAI_ASSIGNED"]
   words <- terra::values(st$qa$flag_word, mat = TRUE)
   good <- rep(TRUE, length(tt))
   for (l in paste0("flags_", c("lst", "albedo", "ndvi", "lai",
@@ -408,35 +410,70 @@ test_that("cells outside the AOI polygon are NA in every layer and word", {
   expect_true(all(inside[res_e$anchors$pixels$cell]))
 })
 
-test_that("z_om undefined at LAI = 0 is NA and flagged (EF_H_ZOM_UNDEFINED)", {
+test_that("z_om below the minimum is raised and flagged (EF_H_ZOM_FLOOR_APPLIED)", {
+  p <- ef_preset("idaho2002_elev")
+  expect_identical(p$roughness$zom_min, 0.005)
   lai <- val(st$lai)
   zom <- val(res_e$layers$zom)
   inside <- !is.na(val(res_e$layers$tau_sw))
-  zero <- inside & !is.na(lai) & lai == 0
-  expect_gt(sum(zero), 0L)
-  expect_true(all(is.na(zom[zero])))
-  rec <- Filter(function(f) f$code == "EF_H_ZOM_UNDEFINED", res_e$flags)
+  low <- inside & !is.na(lai) & 0.018 * lai < 0.005
+  expect_gt(sum(low & lai == 0), 0L)
+  expect_identical(zom[low], rep(0.005, sum(low)))
+  ok <- inside & !is.na(lai) & !low
+  expect_equal(zom[ok], 0.018 * lai[ok], tolerance = 1e-12)
+  rec <- Filter(function(f) f$code == "EF_H_ZOM_FLOOR_APPLIED", res_e$flags)
   expect_length(rec, 1L)
-  expect_identical(rec[[1]]$index, which(zero))
+  expect_identical(rec[[1]]$index, which(low))
   expect_identical(rec[[1]]$target, "zom")
-  expect_identical(res_e$provenance$counts[["zom_undefined"]], sum(zero))
+  expect_identical(rec[[1]]$severity, "info")
+  expect_identical(res_e$provenance$counts[["zom_floor_applied"]], sum(low))
   w <- as.integer(val(res_e$qa$metric$flags_h))
-  b <- ef_flag_registry()$bit[ef_flag_registry()$code == "EF_H_ZOM_UNDEFINED"]
-  expect_identical(b, 10L)
+  b <- ef_flag_registry()$bit[ef_flag_registry()$code ==
+                                "EF_H_ZOM_FLOOR_APPLIED"]
+  expect_identical(b, 1L)
   expect_identical(which(!is.na(w) & bitwAnd(w, bitwShiftL(1L, b)) != 0L),
-                   which(zero))
-  # negative case: no LAI = 0 in the AOI -> evaluated, no record
+                   which(low))
+  # the cells with LAI = 0 now have an ETa where the rest of the chain is
+  # defined (they were NA with the retired rule of M5-13)
+  expect_true(any(!is.na(val(res_e$layers$eta_24))[low & lai == 0]))
+  # no anchor on a cell whose LAI was assigned by `lai_nonveg`
+  lw <- terra::values(st$qa$flag_word, mat = TRUE)[, "flags_lai"]
+  bl <- st$qa$flag_bits$bit[st$qa$flag_bits$code == "EF_SURF_LAI_ASSIGNED"]
+  assigned <- !is.na(lw) & bitwAnd(as.integer(lw), bitwShiftL(1L, bl)) != 0L
+  expect_gt(sum(assigned & inside), 0L)
+  expect_false(any(assigned[res_e$anchors$pixels$cell]))
+  # negative case: no z_om below the minimum -> evaluated, no record
   st2 <- st
   l2 <- st2$lai
-  terra::values(l2) <- ifelse(!is.na(lai) & lai == 0, 0.1, lai)
+  terra::values(l2) <- ifelse(!is.na(lai) & lai < 0.3, 0.3, lai)
   st2$lai <- l2
   calls <- ewf_mock(st2, ter)
   res2 <- ewf_run(aoi, ewf_date(), weather = sta1, preset = "idaho2002_elev",
                   cache_dir = tempdir())
-  expect_false("EF_H_ZOM_UNDEFINED" %in% vapply(res2$flags, `[[`, "", "code"))
-  expect_true("EF_H_ZOM_UNDEFINED" %in%
+  expect_false("EF_H_ZOM_FLOOR_APPLIED" %in%
+                 vapply(res2$flags, `[[`, "", "code"))
+  expect_true("EF_H_ZOM_FLOOR_APPLIED" %in%
                 res2$provenance$flags_evaluated_by_stage$metric)
-  expect_identical(res2$provenance$counts[["zom_undefined"]], 0L)
+  expect_identical(res2$provenance$counts[["zom_floor_applied"]], 0L)
+})
+
+test_that("workflow_zom_floor() raises z_om to the minimum and keeps NA", {
+  z <- matrix(c(0, 0.004, 0.005, 0.02, NA, 0.1), 2, 3)
+  f <- workflow_zom_floor(z, 0.005)
+  expect_identical(dim(f$zom), dim(z))
+  expect_identical(f$zom, matrix(c(0.005, 0.005, 0.005, 0.02, NA, 0.1), 2, 3))
+  expect_identical(f$floored,
+                   matrix(c(TRUE, TRUE, FALSE, FALSE, FALSE, FALSE), 2, 3))
+  rec <- f$flags[[1]]
+  expect_identical(rec$code, "EF_H_ZOM_FLOOR_APPLIED")
+  expect_identical(rec$index, 1:2)
+  expect_identical(attr(f$flags, "evaluated"), "EF_H_ZOM_FLOOR_APPLIED")
+  none <- workflow_zom_floor(c(0.01, NA), 0.005)
+  expect_length(none$flags, 0L)
+  expect_identical(none$zom, c(0.01, NA))
+  expect_error(workflow_zom_floor(z, 0), class = "earthflux_input_error")
+  expect_error(workflow_zom_floor(z, NA_real_),
+               class = "earthflux_input_error")
 })
 
 test_that("the provenance records every option of the preset", {

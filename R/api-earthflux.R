@@ -302,7 +302,8 @@ earthflux <- function(aoi, date, weather, preset,
   }
   defined_forcing <- !is.na(x$etr_inst) & !is.na(x$etr_24) &
     !is.na(x$wind_speed_2m)
-  x$anchor_qa <- workflow_anchor_qa(st, fc, in_aoi & defined_forcing)
+  x$anchor_qa <- workflow_anchor_qa(st, fc, in_aoi & defined_forcing,
+                                    p$anchors$qa_exclude_codes)
 
   # METRIC chain (datum of Ts: the station, or the cold calibration point
   # when there is no representative station, set after the selection)
@@ -504,7 +505,7 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
       surface_critical_excluded = sum(ex$exclude & in_aoi),
       ter$counts,
       fc$counts,
-      zom_undefined = mt$zom_undefined,
+      zom_floor_applied = mt$zom_floor_applied,
       eta_24_valid = cnt_eta
     ),
     surface_critical_by_code = ex$counts,

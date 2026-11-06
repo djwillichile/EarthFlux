@@ -34,7 +34,7 @@ print.earthflux_preset <- function(x, ...) {
   show("Radiation", x$radiation)
   show("Soil heat flux, roughness, wind, lambda",
        c(soil_heat = x$soil_heat$method, zom = x$roughness$method,
-         zom_zero = x$roughness$zero, zom_station = x$wind$zom_station,
+         zom_min = x$roughness$zom_min, zom_station = x$wind$zom_station,
          d_station = x$wind$d_station, lambda = x$lambda$method))
   show("Anchors", x$anchors[c("aggregate", "search_area", "etrf_cold",
                               "etrf_hot")])
