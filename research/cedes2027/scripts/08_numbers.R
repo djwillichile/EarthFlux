@@ -37,6 +37,14 @@ add("NTestsError", sum(tests$error), "results/diagnostics/package_tests.csv", "e
 add("NTestsSkipped", sum(tests$skipped), "results/diagnostics/package_tests.csv", "skipped == TRUE", "count")
 add("NTestsPassed", sum(!tests$error & tests$failed == 0 & !tests$skipped),
     "results/diagnostics/package_tests.csv", "no error, no failure, not skipped", "count")
+ns <- readLines("NAMESPACE")
+add("NExports", sum(grepl("^export\\(", ns)), "NAMESPACE", "lines starting with export(",
+    "number of exported functions")
+add("NLinesR", sum(vapply(list.files("R", "\\.R$", full.names = TRUE),
+                          function(f) length(readLines(f, warn = FALSE)), 0)),
+    "R/*.R", "all files", "total lines of R source (code, roxygen and comments)")
+add("NDecisions", sum(grepl("^\\| D-", readLines(p("docs", "decisions.md")))),
+    "docs/decisions.md", "table rows starting with '| D-'", "number of study decisions")
 # Verification register of the package (dev/VERIFICATION.md section 2).
 vr <- c(VerRows = 49, VerVerified = 31, VerCorroborated = 3, VerCandidate = 9,
         VerDiscrepancies = 7, VerFixed = 2)

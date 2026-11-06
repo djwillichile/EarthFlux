@@ -19,7 +19,7 @@ test_that("every macro used in the documents is defined by numbers.tex", {
   latex <- c("LaTeX", "TeX")
   candidates <- setdiff(used, c(local, latex))
   # A macro used in the text must be a generated number or a LaTeX command.
-  generated_like <- candidates[grepl("^(CV|Pair|M[A-Z]|Cal|D[A-Z]|S[ABC]|Range|Dens|Moran|N[A-Z]|Ver|Scene|Rep|Ratio|OLS|EarthFlux|Seed|Same|NRuns|Vol)", candidates)]
+  generated_like <- candidates[grepl("^(CV|Pair|M[A-Z]|Cal|D[A-Z]|S[ABC]|Range|Dens|Moran|N[A-Z]|Ver|Scene|Rep|Ratio|OLS|EarthFlux|Seed|Same|NRuns|Vol|NExports|NLinesR|NDecisions)", candidates)]
   expect_true(all(generated_like %in% defined),
               info = paste(setdiff(generated_like, defined), collapse = ", "))
 })

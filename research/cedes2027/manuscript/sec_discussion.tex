@@ -93,6 +93,23 @@ evaluación. El propio estudio detectó un error en el script de análisis
 gracias a que el paquete registra las estaciones excluidas y su motivo, en
 lugar de excluirlas en silencio.
 
+\subsection{Estado de EarthFlux y hoja de ruta}
+
+EarthFlux \EarthFluxVersion{} (\NExports{} funciones públicas, \NLinesR{} líneas
+de código R) es todavía experimental, y el estudio lo muestra en sus propias
+condiciones de ejecución. Tres de sus limitaciones vienen del paquete: no
+existe aún el flujo integrado que encadene todas las etapas, por lo que hubo que
+combinar a mano unas veinte funciones y declarar \NDecisions{} decisiones; el
+preprocesamiento de MODIS no descarga escenas, por lo que el experimento de
+propagación usa una sola; y dos componentes centrales siguen como candidatos.
+El caso define además una necesidad nueva: un diagnóstico explícito de la
+extrapolación de GWR entre estaciones. Otras limitaciones no dependen del
+paquete, sino de los datos disponibles: la falta de mediciones públicas de
+flujos y la escasez de estaciones con viento y radiación media. La hoja de ruta
+del paquete (flujo integrado con configuraciones documentadas, descarga de
+múltiples escenas, validación con torres de flujo) responde directamente a lo
+que este caso puso en evidencia.
+
 \subsection{Implicaciones para la gestión sostenible del agua}
 
 En volumen, el desacuerdo entre GWR y la estación representativa equivale a
