@@ -56,27 +56,42 @@ names(elev_df)[3] <- "elevation"
 meta$role <- ifelse(meta$station_id == rep_station, "Representativa (C1)", "Estación")
 scene_ext <- terra::ext(terra::project(terra::as.polygons(terra::ext(scene),
                                                           crs = terra::crs(scene)), "EPSG:4326"))
+vbar1 <- function(h = 3) guide_colourbar(title.position = "right",
+                                         title.theme = element_text(angle = 90, hjust = 0.5, size = 7),
+                                         barheight = unit(h, "cm"), barwidth = unit(0.3, "cm"))
 p1a <- ggplot(elev_df, aes(x, y, fill = elevation)) + geom_raster() +
-  scale_fill_gradientn("Elevación (m)", colours = terrain.colors(10), na.value = "#cfe3f0") +
+  scale_fill_gradientn("Elevación (m)", colours = terrain.colors(10), na.value = "#cfe3f0",
+                       guide = vbar1(4)) +
   annotate("rect", xmin = scene_ext$xmin, xmax = scene_ext$xmax, ymin = scene_ext$ymin,
            ymax = scene_ext$ymax, fill = NA, colour = "red", linewidth = 0.4) +
   geom_point(data = meta, aes(lon, lat, shape = role), inherit.aes = FALSE, size = 1.4) +
-  scale_shape_manual(NULL, values = c("Estación" = 17, "Representativa (C1)" = 8)) +
-  coord_fixed(1.2) + map_theme + theme(legend.position = "bottom", legend.box = "vertical") +
+  scale_shape_manual(NULL, values = c("Estación" = 17, "Representativa (C1)" = 8),
+                     guide = guide_legend(position = "inside")) +
+  coord_fixed(1.2, expand = FALSE) + map_theme +
+  theme(legend.position = "right", legend.box = "vertical",
+        legend.position.inside = c(0.02, 0.02), legend.justification.inside = c(0, 0),
+        legend.background = element_rect(fill = scales::alpha("white", 0.85), colour = NA),
+        legend.text = element_text(size = 7), legend.key.size = unit(0.35, "cm"),
+        plot.title = element_text(size = 8)) +
   labs(title = "a) Red de estaciones y relieve")
 sc <- c(scene[["lst"]] - 273.15, scene[["ndvi"]], scene[["albedo"]])
 names(sc) <- c("lst_c", "ndvi", "albedo")
 sdf <- to_df(sc)
-mk <- function(col, title, pal) {
+ok1 <- !is.na(sdf$lst_c)
+lim1 <- coord_fixed(1.2, xlim = range(sdf$x[ok1]) + c(-0.03, 0.03),
+                    ylim = range(sdf$y[ok1]) + c(-0.03, 0.03), expand = FALSE)
+mk <- function(col, title, legend, pal) {
   ggplot(sdf, aes(x, y, fill = .data[[col]])) + geom_raster() + aoi_layer +
-    scale_fill_gradientn(NULL, colours = pal, na.value = "white") +
-    coord_fixed(1.2) + map_theme + labs(title = title) +
-    theme(legend.position = "bottom", legend.key.width = unit(0.7, "cm"))
+    scale_fill_gradientn(legend, colours = pal, na.value = "white", guide = vbar1(2.4)) +
+    scale_x_continuous(breaks = c(-72.6, -72.2)) +
+    lim1 + map_theme + labs(title = title) +
+    theme(legend.position = "right", plot.title = element_text(size = 8),
+          plot.margin = margin(1, 2, 1, 2))
 }
-p1b <- mk("lst_c", "b) LST MODIS (°C)", rev(hcl.colors(9, "YlOrRd")))
-p1c <- mk("ndvi", "c) NDVI", hcl.colors(9, "YlGn", rev = TRUE))
-p1d <- mk("albedo", "d) Albedo", hcl.colors(9, "Grays", rev = TRUE))
-save_fig(p1a + (p1b / p1c / p1d) + plot_layout(widths = c(1.3, 1)), "fig01_area", 17, 15,
+p1b <- mk("lst_c", "b) Temperatura superficial", "LST (°C)", rev(hcl.colors(9, "YlOrRd")))
+p1c <- mk("ndvi", "c) NDVI", "NDVI (-)", hcl.colors(9, "YlGn", rev = TRUE))
+p1d <- mk("albedo", "d) Albedo", "Albedo (-)", hcl.colors(9, "Grays", rev = TRUE))
+save_fig(p1a + (p1b / p1c / p1d) + plot_layout(widths = c(1.45, 1)), "fig01_area", 17, 13,
          data = meta)
 
 ## Figure 3: cross-validation metrics ---------------------------------------------
@@ -175,17 +190,6 @@ ed <- do.call(rbind, lapply(full_cfg, function(cf) {
   d
 }))
 ed$config <- factor(ed$config, cfg_levels)
-long_e <- do.call(rbind, lapply(names(lay), function(l)
-  data.frame(x = ed$x, y = ed$y, config = ed$config, flux = lay[[l]], value = ed[[l]])))
-long_e$flux <- factor(long_e$flux, lay)
-p5 <- ggplot(long_e, aes(x, y, fill = value)) + geom_raster() + aoi_layer +
-  facet_grid(flux ~ config) +
-  scale_fill_gradientn("W/m²", colours = hcl.colors(11, "Spectral", rev = TRUE),
-                       limits = c(-50, 800), oob = scales::squish, na.value = "white") +
-  coord_fixed(1.2) + map_theme
-save_fig(p5, "fig05_energy_balance", 18, 10.5)
-
-## Figure 6: ETa maps and differences against C1 ------------------------------------
 # Legend titles vertical next to the colour bars; the difference row keeps the
 # five columns of the ETa row (C1, the reference, left empty) so that every
 # difference map sits under its ETa map; the height matches the panels.
@@ -200,6 +204,27 @@ row_theme <- theme(plot.margin = margin(1, 2, 1, 2), legend.margin = margin(0, 0
 okc <- !is.na(ed$eta)
 map_lims <- coord_fixed(1.2, xlim = range(ed$x[okc]) + c(-0.03, 0.03),
                         ylim = range(ed$y[okc]) + c(-0.03, 0.03), expand = FALSE)
+# Energy balance: one row per flux with its own colour bar (P1-P99 of the
+# row), the same five columns and extent as the ETa figure.
+flux_lab <- c(rn = "Rn (W/m²)", g = "G (W/m²)", h = "H (W/m²)", le = "LE (W/m²)")
+flux_pal <- list(rn = hcl.colors(11, "YlOrRd", rev = TRUE), g = hcl.colors(11, "Oranges", rev = TRUE),
+                 h = hcl.colors(11, "Reds", rev = TRUE), le = hcl.colors(11, "YlGnBu", rev = TRUE))
+p5 <- lapply(seq_along(lay), function(i) {
+  l <- names(lay)[i]
+  lim <- stats::quantile(ed[[l]], c(0.01, 0.99), na.rm = TRUE)
+  g <- ggplot(ed, aes(x, y, fill = .data[[l]])) + geom_raster() + aoi_layer +
+    facet_grid(. ~ config) +
+    scale_fill_gradientn(flux_lab[[l]], colours = flux_pal[[l]], limits = lim,
+                         oob = scales::squish, na.value = "white") +
+    scale_x_continuous(breaks = c(-72.6, -72.2)) +
+    guides(fill = vbar()) + map_lims + map_theme + row_theme
+  if (i < length(lay)) g <- g + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  if (i > 1) g <- g + theme(strip.text = element_blank(), strip.background = element_blank())
+  g
+})
+save_fig(wrap_plots(p5, ncol = 1), "fig05_energy_balance", 18, 15.2)
+
+## Figure 6: ETa maps and differences against C1 ------------------------------------
 eta_lim <- stats::quantile(ed$eta, c(0.01, 0.99), na.rm = TRUE)
 p6a <- ggplot(ed, aes(x, y, fill = eta)) + geom_raster() + aoi_layer +
   facet_grid(. ~ config) +
@@ -319,7 +344,7 @@ tex_table("tab_metric_summary.tex",
           paste("Variable &", paste(cfs, collapse = " & "), "\\\\"),
           rows, paste0("l", strrep("r", length(cfs))),
           "Balance de energía y $\\mathrm{ET_a}$ de la escena de Cauquenes (15-02-2019) por configuración: media (desviación estándar espacial) y parámetros de calibración.",
-          "tab:metric", notes = "Flujos en \\si{\\watt\\per\\square\\metre}. Las celdas ancla son las mismas en todas las configuraciones.",
+          "tab:metric", notes = "Flujos en \\si{\\watt\\per\\square\\metre}. Las celdas ancla son las mismas en todas las configuraciones salvo C2-OLS, cuyo dominio válido se reduce porque su viento sale del rango físico.",
           size = "\\footnotesize")
 message("figures and tables written")
 
