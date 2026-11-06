@@ -20,6 +20,16 @@ articles:
       - articles/design
 
 reference:
+  - title: Workflow
+    desc: >
+      Actual evapotranspiration of an area and a date in one call: automatic
+      MODIS surface state and elevation model, weather from stations or ERA5
+      (Open-Meteo), and the METRIC chain with a named, documented preset that
+      sets every scientific option.
+    contents:
+      - earthflux
+      - ef_presets
+      - ef_preset
   - title: METRIC
     desc: Physics core of the METRIC surface energy balance.
   - subtitle: Radiation components

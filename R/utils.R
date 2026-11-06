@@ -83,6 +83,33 @@
 #   earthflux_modis_driver_error    GDAL HDF4 driver not available
 #                                   (R/io-modis.R; earthflux_error only)
 #
+# Downloads and workflow (M5; earthflux_error unless stated):
+#
+#   earthflux_credentials_error     NASA Earthdata token missing from
+#                                   EARTHDATA_TOKEN (R/download-modis.R,
+#                                   R/dem.R; one class for both modules)
+#   earthflux_download_error        HTTP or transfer failure (fields status
+#                                   and url without query secrets;
+#                                   R/download-modis.R, R/dem.R,
+#                                   R/forcing-openmeteo.R)
+#   earthflux_modis_granule_error   CMR search without the expected granule
+#                                   (R/download-modis.R)
+#   earthflux_dem_coverage_error    no NASADEM tile covers the grid (R/dem.R;
+#                                   also earthflux_input_error)
+#   earthflux_openmeteo_response_error  malformed Open-Meteo response
+#                                   (R/forcing-openmeteo.R)
+#   earthflux_weather_coverage_error  the weather of earthflux() does not
+#                                   cover the overpass time, the day of the
+#                                   daily reference ET or the 24 hours
+#                                   before (R/api-prepare.R; subclass of
+#                                   earthflux_input_error, field variables)
+#   earthflux_dem_incomplete_warning  cells with partial elevation-model
+#                                   support (R/dem.R; earthflux_warning)
+#   earthflux_unverified_preset_warning  earthflux() run with a preset that
+#                                   is not VERIFICADA (R/api-earthflux.R;
+#                                   earthflux_warning; fields preset and
+#                                   unverified, decision M5-08)
+#
 # Dimension mismatches are earthflux_input_error everywhere (no
 # earthflux_dimension_error class; DECISIONS.md section 1.3).
 
