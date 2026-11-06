@@ -84,10 +84,17 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           pak-version: repo
-          extra-packages: |
-            any::rcmdcheck
-            terra@1.7-65
+          extra-packages: any::rcmdcheck
           needs: check
+
+      # Installed on its own, after the other dependencies: as a pak ref
+      # (terra@1.7-65) its Suggests are resolved too, and leaflet -> raster
+      # requires terra (>= 1.8-5), so the solver refuses the pinned version.
+      - name: Install the minimum terra from the CRAN archive
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev
+          Rscript -e 'install.packages("https://cloud.r-project.org/src/contrib/Archive/terra/terra_1.7-65.tar.gz", repos = NULL, type = "source")'
 
       - name: Confirm the installed terra is the declared minimum
         run: |
