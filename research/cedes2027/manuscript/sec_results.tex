@@ -35,7 +35,7 @@ pruebas (fuente: \texttt{config/verification\_map.csv} y
 La regla D-02 seleccionó como estación representativa
 \emph{\RepStationName}, a \RepStationDist{}~km del centroide de la provincia: la estación más
 cercana con registros completos de temperatura, humedad y viento. La validación
-cruzada espacial (\NFolds{} pliegues, \NCVDays{} días, \num[round-precision=0]{\NCVPred}
+cruzada espacial (\NFolds{} pliegues, \NCVDays{} días, \NCVPred
 predicciones fuera de muestra) entregó los errores de la tabla~\ref{tab:cv}
 y la figura~\ref{fig:cv}.
 
@@ -131,7 +131,7 @@ el de C1 (D-14).}\label{fig:forcing}
 
 Las celdas ancla fueron idénticas en \NRunsSameAnchors{} de las \NRuns{}
 corridas; la excepción es C2-OLS, cuyo dominio válido se redujo a
-\num[round-precision=0]{\OLSValidCells} celdas porque el viento regionalizado
+\OLSValidCells celdas porque el viento regionalizado
 salió del dominio físico, de modo que sus anclas se seleccionaron dentro de
 ese dominio y C2-OLS no es comparable con el resto. Los cambios del forzamiento se tradujeron en cambios de la
 calibración: $b$ varió entre \CalCThreeGWRB{} (GWR) y \CalCTwoIDWB{} (IDW) y
@@ -162,7 +162,7 @@ dominio físico.}\label{fig:eb}
 La $\ETa$ media de la escena fue \MEtaCOneMean~mm/d con C1,
 \MEtaCOneLapMean~mm/d con C1-lap, \MEtaCTwoIDWMean~mm/d con IDW,
 \MEtaCThreeGWRMean~mm/d con GWR y \MEtaCTwoOLSMean~mm/d con la regresión
-global, esta última sobre solo \num[round-precision=0]{\OLSValidCells} celdas
+global, esta última sobre solo \OLSValidCells celdas
 válidas (figura~\ref{fig:eta}). Frente a C1, GWR redujo la $\ETa$ media en
 \DEtaCThreeGWRMean~mm/d (\DEtaCThreeGWRPct\,\%), con diferencias locales
 entre \DEtaCThreeGWRLo{} y \DEtaCThreeGWRHi~mm/d (P5--P95) y
