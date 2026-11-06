@@ -23,14 +23,15 @@ evapotranspiration) and its regionalization over the working grid
 and GWR); the internal MODIS preprocessing into the surface state; and
 the example scene
 [cauquenes_modis](https://djwillichile.github.io/EarthFlux/reference/cauquenes_modis.md).
-The integrated workflow `earthflux()` does not exist yet. Most METRIC
-formulations are candidates pending verification against the primary
-reference (Allen et al., 2007); the reference evapotranspiration
-(FAO-56, ASCE-EWRI 2005), the unit conversions and the MODIS product
-facts are verified. No result has been validated: EarthFlux is not for
-operational or scientific production use. The use of GWR for
-meteorological forcing is treated as a research hypothesis that has not
-been validated.
+The integrated workflow
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+does not exist yet. Most METRIC formulations are candidates pending
+verification against the primary reference (Allen et al., 2007); the
+reference evapotranspiration (FAO-56, ASCE-EWRI 2005), the unit
+conversions and the MODIS product facts are verified. No result has been
+validated: EarthFlux is not for operational or scientific production
+use. The use of GWR for meteorological forcing is treated as a research
+hypothesis that has not been validated.
 
 **Design principles.**
 

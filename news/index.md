@@ -5,15 +5,18 @@
 ### New features
 
 - Automatic search and download of the MODIS granules of the surface
-  state (internal, for the coming `earthflux()`): the sinusoidal tiles
-  under an area of interest, one NASA CMR granule per product, tile and
-  date (MOD11A1/MYD11A1, MCD43A3, MOD13A2, MCD15A2H; composite periods
-  from the granule metadata), and the LP DAAC download with the NASA
-  Earthdata token read only from `EARTHDATA_TOKEN`, into a validated
-  cache (`tools::R_user_dir("EarthFlux", "cache")` by default). Areas
-  that need more than one tile are not assembled yet.
+  state (internal, for the coming
+  [`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)):
+  the sinusoidal tiles under an area of interest, one NASA CMR granule
+  per product, tile and date (MOD11A1/MYD11A1, MCD43A3, MOD13A2,
+  MCD15A2H; composite periods from the granule metadata), and the LP
+  DAAC download with the NASA Earthdata token read only from
+  `EARTHDATA_TOKEN`, into a validated cache
+  (`tools::R_user_dir("EarthFlux", "cache")` by default). Areas that
+  need more than one tile are not assembled yet.
 
-- Automatic elevation model (internal, for the coming `earthflux()`;
+- Automatic elevation model (internal, for the coming
+  [`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md);
   decision M5-06): NASADEM_HGT v001 tiles are found with NASA CMR,
   downloaded from LP DAAC with the Earthdata token of the environment,
   validated and cached, and turned into elevation, slope, aspect, mean
@@ -35,6 +38,33 @@
   provenance. New flag `EF_WS_GRIDDED_FORCING` (warning, object scope).
   Adds `jsonlite` to Imports.
 
+- `earthflux(aoi, date, weather, preset)`, the integrated workflow
+  (decisions M5-04 and M5-08 to M5-22): MODIS surface state and NASADEM
+  elevation downloaded and prepared on the 1 km MODIS grid, weather from
+  a station table (one station: its values everywhere; several: inverse
+  distance weighting) or from ERA5 via Open-Meteo, hourly alfalfa
+  reference ET and wind regionalized and interpolated to the overpass
+  time of each cell, anchors selected before the net radiation (incoming
+  longwave from the cold anchor), calibration of dT and daily ETa.
+  Returns an `earthflux_result` with every intermediate layer, the
+  objects of each stage, flag words per stage, flags and a provenance
+  with every effective option
+  ([`print()`](https://rdrr.io/r/base/print.html),
+  [`summary()`](https://rdrr.io/r/base/summary.html) and
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) methods). Two
+  presets, `idaho2002_elev` and `idaho2002_flat` (SEBAL Idaho manual
+  forms with and without its elevation adjustments, both `CANDIDATA`,
+  version 1), listed by
+  [`ef_presets()`](https://djwillichile.github.io/EarthFlux/reference/ef_presets.md)
+  and shown in full by
+  [`ef_preset()`](https://djwillichile.github.io/EarthFlux/reference/ef_preset.md);
+  a preset that is not verified raises one
+  `earthflux_unverified_preset_warning` listing its unverified elements.
+  New flag `EF_H_ZOM_UNDEFINED` (info, cell scope, bit 10 of the H
+  word): the momentum roughness length is 0 where LAI is 0 and no
+  minimum is applied, so the cell is `NA` from the sensible heat flux
+  on. New error class `earthflux_weather_coverage_error`.
+
 ### Bug fixes
 
 - The MODIS readers and `modis_provenance()` now work with older and
@@ -54,6 +84,12 @@
 
 ### Documentation
 
+- [`ef_station_ref_et()`](https://djwillichile.github.io/EarthFlux/reference/ef_station_ref_et.md):
+  the daily sum of the hourly reference ET is the daily reference ET of
+  the METRIC extrapolation verified against the SEBAL Idaho manual
+  (Waters et al., 2002, Eq. 44); the documentation said it was still to
+  be checked.
+
 - `citation("EarthFlux")` and `CITATION.cff` give the Zenodo DOI of the
   package (concept DOI 10.5281/zenodo.23981325, which resolves to the
   latest release; 0.1.0 is 10.5281/zenodo.23981326), and the README
@@ -67,9 +103,11 @@
 
 First release of EarthFlux. It is **experimental and not for operational
 or scientific production use**: no result has been validated yet, and
-interfaces may change. The integrated `earthflux()` workflow, its
-presets, the automatic download of MODIS products, elevation models and
-weather forcing, and validation results are not part of this release.
+interfaces may change. The integrated
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+workflow, its presets, the automatic download of MODIS products,
+elevation models and weather forcing, and validation results are not
+part of this release.
 
 ### Verification
 

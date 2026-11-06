@@ -22,11 +22,13 @@ latent heat flux, instantaneous and daily ET), the meteorological
 forcing (station tables, quality control, reference ET) and its
 regionalization (including GWR) are available as functions, and the
 MODIS preprocessing is internal, with an example scene shipped as the
-dataset `cauquenes_modis`. The integrated `earthflux()` workflow does
-not exist yet. Most METRIC formulations are verified against the SEBAL
-Idaho manual of the METRIC authors (Waters et al., 2002), the direct
-predecessor of METRIC; the others remain candidates. No result shown in
-the package documentation should be interpreted as validated.
+dataset `cauquenes_modis`. The integrated
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+workflow does not exist yet. Most METRIC formulations are verified
+against the SEBAL Idaho manual of the METRIC authors (Waters et al.,
+2002), the direct predecessor of METRIC; the others remain candidates.
+No result shown in the package documentation should be interpreted as
+validated.
 
 ## Conceptual workflow
 
@@ -91,8 +93,10 @@ summary(rl_out) # W m-2; NA outside the province and where LST is missing
 
 ## Next steps
 
-The integrated `earthflux()` workflow (milestone M5) will chain these
-components with automatic inputs (MODIS products, elevation model and
-gridded weather forcing) and documented presets. The scientific
-comparison of a single station, simple interpolation and GWR as
-meteorological forcing (milestone M6) comes after it.
+The integrated
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+workflow (milestone M5) will chain these components with automatic
+inputs (MODIS products, elevation model and gridded weather forcing) and
+documented presets. The scientific comparison of a single station,
+simple interpolation and GWR as meteorological forcing (milestone M6)
+comes after it.

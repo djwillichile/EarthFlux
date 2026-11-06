@@ -166,7 +166,7 @@ Specification:
 
 | Function | Purpose | Status |
 |----|----|----|
-| `earthflux()` | Complete workflow built on the same low-level functions, with automatic inputs (MODIS, elevation model, gridded weather forcing) and presets, returning all intermediate components, diagnostics and provenance | Planned |
+| [`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md) | Complete workflow built on the same low-level functions, with automatic inputs (MODIS, elevation model, gridded weather forcing) and presets, returning all intermediate components, diagnostics and provenance | Planned |
 
 ## More information
 

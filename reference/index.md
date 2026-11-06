@@ -1,5 +1,19 @@
 # Package index
 
+## Workflow
+
+Actual evapotranspiration of an area and a date in one call: automatic
+MODIS surface state and elevation model, weather from stations or ERA5
+(Open-Meteo), and the METRIC chain with a named, documented preset that
+sets every scientific option.
+
+- [`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+  : Actual evapotranspiration of a scene with a preset
+- [`ef_presets()`](https://djwillichile.github.io/EarthFlux/reference/ef_presets.md)
+  : Registered presets of earthflux()
+- [`ef_preset()`](https://djwillichile.github.io/EarthFlux/reference/ef_preset.md)
+  : Options of a preset of earthflux()
+
 ## METRIC
 
 Physics core of the METRIC surface energy balance.

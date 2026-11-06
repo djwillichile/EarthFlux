@@ -321,11 +321,13 @@ include, and this article does not show:
   it yet.
 - **Elevation model**: no DEM of the province (needed for pressure,
   slope, aspect and the datum of the surface temperature).
-- **Map of actual evapotranspiration (ETa)**: there is no `earthflux()`
+- **Map of actual evapotranspiration (ETa)**: there is no
+  [`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
   workflow and no ETa result for the scene.
 
-These are the targets of milestone M5 (the `earthflux()` workflow with
-automatic MODIS, elevation model and gridded weather forcing, and
-presets). The comparison of forcing configurations against independent
-observations (milestone M6) comes after it. Until then, no ETa from
-EarthFlux should be interpreted as validated.
+These are the targets of milestone M5 (the
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+workflow with automatic MODIS, elevation model and gridded weather
+forcing, and presets). The comparison of forcing configurations against
+independent observations (milestone M6) comes after it. Until then, no
+ETa from EarthFlux should be interpreted as validated.

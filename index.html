@@ -90,7 +90,8 @@
 <li>
 <strong>MODIS preprocessing</strong> (internal, not exported yet) into the surface state of the METRIC chain, and the example scene <code>cauquenes_modis</code> (Cauquenes province, Chile, 15 February 2019).</li>
 </ul>
-<p>What 0.1.0 does <strong>not</strong> include: the integrated <code>earthflux()</code> workflow and its presets, the automatic download of MODIS products, the elevation model and gridded weather forcing, and any validation results.</p>
+<p>What 0.1.0 does <strong>not</strong> include: the integrated <code><a href="reference/earthflux.html">earthflux()</a></code> workflow and its presets, the automatic download of MODIS products, the elevation model and gridded weather forcing, and any validation results.</p>
+<p>The development version adds the integrated workflow <code>earthflux(aoi, date, weather, preset)</code>: it downloads and prepares the MODIS surface state and the NASADEM elevation model (NASA Earthdata token in <code>EARTHDATA_TOKEN</code>), takes a weather station table or hourly ERA5 data from the Open-Meteo historical weather API, and runs the METRIC chain with a named preset that sets every scientific option (<code><a href="reference/ef_presets.html">ef_presets()</a></code>, <code><a href="reference/ef_preset.html">ef_preset()</a></code>). Both current presets are <strong>candidates</strong>: <code><a href="reference/earthflux.html">earthflux()</a></code> warns and lists their unverified elements.</p>
 <p>Verification status:</p>
 <ul>
 <li>

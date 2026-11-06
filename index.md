@@ -68,9 +68,22 @@ What 0.1.0 includes:
   state of the METRIC chain, and the example scene `cauquenes_modis`
   (Cauquenes province, Chile, 15 February 2019).
 
-What 0.1.0 does **not** include: the integrated `earthflux()` workflow
-and its presets, the automatic download of MODIS products, the elevation
-model and gridded weather forcing, and any validation results.
+What 0.1.0 does **not** include: the integrated
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+workflow and its presets, the automatic download of MODIS products, the
+elevation model and gridded weather forcing, and any validation results.
+
+The development version adds the integrated workflow
+`earthflux(aoi, date, weather, preset)`: it downloads and prepares the
+MODIS surface state and the NASADEM elevation model (NASA Earthdata
+token in `EARTHDATA_TOKEN`), takes a weather station table or hourly
+ERA5 data from the Open-Meteo historical weather API, and runs the
+METRIC chain with a named preset that sets every scientific option
+([`ef_presets()`](https://djwillichile.github.io/EarthFlux/reference/ef_presets.md),
+[`ef_preset()`](https://djwillichile.github.io/EarthFlux/reference/ef_preset.md)).
+Both current presets are **candidates**:
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+warns and lists their unverified elements.
 
 Verification status:
 
