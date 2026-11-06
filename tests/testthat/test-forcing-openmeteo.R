@@ -609,6 +609,33 @@ test_that("openmeteo_fetch() caches the response under a key without the API key
   expect_length(list.files(cache, pattern = "\\.part$", recursive = TRUE), 0L)
 })
 
+test_that("openmeteo_fetch() does not cache a response with unpublished hours", {
+  cache <- tempfile("om-cache-")
+  dir.create(cache)
+  on.exit(unlink(cache, recursive = TRUE), add = TRUE)
+  calls <- 0L
+  # ERA5 hours not yet published come back as JSON null.
+  local_mocked_bindings(openmeteo_http_get = function(url, destfile) {
+    calls <<- calls + 1L
+    json <- sub('("temperature_2m"\\s*:\\s*\\[)\\s*[-0-9.eE]+', "\\1null",
+                paste(om_server(url), collapse = "\n"))
+    writeLines(json, destfile)
+    200L
+  })
+  st <- openmeteo_fetch(om_aoi(), as.Date("2019-02-15"),
+                        elevation_adjust = FALSE,
+                        instant_values = "end_of_period", cache_dir = cache)
+  expect_s3_class(st, "earthflux_station_table")
+  expect_true(anyNA(st$observations$air_temperature))
+  expect_length(list.files(file.path(cache, "openmeteo")), 0L)
+  expect_length(list.files(cache, pattern = "\\.part$", recursive = TRUE), 0L)
+  expect_false(st$provenance$cache$hit)
+  # The next call asks the API again instead of reusing the gap.
+  openmeteo_fetch(om_aoi(), as.Date("2019-02-15"), elevation_adjust = FALSE,
+                  instant_values = "end_of_period", cache_dir = cache)
+  expect_identical(calls, 2L)
+})
+
 test_that("the cache key ignores the API key and the endpoint", {
   q <- openmeteo_query(om_points(), as.Date("2019-02-14"),
                        as.Date("2019-02-16"), FALSE)

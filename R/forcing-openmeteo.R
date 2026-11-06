@@ -1317,16 +1317,54 @@ openmeteo_fetch <- function(aoi, date, elevation_adjust, instant_values,
                                   elevation_adjust = elevation_adjust,
                                   chunk_size = chunk_size,
                                   retry_wait = retry_wait)
-    dir.create(dir, recursive = TRUE, showWarnings = FALSE)
-    part <- paste0(path, ".part")
-    on.exit(unlink(part), add = TRUE)
-    writeLines(response$json, part, useBytes = TRUE)
-    openmeteo_response(openmeteo_read_text(part), response$request)
-    if (!file.rename(part, path)) {
-      openmeteo_abort(sprintf("Could not write the cache file %s.", path))
-    }
-    response$request$cache_path <- path
-    response$request$cache_hit <- FALSE
+    response <- openmeteo_cache_write(response, dir, path)
   }
   openmeteo_station_table(response, instant_values)
+}
+
+#' Write a complete Open-Meteo response to the cache
+#'
+#' A response with any `null` value in an hourly series is returned without
+#' being cached: ERA5 is published with a delay of about five days, and the
+#' hours not yet available come back as `null`. Caching them would freeze
+#' the gap; the next call requests the window again instead.
+#'
+#' @param response An `earthflux_openmeteo_response` from the API.
+#' @param dir,path Cache directory and file.
+#' @return The response, with `cache_path` and `cache_hit` set when cached.
+#' @noRd
+openmeteo_cache_write <- function(response, dir, path) {
+  if (!openmeteo_response_complete(response)) {
+    response$request$cache_path <- NA_character_
+    response$request$cache_hit <- FALSE
+    response$request$cache_skipped <- "incomplete series (null values)"
+    return(response)
+  }
+  dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  part <- paste0(path, ".part")
+  on.exit(unlink(part), add = TRUE)
+  writeLines(response$json, part, useBytes = TRUE)
+  openmeteo_response(openmeteo_read_text(part), response$request)
+  if (!file.rename(part, path)) {
+    openmeteo_abort(sprintf("Could not write the cache file %s.", path))
+  }
+  response$request$cache_path <- path
+  response$request$cache_hit <- FALSE
+  response
+}
+
+#' Whether every hourly series of a response is complete (no `null`)
+#'
+#' @param response An `earthflux_openmeteo_response`.
+#' @return `TRUE` when no hourly value of any location is `null`.
+#' @noRd
+openmeteo_response_complete <- function(response) {
+  for (loc in response$locations) {
+    for (nm in setdiff(names(loc$hourly), "time")) {
+      if (any(vapply(loc$hourly[[nm]], is.null, logical(1)))) {
+        return(FALSE)
+      }
+    }
+  }
+  TRUE
 }
