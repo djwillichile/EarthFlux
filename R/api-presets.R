@@ -38,7 +38,7 @@ workflow_preset_names <- function() {
 #' version 2, `CANDIDATA`), recalibrated for 1 km MODIS pixels on the
 #' Cauquenes and Maule scenes of 2019-02-15
 #' (dev/verification/anchors-m5-23.md). Physical intent of the SEBAL Idaho
-#' manual (Waters et al., 2002, pp. 22-23 and 30-31, appendix 7): cold =
+#' manual (Waters et al., 2002, pp. 23 and 30-31, appendix 7): cold =
 #' well-watered full-cover (agricultural) vegetation, very cold but not
 #' extremely cold; hot = dry bare agricultural soil, with an albedo similar
 #' to the other dry fields, not a desert, rock or mountain slope.
@@ -82,7 +82,7 @@ workflow_anchor_criteria <- function(cold_ndvi = 0.90, hot_ndvi = 0.10) {
     quantile_type = 7,
     source = paste0(
       "EarthFlux preset idaho2002 v2 (dev/specs/presets.md 4; DECISIONS.md ",
-      "M5-23): physical intent of Waters et al. (2002), pp. 22-23, 30-31 ",
+      "M5-23): physical intent of Waters et al. (2002), pp. 23, 30-31 ",
       "and appendix 7, with thresholds for 1 km MODIS pixels set from the ",
       "Cauquenes and Maule scenes of 2019-02-15 (no primary source)"
     ),

@@ -44,12 +44,12 @@ Cauquenes.
 ## 2. Intención física (manual SEBAL-Idaho, Waters et al., 2002)
 
 - Ancla fría: "wet, well-irrigated crop surface having full ground cover by
-  vegetation" (p. 22); campo agrícola bien regado de cobertura plena, "very
+  vegetation" (p. 23); campo agrícola bien regado de cobertura plena, "very
   cold, but not extremely cold" (ap. 7, pp. 66–67, pasos 5 y 7); guías:
   albedo 0,22–0,24 (alfalfa de referencia), LAI 4–6 (cobertura plena,
   LAI > 3), cerca de la estación.
 - Ancla caliente: "dry, bare agricultural field where ET is assumed to be
-  zero" (p. 22; p. 31, paso 5b); no un desierto, asfalto, techo o ladera de
+  zero" (p. 23; p. 31, paso 5b); no un desierto, asfalto, techo o ladera de
   montaña (ap. 7, p. 72, paso 2); albedo "similar to other dry and bare
   fields", LAI 0–0,4 (paso 3); no el píxel más caliente (p. 73).
 

@@ -162,7 +162,7 @@ No bloquean (formas V-I/V): Rn, τ, ε_a, RL↓/RL↑, G, z_om por LAI, u*, rah,
 ## 4. Criterios de anclas (ambos presets; `status = "CANDIDATA"`; M5-23)
 
 Versión 2 (M5-23, reemplaza los criterios M5-10 de la versión 1).
-Intención física del manual (Waters et al., 2002, pp. 22–23 y 30–31; ap. 7,
+Intención física del manual (Waters et al., 2002, pp. 23 y 30–31; ap. 7,
 pp. 66–74; V#42): frío = vegetación agrícola de cobertura plena bien
 regada, "very cold, but not extremely cold"; caliente = suelo agrícola
 desnudo y seco, con albedo como el de otros campos secos, no desierto,
