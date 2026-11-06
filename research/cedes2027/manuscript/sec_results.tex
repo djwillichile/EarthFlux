@@ -126,14 +126,17 @@ en METRIC (salvo el viento de GWR, que no fue factible).
 \centering
 \includegraphics[width=\textwidth]{fig04_forcing_maps.pdf}
 \caption{Temperatura del aire, presión de vapor y viento a 2~m regionalizados
-a las 14:00~UTC del 15-02-2019 por configuración (grilla UTM~18S de 1~km;
-mostrados en coordenadas geográficas). El viento de C3-GWR se reemplazó por
-el de C1 (D-14).}\label{fig:forcing}
+a las 14:00~UTC del 15 de febrero de 2019, por configuración, en la grilla
+UTM~18S de 1~km que rodea la escena (mostrada en WGS~84). Escala común por fila,
+con valores fuera del rango P1--P99 saturados (p.\,ej., los máximos locales de
+GWR y la extrapolación del viento por regresión global). El gradiente de C1-lap
+solo se aplica a la temperatura (en las otras filas equivale a C1); GWR del
+viento no fue factible y en METRIC se usó el campo de C1 (D-14).}\label{fig:forcing}
 \end{figure}
 
 Las celdas ancla fueron idénticas en \NRunsSameAnchors{} de las \NRuns{}
 corridas; la excepción es C2-OLS, cuyo dominio válido se redujo a
-\OLSValidCells celdas porque el viento regionalizado
+\OLSValidCells{} celdas porque el viento regionalizado
 salió del dominio físico, de modo que sus anclas se seleccionaron dentro de
 ese dominio y C2-OLS no es comparable con el resto. Los cambios del forzamiento se tradujeron en cambios de la
 calibración: $b$ varió entre \CalCThreeGWRB{} (GWR) y \CalCTwoIDWB{} (IDW) y
@@ -164,7 +167,7 @@ dominio físico.}\label{fig:eb}
 La $\ETa$ media de la escena fue \MEtaCOneMean~mm/d con C1,
 \MEtaCOneLapMean~mm/d con C1-lap, \MEtaCTwoIDWMean~mm/d con IDW,
 \MEtaCThreeGWRMean~mm/d con GWR y \MEtaCTwoOLSMean~mm/d con la regresión
-global, esta última sobre solo \OLSValidCells celdas
+global, esta última sobre solo \OLSValidCells{} celdas
 válidas (figura~\ref{fig:eta}). Frente a C1, GWR redujo la $\ETa$ media en
 \DEtaCThreeGWRMean~mm/d (\DEtaCThreeGWRPct\,\%), con diferencias locales
 entre \DEtaCThreeGWRLo{} y \DEtaCThreeGWRHi~mm/d (P5--P95) y

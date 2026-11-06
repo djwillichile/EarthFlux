@@ -119,15 +119,49 @@ fd <- do.call(rbind, lapply(fs, function(f) {
 }))
 fd <- fd[fd$config != "C1-lap" | fd$variable == "air_temperature", ]
 fd$config <- factor(fd$config, cfg_levels)
-p4 <- lapply(names(var_lab), function(v) {
-  ggplot(fd[fd$variable == v, ], aes(x, y, fill = value)) + geom_raster() + aoi_layer +
-    facet_grid(. ~ config) +
+# Same layout as the ETa figure: rows aligned in the five configuration
+# columns, legend titles vertical to the right of the colour bars, one tight
+# extent; empty panels say why they are empty. Colour limits per row are the
+# P1-P99 of the row (values beyond are saturated), so that the out-of-domain
+# extrapolation of the global regression of the wind does not flatten the rest.
+fext <- list(x = range(fd$x[!is.na(fd$value)]), y = range(fd$y[!is.na(fd$value)]))
+flims <- coord_fixed(1.2, xlim = fext$x, ylim = fext$y, expand = FALSE)
+fbar <- function() guide_colourbar(title.position = "right",
+                                   title.theme = element_text(angle = 90, hjust = 0.5, size = 6.5),
+                                   barheight = unit(2.0, "cm"), barwidth = unit(0.3, "cm"))
+ftheme <- theme(plot.margin = margin(1, 2, 1, 2), legend.margin = margin(0, 0, 0, 2),
+                strip.text = element_text(size = 7, margin = margin(1, 0, 1, 0)),
+                axis.text = element_text(size = 5), panel.spacing.x = unit(1.5, "mm"))
+empty_label <- function(v) {
+  lab <- data.frame(config = factor(character(), cfg_levels), label = character())
+  if (v != "air_temperature") lab <- rbind(lab, data.frame(config = "C1-lap", label = "no aplica\n(solo temperatura)"))
+  present <- unique(as.character(fd$config[fd$variable == v]))
+  for (cf in setdiff(cfg_levels, c(present, "C1-lap")))
+    lab <- rbind(lab, data.frame(config = cf, label = "no factible"))
+  lab$config <- factor(lab$config, cfg_levels)
+  lab$x <- rep(mean(fext$x), nrow(lab)); lab$y <- rep(mean(fext$y), nrow(lab))
+  lab
+}
+nv <- length(var_lab)
+p4 <- lapply(seq_along(var_lab), function(i) {
+  v <- names(var_lab)[i]
+  d <- fd[fd$variable == v, ]
+  lim <- stats::quantile(d$value, c(0.01, 0.99), na.rm = TRUE)
+  g <- ggplot(d, aes(x, y, fill = value)) + geom_raster() + aoi_layer +
+    geom_label(data = empty_label(v), aes(x, y, label = label), inherit.aes = FALSE,
+               size = 2.3, colour = "grey40", fontface = "italic", fill = "white",
+               label.size = 0, label.padding = unit(1.5, "pt")) +
+    facet_grid(. ~ config, drop = FALSE) +
     scale_fill_gradientn(var_lab[[v]], colours = hcl.colors(11, if (v == "air_temperature")
       "RdYlBu" else if (v == "vapour_pressure") "BrBG" else "Purples", rev = v == "air_temperature"),
-      na.value = "white") +
-    coord_fixed(1.2) + map_theme + theme(legend.position = "right")
+      limits = lim, oob = scales::squish, na.value = "white") +
+    scale_x_continuous(breaks = c(-72.8, -72.0)) +
+    guides(fill = fbar()) + flims + map_theme + ftheme
+  if (i < nv) g <- g + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  if (i > 1) g <- g + theme(strip.text = element_blank(), strip.background = element_blank())
+  g
 })
-save_fig(wrap_plots(p4, ncol = 1), "fig04_forcing_maps", 19, 11.5)
+save_fig(wrap_plots(p4, ncol = 1), "fig04_forcing_maps", 18, 9.6)
 
 ## Figure 5: energy balance and ETa per configuration -----------------------------
 runs_files <- list.files(p("results", "maps"), pattern = "^metric_.*\\.tif$", full.names = TRUE)
