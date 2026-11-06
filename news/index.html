@@ -37,7 +37,7 @@
 <div class="section level3">
 <h3 id="bug-fixes-0-1-0-9000">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-0-9000"></a></h3>
 <ul><li><p>The MODIS readers and <code>modis_provenance()</code> now work with older and newer terra alike. <code><a href="https://rspatial.github.io/terra/reference/metags.html" class="external-link">terra::metags()</a></code> returns a named character vector up to terra 1.8-29 and a data frame (with metadata domains) from 1.8-42, and <code>terra::gdal(lib = "all")</code> returns a named character vector up to 1.9-45 and a data frame from 1.9-46; both shapes are now handled. With terra 1.7-65 the tag lookup failed (“missing value where TRUE/FALSE needed”) and the provenance record failed on <code>$</code>.</p></li>
-<li><p><code>DESCRIPTION</code> now requires <code>terra (&gt;= 1.7-65)</code>, the oldest release on which the test suite has been run (<code>metags()</code> itself exists from 1.7-55).</p></li>
+<li><p><code>DESCRIPTION</code> now requires <code>terra (&gt;= 1.7-65)</code>, the oldest release on which the test suite has been run (<code>metags()</code> itself exists from 1.7-55). A new CI job (<code>min-terra</code>) runs <code>R CMD check</code> with R 4.3 and that terra release, so regressions on the minimum are caught.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-0-1-0-9000">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-1-0-9000"></a></h3>
