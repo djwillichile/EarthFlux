@@ -122,6 +122,25 @@ esa fecha.
 > 11. **E1/E2** (`"split_window_regression"`, `"tes_regression"`): siguen
 >    `earthflux_method_not_implemented`; lo que falta para implementarlas
 >    está en la lista de §8.2 (M4-30).
+>
+> **Descarga automática (M5, 2026-11-06; M5-03).** `R/download-modis.R`
+> (interno, `@noRd`): `modis_tiles_for_aoi(aoi)` (teselas cuya extensión
+> toca la caja del AOI en la grilla sinusoidal, la misma caja que recortan
+> los lectores; `DERIVADA` de §4), `modis_search(products, date, tiles,
+> collection = "061")` (CMR, proveedor `LPCLOUD`, sin credencial: diarios
+> por la etiqueta `AYYYYDDD` del nombre; compuestos por consulta temporal
+> con el período de los metadatos, A-M4-5; exactamente un granulo por
+> producto y tesela, si no `earthflux_modis_granule_error`),
+> `modis_download(granules, cache_dir)` (LP DAAC con `EARTHDATA_TOKEN` solo
+> del entorno, `.part` + número mágico HDF4 + renombre, caché en
+> `<cache_dir>/modis/`) y `modis_fetch(aoi, date, lst_product, cache_dir,
+> collection, per_tile = FALSE)` (devuelve el argumento `files` de
+> `modis_surface_state()`; AOI de varias teselas →
+> `earthflux_method_not_implemented` salvo `per_tile = TRUE`, que entrega
+> una lista por tesela sin mosaico, §11.4). Tests sin red en
+> `tests/testthat/test-modis-download.R`; prueba en línea opcional con
+> `EARTHFLUX_LIVE_TESTS=true` (contrastada el 2026-11-06 contra la escena
+> `cauquenes_modis`: valores idénticos).
 
 ---
 
@@ -1164,9 +1183,22 @@ de producto (§13), que registra la convención y la fuente de cada capa.
   futuro se agrega descarga, las credenciales se leen del entorno del
   usuario (p. ej., `~/.netrc` o variable de entorno), nunca de archivos del
   repositorio, y la función es opcional.
+- **Implementado (M5, M5-03):** la descarga (`R/download-modis.R`) lee el
+  token **solo** de la variable de entorno `EARTHDATA_TOKEN`, dentro de la
+  envoltura HTTP, y lo envía como `Authorization: Bearer` (documentación
+  de Earthdata Login, *User Token Management*); nunca se devuelve, imprime,
+  registra en la procedencia ni aparece en mensajes (se reemplaza por
+  `<redacted>`). Sin token → `earthflux_credentials_error` con
+  instrucciones. Fallos HTTP → `earthflux_download_error` (código y URL sin
+  consulta), con un reintento acotado tras HTTP 429 (CMR, *Moderating
+  Client Request Traffic*). Una descarga que no empieza con el número
+  mágico HDF4 `0e 03 13 01` (fuentes de HDF4, `hfile_priv.h`, `HDFMAGIC`;
+  típicamente la página de inicio de sesión de Earthdata) se rechaza sin
+  dejar entrada en la caché.
 - Tests y ejemplos no usan internet (`DEVELOPMENT.md` §5); los tests en
-  línea, si existen, se activan con `EARTHFLUX_ONLINE_TESTS` y deben fallar
-  con elegancia si el recurso no está disponible (D17).
+  línea, si existen, se activan con `EARTHFLUX_LIVE_TESTS=true` (nombre
+  adoptado en M5; antes `EARTHFLUX_ONLINE_TESTS`), se omiten en CRAN y CI
+  y deben fallar con elegancia si el recurso no está disponible (D17).
 - Paquetes CRAN relacionados que podrían evaluarse (sin decisión; listados
   como dependencias inversas de `terra` en D18): `MODISTools`, `modisfast`,
   `appeears`, `earthdatalogin`. `TODO`: revisar licencia, mantenimiento y
