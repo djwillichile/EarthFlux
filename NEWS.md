@@ -18,6 +18,17 @@
   normal length and valid fraction on the 1 km working grid, either flat
   or with the `CANDIDATA` mean-normal chain (3 arc-second slopes averaged
   as unit normal vectors). Water and missing tiles are never filled.
+* Station-free weather forcing (decision M5-07, internal for now): hourly
+  ERA5 data from the Open-Meteo historical weather API (`models=era5`) for
+  the ERA5 cells covering an area of interest plus a one-cell buffer, each
+  cell a virtual station of `ef_station_table()` (wind at 10 m, elevation
+  from the API, UTC), so that QC, reference ET and regionalization work
+  unchanged. Explicit choices without defaults for the elevation
+  adjustment and the treatment of the instantaneous values; optional
+  `apikey` for the customer (commercial) API, never stored; JSON cache;
+  CC BY 4.0 and Copernicus attribution in the provenance. New flag
+  `EF_WS_GRIDDED_FORCING` (warning, object scope). Adds `jsonlite` to
+  Imports.
 
 ## Bug fixes
 

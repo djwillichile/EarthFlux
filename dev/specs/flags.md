@@ -27,8 +27,8 @@ mayúsculas (`EF_*`); las descripciones del registro, en inglés (en-GB,
 |---|---|
 | Filas de inventario (propuestas por documento, §2) | 122 |
 | Códigos/condiciones distintos inventariados | 120 (119 con nombre + 1 sin nombre: "Rn negativo") |
-| Códigos tras normalizar (§3–§4) | **113** (112 de la normalización de M1 + `EF_SURF_LAI_ASSIGNED`, agregado en M4 con la opción `lai_nonveg`, MP-06; §4.2) |
-| Clase I — inequívocos, sin umbral: registrables con su módulo | **74** (65 registrados + 9 pendientes al 2026-11-04, §4.4) |
+| Códigos tras normalizar (§3–§4) | **114** (112 de la normalización de M1 + `EF_SURF_LAI_ASSIGNED`, agregado en M4 con la opción `lai_nonveg`, MP-06, + `EF_WS_GRIDDED_FORCING`, agregado en M5 con el forzamiento ERA5 vía Open-Meteo, M5-07; §4.2) |
+| Clase I — inequívocos, sin umbral: registrables con su módulo | **75** (66 registrados + 9 pendientes al 2026-11-06, §4.4) |
 | Clase II — requieren umbral (o verificación de fuente): `TODO`, no registrar | **35** |
 | Clase III — imposibilidad física/lógica: **error** en el núcleo; flag `critical` solo en módulos de datos | **4** |
 | Fusiones (mismo hecho, nombres distintos) | 5 (eliminan 5 códigos) |
@@ -419,7 +419,7 @@ corrida); **Bit** = bit planificado en la palabra de la etapa (§6.4; solo
 bit libre al registrarse). **Sev.** marcada con `*` = cambia respecto de
 la fuente o la fuente no la indicaba (justificación en §5.4).
 
-### 4.2 Catálogo (113 códigos)
+### 4.2 Catálogo (114 códigos)
 
 **Estado de implementación (2026-11-04).** El registro se ensambla por
 etapa: `ef_flag_registry()` (`R/diagnostics.R`) une las filas que cada
@@ -462,7 +462,16 @@ MCD15A2H, MP-06; `modis_lai()`, `modis_surface_options()`) agrega en M4
 proviene del inventario de §2: ningún código existente significaba "valor
 asignado por una opción del usuario", y `EF_SURF_LAI_NONVEG` es una causa
 de `NA` (§7, punto 6: un código registrado no cambia de significado).
-Total registrado: 69 códigos (§4.4). Las demás filas de
+En M5 (2026-11-06), el forzamiento sin estaciones (ERA5 vía Open-Meteo,
+`DECISIONS.md` M5-07; `R/forcing-openmeteo.R`) registra en
+`ef_flags_gridded_forcing()` el código nuevo `EF_WS_GRIDDED_FORCING`
+(clase I, `warning`, ámbito `object`, sin bit): M5-07 pide que "el
+resultado lleva un flag de forzamiento grillado" y ningún código existente
+lo significaba. Se deriva de la procedencia (`provenance$forcing$type ==
+"gridded"`, §6.1, R19) y viaja en `provenance$forcing$flags` de la tabla de
+estaciones virtuales (el elemento `flags` debe quedar vacío antes de
+`ef_station_qc()`, y `provenance$flags` lo reescribe el QC).
+Total registrado: 70 códigos (§4.4). Las demás filas de
 este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
@@ -498,7 +507,7 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_SURF_OVERPASS_OUTSIDE_WINDOW` | `EF_OVERPASS_OUTSIDE_WINDOW` | prefijo | II | warning* | cell | libre | Ventana `TODO` (`soil-heat-flux.md` §3.1) |
 | `EF_SURF_LST_IMPLAUSIBLE` | `EF_LST_IMPLAUSIBLE` | prefijo (de Rn a `surface`) | II | warning | cell | libre | `lst ≤ 0` K ya es `earthflux_domain_error`; el rango plausible es `TODO` |
 
-#### `EF_WS_` (26)
+#### `EF_WS_` (27)
 
 | Código | Anterior(es) | Cambio | Clase | Sev. | Ámbito | Bit | Contraparte de error / nota |
 |---|---|---|---|---|---|---|---|
@@ -515,6 +524,7 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_WS_RS_RSO_LIMITED` | `EF_WS_RS_RSO_LIMITED` | — | I-m (registrado; `ef_ref_net_radiation()`, `R/reference-et.R`) | info | record | — | Límite 1.0 de FAO-56 Ec. 39 y límites 0,3–1,0 de ASCE-EWRI 2005 Ec. 18 y 45 (`VERIFICADA`) |
 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | I (registrado en `ef_flags_reference_et()`; lo levanta `ef_station_ref_et()`, tabla `etr_inst`) | info* | record | — | Causa de `NA`; el soporte depende de la opción (O1: inicio del primer período a fin del último; O3: primer a último punto medio) |
 | `EF_WS_ETR_NEGATIVE` | `EF_ETREF_NEGATIVE` | prefijo + renombre | I (registrado; `ef_ref_et()`, `R/reference-et.R`) | info | record | — | Cubre ETr y ETo (tipo en la procedencia); ámbito `cell` si se adopta la opción C (FL-09) |
+| `EF_WS_GRIDDED_FORCING` | — (nuevo, M5) | código nuevo (M5-07) | I (registrado en `ef_flags_gridded_forcing()`; lo levanta `openmeteo_station_table()`, `R/forcing-openmeteo.R`) | warning* | object | — | Forzamiento de un reanálisis grillado (ERA5 vía Open-Meteo): cada celda es una estación virtual. Se deriva de `provenance$forcing$type` (R19) y viaja en `provenance$forcing$flags`; los resultados aguas abajo lo heredan (§6.5) |
 | `EF_WS_IMPLAUSIBLE` | `EF_WS_IMPLAUSIBLE` | — | II | warning | record | — | Límites de `water` sin cita: no se adoptan |
 | `EF_WS_RH_RECALIBRATE` | `EF_WS_RH_RECALIBRATE` | — | II | warning | record | — | Rango [3, 5] % de FAO-56; falta elegir δ (WF-06) |
 | `EF_WS_RS_GT_RSO` | `EF_WS_RS_GT_RSO` | — | II | warning | record | — | Margen `TODO` |
@@ -643,14 +653,14 @@ división).
 |---|---|---|---|---|---|
 | `INPUT` | 1 | 0 | 0 | 1 | 1 |
 | `SURF` | 14 | 7 | 1 | 22 | 15 |
-| `WS` | 11 | 13 | 2 | 26 | 13 |
+| `WS` | 12 | 13 | 2 | 27 | 14 |
 | `GWR` | 14 | 4 | 1 | 19 | 13 |
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
 | `G` | 4 | 2 | 0 | 6 | 4 |
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
 | `H` | 11 | 2 | 0 | 13 | 8 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **74** | **35** | **4** | **113** | **69** |
+| **Total** | **75** | **35** | **4** | **114** | **70** |
 
 Registrados (M4, 2026-11-04, tras la opción `lai_nonveg`; recuento de
 `ef_flag_registry()`): **69 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
@@ -660,6 +670,12 @@ M3) y `SURF` 15 (M4); 65 de clase I y 4 de clase III
 `EF_SURF_ALBEDO_GT1`), todos ejercitados por un test de su módulo (R11,
 sin excepciones); ningún código de clase II (los 35 siguen en la guardia
 de `test-diagnostics.R`).
+
+Forzamiento grillado (M5, 2026-11-06): `EF_WS_GRIDDED_FORCING` (clase
+I, `warning`, ámbito `object`) se registra en
+`ef_flags_gridded_forcing()` (`R/forcing-openmeteo.R`) con su función y
+sus tests (`test-forcing-openmeteo.R`): **70 códigos** registrados, 66 de
+clase I.
 
 Superficie (M4, 2026-11-04): los 14 `EF_SURF_*` de clase I y el de clase
 III están registrados en `ef_flags_surface()` (`R/modis-qa.R`): 12
@@ -764,6 +780,7 @@ todavía ningún código registrado lo usa.
 | `EF_SURF_ALBEDO_GT1` | — | `critical` | Imposible por definición; G y Rn lo rechazan con error (C12) |
 | `EF_H_CALIBRATION_NOT_CONVERGED` | warning (escena) | `critical` | La calibración no cumplió su propio criterio; H, LE y ET de toda la escena dependen de ella. Se conserva el `earthflux_convergence_warning` |
 | `EF_H_DT_SLOPE_NONPOSITIVE` | warning | `critical` | Con anclas bien ordenadas, b ≤ 0 hace que H no crezca con Ts: la calibración contradice el supuesto de linealidad dT–Ts de METRIC |
+| `EF_WS_GRIDDED_FORCING` | — (nuevo, M5) | warning | Valor utilizable obtenido bajo un supuesto (§5.3, `warning`): una celda de 0,25° como estación; ERA5 comprime la amplitud diaria (Tmax 2–3 K bajo, Tmin 3–4 K alto en la evaluación de M5-07) y da un forzamiento casi uniforme a escala de valle |
 | `EF_SURF_LAI_ASSIGNED` | — (nuevo, M4) | info | Registro de una opción explícita del usuario aplicada (§5.3, `info`); el valor asignado queda identificado y en la procedencia |
 | `EF_SURF_*` (resto) | — | info (causas de `NA`) / warning (valores conservados) | `modis-products.md` §10.2 no indicaba severidades; se aplica §5.3 |
 | `EF_WS_OVERPASS_OUTSIDE_RECORDS` | — | info | Causa de `NA` |

@@ -38,6 +38,7 @@ diseñados: este documento los especifica, pero la integración en
 11. Registro de decisiones abiertas
 12. Registro de fuentes y accesos
 13. Estado de implementación (M3)
+14. Forzamiento sin estaciones: ERA5 vía Open-Meteo (M5)
 
 Resumen de estados:
 
@@ -1545,3 +1546,94 @@ Decisiones tomadas (para que el integrador las registre en `DECISIONS.md`):
 
 No se encontró ningún error de implementación (bug) en la cadena: todas
 las diferencias son de norma o reglas ausentes, agregadas como opciones.
+
+---
+
+## 14. Forzamiento sin estaciones: ERA5 vía Open-Meteo (M5, 2026-11-06)
+
+Decisión M5-07 (`DECISIONS.md` §1.5; `ARCHITECTURE.md` §6.7). Archivo
+`R/forcing-openmeteo.R` (funciones internas; la API pública la decide la
+fase 2 de M5), tests en `tests/testthat/test-forcing-openmeteo.R` (sin
+red: `openmeteo_http_get()` se reemplaza con respuestas JSON sintéticas).
+
+### 14.1 Diseño
+
+Cada celda ERA5 usada es una **estación virtual** de la tabla estándar
+(§2): `station_id` `era5_<lat>_<lon>` (centro de la celda, dos
+decimales), coordenadas del centro (WGS84), elevación entregada por la
+API, `height_wind = 10`, `height_temp_rh = 2`, `surface_type =
+"unknown"`. Observaciones horarias en UTC con `timestamp_convention =
+"end"` e `interval = 3600`: `air_temperature`, `dewpoint_temperature`,
+`wind_speed` (10 m; `ef_wind_2m()` la lleva a 2 m con la Ec. 47),
+`solar_radiation` (media de la hora precedente) y `air_pressure` (hPa →
+kPa, conversión declarada). Así el QC (`ef_station_qc()`), la ETr
+(`ef_station_ref_et()`, que arma las sumas diarias desde los registros
+horarios: no se pide tabla diaria) y la regionalización
+(`ef_regionalize()`, C1/C2) funcionan sin cambios.
+
+| Función | Papel |
+|---|---|
+| `openmeteo_points(aoi, resolution = 0.25, max_points = 250)` | Centros de las celdas ERA5 que tocan el AOI más un anillo de celdas vecinas; error si superan `max_points` (sin truncar) |
+| `openmeteo_query()` | Parámetros documentados: `models=era5`, `cell_selection=nearest`, `wind_speed_unit=ms`, `timezone=GMT`, `timeformat=unixtime`, `elevation=nan` si `elevation_adjust = FALSE` |
+| `openmeteo_request(points, start_date, end_date, apikey = NULL, elevation_adjust)` | Una petición GET por bloque de hasta `chunk_size` (100) ubicaciones; extremo `customer-` con `apikey`; HTTP 429 → un reintento con espera, luego `earthflux_download_error` |
+| `openmeteo_station_table(response, instant_values)` | JSON → `earthflux_station_table` (`null` → `NA`, el registro se conserva) |
+| `openmeteo_fetch(aoi, date, elevation_adjust, instant_values, apikey = NULL, cache_dir)` | Puntos + caché JSON (`<cache_dir>/openmeteo/era5_<md5>.json`, clave sin `apikey` ni extremo) + petición + tabla; ventana UTC `date - 2` a `date + 1` |
+
+### 14.2 Hechos verificados (2026-11-06)
+
+| Hecho | Fuente | Estado |
+|---|---|---|
+| Extremos `archive-api.open-meteo.com/v1/archive` y `customer-archive-api...` con `apikey` | Documentación de la API histórica (parámetro `apikey`); `open-meteo.com/en/pricing` (FAQ) | `VERIFICADA` |
+| Nombres, unidades y validez: `temperature_2m`, `dew_point_2m`, `surface_pressure`, `wind_speed_10m` instantáneos; `shortwave_radiation` media de la hora precedente (W m⁻²) | Documentación, "Hourly Parameter Definition" | `VERIFICADA` |
+| Varias ubicaciones separadas por comas; la respuesta pasa a ser una lista | Documentación, parámetro `latitude`/`longitude` | `VERIFICADA` |
+| Máximo de 1000 ubicaciones por petición (10 000 o más con clave) | Código fuente (`configure.swift`, `ApiKeyManager.swift`); no está en la documentación | `VERIFICADA` (código) |
+| Grilla ERA5: 0,25°, puntos en múltiplos de 0,25° desde −90/−180 | Código fuente (`Era5Domain.swift`); resolución en la tabla "Data Sources" | `VERIFICADA` |
+| `elevation=nan`: sin reducción de escala, elevación media de la celda; por defecto, MDE de 90 m y "statistical downscaling" (en el código: 0,0065 K m⁻¹ en T y Td; presión en superficie calculada desde `pressure_msl` a la elevación objetivo) | Documentación (parámetro `elevation`, objeto JSON); código (`GenericReader.swift`, `VariableHourly.swift`, `Meteorology.swift`) | `VERIFICADA` |
+| `cell_selection=nearest` elige la celda más cercana (por defecto `land` puede elegir otra celda de elevación parecida) | Documentación (parámetro `cell_selection`) | `VERIFICADA` |
+| Licencia CC BY 4.0 con enlace y aviso de cambios; plan gratuito solo no comercial (10 000 llamadas/día) | `open-meteo.com/en/licence`, `/en/terms`, `/en/pricing` | `VERIFICADA` |
+| Aviso Copernicus: "Contains modified Copernicus Climate Change Service information [Year]" y descargo de responsabilidad de la CE y ECMWF | Licence to use Copernicus Products, cláusulas 5.1.2–5.1.3 | `VERIFICADA` |
+
+### 14.3 Decisiones tomadas al implementar
+
+1. **Valores instantáneos** (`instant_values`, sin defecto, `CANDIDATA`):
+   la tabla tiene una sola semántica de período y la ETr horaria usa
+   medias del período; la radiación ya es media de la hora precedente,
+   pero T, Td, viento y presión son instantáneos. Opciones:
+   `"end_of_period"` (el valor al final de la hora representa la hora;
+   desfase de 30 min respecto del punto medio) y `"trapezoid"` (media de
+   los valores al inicio y al final de la hora; el primer registro de cada
+   serie queda `NA`).
+2. **Ajuste por elevación** (`elevation_adjust`, sin defecto, M5-07):
+   `TRUE` = comportamiento por defecto de la API (MDE de 90 m en el centro
+   de la celda y reducción de escala); `FALSE` = `elevation=nan`. Queda en
+   la procedencia (`elevation_adjust`, `elevation_source`).
+3. **Flag** `EF_WS_GRIDDED_FORCING` (clase I, `warning`, ámbito `object`;
+   `flags.md` §4.2): se deriva de `provenance$forcing$type == "gridded"` y
+   viaja en `provenance$forcing$flags`, porque el elemento `flags` de la
+   tabla debe estar vacío antes del QC y `provenance$flags` lo reescribe
+   `ef_station_qc()`. El QC y `ef_station_ref_et()` (en
+   `provenance$station_table`) conservan `provenance$forcing`.
+4. **Procedencia**: extremo, modelo, petición sin clave, URLs sin clave,
+   `apikey_used`, uso (no comercial sin clave), fecha de descarga, caché,
+   licencia, atribuciones (Open-Meteo, Copernicus con el año de descarga,
+   descargo, cambios realizados), citas y la tabla de estaciones virtuales
+   (`in_aoi`: celda que toca el AOI o anillo).
+5. **Celdas en el mar**: la API entrega elevación 0 para celdas marinas
+   con `elevation=nan`; se conservan como estaciones virtuales (ERA5 es
+   válido sobre el mar), pero su viento y su temperatura representan la
+   superficie marina.
+
+### 14.4 Pendiente (fase 2 y validación)
+
+- Hora de paso: la ETr instantánea la interpola `ef_station_ref_et()`
+  (WF-09, O1/O3); para T, eₐ, u₂ y Rs a la hora de paso, la fase 2 debe
+  regionalizar los `target_time` que rodean el paso (puntos medios de las
+  horas) y elegir o interpolar en el tiempo (sin decisión registrada).
+- `ef_regionalize()` falla si en algún `target_time` hay menos estaciones
+  válidas que las que pide el método: filtrar la entrada a los tiempos
+  necesarios (con `"trapezoid"` el primer registro de cada serie es `NA`).
+- Viento y valores a la hora de paso sin evaluar contra estaciones
+  horarias (M5-07); celdas costeras y de montaña sin evaluar.
+- El año del aviso de Copernicus: la licencia no lo define; se usa el año
+  de descarga.
+
