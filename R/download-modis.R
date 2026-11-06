@@ -57,7 +57,7 @@
 #
 # Cache: files go to <cache_dir>/modis/ (default
 #   tools::R_user_dir("EarthFlux", "cache")); each download is written to
-#   <file>.part and renamed only after the HDF4 magic number is checked, so
+#   a per-call <file>.<random>.part file and renamed only after the HDF4 magic number is checked, so
 #   an interrupted or refused download never leaves a cache entry. Valid
 #   entries are reused without network access.
 #
@@ -595,8 +595,8 @@ modis_is_hdf4 <- function(path) {
 #' * a cached file that starts with the HDF4 magic number (header source
 #'   HDF4) is reused without network access; any other file of that name
 #'   is replaced;
-#' * the download is written to `<file>.part`, checked (download status and
-#'   HDF4 magic number, which rejects the Earthdata login page that an
+#' * the download is written to a per-call `<file>.<random>.part` file,
+#'   checked (download status and HDF4 magic number, which rejects the Earthdata login page that an
 #'   invalid or expired token returns) and only then renamed; on any
 #'   failure the `.part` file is removed and nothing is left in the cache.
 #'
@@ -670,9 +670,11 @@ modis_download <- function(granules,
 #' Download one granule through a `.part` file
 #' @noRd
 modis_download_one <- function(url, dest) {
-  part <- paste0(dest, ".part")
+  # A per-call temporary name: concurrent sessions fetching the same granule
+  # into a shared cache never write, validate or rename each other's file.
+  part <- tempfile(paste0(basename(dest), "."), tmpdir = dirname(dest),
+                   fileext = ".part")
   on.exit(unlink(part), add = TRUE)
-  unlink(part)
   modis_http_retry(url, part, auth = TRUE,
                    what = sprintf("granule %s", basename(dest)))
   if (!modis_is_hdf4(part)) {
