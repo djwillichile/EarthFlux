@@ -128,10 +128,10 @@ chain_surface <- function(scene = chain_scene(), weather = chain_weather) {
 }
 
 chain_control <- function(stable_psi_m_height = 2) {
-  # Tight tolerance so that phase B reproduces the anchor closure closely;
-  # heights from the defaults (Waters et al., 2002).
+  # Tight tolerances in both phases so that phase B reproduces the anchor
+  # closure closely; heights from the defaults (Waters et al., 2002).
   ef_h_control(stable_psi_m_height = stable_psi_m_height, tol = 1e-10,
-               maxit = 200L)
+               maxit = 200L, pixel_tol = 1e-10, pixel_maxit = 200L)
 }
 
 chain_pixels <- function(s, rows = seq_len(nrow(s$rn))) {

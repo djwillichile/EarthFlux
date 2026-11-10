@@ -8,7 +8,8 @@
 #
 # Specification: dev/specs/sensible-heat.md sections 2, 8, 11-13 and 16;
 #   decisions SH-08, SH-10, SH-14 to SH-19 and P0-6, P0-9, P0-10 (provisional,
-#   dev/DECISIONS.md section 1.0); SH-11 (P0-2) is resolved with the SEBAL
+#   dev/DECISIONS.md section 1.0; P0-10 revised by M2-11, section 1.2: one
+#   tolerance per phase); SH-11 (P0-2) is resolved with the SEBAL
 #   Idaho manual (Waters et al., 2002, p. 33, Eq. 38): `stable_psi_m_height`
 #   of ef_h_control() defaults to 2 m. Flags:
 #   dev/specs/flags.md section 4.2 (EF_H_).
@@ -181,7 +182,10 @@ ef_sensible_heat <- function(air_density, dt, rah,
 #' Builds and validates the settings of [ef_calibrate_h()]: the heights of
 #' the aerodynamic formulation, the height at which the stable stability
 #' correction for momentum of the blending height is evaluated (decision
-#' SH-11) and the convergence settings of the iteration.
+#' SH-11) and the convergence settings of the two iterations: the
+#' calibration of dT at the anchors (phase A: `tol`, `maxit`) and the
+#' per-pixel stability iteration with the calibrated coefficients (phase B:
+#' `pixel_tol`, `pixel_maxit`).
 #'
 #' @param stable_psi_m_height Numeric scalar. Height \[m\] at which the
 #'   stability correction for momentum \eqn{\psi_m}{psi_m} of the blending
@@ -202,26 +206,54 @@ ef_sensible_heat <- function(air_density, dt, rah,
 #' @param z1,z2 Numeric scalars. Lower and upper heights of the aerodynamic
 #'   resistance \[m\], `0 < z1 < z2`. Defaults 0.1 m and 2 m (Waters et al.,
 #'   2002, p. 30 and Eq. 41).
-#' @param tol Numeric scalar. Convergence tolerance on the relative change
-#'   of \eqn{r_{ah}}{rah} between iterations, applied to every anchor
-#'   (phase A) and to every pixel (phase B). Must be `> 0`. Default 0.01
-#'   (decision P0-10; value of METRIC implementations, without a primary
-#'   source). The value matters: in the synthetic case of the specification,
-#'   `tol = 0.01` stops 0.6 % away from the fixed point of the intercept.
-#' @param maxit Integer scalar. Maximum number of iterations, `>= 1`.
-#'   Default 20 (P0-10; a design choice).
+#' @param tol Numeric scalar. Convergence tolerance of the calibration of
+#'   dT at the anchors (phase A): the iteration stops when the relative
+#'   change of \eqn{r_{ah}}{rah} between iterations is below `tol` at every
+#'   anchor. Must be `> 0`. Default `1e-6` (decision M2-11; EarthFlux 0.1.0
+#'   used 0.01, the value of METRIC implementations). See Details.
+#' @param maxit Integer scalar. Maximum number of iterations of phase A,
+#'   `>= 1`. Default 100 (M2-11; 20 in EarthFlux 0.1.0).
 #' @param damping Numeric scalar. Damping factor \eqn{\omega}{omega} in
 #'   \[0, 1), \eqn{r_{ah,k} = (1 - \omega) r_{ah,new} + \omega
-#'   r_{ah,k-1}}{rah_k = (1 - omega) * rah_new + omega * rah_(k-1)}. Default
-#'   0 (P0-10). Damping does not change the fixed point; it can help when the
-#'   iteration oscillates.
+#'   r_{ah,k-1}}{rah_k = (1 - omega) * rah_new + omega * rah_(k-1)}, used by
+#'   both phases. Default 0 (P0-10). Damping does not change the fixed
+#'   point; it can help when the iteration oscillates.
+#' @param pixel_tol Numeric scalar. Convergence tolerance of the per-pixel
+#'   stability iteration with the calibrated coefficients (phase B): a pixel
+#'   stops when the relative change of its \eqn{r_{ah}}{rah} is below
+#'   `pixel_tol`. Must be `> 0`. Default `1e-5` (M2-11; in EarthFlux 0.1.0
+#'   phase B used `tol`).
+#' @param pixel_maxit Integer scalar. Maximum number of iterations of a
+#'   pixel in phase B, `>= 1`. Default 100 (M2-11; in EarthFlux 0.1.0
+#'   phase B used `maxit`).
 #'
 #' @return A named list with elements `stable_psi_m_height`,
-#'   `blending_height`, `z1`, `z2`, `tol`, `maxit` (integer) and `damping`.
+#'   `blending_height`, `z1`, `z2`, `tol`, `maxit` (integer), `damping`,
+#'   `pixel_tol` and `pixel_maxit` (integer).
 #'
 #' @details
 #' Invalid values raise `earthflux_domain_error` or `earthflux_input_error`
 #' (e.g. a `stable_psi_m_height` above the blending height, or `z2 <= z1`).
+#'
+#' Why the tolerances are tight (decision M2-11): the result of a pixel is
+#' the fixed point of its own stability iteration with (a*, b*), while
+#' (a*, b*) come from the last iterate at the anchors. If phase A stops
+#' early, the anchors run through phase B no longer reproduce their target
+#' \eqn{H}{H}, and the pixels inherit that offset. With `tol = 0.01` (the
+#' former default) the mean \eqn{H}{H} of a strongly unstable, low-wind
+#' Landsat scene (Talca, 2013-02-15) was 0.61 W m-2 below the fixed point
+#' of both phases (maximum 1.34 W m-2), and 0.39 W m-2 above it (maximum
+#' 1.23 W m-2) in the packaged Cauquenes MODIS scene; tightening only the
+#' tolerance of phase B did not reduce it. With the defaults the largest
+#' difference is below 5e-4 W m-2 in both scenes, for 15 to 26 iterations
+#' at the anchors and 1.5 to 2 times the former cost of phase B
+#' (`dev/verification/water-comparison.md`, section 5.3). Both criteria are
+#' relative changes of \eqn{r_{ah}}{rah}: dimensionless, and defined also
+#' where \eqn{H \approx 0}{H ~ 0}; in phase B \eqn{\rho}{rho} and dT are
+#' fixed, so the relative change of \eqn{r_{ah}}{rah} of a pixel is also
+#' the relative change of its \eqn{H}{H}. The former behaviour is
+#' `ef_h_control(tol = 0.01, maxit = 20, pixel_tol = 0.01, pixel_maxit =
+#' 20)`.
 #'
 #' Why 2 m under stable conditions: the manual evaluates the stable
 #' correction of the momentum at the blending height with the ratio
@@ -234,8 +266,10 @@ ef_sensible_heat <- function(air_density, dt, rah,
 #' `stable_psi_m_height = 2` are `VERIFICADA (SEBAL-Idaho 2002)` (Waters et
 #' al., 2002, pp. 26, 30 and 33, Eqs. 38-41); the cross-check with Allen,
 #' Tasumi and Trezza (2007) is desirable but no longer blocking
-#' (`dev/VERIFICATION.md`). `tol`, `maxit` and `damping` are design choices
-#' adopted provisionally (P0-10).
+#' (`dev/VERIFICATION.md`). `tol`, `maxit`, `damping`, `pixel_tol` and
+#' `pixel_maxit` are design choices (P0-10, M2-11), not values of a source:
+#' the manual iterates until dT and rah of the hot pixel "have stabilized"
+#' (Waters et al., 2002, p. 34).
 #'
 #' @references
 #' Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
@@ -253,12 +287,16 @@ ef_sensible_heat <- function(air_density, dt, rah,
 #'
 #' # The blending height in the stable correction, chosen explicitly
 #' ef_h_control(stable_psi_m_height = 200)
+#'
+#' # The convergence settings of EarthFlux 0.1.0
+#' ef_h_control(tol = 0.01, maxit = 20, pixel_tol = 0.01, pixel_maxit = 20)
 ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
-                         z1 = 0.1, z2 = 2, tol = 0.01, maxit = 20L,
-                         damping = 0) {
+                         z1 = 0.1, z2 = 2, tol = 1e-6, maxit = 100L,
+                         damping = 0, pixel_tol = 1e-5, pixel_maxit = 100L) {
   call <- sys.call()
   required <- c("stable_psi_m_height", "blending_height", "z1", "z2")
-  for (nm in c(required, "tol", "maxit", "damping")) {
+  for (nm in c(required, "tol", "maxit", "damping", "pixel_tol",
+               "pixel_maxit")) {
     check_scalar(get(nm), nm, call = call)
   }
   check_in_range(z1, "z1", lower = 0, lower_inclusive = FALSE, call = call)
@@ -274,6 +312,11 @@ ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
                   call)
   check_in_range(damping, "damping", lower = 0, upper = 1,
                  upper_inclusive = FALSE, call = call)
+  check_in_range(pixel_tol, "pixel_tol", lower = 0, lower_inclusive = FALSE,
+                 call = call)
+  check_in_range(pixel_maxit, "pixel_maxit", lower = 1, call = call)
+  check_condition(pixel_maxit == round(pixel_maxit),
+                  "`pixel_maxit` must be a whole number", call)
   list(
     stable_psi_m_height = as.numeric(stable_psi_m_height),
     blending_height = as.numeric(blending_height),
@@ -281,7 +324,9 @@ ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
     z2 = as.numeric(z2),
     tol = as.numeric(tol),
     maxit = as.integer(maxit),
-    damping = as.numeric(damping)
+    damping = as.numeric(damping),
+    pixel_tol = as.numeric(pixel_tol),
+    pixel_maxit = as.integer(pixel_maxit)
   )
 }
 
@@ -322,7 +367,8 @@ ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
 #'   height of the stable momentum correction of decision SH-11 and the
 #'   convergence settings), e.g. `ef_h_control()` for its defaults. It is
 #'   validated again; elements not given take the defaults of
-#'   [ef_h_control()].
+#'   [ef_h_control()] (a list saved before `pixel_tol` and `pixel_maxit`
+#'   existed gets their current defaults).
 #' @param lapse_rate Numeric scalar. Lapse rate of the surface temperature
 #'   with elevation \[K m-1\] (see [ef_ts_datum()]). No default (SH-13).
 #' @param datum_elevation Numeric scalar. Elevation of the temperature datum
@@ -390,27 +436,33 @@ ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
 #' 7. damping: \eqn{r_{ah,k} = (1 - \omega) r_{ah,new} + \omega
 #'    r_{ah,k-1}}{rah_k = (1 - omega) * rah_new + omega * rah_(k-1)};
 #' 8. convergence when \eqn{\max_i |r_{ah,k} - r_{ah,k-1}| / r_{ah,k} <
-#'    tol}{max_i |rah_k - rah_(k-1)| / rah_k < tol} over both anchors.
+#'    tol}{max_i |rah_k - rah_(k-1)| / rah_k < tol} over both anchors, in
+#'    at most `maxit` iterations.
 #'
 #' Closure: steps 1-3 are repeated with the final \eqn{r_{ah}}{rah} to give
 #' (a*, b*), and \eqn{r_{ah}}{rah} is not updated afterwards, so the anchors
 #' reproduce \eqn{H_{target}}{H_target} exactly.
 #'
-#' **Phase B** (pixels, strategy P2, decision P0-10). With (a*, b*) fixed,
+#' **Phase B** (pixels, strategy P2, decisions P0-10 and M2-11). With (a*, b*) fixed,
 #' \eqn{dT = a^* + b^* T_{s,datum}}{dT = a* + b* * Ts_datum} and
 #' \eqn{\rho}{rho} (at \eqn{T_a = T_s - dT}{Ta = Ts - dT}) are fixed; each
 #' pixel iterates only its stability correction
 #' (\eqn{H \to L \to \psi \to u_* \to r_{ah}}{H -> L -> psi -> u* -> rah})
-#' from the neutral state until its own convergence (same `tol`, `maxit`
-#' and `damping`). The result of a pixel depends only on its inputs and on
-#' (a*, b*), not on the other pixels nor on the path of phase A, so the
-#' computation can be split into blocks.
+#' from the neutral state until \eqn{|r_{ah,k} - r_{ah,k-1}| / r_{ah,k} <
+#' }{|rah_k - rah_(k-1)| / rah_k < }`pixel_tol`, in at most `pixel_maxit`
+#' iterations (with the same `damping`). The result of a pixel depends only
+#' on its inputs and on (a*, b*), not on the other pixels nor on the path
+#' of phase A, so the computation can be split into blocks. The anchors
+#' reproduce their target \eqn{H}{H} in phase B only to the extent that
+#' phase A reached its fixed point, which is why the default `tol` is tight
+#' (see [ef_h_control()], decision M2-11).
 #'
 #' **Failures are never silent.**
 #' * Phase A without convergence after `maxit` iterations: the last iterate
 #'   is returned with `converged = FALSE`, a warning of class
-#'   `earthflux_convergence_warning` is signalled (fields `iterations` and
-#'   `trace`) and the object flag `EF_H_CALIBRATION_NOT_CONVERGED`
+#'   `earthflux_convergence_warning` is signalled (fields `phase =
+#'   "anchors"`, `iterations` and `trace`) and the object flag
+#'   `EF_H_CALIBRATION_NOT_CONVERGED`
 #'   (`critical`) is set.
 #' * Calibrated slope `b <= 0`: a warning of class `earthflux_warning` and
 #'   the object flag `EF_H_DT_SLOPE_NONPOSITIVE` (`critical`).
@@ -422,8 +474,13 @@ ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
 #'   failure occurs during the iteration).
 #' * A pixel whose friction velocity becomes undefined (see [ef_ustar()]) or
 #'   not positive: `NA` outputs for that pixel and the cell flag
-#'   `EF_H_USTAR_INVALID`; a pixel without convergence keeps its last
-#'   iterate and gets `EF_H_PIXEL_NOT_CONVERGED`.
+#'   `EF_H_USTAR_INVALID`.
+#' * Pixels without convergence after `pixel_maxit` iterations: each keeps
+#'   its last iterate (`converged = FALSE`) and gets the cell flag
+#'   `EF_H_PIXEL_NOT_CONVERGED`, and one warning of class
+#'   `earthflux_convergence_warning` is signalled for the call (fields
+#'   `phase = "pixels"`, `n_not_converged` and `iterations`, equal to
+#'   `pixel_maxit`).
 #'
 #' Constants: von Karman constant `EF_VON_KARMAN` (0.41), gravity
 #' `EF_GRAVITY` (9.81 m s-2) and specific heat of air `EF_SPECIFIC_HEAT_AIR`
@@ -441,7 +498,7 @@ ef_h_control <- function(stable_psi_m_height = 2, blending_height = 200,
 #' and rah at the hot pixel have stabilized" (p. 34; 3 to 7 iterations,
 #' appendix 8), whereas EarthFlux uses a relative tolerance on rah at both
 #' anchors, the closure of the anchors and phase B with the per-pixel
-#' strategy P2. Known differences with `water` are listed in section 17 of
+#' strategy P2, each phase with its own tolerance (M2-11). Known differences with `water` are listed in section 17 of
 #' `dev/specs/sensible-heat.md` (e.g. no wind floor, no substitute friction
 #' velocity, per-anchor convergence, strategy P2). The cross-check with
 #' Allen, Tasumi and Trezza (2007) remains desirable but is no longer
@@ -547,6 +604,7 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
         fit$iterations, control$tol
       ),
       class = "earthflux_convergence_warning",
+      phase = "anchors",
       iterations = fit$iterations,
       trace = fit$trace,
       call = call
@@ -582,6 +640,24 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
       rn = inp$rn,
       g = inp$g
     )
+    n_not_converged <- sum(!is.na(pix$converged) & !pix$converged)
+    if (n_not_converged > 0L) {
+      ef_warn(
+        sprintf(
+          paste0(
+            "The per-pixel stability iteration did not converge in %d ",
+            "pixel(s) within %d iteration(s) (pixel_tol = %g); their last ",
+            "iterate is kept and flagged EF_H_PIXEL_NOT_CONVERGED."
+          ),
+          n_not_converged, control$pixel_maxit, control$pixel_tol
+        ),
+        class = "earthflux_convergence_warning",
+        phase = "pixels",
+        n_not_converged = n_not_converged,
+        iterations = control$pixel_maxit,
+        call = call
+      )
+    }
     if (!is.null(inp$dim)) {
       pix <- lapply(pix, function(x) {
         dim(x) <- inp$dim
@@ -635,7 +711,7 @@ ef_calibrate_h <- function(anchors, control, lapse_rate, datum_elevation,
         ),
         status = paste0(
           "VERIFICADA (SEBAL-Idaho 2002) forms; ",
-          "procedure: provisional decisions P0-10"
+          "procedure: provisional decisions P0-10 and M2-11"
         ),
         specification = "dev/specs/sensible-heat.md sections 9-11",
         anchors_input = if (inherits(anchors, "earthflux_anchors")) {
@@ -1008,7 +1084,7 @@ h_phase_b <- function(inp, ts_datum, a, b, control, cp) {
   iterations[valid] <- 0L
   active <- valid
 
-  for (k in seq_len(control$maxit)) {
+  for (k in seq_len(control$pixel_maxit)) {
     idx <- which(active)
     if (length(idx) == 0L) {
       break
@@ -1024,7 +1100,7 @@ h_phase_b <- function(inp, ts_datum, a, b, control, cp) {
     obukhov[ok] <- step$obukhov_length[!bad]
     rah[ok] <- rah_new[!bad]
     iterations[idx] <- k
-    done <- idx[!bad & change < control$tol]
+    done <- idx[!bad & change < control$pixel_tol]
     converged[done] <- TRUE
     active[done] <- FALSE
     failed <- idx[bad]
