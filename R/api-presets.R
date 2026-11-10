@@ -161,7 +161,7 @@ workflow_preset_idaho2002 <- function(terrain) {
   structure(
     list(
       name = name,
-      version = "2",
+      version = "3",
       status = "CANDIDATA",
       description = if (elev) {
         paste0(
@@ -181,10 +181,11 @@ workflow_preset_idaho2002 <- function(terrain) {
       },
       source = paste0(
         "Waters et al. (2002), SEBAL Idaho manual (pp. 10-38; appendices 7, ",
-        "8 and 12); dev/specs/presets.md; dev/DECISIONS.md M5-08 to M5-24"
+        "8 and 12); dev/specs/presets.md; dev/DECISIONS.md M5-08 to M5-24 ",
+        "and M2-11"
       ),
       decisions = c("M5-04", "M5-08", "M5-09", "M5-11", "M5-12", "M5-14",
-                    "M5-15", "M5-16", "M5-17", "M5-23", "M5-24"),
+                    "M5-15", "M5-16", "M5-17", "M5-23", "M5-24", "M2-11"),
       changes = c(
         "1" = "first version (2026-11-06; M5-08 to M5-22)",
         "2" = paste0(
@@ -192,6 +193,12 @@ workflow_preset_idaho2002 <- function(terrain) {
           "replaces M5-10); minimum z_om of 0.005 m with ",
           "EF_H_ZOM_FLOOR_APPLIED (M5-24, replaces M5-13); no anchor on ",
           "cells with an assigned LAI (2026-11-06)"
+        ),
+        "3" = paste0(
+          "convergence of the calibration of H: one tolerance per phase, ",
+          "tol = 1e-6 and maxit = 100 at the anchors, pixel_tol = 1e-5 and ",
+          "pixel_maxit = 100 per pixel (were tol = 0.01 and maxit = 20 for ",
+          "both; M2-11); H changes by up to about 1 W m-2 (2026-11-10)"
         )
       ),
       modis = list(
@@ -292,7 +299,10 @@ workflow_preset_idaho2002 <- function(terrain) {
         conditions_status = "VERIFICADA"
       ),
       sensible_heat = list(
-        control = ef_h_control(),
+        # Written out so that a change of the defaults of ef_h_control()
+        # never changes the preset silently (M2-11).
+        control = ef_h_control(tol = 1e-6, maxit = 100L, pixel_tol = 1e-5,
+                               pixel_maxit = 100L),
         lapse_rate = lapse,
         datum_elevation = paste0(
           "elevation of the station (one station) or of the cold ",
@@ -363,8 +373,9 @@ ef_presets <- function() {
 #'   of the elements that are not `VERIFICADA`).
 #'
 #' @details
-#' The two presets (decisions M5-08 to M5-24, dev/specs/presets.md) share
-#' every option except the treatment of elevation:
+#' The two presets (decisions M5-08 to M5-24 and M2-11,
+#' dev/specs/presets.md) share every option except the treatment of
+#' elevation:
 #'
 #' | Option | `idaho2002_elev` | `idaho2002_flat` |
 #' |---|---|---|
@@ -387,7 +398,9 @@ ef_presets <- function() {
 #' values over the whole grid (C1); several stations or ERA5: inverse
 #' distance weighting with power 2 (C2); ERA5 with the native cell
 #' elevation, trapezoid instantaneous values and the sea cells excluded;
-#' anchors selected before the net radiation (incoming longwave from the
+#' calibration of H with the convergence settings of [ef_h_control()]
+#' (`tol = 1e-6`, `pixel_tol = 1e-5`, written out in the preset); anchors
+#' selected before the net radiation (incoming longwave from the
 #' cold anchor, decision P0-3) with the criteria of
 #' dev/specs/presets.md section 4, `etrf_cold = 1.05` and `etrf_hot = 0`;
 #' soil heat flux of Bastiaanssen; z_om = 0.018 LAI with a minimum of
@@ -406,7 +419,8 @@ ef_presets <- function() {
 #' warning or critical surface flag or an assigned LAI.
 #'
 #' Versions: `"1"` (first presets); `"2"` (recalibrated anchor criteria,
-#' M5-23; minimum z_om, M5-24); see the element `changes`.
+#' M5-23; minimum z_om, M5-24); `"3"` (convergence of the calibration of H,
+#' one tolerance per phase, M2-11); see the element `changes`.
 #'
 #' @section Verification status:
 #' `CANDIDATA` (see [ef_presets()]); the unverified elements are in the

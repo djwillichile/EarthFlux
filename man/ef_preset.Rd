@@ -29,8 +29,9 @@ Returns every option that a preset sets, so that the choices made by
 is recorded in the provenance of the result.
 }
 \details{
-The two presets (decisions M5-08 to M5-24, dev/specs/presets.md) share
-every option except the treatment of elevation:\tabular{lll}{
+The two presets (decisions M5-08 to M5-24 and M2-11,
+dev/specs/presets.md) share every option except the treatment of
+elevation:\tabular{lll}{
    Option \tab \code{idaho2002_elev} \tab \code{idaho2002_flat} \cr
    Lapse rate of the datum surface temperature (Eq. 12-7) \tab 0.0065 K m-1 \tab 0 \cr
    Temperature of the incoming longwave \tab cold-anchor Ts adjusted by elevation (Eq. 12-8) \tab cold-anchor Ts \cr
@@ -53,7 +54,9 @@ daily sum over the mean solar day of the AOI centroid; one station: its
 values over the whole grid (C1); several stations or ERA5: inverse
 distance weighting with power 2 (C2); ERA5 with the native cell
 elevation, trapezoid instantaneous values and the sea cells excluded;
-anchors selected before the net radiation (incoming longwave from the
+calibration of H with the convergence settings of \code{\link[=ef_h_control]{ef_h_control()}}
+(\code{tol = 1e-6}, \code{pixel_tol = 1e-5}, written out in the preset); anchors
+selected before the net radiation (incoming longwave from the
 cold anchor, decision P0-3) with the criteria of
 dev/specs/presets.md section 4, \code{etrf_cold = 1.05} and \code{etrf_hot = 0};
 soil heat flux of Bastiaanssen; z_om = 0.018 LAI with a minimum of
@@ -72,7 +75,8 @@ flagged with \code{EF_ANCHOR_CRITERIA_RELAXED}; no anchor on cells with a
 warning or critical surface flag or an assigned LAI.
 
 Versions: \code{"1"} (first presets); \code{"2"} (recalibrated anchor criteria,
-M5-23; minimum z_om, M5-24); see the element \code{changes}.
+M5-23; minimum z_om, M5-24); \code{"3"} (convergence of the calibration of H,
+one tolerance per phase, M2-11); see the element \code{changes}.
 }
 \section{Verification status}{
 
