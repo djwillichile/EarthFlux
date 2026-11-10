@@ -44,8 +44,11 @@ box 6). Its use in METRIC is \code{CANDIDATA}: the SEBAL Idaho manual
 computes the air density at \eqn{T_a = T_s - dT}{Ta = Ts - dT}
 (Waters et al., 2002, p. 31, step 6), which corroborates the temperature
 used here, but it does not print the density equation (METRIC
-implementations use a variant with the pressure of a standard atmosphere
-at \eqn{T_a}{Ta}, about 0.6 \% higher).
+implementations such as the \code{water} package use a variant that evaluates
+the pressure of the standard atmosphere with \eqn{T_a}{Ta} in place of
+293 K: the two densities coincide at sea level or at \eqn{T_a}{Ta} =
+293 K, and the variant is higher above 293 K, by about 0.6 \% at 316 K
+and 700 m).
 }
 \examples{
 # Air at 300 K and 500 m (pressure from elevation)
