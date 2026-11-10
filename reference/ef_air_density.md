@@ -49,9 +49,11 @@ Verification status: `VERIFICADA` as the content of FAO-56 (chapter 2,
 box 6). Its use in METRIC is `CANDIDATA`: the SEBAL Idaho manual
 computes the air density at \\T_a = T_s - dT\\ (Waters et al., 2002, p.
 31, step 6), which corroborates the temperature used here, but it does
-not print the density equation (METRIC implementations use a variant
-with the pressure of a standard atmosphere at \\T_a\\, about 0.6 %
-higher).
+not print the density equation (METRIC implementations such as the
+`water` package use a variant that evaluates the pressure of the
+standard atmosphere with \\T_a\\ in place of 293 K: the two densities
+coincide at sea level or at \\T_a\\ = 293 K, and the variant is higher
+above 293 K, by about 0.6 % at 316 K and 700 m).
 
 ## References
 
