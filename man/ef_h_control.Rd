@@ -86,14 +86,13 @@ Why the tolerances are tight (decision M2-11): the result of a pixel is
 the fixed point of its own stability iteration with (a*, b*), while
 (a*, b*) come from the last iterate at the anchors. If phase A stops
 early, the anchors run through phase B no longer reproduce their target
-\eqn{H}{H}, and the pixels inherit that offset. With \code{tol = 0.01} (the
-former default) the mean \eqn{H}{H} of a strongly unstable, low-wind
-Landsat scene (Talca, 2013-02-15) was 0.61 W m-2 below the fixed point
-of both phases (maximum 1.34 W m-2), and 0.39 W m-2 above it (maximum
-1.23 W m-2) in the packaged Cauquenes MODIS scene; tightening only the
-tolerance of phase B did not reduce it. With the defaults the largest
+\eqn{H}{H}, and the pixels inherit that offset. With \code{tol = pixel_tol = 0.01} (the former settings) the mean \eqn{H}{H} of a strongly unstable,
+low-wind Landsat scene (Talca, 2013-02-15) was 0.59 W m-2 below the
+fixed point of both phases (maximum 1.29 W m-2), and 0.43 W m-2 above it
+(maximum 1.25 W m-2) in the packaged Cauquenes MODIS scene; a tight
+tolerance of phase B alone did not reduce it. With the defaults the largest
 difference is below 5e-4 W m-2 in both scenes, for 15 to 26 iterations
-at the anchors and 1.5 to 2 times the former cost of phase B
+at the anchors and 1.5 to 2 times the former run time of the calibration
 (\code{dev/verification/water-comparison.md}, section 5.3). Both criteria are
 relative changes of \eqn{r_{ah}}{rah}: dimensionless, and defined also
 where \eqn{H \approx 0}{H ~ 0}; in phase B \eqn{\rho}{rho} and dT are

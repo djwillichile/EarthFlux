@@ -723,6 +723,34 @@ H_target exactamente con (a*, b*) (§14.6).
   de `tol` importa y debe documentarse. El manual SEBAL de Idaho itera
   hasta que dT_hot y rah del ancla caliente "se estabilizan" (p. 34; 3 a 7
   iteraciones, ap. 8), sin una tolerancia numérica.
+- **Decisión M2-11 (2026-11-10, revisa SH-16): una tolerancia por fase.**
+  Fase A: `tol` = 10⁻⁶ (antes 0.01), `maxit` = 100 (antes 20). Fase B
+  (§11.7): `pixel_tol` = 10⁻⁵ y `pixel_maxit` = 100, argumentos nuevos de
+  `ef_h_control()` (antes la Fase B usaba `tol` y `maxit`). Ambos
+  criterios son el cambio relativo de rah. Se descartó un criterio
+  absoluto sobre H (W m⁻²): el relativo es adimensional, está definido
+  también con H ≈ 0 (rah > 0) y, en la Fase B, con ρ y dT fijos,
+  |Δrah|/rah es exactamente el cambio relativo de H, de modo que
+  `pixel_tol` = 10⁻⁵ acota el último paso a ≈ 10⁻⁵·|H| (≤ 0.005 W m⁻² con
+  H ≤ 500 W m⁻²). Motivo de la Fase A: con la estrategia P2 los píxeles
+  convergen a su propio punto fijo con (a*, b*), y las anclas pasadas por
+  la Fase B reproducen H_target solo si la Fase A llegó a su punto fijo;
+  con `tol` = 0.01 no lo hacen y todos los píxeles heredan la desviación.
+  Medición (`../verification/water-comparison.md` §5.3), H frente al punto
+  fijo de ambas fases (10⁻¹⁰):
+
+  | Caso | `tol` / `pixel_tol` | Iter. fase A | Iter. fase B (máx.) | H̄ − H̄_fijo (W m⁻²) | máx.\|ΔH\| (W m⁻²) | Tiempo de `ef_calibrate_h()` |
+  |---|---|---|---|---|---|---|
+  | Talca, Landsat 7, 2013-02-15 (198 926 celdas, L_cal ≈ −0.7 m) | 0.01 / 0.01 | 11 | 5 | −0.593 | 1.29 | 0.30 s |
+  | | 0.01 / 10⁻¹⁰ | 11 | 15 | −0.608 | 1.34 | 0.66 s |
+  | | **10⁻⁶ / 10⁻⁵** | 26 | 9 | 7·10⁻⁵ | 4.7·10⁻⁴ | 0.44 s |
+  | Cauquenes, `cauquenes_modis` en la cadena de `earthflux()` de los tests (3147 celdas, `idaho2002_elev` / `_flat`) | 0.01 / 0.01 | 6 | 4 | +0.426 / +0.415 | 1.25 / 1.21 | 0.010 / 0.011 s |
+  | | **10⁻⁶ / 10⁻⁵** | 15 | 8 | −3·10⁻⁵ | 2.9·10⁻⁴ / 3.4·10⁻⁴ | 0.021 / 0.016 s |
+
+  En el caso sintético de §14.5 con viento de 1 m/s a 2 m (L_cal ≈ −0.7 m)
+  los defectos dejan máx.|ΔH| ≈ 4·10⁻⁴ W m⁻² y 0.01 / 0.01 ≈ 1.2 W m⁻²
+  (`tests/testthat/test-sensible-heat.R`). Valores de diseño, sin fuente
+  primaria.
 
 ### 11.4 Amortiguación
 
@@ -739,6 +767,9 @@ H_target exactamente con (a*, b*) (§14.6).
 
 `maxit`, por defecto 20 en `water` (elección de diseño, no científica). Se
 propone el mismo valor por defecto como argumento explícito (SH-16).
+*M2-11 (2026-11-10):* `maxit` = 100 en la Fase A (con `tol` = 10⁻⁶ hacen
+falta 26 iteraciones en Talca y 15 en Cauquenes; 23 y 34 con ω = 0 y 0.5
+a 10⁻¹⁰ en §14.5) y `pixel_maxit` = 100 por píxel (máximo observado: 9).
 
 ### 11.6 No convergencia y divergencia (nunca en silencio)
 
@@ -747,7 +778,7 @@ propone el mismo valor por defecto como argumento explícito (SH-16).
 | `maxit` alcanzado sin cumplir `tol` | Devolver el último iterado con `converged = FALSE`, historial completo; **warning** con clase `earthflux_convergence_warning`; flag de escena `EF_H_NOT_CONVERGED` en todos los píxeles |
 | a, b o u* no finitos, o u* ≤ 0 en un ancla | **Error** con clase `earthflux_calibration_error` (`water` también detiene: `checkIteration()`) |
 | u* inválida en un píxel (Fase B) | `NA` en ese píxel + flag `EF_USTAR_INVALID` |
-| Píxel sin convergencia en Fase B | Último iterado + flag `EF_H_PIXEL_NOT_CONVERGED`; conteo en el resumen de diagnósticos |
+| Píxel sin convergencia en Fase B (`pixel_maxit` alcanzado sin cumplir `pixel_tol`) | Último iterado + flag `EF_H_PIXEL_NOT_CONVERGED`; conteo en el resumen de diagnósticos. *M2-11:* además un único **warning** `earthflux_convergence_warning` por llamada con `phase = "pixels"`, `n_not_converged` e `iterations` (el de la Fase A lleva `phase = "anchors"`) |
 
 ### 11.7 Fase B — todos los píxeles
 
@@ -758,8 +789,11 @@ Dos estrategias:
   estado neutral. La convergencia por píxel no se comprueba.
 - **P2 (propuesta):** con (a*, b*) fijos, dT_p = a* + b*·Ts_datum,p y
   ρ_p (T_a = Ts_p − dT_p) quedan fijos; iterar por píxel solo la
-  estabilidad (H_p → L → ψ → u* → rah) hasta su propia convergencia, con
-  flag por píxel. Las anclas reproducen H_target (mismo punto fijo; §14.6).
+  estabilidad (H_p → L → ψ → u* → rah) hasta su propia convergencia
+  (`pixel_tol`, `pixel_maxit`; M2-11), con flag por píxel. Las anclas
+  reproducen H_target (mismo punto fijo; §14.6) **si la Fase A llegó a su
+  punto fijo**: con `tol` = 0.01 se desvían hasta ~1.2 W m⁻² y arrastran a
+  todos los píxeles (§11.3, M2-11).
 
 Recomendación: **P2** (resultado depende solo de (a*, b*) y no del camino de
 la Fase A; convergencia comprobada por píxel). P1 solo para la verificación
@@ -786,7 +820,7 @@ objetos de sensor (`ARCHITECTURE.md` §1, §3).
 | `ef_sensible_heat(air_density, dt, rah, cp)` | kg m⁻³, K, s m⁻¹, J kg⁻¹ K⁻¹ | H [W m⁻²] | Sí |
 | `monin_obukhov_length()`, `stability_psi()` | ver §10 | L [m]; ψ_m, ψ_h [–] | Internas (API pequeña) |
 | Driver de calibración (nombre provisional `ef_calibrate_h(anchors, pixels, control)`) | Tabla de anclas (§2.2) + vectores de píxel | Objeto con a*, b*, `converged`, `iterations`, historial, estado en anclas, configuración; y H, dT, rah, u*, L, flags por píxel | **Decisión abierta (SH-17)** |
-| Control (nombre provisional `ef_h_control(tol, maxit, damping, stable_psi_m_height, …)`) | – | Lista validada | Según SH-17 |
+| Control (`ef_h_control(stable_psi_m_height, blending_height, z1, z2, tol, maxit, damping, pixel_tol, pixel_maxit)`; `pixel_tol`, `pixel_maxit` desde M2-11) | – | Lista validada | Sí (SH-17) |
 
 Diseño para `terra`, bloques y paralelismo (`ARCHITECTURE.md` §6.2–6.3,
 §6.6):
@@ -816,7 +850,8 @@ Diseño para `terra`, bloques y paralelismo (`ARCHITECTURE.md` §6.2–6.3,
   `ef_rah()`; z₂ > z₁ > 0; P > 0; T > 0 K; c_p > 0;
   rah > 0 en `ef_sensible_heat()`; LAI ≥ 0; α > 0 (método custom); f ∈
   [0, 1]; h ≥ 0; Γ ≥ 0 (`water` exige ≥ 0; un gradiente negativo requeriría
-  justificación); `tol` > 0; `maxit` entero ≥ 1; ω ∈ [0, 1).
+  justificación); `tol` > 0; `maxit` entero ≥ 1; ω ∈ [0, 1);
+  `pixel_tol` > 0; `pixel_maxit` entero ≥ 1 (M2-11).
 - `Inf` rechazado en todas las entradas.
 - u_b = 0 es posible (calma) pero produce u* = 0 y rah infinita: flag
   `EF_LOW_WIND`; en anclas → error de calibración con mensaje explícito.
@@ -1032,7 +1067,7 @@ forzarse:
 | ρ en H | §8.2 (P con T_a) | §8.1 con T_a (SH-08) | ≈ 0.6 % en ρ; en gran parte absorbido por la calibración (§8.3) |
 | ρ y T en L | ρ inicial (con Ts) y Ts, no actualizadas | ρ de la iteración y Ts (SH-10, M2-10; como el manual SEBAL de Idaho) | Pequeño |
 | ρ en dT de anclas vs en H | dT de anclas con ρ(dT_{k−1}); H con ρ(dT_k): H_ancla ≈ H_target | Mismo ρ en ambos: H_ancla = H_target exacto | Pequeño |
-| Convergencia | Promedio por clase, 1 %, más una iteración | Por ancla (SH-16) | Pequeño |
+| Convergencia | Promedio por clase, 1 %, más una iteración | Por ancla (SH-16), `tol` = 10⁻⁶; por píxel `pixel_tol` = 10⁻⁵ (M2-11) | Con 1 % y P2, H a ~0.6 W m⁻² del punto fijo (Talca); con M2-11, < 5·10⁻⁴ |
 | Fase B | P1 (reproduce secuencia de a, b) | P2 (convergencia por píxel) | Pequeño si converge; distinto si no |
 | Varias anclas | `"mean"` / `"lm"` (último par) | SH-14 | Según escena |
 
@@ -1057,7 +1092,7 @@ forzarse:
 | SH-13 | Γ y z_datum | 6.49 K km⁻¹ fijo / argumento; z_datum de estación / constante de escena | Γ como argumento con valor documentado; z_datum constante explícito. *2026-11-05:* forma verificada (Ec. 12-7, 0,0065 K m⁻¹); Γ sin defecto porque METRIC lo ajusta a la escena (Allen et al., 2012, p. 74) | §9.1 |
 | SH-14 | Agregación de varias anclas | Promedio de entradas / promedio de dT / por par / regresión | Coordinar con la especificación de anclas; caso base 1 valor por clase | §2.3 |
 | SH-15 | Estrategia de Fase B | P1 / P2 | P2; P1 solo para verificación | §11.7 |
-| SH-16 | `tol`, `maxit`, ω por defecto; criterio por ancla o promedio | – | 0.01, 20, 0 por ancla; reportar Δa, Δb | §11.3–11.5 |
+| SH-16 | `tol`, `maxit`, ω por defecto; criterio por ancla o promedio | – | 0.01, 20, 0 por ancla; reportar Δa, Δb. *2026-11-10 (M2-11):* una tolerancia por fase: `tol` = 10⁻⁶, `maxit` = 100 por ancla; `pixel_tol` = 10⁻⁵, `pixel_maxit` = 100 por píxel; ω = 0 | §11.3–11.5 |
 | SH-17 | Driver exportado o interno; exportar `ef_ts_datum()` y auxiliares de estabilidad | – | Driver exportado (usuarios avanzados con anclas propias); auxiliares internas | §12 |
 | SH-18 | Clases de condición nuevas | `earthflux_calibration_error`, `earthflux_convergence_warning` | Adoptar | §13 |
 | SH-19 | Estado inicial | dT₀ = 0 (ρ con Ts) / otro | dT₀ = 0, documentado | §11.2 |
@@ -1141,6 +1176,19 @@ Observaciones al implementar:
   resolvió con la fuente primaria (M2-09, 2 m).
 - **Fase B en paralelo.** Probada la invariancia por bloques (propiedad 7);
   la comparación secuencial = paralelo queda para el envoltorio ráster.
+- **Convergencia por fase (2026-11-10, `DECISIONS.md` M2-11).** La
+  verificación cruzada con `water` mostró que, con `tol` = 0.01 compartida,
+  H queda ~0.6 W m⁻² bajo el punto fijo en una escena muy inestable y que
+  la causa es la parada de la Fase A, no la de la Fase B (§11.3).
+  `ef_h_control()` tiene ahora `tol`/`maxit` (Fase A, defectos 10⁻⁶/100) y
+  `pixel_tol`/`pixel_maxit` (Fase B, 10⁻⁵/100); un píxel sin convergencia
+  emite además `earthflux_convergence_warning` (`phase = "pixels"`). Los
+  valores de §14.5 con `tol` = 0.01 se obtienen ahora con
+  `ef_h_control(tol = 0.01, maxit = 20)`; los tests de punto fijo fijan
+  también `pixel_tol` = 10⁻¹⁰. Tests nuevos: caso sintético inestable con
+  viento bajo frente a 10⁻¹⁰ (defectos dentro de 0.01 W m⁻², Fase B dentro
+  de `pixel_tol`, la Fase A como causa del sesgo) y validación de los
+  argumentos nuevos.
 - **Armonización M2 (2026-11-04).** `check_condition()` y `check_scalar()`
   pasaron a `R/utils.R` (este último con cotas y `whole` opcionales, y lo
   comparten las anclas); `ef_zom()` tiene `method` como último argumento y

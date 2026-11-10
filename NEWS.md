@@ -65,6 +65,30 @@
   `EF_H_ZOM_UNDEFINED` is retired (no function raises it any more); its
   bit 10 stays reserved and the registry refuses retired codes and bits.
 
+## Changes
+
+* `ef_h_control()` has one convergence control per phase of
+  `ef_calibrate_h()` (decision M2-11): `tol` and `maxit` now apply to the
+  calibration at the anchors only, with defaults `1e-6` and 100 (were 0.01
+  and 20), and the new `pixel_tol` (default `1e-5`) and `pixel_maxit`
+  (default 100) to the per-pixel stability iteration. With the former
+  shared 1 % tolerance the anchors stopped short of their fixed point, so
+  the anchors run through the pixel phase no longer reproduced their target
+  H and every pixel inherited the offset: in a strongly unstable, low-wind
+  Landsat scene (the Talca example of the `water` package) H was
+  0.59 W m-2 below the fixed point on average (up to 1.3 W m-2); with the
+  new defaults it is within 5e-4 W m-2, at about 1.5 times the run time.
+  Pixels that do not converge keep their flag `EF_H_PIXEL_NOT_CONVERGED`
+  and now also raise one `earthflux_convergence_warning` (field
+  `phase = "pixels"`). The former behaviour is
+  `ef_h_control(tol = 0.01, maxit = 20, pixel_tol = 0.01, pixel_maxit = 20)`.
+
+* Presets `idaho2002_elev` and `idaho2002_flat` version 3: the convergence
+  settings of the calibration of H are written out in the preset
+  (`tol = 1e-6`, `maxit = 100`, `pixel_tol = 1e-5`, `pixel_maxit = 100`;
+  decision M2-11) and recorded in the provenance with every other option.
+  H changes by up to about 1.3 W m-2.
+
 ## Bug fixes
 
 * The MODIS readers and `modis_provenance()` now work with older and newer

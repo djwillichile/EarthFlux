@@ -127,8 +127,8 @@ Closure: steps 1-3 are repeated with the final \eqn{r_{ah}}{rah} to give
 (a*, b*), and \eqn{r_{ah}}{rah} is not updated afterwards, so the anchors
 reproduce \eqn{H_{target}}{H_target} exactly.
 
-\strong{Phase B} (pixels, strategy P2, decisions P0-10 and M2-11). With (a*, b*) fixed,
-\eqn{dT = a^* + b^* T_{s,datum}}{dT = a* + b* * Ts_datum} and
+\strong{Phase B} (pixels, strategy P2, decisions P0-10 and M2-11). With
+(a*, b*) fixed, \eqn{dT = a^* + b^* T_{s,datum}}{dT = a* + b* * Ts_datum} and
 \eqn{\rho}{rho} (at \eqn{T_a = T_s - dT}{Ta = Ts - dT}) are fixed; each
 pixel iterates only its stability correction
 (\eqn{H \to L \to \psi \to u_* \to r_{ah}}{H -> L -> psi -> u* -> rah})
@@ -183,7 +183,8 @@ procedure): the manual iterates "until the successive values for dT_hot
 and rah at the hot pixel have stabilized" (p. 34; 3 to 7 iterations,
 appendix 8), whereas EarthFlux uses a relative tolerance on rah at both
 anchors, the closure of the anchors and phase B with the per-pixel
-strategy P2, each phase with its own tolerance (M2-11). Known differences with \code{water} are listed in section 17 of
+strategy P2, each phase with its own tolerance (M2-11). Known
+differences with \code{water} are listed in section 17 of
 \code{dev/specs/sensible-heat.md} (e.g. no wind floor, no substitute friction
 velocity, per-anchor convergence, strategy P2). The cross-check with
 Allen, Tasumi and Trezza (2007) remains desirable but is no longer

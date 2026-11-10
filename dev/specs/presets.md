@@ -2,7 +2,8 @@
 
 Estado: **implementada (M5, fase 2, 2026-11-06)** · Autor y mantenedor:
 Guillermo Servando Fuentes-Jaque · Decisiones: `DECISIONS.md` §1.5, M5-04
-y **M5-08 … M5-24** (presets versión 2 desde M5-23 y M5-24) · Documento
+y **M5-08 … M5-24** (presets versión 2 desde M5-23 y M5-24), **M2-11**
+(versión 3: convergencia de H por fase) · Documento
 dueño de la arquitectura:
 `ARCHITECTURE.md` §6.7.
 
@@ -81,12 +82,12 @@ V#7; M5-11) las anclas se seleccionan **antes** de Rn (P0-3;
 | 16 | Rn, G | `ef_net_radiation()` (misma ε₀ que RL↑, RC-14), `ef_g(..., method = "bastiaanssen")` | — |
 | 17 | λ | `ef_lambda(method = "constant")` | Misma λ en anclas y ET (P0-7) |
 | 18 | Condiciones de borde | `ef_anchor_conditions(..., etrf_cold = 1.05, etrf_hot = 0, reference = "alfalfa", zom, u_blend, pressure)` | — |
-| 19 | H | `ef_calibrate_h(anchors, ef_h_control(), lapse_rate, datum_elevation, pixels)` | Datum: elevación de la estación (C1) o del punto de calibración frío (C2) |
+| 19 | H | `ef_calibrate_h(anchors, preset$sensible_heat$control, lapse_rate, datum_elevation, pixels)` (control de la versión 3: §3.2) | Datum: elevación de la estación (C1) o del punto de calibración frío (C2) |
 | 20 | LE → ETa | `ef_latent_heat()`, `ef_et_inst()`, `ef_etrf()`, `ef_et_daily(method = "etrf")` | `reference = "alfalfa"` en toda la cadena (ET-D9) |
 
 ## 3. Presets
 
-Dos presets (M5-09), **`CANDIDATA`**, versión interna **`"2"`** (registrada
+Dos presets (M5-09), **`CANDIDATA`**, versión interna **`"3"`** (registrada
 en la procedencia; un cambio de cualquier valor es una versión nueva).
 Versiones (elemento `changes` del preset y `provenance$preset$changes`):
 
@@ -94,6 +95,7 @@ Versiones (elemento `changes` del preset y `provenance$preset$changes`):
 |---|---|---|
 | `"1"` | 2026-11-06 | Primera versión (M5-08 … M5-22) |
 | `"2"` | 2026-11-06 | Criterios de anclas recalibrados para MODIS a 1 km (M5-23, reemplaza M5-10; §4); mínimo de z_om de 0,005 m con `EF_H_ZOM_FLOOR_APPLIED` (M5-24, reemplaza M5-13); ninguna ancla en celdas con LAI asignado (`EF_SURF_LAI_ASSIGNED`) |
+| `"3"` | 2026-11-10 | Convergencia de la calibración de H con una tolerancia por fase (M2-11): `tol` = 10⁻⁶ y `maxit` = 100 en las anclas, `pixel_tol` = 10⁻⁵ y `pixel_maxit` = 100 por píxel (antes 0,01 y 20 en ambas fases), escritos en el preset para que un cambio de los defectos de `ef_h_control()` no lo cambie en silencio. H cambia hasta ~1,3 W m⁻² (en Cauquenes, −0,43 W m⁻² de media) |
  El
 estado va en la documentación y en la procedencia, **no en el nombre**
 (M5-08, que reescribe D-AP-01). Ninguno usa la pendiente: se fuerza a 0
@@ -140,7 +142,7 @@ estado va en la documentación y en la procedencia, **no en el nombre**
 | Anclas | criterios, relajación, QA | §4 | **C** (M5-10) |
 | | `aggregate`; `search_area` | `"mean"`; una estación: lista (30 km alrededor de la estación, AOI), si no: AOI | D(p) |
 | | `etrf_cold`; `etrf_hot` | 1,05; 0 (`EF_ANCHOR_HOT_LE_ASSUMED_ZERO`) | valores del manual (V-I, V#40–41) |
-| H | `ef_h_control()` | defectos (200, 0,1, 2, ψ_m estable a 2 m, tol 0,01, maxit 20, ω 0) | V-I / D(p) |
+| H | `ef_h_control()` | 200, 0,1, 2, ψ_m estable a 2 m (defectos); `tol` 10⁻⁶, `maxit` 100, `pixel_tol` 10⁻⁵, `pixel_maxit` 100, ω 0 (escritos en el preset; versión 3, M2-11; antes tol 0,01 y maxit 20 en ambas fases) | V-I / D(p) |
 | | `datum_elevation` | estación (C1) o punto de calibración frío (C2) | no afecta a H (`sensible-heat.md` §9.1); M5-20 |
 | ET | `ef_et_daily` | `"etrf"`, `reference = "alfalfa"` | V-I (V#46) |
 
