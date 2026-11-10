@@ -353,8 +353,12 @@ add_scalar("H_hot objetivo [W/m2]",
            mean(W$rn[hot_cells]) - mean(W$g[hot_cells]),
            cp_pts$h_target[cp_pts$type == "hot"])
 
+# Convergence as in water (1 % change of rah, at most 20 iterations) in both
+# phases: the settings of EarthFlux 0.1.0. Decision M2-11 changed the
+# defaults (section 3b below compares them).
 ctrl <- ef_h_control(stable_psi_m_height = 2, blending_height = 200,
-                     z1 = 0.1, z2 = 2, tol = 0.01, maxit = 20L, damping = 0)
+                     z1 = 0.1, z2 = 2, tol = 0.01, maxit = 20L, damping = 0,
+                     pixel_tol = 0.01, pixel_maxit = 20L)
 pix <- list(lst = m(W$ts), elevation = m(W$dem), zom = m(W$zom),
             u_blend = m(rep(u200_used, length(W$ts))),
             pressure = m(W$pressure), rn = m(W$rn), g = m(W$g))
@@ -544,7 +548,8 @@ for (st in steps) {
 emu_ef <- r
 emu_tab <- do.call(rbind, emu_tab)
 
-# Pixel phase of EarthFlux: iterations and convergence (tol = 0.01)
+# Pixel phase of EarthFlux: iterations and convergence (tol = pixel_tol =
+# 0.01)
 phase_b <- data.frame(
   converged = mean(cal$pixels$converged, na.rm = TRUE),
   iterations_median = stats::median(cal$pixels$iterations, na.rm = TRUE),
@@ -570,8 +575,10 @@ phase_b$share_abs_dh_gt_0.5 <- mean(abs(dh_b) > 0.5, na.rm = TRUE)
 
 # The same algorithms iterated to the fixed point (tol = 1e-10): what the
 # stopping rule (1 %) leaves, separately from the formulas
+ctrl_tight <- ef_h_control(tol = 1e-10, maxit = 500L, pixel_tol = 1e-10,
+                           pixel_maxit = 500L)
 cal_tight <- suppressWarnings(ef_calibrate_h(
-  anc, control = ef_h_control(tol = 1e-10, maxit = 500L), lapse_rate = lapse_w,
+  anc, control = ctrl_tight, lapse_rate = lapse_w,
   datum_elevation = WS$location$elev, pixels = pix
 ))
 emu_w_tight <- emu_h(sw_water, maxit = 500, tol = 1e-10)
@@ -591,6 +598,67 @@ add("H (punto fijo)", "H, ambos iterados a tol 1e-10", emu_w_tight$h,
 add("emulador", "H emulado (water) vs calcH()", W$h, emu_water$h, "W m-2")
 add("emulador", "H emulado (EarthFlux) vs ef_calibrate_h()",
     tv(cal$pixels$h), emu_ef$h, "W m-2")
+
+# 3b. Convergence settings of ef_calibrate_h() (decision M2-11) --------------
+#
+# Each phase has its own tolerance: `tol`/`maxit` at the anchors (phase A),
+# `pixel_tol`/`pixel_maxit` per pixel (phase B). The runs separate the
+# effect of each phase on H: distance to the fixed point of both phases
+# (cal_tight), difference from water, H of phase B at the calibration
+# points against H_target (the anchors reproduce their target in phase B
+# only if phase A reached its fixed point) and run time of
+# ef_calibrate_h() (median of 5 runs, all pixels).
+cp_ab <- cp_pts[match(c("hot", "cold"), cp_pts$type), ]
+pix_anchors <- list(lst = cp_ab$lst, elevation = cp_ab$elevation,
+                    zom = cp_ab$zom, u_blend = cp_ab$u_blend,
+                    pressure = cp_ab$pressure)
+h_target_ab <- cp_ab$rn - cp_ab$g - cp_ab$le_target
+conv_runs <- list(
+  "0.1.0 / water: tol 0.01, pixel_tol 0.01" = ctrl,
+  "tol 0.01, pixel_tol 1e-10" = ef_h_control(tol = 0.01, maxit = 20L,
+                                             pixel_tol = 1e-10,
+                                             pixel_maxit = 500L),
+  "defectos M2-11: tol 1e-6, pixel_tol 1e-5" = ef_h_control(),
+  "tol 1e-10, pixel_tol 1e-10" = ctrl_tight
+)
+run_cal <- function(control, pixels = pix) {
+  suppressWarnings(ef_calibrate_h(anc, control = control,
+                                  lapse_rate = lapse_w,
+                                  datum_elevation = WS$location$elev,
+                                  pixels = pixels))
+}
+convergence <- do.call(rbind, lapply(names(conv_runs), function(nm) {
+  ct <- conv_runs[[nm]]
+  r <- run_cal(ct)
+  ra <- run_cal(ct, pix_anchors)
+  secs <- stats::median(replicate(5, system.time(run_cal(ct))[["elapsed"]]))
+  d_fp <- r$pixels$h - cal_tight$pixels$h
+  d_w <- tv(r$pixels$h) - W$h
+  data.frame(
+    run = nm, slope = r$b, intercept = r$a, iterations_a = r$iterations,
+    iterations_b_median = stats::median(r$pixels$iterations, na.rm = TRUE),
+    iterations_b_max = max(r$pixels$iterations, na.rm = TRUE),
+    not_converged = sum(!r$pixels$converged, na.rm = TRUE),
+    mean_h = mean(r$pixels$h, na.rm = TRUE),
+    mean_dh_fixed_point = mean(d_fp, na.rm = TRUE),
+    max_abs_dh_fixed_point = max(abs(d_fp), na.rm = TRUE),
+    max_abs_dh_anchors = max(abs(ra$pixels$h - h_target_ab)),
+    mean_dh_water = mean(d_w, na.rm = TRUE),
+    max_abs_dh_water = max(abs(d_w), na.rm = TRUE),
+    seconds = secs
+  )
+}))
+cal_def <- run_cal(ef_h_control())
+add("H", "H con los defectos de ef_h_control() (M2-11)", W$h,
+    tv(cal_def$pixels$h), "W m-2")
+add("H (punto fijo)", "H, water emulado a 1e-10 vs EarthFlux con defectos",
+    emu_w_tight$h, tv(cal_def$pixels$h), "W m-2")
+et24_def <- ef_et_daily(
+  ef_etrf(ef_et_inst(W$rn - W$g - tv(cal_def$pixels$h), lambda_ts),
+          ETr_inst, "alfalfa"),
+  ETr_24, "alfalfa", "etrf")$eta_24
+add("ET_24", "ET_24 (H de EarthFlux con los defectos M2-11)", W$et24,
+    et24_def, "mm d-1")
 
 # 4. Weather and reference ET: the same records through EarthFlux -----------
 
@@ -808,11 +876,14 @@ utils::write.csv(anchor_tab, file.path(cfg$out_dir, "anchors-summary.csv"),
                  row.names = FALSE)
 utils::write.csv(fixed_point, file.path(cfg$out_dir, "fixed-point.csv"),
                  row.names = FALSE)
+utils::write.csv(convergence, file.path(cfg$out_dir, "convergence.csv"),
+                 row.names = FALSE)
 saveRDS(list(versions = versions, settings = settings_water, stages = res,
              scalars = sca, water_iterations = water_iter,
              earthflux_iterations = cal$trace, h_decomposition = emu_tab,
              anchors_water = anchors_out, anchors_summary = anchor_tab,
              phase_b = phase_b, fixed_point = fixed_point,
+             convergence = convergence,
              earthflux_selection = sel_info,
              earthflux_anchor_pixels = sel_ef$pixels,
              calibration_points = cp_pts, simple = simple,
@@ -827,6 +898,7 @@ print(res[, c("stage", "quantity", "n", "na_mismatch", "mean_water",
 print(emu_tab, row.names = FALSE)
 print(phase_b, row.names = FALSE)
 print(fixed_point, row.names = FALSE)
+print(convergence, row.names = FALSE)
 print(anchor_tab, row.names = FALSE)
 if (!is.null(simple)) str(simple)
 options(op)

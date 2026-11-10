@@ -111,7 +111,7 @@ rotulan como `CANDIDATA` en roxygen.
 | P0-7 | Una sola `ef_lambda()`, `method` sin defecto; `"constant"` como defecto futuro de `earthflux()` hasta V2; guarda [10⁶, 10⁷] J kg⁻¹ | ET-D1, ET-D2 | `"metric"` (`CANDIDATA`, no implementada hasta V2) |
 | P0-8 | Núcleo de anclas sin umbrales ni k por defecto, sin relajación automática, `etrf_hot`/`le_hot` explícitos | D-AP-01, D-AP-02, D-AP-04, D-AP-05 | ~~Preset `VERIFICADA` para `earthflux()`~~: sustituido por M5-08 (presets `CANDIDATA` admitidos con estado declarado y aviso) |
 | P0-9 | Un punto de calibración por clase con `aggregate` explícito; condiciones de borde en función propia de la etapa [B] | D-AP-06, SH-14, D-AP-03 | — |
-| P0-10 | Fase B con estrategia P2, `tol` = 0.01 por ancla, `maxit` = 20, ω = 0, driver de calibración exportado | SH-15, SH-16, SH-17 | — |
+| P0-10 | Fase B con estrategia P2, `tol` = 0.01 por ancla, `maxit` = 20, ω = 0, driver de calibración exportado. *Revisada por M2-11 (2026-11-10, §1.2):* una tolerancia por fase, `tol` = 10⁻⁶ y `maxit` = 100 en las anclas, `pixel_tol` = 10⁻⁵ y `pixel_maxit` = 100 por píxel | SH-15, SH-16, SH-17 | — |
 | P0-11 | Entrada imposible → error con clase en el núcleo; la orquestación convierte en `NA` + flag lo marcado aguas arriba; `on_invalid` no adoptado | G-D6, ET-D6 | Política de la orquestación M2–M3 (T-13) |
 | P0-12 | Núcleo vectorizado; longitud 0 rechazada; `dim` sin reciclar; una función por método + despachador delgado con `method` sin defecto; clases de retorno coordinadas (`ARCHITECTURE.md` §3.2); condiciones con datos (T-17) | ARCH-3, G-5.2, G-D3, D-AP-09, ET-D12, SH-18, D-AP-10 (NR-D5, NR-D6 confirmadas) | Revisión del tamaño de la API antes de `0.1.0` (T-16) |
 
@@ -132,7 +132,11 @@ M2-08 … M2-10 se tomaron el 2026-11-05, en la revisión de verificación
 contra el manual SEBAL de Idaho (registro en
 [`VERIFICATION.md`](VERIFICATION.md)); M2-08 y M2-09 son `DECIDIDA`
 (regla de estados y resolución con fuente primaria) y M2-10 corrige una
-decisión provisional (SH-10) para alinearla con la fuente.
+decisión provisional (SH-10) para alinearla con la fuente. M2-11 se tomó
+el 2026-11-10, tras la verificación cruzada con `water`
+([`verification/water-comparison.md`](verification/water-comparison.md)
+§5.3 y §12), y revisa la provisional P0-10 (SH-16); es `DECIDIDA
+(provisional)`.
 
 | ID | Decisión | Fundamento | Dónde |
 |---|---|---|---|
@@ -146,6 +150,7 @@ decisión provisional (SH-10) para alinearla con la fuente.
 | M2-08 | **Política de verificación con el manual SEBAL de Idaho** (`DECIDIDA`, 2026-11-05). Nuevo estado **`VERIFICADA (SEBAL-Idaho 2002)`**: formulación confirmada palabra por palabra (forma, coeficientes, alturas) contra Waters et al. (2002), con página y número de ecuación; análogamente **`VERIFICADA (IAHS 2012)`** contra Allen et al. (2012, IAHS Publ. 352, pp. 73–75). Se registra fuente, página y ecuación en las tablas de las especificaciones y en `VERIFICATION.md`. El contraste con Allen, Tasumi & Trezza (2007) sigue siendo **deseable pero deja de ser bloqueante**. Si la forma de EarthFlux **difiere** del manual: se documenta la discrepancia; si la forma del manual es inequívoca, el código se alinea (pasa a `VERIFICADA` y se anota en `NEWS.md`); si es ambigua, sigue `CANDIDATA`. Lo propio de METRIC que el manual no cubre sigue `CANDIDATA`. Una formulación `VERIFICADA` deja de estar sujeta a la regla de §1.0: puede tener defecto **solo** donde la especificación o este registro decían que la falta de defecto se debía a la verificación pendiente; la regla de diseño T-15 (despachadores con `method` sin defecto) y los coeficientes sin defecto por diseño (P0-8: k del ancla fría, condición caliente, criterios de anclas; SH-13: Γ) no cambian | El manual es el documento de los autores de METRIC (Waters, Allen, Bastiaanssen, Tasumi, Trezza) con el mismo esquema aerodinámico y de estabilidad, anclas y dT = a + b·Ts; se leyeron como imagen todas las ecuaciones usadas. Sin DOI ni URL (PDF abierto) | `VERIFICATION.md`; `SCIENTIFIC_SPEC.md` (convención de estados); roxygen |
 | M2-09 | **SH-11 / P0-2 resueltas** (`DECIDIDA`, 2026-11-05): ψ_m(200 m) estable = −5·(2/L) (Waters et al., 2002, p. 33, Ec. 38; también ψ_h(2 m) = −5·(2/L), Ec. 39a, y ψ_h(0,1 m) = −5·(0,1/L), Ec. 39b). `ef_h_control()` tiene defecto `stable_psi_m_height = 2` y conserva el argumento para elegir otra altura (p. ej., 200 m) explícitamente. Además, por la misma regla, `blending_height = 200` (p. 26), `z1 = 0.1` y `z2 = 2` (p. 30, Ec. 41) son defectos de `ef_h_control()`, `ef_blending_wind()`, `ef_ustar()` y `ef_rah()`, y `cp = 1004` J kg⁻¹ K⁻¹ (p. 25; SH-09) de `ef_sensible_heat()` | Coincide con `water` y con el hallazgo M2-07 (2 m converge con un ancla fría estable). La falta de defecto se debía solo a la verificación pendiente (§1.0) | `sensible-heat.md` §10.3, §18, §21; `NEWS.md` |
 | M2-10 | **L con Ts y g = 9,81** (`DECIDIDA`, 2026-11-05; revisa SH-10): la longitud de Monin-Obukhov se calcula con la **temperatura de superficie** Ts (no con T_a = Ts − dT) y g = 9,81 m s⁻² (`EF_GRAVITY`), como en la Ec. 34 del manual (p. 32; el modelo F14 recibe Ts, ap. 8, p. 82); la densidad sigue siendo la de la iteración | Discrepancia con forma inequívoca en el manual: se alinea el código (M2-08). Cambia los valores de la escena sintética (`sensible-heat.md` §14.4–§14.5), recalculados con un script independiente | `sensible-heat.md` §10.1, §14; `R/constants.R`; `NEWS.md` |
+| M2-11 | **Convergencia de la calibración de H, una tolerancia por fase** (`DECIDIDA (provisional)`, 2026-11-10; revisa P0-10 y SH-16). `ef_h_control()` separa la convergencia de la Fase A (`tol`, `maxit`: anclas) de la de la Fase B (argumentos nuevos `pixel_tol`, `pixel_maxit`: cada píxel), con defectos `tol` = 10⁻⁶, `maxit` = 100, `pixel_tol` = 10⁻⁵ y `pixel_maxit` = 100 (antes 0,01 y 20 para ambas fases; ω = 0 sigue común). Ambos criterios siguen siendo el **cambio relativo de rah** (por ancla y por píxel): adimensional, definido también con H ≈ 0 y, en la Fase B (ρ y dT fijos), igual al cambio relativo de H; no se adopta un criterio absoluto en W m⁻². Un píxel sin convergencia conserva su último iterado con `EF_H_PIXEL_NOT_CONVERGED` (sin código nuevo) y la llamada emite además un único `earthflux_convergence_warning` (campo `phase = "pixels"`; el de la Fase A lleva `phase = "anchors"`). Presets versión 3, con los cuatro valores escritos en el preset. El comportamiento anterior es `ef_h_control(tol = 0.01, maxit = 20, pixel_tol = 0.01, pixel_maxit = 20)` | Medición en la escena de Talca (Landsat 7, 2013-02-15, inestabilidad fuerte, viento bajo) y en la cadena de `earthflux()` de los tests con `cauquenes_modis` (`verification/water-comparison.md` §5.3): con tol = 0,01 la **Fase A** se detiene antes de su punto fijo y, con la estrategia P2, las anclas pasadas por la Fase B ya no reproducen su H objetivo; todos los píxeles heredan la desviación (Talca: H̄ −0,59 W m⁻² frente al punto fijo de ambas fases, máx. 1,29; Cauquenes: +0,42 a +0,43, máx. 1,25). Apretar solo la Fase B no la reduce (Talca: −0,61), contra lo supuesto en la primera versión del informe. Con los defectos nuevos máx.\|ΔH\| ≤ 4,7·10⁻⁴ W m⁻² frente a tol = `pixel_tol` = 10⁻¹⁰, con 15 a 26 iteraciones en las anclas y 1,5 a 2 veces el tiempo de `ef_calibrate_h()` (Talca: 0,30 → 0,44 s en 198 926 celdas). La diferencia de H con `water` pasa de −0,33 W m⁻² de media (máx. 2,04) a +0,27 (máx. 0,75), la de las fórmulas de ρ. El manual itera hasta que dT y rah del píxel caliente "se estabilizan", sin tolerancia numérica (Waters et al., 2002, p. 34): los valores son de diseño | `R/metric-sensible-heat.R` (`ef_h_control()`, `ef_calibrate_h()`); `R/api-presets.R`; `sensible-heat.md` §11.3–§11.7, §12, §13, §21; `presets.md` §3; `NEWS.md` |
 
 ### 1.3 Decisiones de implementación de M3 (2026-11-04)
 
@@ -511,7 +516,10 @@ Doce preguntas concretas que desbloquean M2. Cada una da la recomendación
     *Recomendación:* sí (`sensible-heat.md` §11.7, §18). — *Consecuencia:* el
     resultado depende solo de (a*, b*); la estrategia P1 (`water`) queda para
     verificación cruzada; `tol` importa (0.7 % en a en el caso sintético) y
-    se documenta.
+    se documenta. — *Revisión 2026-11-10 (M2-11, §1.2):* con P2 una Fase A
+    detenida con `tol` = 0.01 desplaza H de todos los píxeles (hasta
+    ~1,3 W m⁻²); cada fase tiene ahora su tolerancia (`tol` = 10⁻⁶,
+    `pixel_tol` = 10⁻⁵, `maxit` = `pixel_maxit` = 100).
 11. **P0-11 · Valores imposibles en rásteres (G-D6, ET-D6, WF-04, GW §2.3; T-13).**
     ¿Entrada físicamente imposible → error con clase (y la limpieza es de QA
     aguas arriba), o se ofrece `on_invalid = "na_flag"`? —
@@ -550,7 +558,7 @@ GW-22, GW-23 y ARCH-6.3b para M3): 101 `ABIERTA`, 58 `DECIDIDA`, 3
 `CERRADA`; las de M4 (§1.4) pasan **3 filas** más (MP-10, MP-11 y
 MP-13): 98 `ABIERTA`, 61 `DECIDIDA`, 3 `CERRADA`; y las decisiones del
 autor del 2026-11-04 posteriores a M4 (M4-27, M4-28) pasan **2 filas** más
-(MP-06 y MP-12): 96 `ABIERTA`, 63 `DECIDIDA`, 3 `CERRADA`. Las decisiones de diseño de la API de usuario del 2026-11-05 (§1.5, M5-01 … M5-07) son nuevas y no cambian el recuento. La revisión de verificación del 2026-11-05 (§1.2, M2-08 … M2-10) pasa **3 filas** de `ABIERTA` a `CERRADA` (NR-D3, SH-09 y SH-11): 93 `ABIERTA`, 63 `DECIDIDA`, 6 `CERRADA`; SH-10 sigue `DECIDIDA` con contenido revisado. Las tablas de esta sección y de §5 conservan el recuento
+(MP-06 y MP-12): 96 `ABIERTA`, 63 `DECIDIDA`, 3 `CERRADA`. Las decisiones de diseño de la API de usuario del 2026-11-05 (§1.5, M5-01 … M5-07) son nuevas y no cambian el recuento. La revisión de verificación del 2026-11-05 (§1.2, M2-08 … M2-10) pasa **3 filas** de `ABIERTA` a `CERRADA` (NR-D3, SH-09 y SH-11): 93 `ABIERTA`, 63 `DECIDIDA`, 6 `CERRADA`; SH-10 sigue `DECIDIDA` con contenido revisado. M2-11 (2026-11-10) revisa el contenido de SH-16, que sigue `DECIDIDA (provisional)`, sin cambiar el recuento. Las tablas de esta sección y de §5 conservan el recuento
 original salvo en la columna de estado.
 
 Decisiones abiertas por prioridad:
@@ -1026,7 +1034,7 @@ la columna Recomendación.
 | SH-13 | Γ y z_datum | 6.49 K km⁻¹ fijo / argumento; z_datum estación / escena | Γ argumento documentado; z_datum constante explícito. Evidencia 2026-11-05: forma `VERIFICADA (SEBAL-Idaho 2002)` (Ec. 12-7, Γ = 0,0065 K m⁻¹, datum en la estación); METRIC ajusta Γ a la escena con doble tasa en montaña (Allen et al., 2012, p. 74): Γ sigue sin defecto por diseño | §9.1 | D-AP-07; T-20 |
 | SH-14 | Agregación de varias anclas | Promedio entradas / dT / por par / regresión | Coordinar con anclas; caso base 1 valor por clase → **DECIDIDA (provisional, 2026-11-04)** | §2.3 | = D-AP-06; T-03; P0-9 |
 | SH-15 | Estrategia de Fase B | Estrategia P1 (`water`) / estrategia P2 | Estrategia P2; P1 solo verificación → **DECIDIDA (provisional, 2026-11-04)** | §11.7 | P0-10 |
-| SH-16 | `tol`, `maxit`, ω; criterio por ancla o promedio | — | 0.01, 20, 0, por ancla; reportar Δa, Δb → **DECIDIDA (provisional, 2026-11-04)** | §11.3–11.5 | T-15; P0-10 |
+| SH-16 | `tol`, `maxit`, ω; criterio por ancla o promedio | — | 0.01, 20, 0, por ancla; reportar Δa, Δb → **DECIDIDA (provisional, 2026-11-04)**; *revisada por M2-11 (2026-11-10):* una tolerancia por fase, `tol` = 10⁻⁶ y `maxit` = 100 por ancla, `pixel_tol` = 10⁻⁵ y `pixel_maxit` = 100 por píxel, ω = 0 | §11.3–11.5 | T-15; P0-10; M2-11 |
 | SH-17 | Driver exportado o interno; auxiliares | — | Driver exportado; auxiliares internas → **DECIDIDA (provisional, 2026-11-04)** | §12 | T-16; T-17; P0-10 |
 | SH-18 | Clases de condición nuevas | `earthflux_calibration_error`, `earthflux_convergence_warning` | Adoptar → **DECIDIDA (provisional, 2026-11-04)** | §13 | T-17 |
 | SH-19 | Estado inicial | dT₀ = 0 / otro | dT₀ = 0, documentado → **DECIDIDA (provisional, 2026-11-04)** | §11.2 | P0-6 |

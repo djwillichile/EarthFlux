@@ -34,7 +34,8 @@ are ignored. Missing values at an anchor raise
 height of the stable momentum correction of decision SH-11 and the
 convergence settings), e.g. \code{ef_h_control()} for its defaults. It is
 validated again; elements not given take the defaults of
-\code{\link[=ef_h_control]{ef_h_control()}}.}
+\code{\link[=ef_h_control]{ef_h_control()}} (a list saved before \code{pixel_tol} and \code{pixel_maxit}
+existed gets their current defaults).}
 
 \item{lapse_rate}{Numeric scalar. Lapse rate of the surface temperature
 with elevation [K m-1] (see \code{\link[=ef_ts_datum]{ef_ts_datum()}}). No default (SH-13).}
@@ -118,29 +119,34 @@ the new \eqn{r_{ah}}{rah};
 \item damping: \eqn{r_{ah,k} = (1 - \omega) r_{ah,new} + \omega
    r_{ah,k-1}}{rah_k = (1 - omega) * rah_new + omega * rah_(k-1)};
 \item convergence when \eqn{\max_i |r_{ah,k} - r_{ah,k-1}| / r_{ah,k} <
-   tol}{max_i |rah_k - rah_(k-1)| / rah_k < tol} over both anchors.
+   tol}{max_i |rah_k - rah_(k-1)| / rah_k < tol} over both anchors, in
+at most \code{maxit} iterations.
 }
 
 Closure: steps 1-3 are repeated with the final \eqn{r_{ah}}{rah} to give
 (a*, b*), and \eqn{r_{ah}}{rah} is not updated afterwards, so the anchors
 reproduce \eqn{H_{target}}{H_target} exactly.
 
-\strong{Phase B} (pixels, strategy P2, decision P0-10). With (a*, b*) fixed,
-\eqn{dT = a^* + b^* T_{s,datum}}{dT = a* + b* * Ts_datum} and
+\strong{Phase B} (pixels, strategy P2, decisions P0-10 and M2-11). With
+(a*, b*) fixed, \eqn{dT = a^* + b^* T_{s,datum}}{dT = a* + b* * Ts_datum} and
 \eqn{\rho}{rho} (at \eqn{T_a = T_s - dT}{Ta = Ts - dT}) are fixed; each
 pixel iterates only its stability correction
 (\eqn{H \to L \to \psi \to u_* \to r_{ah}}{H -> L -> psi -> u* -> rah})
-from the neutral state until its own convergence (same \code{tol}, \code{maxit}
-and \code{damping}). The result of a pixel depends only on its inputs and on
-(a*, b*), not on the other pixels nor on the path of phase A, so the
-computation can be split into blocks.
+from the neutral state until \eqn{|r_{ah,k} - r_{ah,k-1}| / r_{ah,k} <
+}{|rah_k - rah_(k-1)| / rah_k < }\code{pixel_tol}, in at most \code{pixel_maxit}
+iterations (with the same \code{damping}). The result of a pixel depends only
+on its inputs and on (a*, b*), not on the other pixels nor on the path
+of phase A, so the computation can be split into blocks. The anchors
+reproduce their target \eqn{H}{H} in phase B only to the extent that
+phase A reached its fixed point, which is why the default \code{tol} is tight
+(see \code{\link[=ef_h_control]{ef_h_control()}}, decision M2-11).
 
 \strong{Failures are never silent.}
 \itemize{
 \item Phase A without convergence after \code{maxit} iterations: the last iterate
 is returned with \code{converged = FALSE}, a warning of class
-\code{earthflux_convergence_warning} is signalled (fields \code{iterations} and
-\code{trace}) and the object flag \code{EF_H_CALIBRATION_NOT_CONVERGED}
+\code{earthflux_convergence_warning} is signalled (fields \code{phase = "anchors"}, \code{iterations} and \code{trace}) and the object flag
+\code{EF_H_CALIBRATION_NOT_CONVERGED}
 (\code{critical}) is set.
 \item Calibrated slope \code{b <= 0}: a warning of class \code{earthflux_warning} and
 the object flag \code{EF_H_DT_SLOPE_NONPOSITIVE} (\code{critical}).
@@ -152,8 +158,13 @@ or air density at an anchor during the iteration: error of class
 failure occurs during the iteration).
 \item A pixel whose friction velocity becomes undefined (see \code{\link[=ef_ustar]{ef_ustar()}}) or
 not positive: \code{NA} outputs for that pixel and the cell flag
-\code{EF_H_USTAR_INVALID}; a pixel without convergence keeps its last
-iterate and gets \code{EF_H_PIXEL_NOT_CONVERGED}.
+\code{EF_H_USTAR_INVALID}.
+\item Pixels without convergence after \code{pixel_maxit} iterations: each keeps
+its last iterate (\code{converged = FALSE}) and gets the cell flag
+\code{EF_H_PIXEL_NOT_CONVERGED}, and one warning of class
+\code{earthflux_convergence_warning} is signalled for the call (fields
+\code{phase = "pixels"}, \code{n_not_converged} and \code{iterations}, equal to
+\code{pixel_maxit}).
 }
 
 Constants: von Karman constant \code{EF_VON_KARMAN} (0.41), gravity
@@ -172,7 +183,8 @@ procedure): the manual iterates "until the successive values for dT_hot
 and rah at the hot pixel have stabilized" (p. 34; 3 to 7 iterations,
 appendix 8), whereas EarthFlux uses a relative tolerance on rah at both
 anchors, the closure of the anchors and phase B with the per-pixel
-strategy P2. Known differences with \code{water} are listed in section 17 of
+strategy P2, each phase with its own tolerance (M2-11). Known
+differences with \code{water} are listed in section 17 of
 \code{dev/specs/sensible-heat.md} (e.g. no wind floor, no substitute friction
 velocity, per-anchor convergence, strategy P2). The cross-check with
 Allen, Tasumi and Trezza (2007) remains desirable but is no longer

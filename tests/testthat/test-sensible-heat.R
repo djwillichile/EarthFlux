@@ -169,10 +169,12 @@ test_that("ef_h_control() defaults follow the SEBAL Idaho manual (SH-11)", {
   expect_error(ef_h_control(stable_psi_m_height = NULL),
                class = "earthflux_input_error")
   ctrl <- ctrl_for()
+  # Convergence settings of decision M2-11: one tolerance per phase
   expect_identical(
     ctrl,
     list(stable_psi_m_height = 2, blending_height = 200, z1 = 0.1, z2 = 2,
-         tol = 0.01, maxit = 20L, damping = 0)
+         tol = 1e-6, maxit = 100L, damping = 0, pixel_tol = 1e-5,
+         pixel_maxit = 100L)
   )
   expect_identical(ef_h_control(200, 200, 0.1, 2)$stable_psi_m_height, 200)
   expect_error(ctrl_for(tol = 0), class = "earthflux_domain_error")
@@ -186,10 +188,32 @@ test_that("ef_h_control() defaults follow the SEBAL Idaho manual (SH-11)", {
   expect_error(ef_h_control(2, 1, 0.1, 2), class = "earthflux_domain_error")
 })
 
+test_that("ef_h_control() checks the convergence settings of phase B", {
+  ctrl <- ctrl_for(pixel_tol = 1e-8, pixel_maxit = 50)
+  expect_identical(ctrl$pixel_tol, 1e-8)
+  expect_identical(ctrl$pixel_maxit, 50L)
+  # The two phases are set independently
+  expect_identical(ctrl$tol, 1e-6)
+  expect_identical(ctrl$maxit, 100L)
+  expect_identical(ctrl_for(tol = 0.01)$pixel_tol, 1e-5)
+  expect_error(ctrl_for(pixel_tol = 0), class = "earthflux_domain_error")
+  expect_error(ctrl_for(pixel_tol = -1e-5), class = "earthflux_domain_error")
+  expect_error(ctrl_for(pixel_tol = Inf), class = "earthflux_domain_error")
+  expect_error(ctrl_for(pixel_tol = NA_real_),
+               class = "earthflux_input_error")
+  expect_error(ctrl_for(pixel_tol = c(1e-5, 1e-6)),
+               class = "earthflux_input_error")
+  expect_error(ctrl_for(pixel_tol = "1e-5"), class = "earthflux_input_error")
+  expect_error(ctrl_for(pixel_maxit = 0), class = "earthflux_domain_error")
+  expect_error(ctrl_for(pixel_maxit = 2.5), class = "earthflux_domain_error")
+  expect_error(ctrl_for(pixel_maxit = NULL), class = "earthflux_input_error")
+})
+
 # Calibration: properties of section 14.5 ----------------------------------------------
 
 test_that("SH-14.5: iteration with tol = 0.01 and damping 0 or 0.5", {
-  cal <- calibrate()
+  # The values of section 14.5 are for tol = 0.01 (the default until M2-11)
+  cal <- calibrate(control = ctrl_for(tol = 0.01, maxit = 20L))
   expect_s3_class(cal, "earthflux_h_calibration")
   expect_true(cal$converged)
   expect_identical(cal$iterations, 6L)
@@ -203,7 +227,8 @@ test_that("SH-14.5: iteration with tol = 0.01 and damping 0 or 0.5", {
   expect_true(is.na(cal$trace$delta_a[1]))
   expect_equal(cal$trace$delta_a[-1], diff(cal$trace$a), tolerance = 1e-12)
 
-  cal_d <- calibrate(control = ctrl_for(damping = 0.5))
+  cal_d <- calibrate(control = ctrl_for(tol = 0.01, maxit = 20L,
+                                        damping = 0.5))
   last_d <- cal_d$trace[nrow(cal_d$trace), ]
   expect_identical(cal_d$iterations, 7L)
   expect_lt(abs(last_d$a - (-88.570)), 5e-4)
@@ -244,9 +269,9 @@ test_that("SH-14.5/14.6: anchors reproduce H_target (property 3)", {
     expect_lt(max(abs(anc$h / anc$h_target - 1)), 1e-9)
     expect_lt(max(abs((cal$a + cal$b * anc$ts_datum) / anc$dt - 1)), 1e-12)
   }
-  # Phase B (strategy P2) at the anchors themselves, with a tight tolerance
+  # Phase B (strategy P2) at the anchors themselves, with tight tolerances
   cal <- calibrate(
-    control = ctrl_for(tol = 1e-10, maxit = 100L),
+    control = ctrl_for(tol = 1e-10, maxit = 100L, pixel_tol = 1e-10),
     pixels = scene_anchors[c("lst", "elevation", "zom", "u_blend",
                              "pressure")]
   )
@@ -255,7 +280,8 @@ test_that("SH-14.5/14.6: anchors reproduce H_target (property 3)", {
 })
 
 test_that("SH-14.5: phase B of the interior pixel at the fixed point", {
-  cal <- calibrate(control = ctrl_for(tol = 1e-10, maxit = 100L),
+  cal <- calibrate(control = ctrl_for(tol = 1e-10, maxit = 100L,
+                                      pixel_tol = 1e-10),
                    pixels = interior)
   expect_true(cal$pixels$converged)
   expect_lt(abs(cal$pixels$dt - 2.879745), 5e-7)
@@ -268,6 +294,65 @@ test_that("SH-14.5: phase B of the interior pixel at the fixed point", {
   expect_equal(cal$pixels$air_density,
                ef_air_density(interior$pressure, 308 - cal$pixels$dt),
                tolerance = 1e-14)
+})
+
+# Strongly unstable, low-wind variant of the scene (wind of 1 m s-1 at 2 m;
+# L of the hot anchor about -0.7 m, as in the Talca scene of
+# dev/verification/water-comparison.md) and a range of interior pixels.
+u_low <- ef_blending_wind(1, height = 2, zom_station = 0.015, d_station = 0,
+                          blending_height = 200)
+low_anchors <- transform(scene_anchors, u_blend = u_low)
+low_pixels <- list(lst = seq(298, 318, by = 0.5), elevation = 500,
+                   zom = rep(c(0.005, 0.02, 0.06, 0.2), length.out = 41),
+                   u_blend = u_low, pressure = ef_air_pressure(500))
+tight <- ctrl_for(tol = 1e-10, maxit = 500L, pixel_tol = 1e-10,
+                  pixel_maxit = 500L)
+
+test_that("M2-11: the defaults reach the fixed point in a low-wind case", {
+  ref <- calibrate(low_anchors, control = tight, pixels = low_pixels)
+  def <- calibrate(low_anchors, pixels = low_pixels)
+  expect_true(ref$converged && def$converged)
+  expect_true(all(ref$pixels$converged) && all(def$pixels$converged))
+  expect_lt(ref$anchors$obukhov_length[ref$anchors$type == "hot"], -0.5)
+  # H within 0.01 W m-2 of the fixed point of both phases at every pixel
+  # (about 4e-4 W m-2 here)
+  expect_lt(max(abs(def$pixels$h - ref$pixels$h)), 0.01)
+  # Phase B alone, with the same (a*, b*): every pixel stops within
+  # pixel_tol (relative) of its own fixed point
+  same_ab <- calibrate(low_anchors,
+                       control = ctrl_for(tol = 1e-10, maxit = 500L),
+                       pixels = low_pixels)
+  expect_identical(c(same_ab$a, same_ab$b), c(ref$a, ref$b))
+  expect_lt(max(abs(same_ab$pixels$h / ref$pixels$h - 1)),
+            same_ab$control$pixel_tol)
+  expect_lte(max(same_ab$pixels$iterations), 20L)
+  # Phase B at the anchors reproduces H_target (370 and 30 W m-2)
+  at_anchors <- calibrate(
+    low_anchors,
+    pixels = low_anchors[c("lst", "elevation", "zom", "u_blend", "pressure")]
+  )
+  expect_lt(max(abs(at_anchors$pixels$h - c(30, 370))), 0.01)
+})
+
+test_that("M2-11: the bias of tol = 0.01 comes from phase A, not phase B", {
+  ref <- calibrate(low_anchors, control = tight, pixels = low_pixels)
+  # Settings of EarthFlux 0.1.0: about 1.2 W m-2 from the fixed point
+  old <- calibrate(low_anchors,
+                   control = ctrl_for(tol = 0.01, maxit = 20L,
+                                      pixel_tol = 0.01, pixel_maxit = 20L),
+                   pixels = low_pixels)
+  expect_gt(max(abs(old$pixels$h - ref$pixels$h)), 0.5)
+  # A tight pixel_tol alone does not remove it: the anchors run through
+  # phase B no longer reproduce their target H
+  pixel_only <- calibrate(low_anchors,
+                          control = ctrl_for(tol = 0.01, maxit = 20L),
+                          pixels = low_pixels)
+  expect_gt(max(abs(pixel_only$pixels$h - ref$pixels$h)), 0.5)
+  at_anchors <- calibrate(
+    low_anchors, control = ctrl_for(tol = 0.01, maxit = 20L),
+    pixels = low_anchors[c("lst", "elevation", "zom", "u_blend", "pressure")]
+  )
+  expect_gt(max(abs(at_anchors$pixels$h - c(30, 370))), 0.1)
 })
 
 test_that("SH-14.5: unstable correction lowers rah at both anchors (property 4)", {
@@ -292,8 +377,9 @@ test_that("SH-14.5: non-convergence is reported, never silent (property 5)", {
   expect_identical(flag$n_flagged, 1L)
   # The last iterate is returned: anchors still reproduce H_target
   expect_lt(max(abs(cal$anchors$h / cal$anchors$h_target - 1)), 1e-9)
-  # The warning carries the trace
+  # The warning carries the phase and the trace
   w <- tryCatch(calibrate(control = ctrl), warning = function(w) w)
+  expect_identical(w$phase, "anchors")
   expect_identical(w$iterations, 1L)
   expect_s3_class(w$trace, "data.frame")
   # Negative case
@@ -404,7 +490,14 @@ test_that("ef_calibrate_h() validates control, lapse rate and datum", {
                               datum_elevation = 500),
                class = "earthflux_missing_input")
   # A partial control list is completed with the defaults of ef_h_control()
-  expect_identical(calibrate(control = list(tol = 0.01))$control, ctrl_for())
+  expect_identical(calibrate(control = list(tol = 0.01))$control,
+                   ctrl_for(tol = 0.01))
+  # A list saved before pixel_tol and pixel_maxit existed (EarthFlux 0.1.0)
+  # gets their defaults
+  old <- list(stable_psi_m_height = 2, blending_height = 200, z1 = 0.1,
+              z2 = 2, tol = 0.01, maxit = 20L, damping = 0)
+  expect_identical(calibrate(control = old)$control,
+                   ctrl_for(tol = 0.01, maxit = 20L))
   expect_error(calibrate(control = c(ctrl_for(), list(foo = 1))),
                class = "earthflux_input_error")
   expect_error(ef_calibrate_h(scene_anchors, ctrl_for(), lapse_rate = -1,
@@ -522,12 +615,25 @@ test_that("EF_H_USTAR_INVALID and EF_H_PIXEL_NOT_CONVERGED in phase B", {
   expect_identical(flag_of(cal, "EF_H_USTAR_INVALID")$index, 2L)
   expect_absent(cal, "EF_H_PIXEL_NOT_CONVERGED")
 
-  ctrl <- ctrl_for(tol = 1e-12, maxit = 2L)
+  # Phase B is limited by pixel_maxit and pixel_tol, not by maxit and tol:
+  # phase A converges, the pixel does not
+  ctrl <- ctrl_for(pixel_tol = 1e-12, pixel_maxit = 2L)
+  w <- tryCatch(calibrate(control = ctrl, pixels = pixels),
+                warning = function(w) w)
+  expect_s3_class(w, "earthflux_convergence_warning")
+  expect_identical(w$phase, "pixels")
+  expect_identical(w$n_not_converged, 1L)
+  expect_identical(w$iterations, 2L)
   expect_warning(cal <- calibrate(control = ctrl, pixels = pixels),
                  class = "earthflux_convergence_warning")
+  expect_true(cal$converged)
+  expect_null(flag_of(cal, "EF_H_CALIBRATION_NOT_CONVERGED"))
   expect_identical(cal$pixels$converged, c(FALSE, NA))
   expect_identical(cal$pixels$iterations, c(2L, NA))
-  expect_identical(flag_of(cal, "EF_H_PIXEL_NOT_CONVERGED")$index, 1L)
+  flag <- flag_of(cal, "EF_H_PIXEL_NOT_CONVERGED")
+  expect_identical(flag$index, 1L)
+  expect_identical(flag$severity, "warning")
+  expect_identical(flag$scope, "cell")
   expect_false(is.na(cal$pixels$h[1]))
 })
 

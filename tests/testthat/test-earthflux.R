@@ -191,8 +191,11 @@ ewf_manual <- function(st, ter, aoi, stations, name) {
     source = "test", status = "VERIFICADA", zom = zom, u_blend = u_b,
     pressure = pressure
   )
+  # convergence settings of the preset, version 3 (M2-11)
   cal <- ef_calibrate_h(
-    anchors, control = ef_h_control(),
+    anchors,
+    control = list(tol = 1e-6, maxit = 100L, pixel_tol = 1e-5,
+                   pixel_maxit = 100L),
     lapse_rate = if (elev) 0.0065 else 0,
     datum_elevation = stations$stations$elevation,
     pixels = list(lst = mat(lst), elevation = mat(z), zom = zom,
@@ -220,7 +223,7 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   tab <- ef_presets()
   expect_s3_class(tab, "data.frame")
   expect_identical(tab$name, c("idaho2002_elev", "idaho2002_flat"))
-  expect_identical(tab$version, c("2", "2"))
+  expect_identical(tab$version, c("3", "3"))
   expect_identical(tab$status, c("CANDIDATA", "CANDIDATA"))
   e <- ef_preset("idaho2002_elev")
   f <- ef_preset("idaho2002_flat")
@@ -246,7 +249,17 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   expect_identical(c(rule(e$anchors$relax[[1]], "cold", 1)$value,
                      rule(e$anchors$relax[[1]], "hot", 1)$value), c(0.8, 0.2))
   expect_identical(e$anchors$qa_exclude_codes, "EF_SURF_LAI_ASSIGNED")
-  expect_identical(names(e$changes), c("1", "2"))
+  expect_identical(names(e$changes), c("1", "2", "3"))
+  # version 3 (M2-11): the convergence settings of H are written out in the
+  # preset, one tolerance per phase
+  expect_identical(
+    e$sensible_heat$control,
+    ef_h_control(stable_psi_m_height = 2, blending_height = 200, z1 = 0.1,
+                 z2 = 2, tol = 1e-6, maxit = 100L, damping = 0,
+                 pixel_tol = 1e-5, pixel_maxit = 100L)
+  )
+  expect_identical(f$sensible_heat$control, e$sensible_heat$control)
+  expect_true("M2-11" %in% e$decisions)
   expect_identical(e$modis$surface_options$lai_nonveg, 0)
   expect_identical(e$modis$surface_options$albedo_method, "white_sky")
   expect_identical(c(e$sensible_heat$lapse_rate, f$sensible_heat$lapse_rate),
@@ -336,7 +349,7 @@ test_that("LE is the residual of the energy balance and ETa = ETrF x ETr_24", {
   expect_equal(v[ok, "eta_24"], v[ok, "etrf"] * v[ok, "etr_24"],
                tolerance = 1e-12)
   # ETrF at the anchors reproduces the boundary conditions (1.05 and 0) up
-  # to the per-pixel stability iteration of phase B (default tol = 0.01)
+  # to the averaging of the anchor cells into one calibration point
   px <- res_e$anchors$pixels
   etrf <- v[px$cell, "etrf"]
   expect_lt(abs(mean(etrf[px$type == "cold"]) - 1.05), 0.01)
@@ -527,10 +540,18 @@ test_that("the provenance records every option of the preset", {
   pr <- res_e$provenance
   p <- ef_preset("idaho2002_elev")
   expect_identical(pr$preset$name, "idaho2002_elev")
-  expect_identical(pr$preset$version, "2")
+  expect_identical(pr$preset$version, "3")
   expect_identical(pr$preset$status, "CANDIDATA")
   expect_identical(pr$preset$unverified, p$unverified)
-  expect_identical(names(pr$preset$changes), c("1", "2"))
+  expect_identical(names(pr$preset$changes), c("1", "2", "3"))
+  # effective convergence settings of the calibration of H (M2-11)
+  expect_identical(pr$options$sensible_heat$control[c("tol", "maxit",
+                                                      "pixel_tol",
+                                                      "pixel_maxit")],
+                   list(tol = 1e-6, maxit = 100L, pixel_tol = 1e-5,
+                        pixel_maxit = 100L))
+  expect_identical(res_e$h_calibration$control,
+                   pr$options$sensible_heat$control)
   expect_identical(names(pr$options), names(unclass(p)))
   for (nm in setdiff(names(unclass(p)), c("anchors", "sensible_heat"))) {
     expect_identical(pr$options[[nm]], unclass(p)[[nm]], info = nm)

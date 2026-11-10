@@ -9,9 +9,11 @@ ef_h_control(
   blending_height = 200,
   z1 = 0.1,
   z2 = 2,
-  tol = 0.01,
-  maxit = 20L,
-  damping = 0
+  tol = 1e-06,
+  maxit = 100L,
+  damping = 0,
+  pixel_tol = 1e-05,
+  pixel_maxit = 100L
 )
 }
 \arguments{
@@ -37,35 +39,66 @@ greater than \code{z2}.}
 resistance [m], \verb{0 < z1 < z2}. Defaults 0.1 m and 2 m (Waters et al.,
 2002, p. 30 and Eq. 41).}
 
-\item{tol}{Numeric scalar. Convergence tolerance on the relative change
-of \eqn{r_{ah}}{rah} between iterations, applied to every anchor
-(phase A) and to every pixel (phase B). Must be \verb{> 0}. Default 0.01
-(decision P0-10; value of METRIC implementations, without a primary
-source). The value matters: in the synthetic case of the specification,
-\code{tol = 0.01} stops 0.6 \% away from the fixed point of the intercept.}
+\item{tol}{Numeric scalar. Convergence tolerance of the calibration of
+dT at the anchors (phase A): the iteration stops when the relative
+change of \eqn{r_{ah}}{rah} between iterations is below \code{tol} at every
+anchor. Must be \verb{> 0}. Default \code{1e-6} (decision M2-11; EarthFlux 0.1.0
+used 0.01, the value of METRIC implementations). See Details.}
 
-\item{maxit}{Integer scalar. Maximum number of iterations, \verb{>= 1}.
-Default 20 (P0-10; a design choice).}
+\item{maxit}{Integer scalar. Maximum number of iterations of phase A,
+\verb{>= 1}. Default 100 (M2-11; 20 in EarthFlux 0.1.0).}
 
 \item{damping}{Numeric scalar. Damping factor \eqn{\omega}{omega} in
 [0, 1), \eqn{r_{ah,k} = (1 - \omega) r_{ah,new} + \omega
-r_{ah,k-1}}{rah_k = (1 - omega) * rah_new + omega * rah_(k-1)}. Default
-0 (P0-10). Damping does not change the fixed point; it can help when the
-iteration oscillates.}
+r_{ah,k-1}}{rah_k = (1 - omega) * rah_new + omega * rah_(k-1)}, used by
+both phases. Default 0 (P0-10). Damping does not change the fixed
+point; it can help when the iteration oscillates.}
+
+\item{pixel_tol}{Numeric scalar. Convergence tolerance of the per-pixel
+stability iteration with the calibrated coefficients (phase B): a pixel
+stops when the relative change of its \eqn{r_{ah}}{rah} is below
+\code{pixel_tol}. Must be \verb{> 0}. Default \code{1e-5} (M2-11; in EarthFlux 0.1.0
+phase B used \code{tol}).}
+
+\item{pixel_maxit}{Integer scalar. Maximum number of iterations of a
+pixel in phase B, \verb{>= 1}. Default 100 (M2-11; in EarthFlux 0.1.0
+phase B used \code{maxit}).}
 }
 \value{
 A named list with elements \code{stable_psi_m_height},
-\code{blending_height}, \code{z1}, \code{z2}, \code{tol}, \code{maxit} (integer) and \code{damping}.
+\code{blending_height}, \code{z1}, \code{z2}, \code{tol}, \code{maxit} (integer), \code{damping},
+\code{pixel_tol} and \code{pixel_maxit} (integer).
 }
 \description{
 Builds and validates the settings of \code{\link[=ef_calibrate_h]{ef_calibrate_h()}}: the heights of
 the aerodynamic formulation, the height at which the stable stability
 correction for momentum of the blending height is evaluated (decision
-SH-11) and the convergence settings of the iteration.
+SH-11) and the convergence settings of the two iterations: the
+calibration of dT at the anchors (phase A: \code{tol}, \code{maxit}) and the
+per-pixel stability iteration with the calibrated coefficients (phase B:
+\code{pixel_tol}, \code{pixel_maxit}).
 }
 \details{
 Invalid values raise \code{earthflux_domain_error} or \code{earthflux_input_error}
 (e.g. a \code{stable_psi_m_height} above the blending height, or \code{z2 <= z1}).
+
+Why the tolerances are tight (decision M2-11): the result of a pixel is
+the fixed point of its own stability iteration with (a*, b*), while
+(a*, b*) come from the last iterate at the anchors. If phase A stops
+early, the anchors run through phase B no longer reproduce their target
+\eqn{H}{H}, and the pixels inherit that offset. With \code{tol = pixel_tol = 0.01} (the former settings) the mean \eqn{H}{H} of a strongly unstable,
+low-wind Landsat scene (Talca, 2013-02-15) was 0.59 W m-2 below the
+fixed point of both phases (maximum 1.29 W m-2), and 0.43 W m-2 above it
+(maximum 1.25 W m-2) in the packaged Cauquenes MODIS scene; a tight
+tolerance of phase B alone did not reduce it. With the defaults the largest
+difference is below 5e-4 W m-2 in both scenes, for 15 to 26 iterations
+at the anchors and 1.5 to 2 times the former run time of the calibration
+(\code{dev/verification/water-comparison.md}, section 5.3). Both criteria are
+relative changes of \eqn{r_{ah}}{rah}: dimensionless, and defined also
+where \eqn{H \approx 0}{H ~ 0}; in phase B \eqn{\rho}{rho} and dT are
+fixed, so the relative change of \eqn{r_{ah}}{rah} of a pixel is also
+the relative change of its \eqn{H}{H}. The former behaviour is
+\code{ef_h_control(tol = 0.01, maxit = 20, pixel_tol = 0.01, pixel_maxit = 20)}.
 
 Why 2 m under stable conditions: the manual evaluates the stable
 correction of the momentum at the blending height with the ratio
@@ -78,8 +111,10 @@ Verification status: \code{blending_height}, \code{z1}, \code{z2} and
 \code{stable_psi_m_height = 2} are \verb{VERIFICADA (SEBAL-Idaho 2002)} (Waters et
 al., 2002, pp. 26, 30 and 33, Eqs. 38-41); the cross-check with Allen,
 Tasumi and Trezza (2007) is desirable but no longer blocking
-(\code{dev/VERIFICATION.md}). \code{tol}, \code{maxit} and \code{damping} are design choices
-adopted provisionally (P0-10).
+(\code{dev/VERIFICATION.md}). \code{tol}, \code{maxit}, \code{damping}, \code{pixel_tol} and
+\code{pixel_maxit} are design choices (P0-10, M2-11), not values of a source:
+the manual iterates until dT and rah of the hot pixel "have stabilized"
+(Waters et al., 2002, p. 34).
 }
 \examples{
 # Defaults of the SEBAL Idaho manual (z_b = 200 m, z1 = 0.1 m, z2 = 2 m,
@@ -88,6 +123,9 @@ ef_h_control()
 
 # The blending height in the stable correction, chosen explicitly
 ef_h_control(stable_psi_m_height = 200)
+
+# The convergence settings of EarthFlux 0.1.0
+ef_h_control(tol = 0.01, maxit = 20, pixel_tol = 0.01, pixel_maxit = 20)
 }
 \references{
 Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.

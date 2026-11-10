@@ -27,7 +27,7 @@ verificación: `VERIFICATION.md`. Especificaciones: `specs/sensible-heat.md`
 | Celdas válidas | 211 836 en total; 198 926 con todas las capas definidas (el borde de `terrain()` y las celdas sin Ts quedan `NA` en ambos paquetes) |
 | R / terra / sf | 4.3.3 / 1.9.50 / 1.1.3 |
 | `water` | 1.0 (2026-10-19, basado en terra), instalado desde el código fuente en una biblioteca privada; no se modificó |
-| EarthFlux | 0.1.0.9000, `main` en `c64246f` (rama `docs/water-comparison`), `pkgload::load_all()` |
+| EarthFlux | 0.1.0.9000, `main` en `c64246f` (rama `docs/water-comparison`), `pkgload::load_all()`; §5.3 y §12 actualizados el 2026-11-10 con la rama `fix/pixel-phase-tolerance` (decisión M2-11) |
 
 ## 2. El ejemplo de `water` (viñeta `METRIC_advanced`)
 
@@ -84,7 +84,7 @@ EarthFlux" y "H de EarthFlux").
 | Viento | u₂₀₀ = 2 m/s (piso) | `u_blend = 2` (EarthFlux no tiene piso, SH-06; `ef_blending_wind()` da 0,636 m/s) |
 | Anclas | 5 + 5 celdas, medias | `ef_anchors(cold, hot, aggregate = "mean")` con las mismas celdas |
 | Condiciones | ETrF_frío 1,05, ETrF_caliente 0, λ(Ts) | `ef_anchor_conditions(etrf_cold = 1.05, etrf_hot = 0, lambda = ef_lambda(Ts, "fao56"), etr_inst = 0.53132, reference = "alfalfa")` |
-| Calibración | ψ_m estable a 2 m, z₁ 0,1, z₂ 2, z_b 200, 1 %, máx. 20, sin amortiguación | `ef_h_control(stable_psi_m_height = 2, z1 = 0.1, z2 = 2, blending_height = 200, tol = 0.01, maxit = 20, damping = 0)`; `ef_calibrate_h(lapse_rate = 0.00649, datum_elevation = 201)` |
+| Calibración | ψ_m estable a 2 m, z₁ 0,1, z₂ 2, z_b 200, 1 %, máx. 20, sin amortiguación | `ef_h_control(stable_psi_m_height = 2, z1 = 0.1, z2 = 2, blending_height = 200, tol = 0.01, maxit = 20, damping = 0, pixel_tol = 0.01, pixel_maxit = 20)` (la convergencia de EarthFlux 0.1.0 en ambas fases; los defectos de M2-11 se comparan en §5.3); `ef_calibrate_h(lapse_rate = 0.00649, datum_elevation = 201)` |
 | ET | λ(Ts), ETr de `water` | `ef_et_inst(le, ef_lambda(Ts, "fao56"))`, `ef_etrf(reference = "alfalfa")`, `ef_et_daily(method = "etrf")` |
 
 ## 4. Resultados por etapa
@@ -189,12 +189,44 @@ Iterando ambos algoritmos hasta tol = 10⁻¹⁰ (43 pares (a, b)):
 
 En el punto fijo la diferencia de H es 0,23 W m⁻² de media (máx. 0,80):
 solo las fórmulas de ρ (y g). El resto de la diferencia de §5.2 (fase B,
-−0,57 W m⁻² de media) es el **criterio de parada**: en esta escena la
-fase B de EarthFlux con tol = 0,01 se detiene, desde rah neutra, a unas
-4 iteraciones y deja H 0,59 W m⁻² (0,3 %) por debajo de su propio punto
-fijo; la repetición de las 12 pasadas en `water` queda a 0,03 W m⁻². Es
-coherente con lo documentado en `ef_h_control()` ("`tol = 0.01` stops
-0.6 % away from the fixed point of the intercept").
+−0,57 W m⁻² de media) es el **criterio de parada**: con tol = 0,01 H
+queda 0,59 W m⁻² (0,3 %) por debajo del punto fijo de EarthFlux; la
+repetición de las 12 pasadas en `water` queda a 0,03 W m⁻² del suyo.
+
+**Qué fase lo produce (revisión del 2026-11-10, decisión M2-11).** La
+primera versión de este informe atribuía el sesgo a la parada de la fase
+B (unas 4 iteraciones por píxel). Separar la tolerancia de cada fase
+(`tol` en las anclas, `pixel_tol` por píxel, `convergence.csv`) muestra
+que lo produce la **fase A**: con (a, b) fijos, la fase B con tol = 0,01
+queda a solo 0,015 W m⁻² de media (máx. 0,19) de su propio punto fijo, y
+apretar solo `pixel_tol` no reduce el sesgo (−0,61 W m⁻²). Con tol = 0,01
+la fase A se detiene en la iteración 11 con un rah de las anclas a
+0,17–0,24 % del de su punto fijo; el cierre da (a*, b*) coherentes con
+ese rah, pero la fase B lleva el rah de cada píxel a su propio punto
+fijo, de modo que las anclas, pasadas por la fase B, ya no reproducen su
+H objetivo (error de 1,21 W m⁻²) y todos los píxeles heredan esa
+desviación. La estrategia
+P1 de `water` no la tiene porque los píxeles repiten la misma secuencia
+incompleta que las anclas.
+
+| Corrida (`ef_calibrate_h()`, 198 926 celdas) | Iter. fase A | Iter. fase B (mediana / máx.) | H̄ (W m⁻²) | ΔH̄ vs punto fijo | máx.\|ΔH\| vs punto fijo | máx.\|ΔH\| anclas en fase B | ΔH̄ vs `water` (máx.\|ΔH\|) | Tiempo (s) |
+|---|---|---|---|---|---|---|---|---|
+| tol 0,01, `pixel_tol` 0,01 (EarthFlux 0.1.0, como `water`) | 11 | 4 / 5 | 187,35 | −0,593 | 1,287 | 1,209 | −0,327 (2,04) | 0,30 |
+| tol 0,01, `pixel_tol` 10⁻¹⁰ | 11 | 10 / 15 | 187,33 | −0,608 | 1,342 | 1,262 | −0,342 (2,09) | 0,66 |
+| **defectos M2-11: tol 10⁻⁶, `pixel_tol` 10⁻⁵** | 26 | 6 / 9 | 187,94 | 7·10⁻⁵ | 4,7·10⁻⁴ | 1,1·10⁻⁴ | **+0,266 (0,75)** | 0,44 |
+| tol 10⁻¹⁰, `pixel_tol` 10⁻¹⁰ (punto fijo) | 42 | 10 / 15 | 187,94 | 0 | 0 | 3·10⁻⁹ | +0,266 (0,75) | 0,68 |
+
+Tiempo: mediana de 5 corridas de `ef_calibrate_h()` (fases A y B) en
+este equipo. Con los defectos de M2-11 la diferencia con `water` es la de
+las fórmulas (ρ en L y en H, g; §5.2): +0,27 W m⁻² de media frente a
+`calcH()` (que con su 1 % queda 0,03 W m⁻² bajo su propio punto fijo) y
++0,23 W m⁻² (máx. 0,80) frente a `water` emulado a 10⁻¹⁰; en ET₂₄,
+−0,005 mm/d de media frente a `water` (antes +0,006). En la escena
+empaquetada de Cauquenes (cadena de `earthflux()` de los tests, 3147
+celdas, viento de 5,8–6,6 m/s), tol = 0,01 dejaba H 0,42–0,43 W m⁻² de
+media sobre el punto fijo (máx. 1,25) y los defectos de M2-11 lo dejan a
+3,4·10⁻⁴ W m⁻² como máximo (15 iteraciones en las anclas; la calibración
+pasa de 0,010–0,011 s a 0,016–0,021 s).
 
 ## 6. Meteorología y ETr
 
@@ -303,8 +335,8 @@ esta rama.
 | 11 | ρ en L: ρ(Ts) con P(z) fija desde el inicio frente a la ρ(T_a) de cada iteración | H +0,23 W m⁻² de media, máx. 0,57 | `calcH()` l. 927; `rahStep()` l. 733 | `h_stability_step()`, `R/metric-sensible-heat.R` l. 826; ρ de l. 903 y 992 (SH-10) | Waters et al. (2002), p. 31, paso 6, y p. 34, pasos 12 y 14 (ρ recalculada con T_a en cada iteración); p. 32, Ec. 34 | (b) |
 | 12 | ρ en H (y en la inversión de dT): P de la atmósfera estándar evaluada con T_a en vez de 293 K | ρ de −0,004 a +0,23 % en esta escena (mediana +0,05 %); H máx. 0,65 W m⁻² | `airDensity()` l. 720–722 (cita "Allen et al., 2007, Eq. 37") | `air_density_core()`, `R/metric-sensible-heat.R` l. 97 (FAO-56 recuadro 6 con P de FAO-56 Ec. 7; SH-08) | El manual no imprime la ecuación de ρ (p. 31); Allen et al. (2007) Ec. 37 no disponible | (d) |
 | 13 | Anclas múltiples: media de rah y ρ de los píxeles frente a un punto de calibración (media de las entradas) | H máx. 0,03 W m⁻² | `calcH()` l. 1030–1041 | `anchor_calibration_points()`, `ef_anchor_conditions()`, `h_anchor_inputs()` (P0-9, D-AP) | El manual usa un píxel por clase (p. 23) | (c) |
-| 14 | Fase B: repetición de la secuencia de (a, b) (P1) frente a convergencia por píxel con (a, b) finales (P2) | H −0,57 W m⁻² de media, máx. 1,25; casi todo es el criterio de parada (§5.3) | `replay()` l. 1089 | `h_phase_b()`, `R/metric-sensible-heat.R` l. 989 (P0-10) | Waters et al. (2002), p. 34, pasos 11–16 (dT de cada píxel revisado en cada iteración) | (c) |
-| 15 | Tolerancia de la fase B: 1 % de cambio de rah desde rah neutra deja H a −0,3 % de su punto fijo con estabilidad fuerte | H̄ −0,59 W m⁻² frente al punto fijo; ET̄₂₄ +0,01 mm/d | — | `ef_h_control(tol = 0.01)` compartida por las fases A y B, `R/metric-sensible-heat.R` l. 256, 1027 | Waters et al. (2002), p. 34, paso 15 (sin tolerancia numérica) | (c), con acción recomendada |
+| 14 | Fase B: repetición de la secuencia de (a, b) (P1) frente a convergencia por píxel con (a, b) finales (P2) | H −0,57 W m⁻² de media, máx. 1,25, con tol = 0,01; casi todo es el criterio de parada de la fase A (§5.3) | `replay()` l. 1089 | `h_phase_b()`, `R/metric-sensible-heat.R` (P0-10) | Waters et al. (2002), p. 34, pasos 11–16 (dT de cada píxel revisado en cada iteración) | (c) |
+| 15 | Tolerancia de la calibración: con 1 % de cambio de rah la fase A se detiene antes de su punto fijo y, con P2, H queda a −0,3 % del punto fijo con estabilidad fuerte | Con tol = 0,01: H̄ −0,59 W m⁻² frente al punto fijo, ET̄₂₄ +0,01 mm/d. Con los defectos de M2-11: máx.\|ΔH\| 4,7·10⁻⁴ W m⁻² | — | **Resuelta (M2-11)**: `ef_h_control(tol = 1e-6, maxit = 100, pixel_tol = 1e-5, pixel_maxit = 100)`, una tolerancia por fase, `R/metric-sensible-heat.R` | Waters et al. (2002), p. 34, paso 15 (sin tolerancia numérica) | (c), resuelta |
 | 16 | Notación de dT: a pendiente, b intercepto (`water` y manual) frente a a intercepto, b pendiente | Ninguna | `rahStep()` l. 730 | `dt_coef_core()`, `R/metric-dt.R` l. 204 (SH-12) | Waters et al. (2002), p. 31 | (c) |
 | 17 | λ con 0,00236 en `ET24h()` y 0,002361 en `calcH()` | ET_inst 2,2·10⁻⁵ relativo | `ET24h()` `water_ET.R` l. 288 frente a `calcH()` l. 954 | Un solo λ de entrada (`ef_lambda()`, `R/shared-physics.R` l. 170; ET-D1) | FAO-56, anexo 3, Ec. 3-1 (2,361·10⁻³) | (b), despreciable |
 | 18 | λ de la temperatura de superficie (`water`) frente a λ como entrada (constante en los presets) | 0 en la comparación (se pasó λ(Ts)) | `calcH()` l. 954, `ET24h()` l. 288 | `ef_lambda(method = "fao56")` espera temperatura del aire; `"metric"` no implementado (ET-D1, V2) | El manual no da λ(T) (`VERIFICATION.md` fila 48) | (c) |
@@ -335,9 +367,11 @@ escena va de −0,004 a +0,23 %. Se reescribió la frase (`R/metric-sensible-hea
 3. La calibración de H difiere en 0,33 W m⁻² de media (máx. 2,0 W m⁻²,
    1 %) y la pendiente de dT en 1,3 %. Un emulador que reproduce ambos
    paquetes a 10⁻¹² W m⁻² reparte la diferencia: ρ de L (0,57), ρ de H
-   (0,65), criterio de parada de la fase B (1,25), agregación de anclas
-   (0,03) y g (0,006), en máx.|ΔH| por paso. En ET₂₄ el efecto conjunto es
-   de 0,006 mm/d de media (máx. 0,038 mm/d sin contar el truncamiento).
+   (0,65), criterio de parada (1,25; de la fase A, §5.3), agregación de
+   anclas (0,03) y g (0,006), en máx.|ΔH| por paso. En ET₂₄ el efecto
+   conjunto es de 0,006 mm/d de media (máx. 0,038 mm/d sin contar el
+   truncamiento). Con los defectos de convergencia de M2-11 la diferencia
+   de H queda en +0,27 W m⁻² de media (máx. 0,75), la de las fórmulas.
 4. Las diferencias grandes provienen de elecciones de `water` distintas de
    la fuente (RL↓ con la Ts de cada píxel: 25 W m⁻² en Rn) o de opciones
    de diseño (factor de terreno de z_om, partición de Rs↓ en laderas,
@@ -350,11 +384,16 @@ escena va de −0,004 a +0,23 %. Se reescribió la frase (`R/metric-sensible-hea
 
 ## 12. Acciones recomendadas
 
-1. **Tolerancia de la fase B** (fila 15): separar la tolerancia de la
-   fase B de la de la fase A, o usar en la fase B una tolerancia menor
-   (p. ej., 10⁻⁴; cuesta unas pocas iteraciones por píxel), o documentar
-   en `ef_calibrate_h()` el sesgo de H frente al punto fijo con
-   estabilidad fuerte. Decisión del autor (P0-10).
+1. ~~**Tolerancia de la fase B** (fila 15)~~ **Hecho (2026-11-10,
+   decisión M2-11).** `ef_h_control()` separa la convergencia de cada
+   fase (`tol`/`maxit` en las anclas, `pixel_tol`/`pixel_maxit` por
+   píxel) con defectos 10⁻⁶/100 y 10⁻⁵/100; los presets pasan a la
+   versión 3. La medición mostró que el sesgo venía de la fase A, no de la
+   B (§5.3): con los defectos nuevos H queda a menos de 5·10⁻⁴ W m⁻² del
+   punto fijo (antes −0,59 W m⁻² de media, máx. 1,29) y la diferencia con
+   `water` pasa de −0,33 W m⁻² de media (máx. 2,04) a +0,27 W m⁻² (máx.
+   0,75), la de las fórmulas de ρ; la calibración tarda 0,44 s en lugar
+   de 0,30 s en las 198 926 celdas.
 2. **ρ en H** (fila 12): mantener `CANDIDATA` hasta contrastar con Allen
    et al. (2007) Ec. 37 (pendiente de `VERIFICATION.md` §5).
 3. **RL↓** (fila 3): la comparación confirma la magnitud del efecto de la
@@ -381,6 +420,6 @@ WATER_LIB=/ruta/rlib WATER_CMP_OUT=/ruta/salida \
 
 Unos 40 s. Escribe en `WATER_CMP_OUT` las tablas CSV (`stages.csv`,
 `scalars.csv`, `water-iterations.csv`, `earthflux-iterations.csv`,
-`h-decomposition.csv`, `fixed-point.csv`, `anchors-*.csv`,
+`h-decomposition.csv`, `fixed-point.csv`, `convergence.csv`, `anchors-*.csv`,
 `settings-water.csv`, `versions.csv`) y `water-comparison.rds`. No se
 versionan datos: solo se leen los datos de ejemplo que distribuye `water`.
