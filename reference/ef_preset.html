@@ -73,8 +73,9 @@ of the elements that are not <code>VERIFICADA</code>).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The two presets (decisions M5-08 to M5-24, dev/specs/presets.md) share
-every option except the treatment of elevation:</p><table class="table table"><tr><td>Option</td><td><code>idaho2002_elev</code></td><td><code>idaho2002_flat</code></td></tr><tr><td>Lapse rate of the datum surface temperature (Eq. 12-7)</td><td>0.0065 K m-1</td><td>0</td></tr><tr><td>Temperature of the incoming longwave</td><td>cold-anchor Ts adjusted by elevation (Eq. 12-8)</td><td>cold-anchor Ts</td></tr><tr><td>Shortwave transmissivity (Eq. 11)</td><td>per pixel, from the elevation model</td><td>one for the scene</td></tr></table><p>Neither uses the slope (forced to 0, flat projection, until decision
+    <p>The two presets (decisions M5-08 to M5-24 and M2-11,
+dev/specs/presets.md) share every option except the treatment of
+elevation:</p><table class="table table"><tr><td>Option</td><td><code>idaho2002_elev</code></td><td><code>idaho2002_flat</code></td></tr><tr><td>Lapse rate of the datum surface temperature (Eq. 12-7)</td><td>0.0065 K m-1</td><td>0</td></tr><tr><td>Temperature of the incoming longwave</td><td>cold-anchor Ts adjusted by elevation (Eq. 12-8)</td><td>cold-anchor Ts</td></tr><tr><td>Shortwave transmissivity (Eq. 11)</td><td>per pixel, from the elevation model</td><td>one for the scene</td></tr></table><p>Neither uses the slope (forced to 0, flat projection, until decision
 RC-09 is resolved); both use the elevation of the elevation model for
 the air pressure, the anchors and the datum temperature.</p>
 <p>Common options: MODIS Terra LST (MOD11A1), white-sky albedo, emissivity
@@ -88,7 +89,9 @@ daily sum over the mean solar day of the AOI centroid; one station: its
 values over the whole grid (C1); several stations or ERA5: inverse
 distance weighting with power 2 (C2); ERA5 with the native cell
 elevation, trapezoid instantaneous values and the sea cells excluded;
-anchors selected before the net radiation (incoming longwave from the
+calibration of H with the convergence settings of <code><a href="ef_h_control.html">ef_h_control()</a></code>
+(<code>tol = 1e-6</code>, <code>pixel_tol = 1e-5</code>, written out in the preset); anchors
+selected before the net radiation (incoming longwave from the
 cold anchor, decision P0-3) with the criteria of
 dev/specs/presets.md section 4, <code>etrf_cold = 1.05</code> and <code>etrf_hot = 0</code>;
 soil heat flux of Bastiaanssen; z_om = 0.018 LAI with a minimum of
@@ -105,7 +108,8 @@ candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
 flagged with <code>EF_ANCHOR_CRITERIA_RELAXED</code>; no anchor on cells with a
 warning or critical surface flag or an assigned LAI.</p>
 <p>Versions: <code>"1"</code> (first presets); <code>"2"</code> (recalibrated anchor criteria,
-M5-23; minimum z_om, M5-24); see the element <code>changes</code>.</p>
+M5-23; minimum z_om, M5-24); <code>"3"</code> (convergence of the calibration of H,
+one tolerance per phase, M2-11); see the element <code>changes</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="verification-status">Verification status<a class="anchor" aria-label="anchor" href="#verification-status"></a></h2>
@@ -133,7 +137,7 @@ University of Idaho and Idaho Department of Water Resources.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">ef_preset</span><span class="op">(</span><span class="st">"idaho2002_elev"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_preset&gt; idaho2002_elev (version 2, CANDIDATA)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_preset&gt; idaho2002_elev (version 3, CANDIDATA)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SEBAL-Idaho 2002 forms with the elevation adjustments of appendix 12</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   of the manual (datum surface temperature with a lapse rate of 0.0065</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   K/m, cold-pixel temperature of the incoming longwave adjusted by</span>

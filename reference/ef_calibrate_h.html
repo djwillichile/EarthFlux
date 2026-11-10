@@ -90,7 +90,8 @@ are ignored. Missing values at an anchor raise
 height of the stable momentum correction of decision SH-11 and the
 convergence settings), e.g. <code><a href="ef_h_control.html">ef_h_control()</a></code> for its defaults. It is
 validated again; elements not given take the defaults of
-<code><a href="ef_h_control.html">ef_h_control()</a></code>.</p></dd>
+<code><a href="ef_h_control.html">ef_h_control()</a></code> (a list saved before <code>pixel_tol</code> and <code>pixel_maxit</code>
+existed gets their current defaults).</p></dd>
 
 
 <dt id="arg-lapse-rate">lapse_rate<a class="anchor" aria-label="anchor" href="#arg-lapse-rate"></a></dt>
@@ -166,23 +167,28 @@ the new \(r_{ah}\);</p></li>
 <li><p>damping: \(r_{ah,k} = (1 - \omega) r_{ah,new} + \omega
    r_{ah,k-1}\);</p></li>
 <li><p>convergence when \(\max_i |r_{ah,k} - r_{ah,k-1}| / r_{ah,k} &lt;
-   tol\) over both anchors.</p></li>
+   tol\) over both anchors, in
+at most <code>maxit</code> iterations.</p></li>
 </ol><p>Closure: steps 1-3 are repeated with the final \(r_{ah}\) to give
 (a*, b*), and \(r_{ah}\) is not updated afterwards, so the anchors
 reproduce \(H_{target}\) exactly.</p>
-<p><strong>Phase B</strong> (pixels, strategy P2, decision P0-10). With (a*, b*) fixed,
-\(dT = a^* + b^* T_{s,datum}\) and
+<p><strong>Phase B</strong> (pixels, strategy P2, decisions P0-10 and M2-11). With
+(a*, b*) fixed, \(dT = a^* + b^* T_{s,datum}\) and
 \(\rho\) (at \(T_a = T_s - dT\)) are fixed; each
 pixel iterates only its stability correction
 (\(H \to L \to \psi \to u_* \to r_{ah}\))
-from the neutral state until its own convergence (same <code>tol</code>, <code>maxit</code>
-and <code>damping</code>). The result of a pixel depends only on its inputs and on
-(a*, b*), not on the other pixels nor on the path of phase A, so the
-computation can be split into blocks.</p>
+from the neutral state until \(|r_{ah,k} - r_{ah,k-1}| / r_{ah,k} &lt;
+\)<code>pixel_tol</code>, in at most <code>pixel_maxit</code>
+iterations (with the same <code>damping</code>). The result of a pixel depends only
+on its inputs and on (a*, b*), not on the other pixels nor on the path
+of phase A, so the computation can be split into blocks. The anchors
+reproduce their target \(H\) in phase B only to the extent that
+phase A reached its fixed point, which is why the default <code>tol</code> is tight
+(see <code><a href="ef_h_control.html">ef_h_control()</a></code>, decision M2-11).</p>
 <p><strong>Failures are never silent.</strong></p><ul><li><p>Phase A without convergence after <code>maxit</code> iterations: the last iterate
 is returned with <code>converged = FALSE</code>, a warning of class
-<code>earthflux_convergence_warning</code> is signalled (fields <code>iterations</code> and
-<code>trace</code>) and the object flag <code>EF_H_CALIBRATION_NOT_CONVERGED</code>
+<code>earthflux_convergence_warning</code> is signalled (fields <code>phase = "anchors"</code>, <code>iterations</code> and <code>trace</code>) and the object flag
+<code>EF_H_CALIBRATION_NOT_CONVERGED</code>
 (<code>critical</code>) is set.</p></li>
 <li><p>Calibrated slope <code>b &lt;= 0</code>: a warning of class <code>earthflux_warning</code> and
 the object flag <code>EF_H_DT_SLOPE_NONPOSITIVE</code> (<code>critical</code>).</p></li>
@@ -194,8 +200,13 @@ or air density at an anchor during the iteration: error of class
 failure occurs during the iteration).</p></li>
 <li><p>A pixel whose friction velocity becomes undefined (see <code><a href="ef_ustar.html">ef_ustar()</a></code>) or
 not positive: <code>NA</code> outputs for that pixel and the cell flag
-<code>EF_H_USTAR_INVALID</code>; a pixel without convergence keeps its last
-iterate and gets <code>EF_H_PIXEL_NOT_CONVERGED</code>.</p></li>
+<code>EF_H_USTAR_INVALID</code>.</p></li>
+<li><p>Pixels without convergence after <code>pixel_maxit</code> iterations: each keeps
+its last iterate (<code>converged = FALSE</code>) and gets the cell flag
+<code>EF_H_PIXEL_NOT_CONVERGED</code>, and one warning of class
+<code>earthflux_convergence_warning</code> is signalled for the call (fields
+<code>phase = "pixels"</code>, <code>n_not_converged</code> and <code>iterations</code>, equal to
+<code>pixel_maxit</code>).</p></li>
 </ul><p>Constants: von Karman constant <code>EF_VON_KARMAN</code> (0.41), gravity
 <code>EF_GRAVITY</code> (9.81 m s-2) and specific heat of air <code>EF_SPECIFIC_HEAT_AIR</code>
 (1004 J kg-1 K-1), the values of Waters et al. (2002, pp. 25-26 and 32);
@@ -211,7 +222,8 @@ procedure): the manual iterates "until the successive values for dT_hot
 and rah at the hot pixel have stabilized" (p. 34; 3 to 7 iterations,
 appendix 8), whereas EarthFlux uses a relative tolerance on rah at both
 anchors, the closure of the anchors and phase B with the per-pixel
-strategy P2. Known differences with <code>water</code> are listed in section 17 of
+strategy P2, each phase with its own tolerance (M2-11). Known
+differences with <code>water</code> are listed in section 17 of
 <code>dev/specs/sensible-heat.md</code> (e.g. no wind floor, no substitute friction
 velocity, per-anchor convergence, strategy P2). The cross-check with
 Allen, Tasumi and Trezza (2007) remains desirable but is no longer
@@ -274,9 +286,9 @@ Meteorological Society</em>, 96(407), 67-90. <a href="https://doi.org/10.1002/qj
 <span class="r-in"><span>                                    pressure <span class="op">=</span> <span class="fu"><a href="ef_air_pressure.html">ef_air_pressure</a></span><span class="op">(</span><span class="fl">500</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">a</span>, b <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">b</span>, iterations <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">iterations</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           a           b  iterations </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -87.4397761   0.2932606   6.0000000 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -87.2631378   0.2926717  15.0000000 </span>
 <span class="r-in"><span><span class="va">cal</span><span class="op">$</span><span class="va">pixels</span><span class="op">$</span><span class="va">h</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 182.3605</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 181.8722</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

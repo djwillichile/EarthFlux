@@ -36,8 +36,9 @@ that are not `VERIFICADA`).
 
 ## Details
 
-The two presets (decisions M5-08 to M5-24, dev/specs/presets.md) share
-every option except the treatment of elevation:
+The two presets (decisions M5-08 to M5-24 and M2-11,
+dev/specs/presets.md) share every option except the treatment of
+elevation:
 
 |  |  |  |
 |----|----|----|
@@ -61,9 +62,12 @@ daily sum over the mean solar day of the AOI centroid; one station: its
 values over the whole grid (C1); several stations or ERA5: inverse
 distance weighting with power 2 (C2); ERA5 with the native cell
 elevation, trapezoid instantaneous values and the sea cells excluded;
-anchors selected before the net radiation (incoming longwave from the
-cold anchor, decision P0-3) with the criteria of dev/specs/presets.md
-section 4, `etrf_cold = 1.05` and `etrf_hot = 0`; soil heat flux of
+calibration of H with the convergence settings of
+[`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
+(`tol = 1e-6`, `pixel_tol = 1e-5`, written out in the preset); anchors
+selected before the net radiation (incoming longwave from the cold
+anchor, decision P0-3) with the criteria of dev/specs/presets.md section
+4, `etrf_cold = 1.05` and `etrf_hot = 0`; soil heat flux of
 Bastiaanssen; z_om = 0.018 LAI with a minimum of 0.005 m (`CANDIDATA`,
 flagged with `EF_H_ZOM_FLOOR_APPLIED`); wind at 200 m from a weather
 site with z_om,w = 0.0144 m and d = 0; constant latent heat; ETa_24 =
@@ -80,7 +84,8 @@ averaged; one relaxation step (percentiles 0.80 and 0.20), flagged with
 critical surface flag or an assigned LAI.
 
 Versions: `"1"` (first presets); `"2"` (recalibrated anchor criteria,
-M5-23; minimum z_om, M5-24); see the element `changes`.
+M5-23; minimum z_om, M5-24); `"3"` (convergence of the calibration of H,
+one tolerance per phase, M2-11); see the element `changes`.
 
 ## Verification status
 
@@ -109,7 +114,7 @@ Other workflow functions:
 ``` r
 p <- ef_preset("idaho2002_elev")
 p
-#> <earthflux_preset> idaho2002_elev (version 2, CANDIDATA)
+#> <earthflux_preset> idaho2002_elev (version 3, CANDIDATA)
 #>   SEBAL-Idaho 2002 forms with the elevation adjustments of appendix 12
 #>   of the manual (datum surface temperature with a lapse rate of 0.0065
 #>   K/m, cold-pixel temperature of the incoming longwave adjusted by

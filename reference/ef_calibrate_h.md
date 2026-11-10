@@ -58,7 +58,9 @@ ef_calibrate_h(anchors, control, lapse_rate, datum_elevation, pixels = NULL)
   [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
   for its defaults. It is validated again; elements not given take the
   defaults of
-  [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md).
+  [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
+  (a list saved before `pixel_tol` and `pixel_maxit` existed gets their
+  current defaults).
 
 - lapse_rate:
 
@@ -153,28 +155,33 @@ and \\dT_0 = 0\\ (SH-19). At each iteration k:
     r\_{ah,k-1}\\;
 
 8.  convergence when \\\max_i \|r\_{ah,k} - r\_{ah,k-1}\| / r\_{ah,k} \<
-    tol\\ over both anchors.
+    tol\\ over both anchors, in at most `maxit` iterations.
 
 Closure: steps 1-3 are repeated with the final \\r\_{ah}\\ to give (a\*,
 b\*), and \\r\_{ah}\\ is not updated afterwards, so the anchors
 reproduce \\H\_{target}\\ exactly.
 
-**Phase B** (pixels, strategy P2, decision P0-10). With (a\*, b\*)
-fixed, \\dT = a^\* + b^\* T\_{s,datum}\\ and \\\rho\\ (at \\T_a = T_s -
-dT\\) are fixed; each pixel iterates only its stability correction (\\H
-\to L \to \psi \to u\_\* \to r\_{ah}\\) from the neutral state until its
-own convergence (same `tol`, `maxit` and `damping`). The result of a
+**Phase B** (pixels, strategy P2, decisions P0-10 and M2-11). With (a\*,
+b\*) fixed, \\dT = a^\* + b^\* T\_{s,datum}\\ and \\\rho\\ (at \\T_a =
+T_s - dT\\) are fixed; each pixel iterates only its stability correction
+(\\H \to L \to \psi \to u\_\* \to r\_{ah}\\) from the neutral state
+until \\\|r\_{ah,k} - r\_{ah,k-1}\| / r\_{ah,k} \< \\`pixel_tol`, in at
+most `pixel_maxit` iterations (with the same `damping`). The result of a
 pixel depends only on its inputs and on (a\*, b\*), not on the other
 pixels nor on the path of phase A, so the computation can be split into
-blocks.
+blocks. The anchors reproduce their target \\H\\ in phase B only to the
+extent that phase A reached its fixed point, which is why the default
+`tol` is tight (see
+[`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md),
+decision M2-11).
 
 **Failures are never silent.**
 
 - Phase A without convergence after `maxit` iterations: the last iterate
   is returned with `converged = FALSE`, a warning of class
-  `earthflux_convergence_warning` is signalled (fields `iterations` and
-  `trace`) and the object flag `EF_H_CALIBRATION_NOT_CONVERGED`
-  (`critical`) is set.
+  `earthflux_convergence_warning` is signalled (fields
+  `phase = "anchors"`, `iterations` and `trace`) and the object flag
+  `EF_H_CALIBRATION_NOT_CONVERGED` (`critical`) is set.
 
 - Calibrated slope `b <= 0`: a warning of class `earthflux_warning` and
   the object flag `EF_H_DT_SLOPE_NONPOSITIVE` (`critical`).
@@ -189,8 +196,14 @@ blocks.
 - A pixel whose friction velocity becomes undefined (see
   [`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md))
   or not positive: `NA` outputs for that pixel and the cell flag
-  `EF_H_USTAR_INVALID`; a pixel without convergence keeps its last
-  iterate and gets `EF_H_PIXEL_NOT_CONVERGED`.
+  `EF_H_USTAR_INVALID`.
+
+- Pixels without convergence after `pixel_maxit` iterations: each keeps
+  its last iterate (`converged = FALSE`) and gets the cell flag
+  `EF_H_PIXEL_NOT_CONVERGED`, and one warning of class
+  `earthflux_convergence_warning` is signalled for the call (fields
+  `phase = "pixels"`, `n_not_converged` and `iterations`, equal to
+  `pixel_maxit`).
 
 Constants: von Karman constant `EF_VON_KARMAN` (0.41), gravity
 `EF_GRAVITY` (9.81 m s-2) and specific heat of air
@@ -207,12 +220,13 @@ EarthFlux decisions (P0-10, `CANDIDATA` as procedure): the manual
 iterates "until the successive values for dT_hot and rah at the hot
 pixel have stabilized" (p. 34; 3 to 7 iterations, appendix 8), whereas
 EarthFlux uses a relative tolerance on rah at both anchors, the closure
-of the anchors and phase B with the per-pixel strategy P2. Known
-differences with `water` are listed in section 17 of
-`dev/specs/sensible-heat.md` (e.g. no wind floor, no substitute friction
-velocity, per-anchor convergence, strategy P2). The cross-check with
-Allen, Tasumi and Trezza (2007) remains desirable but is no longer
-blocking; Paulson (1970) and Webb (1970) were not consulted.
+of the anchors and phase B with the per-pixel strategy P2, each phase
+with its own tolerance (M2-11). Known differences with `water` are
+listed in section 17 of `dev/specs/sensible-heat.md` (e.g. no wind
+floor, no substitute friction velocity, per-anchor convergence, strategy
+P2). The cross-check with Allen, Tasumi and Trezza (2007) remains
+desirable but is no longer blocking; Paulson (1970) and Webb (1970) were
+not consulted.
 
 ## References
 
@@ -276,7 +290,7 @@ cal <- ef_calibrate_h(anchors, control = ctrl, lapse_rate = 0.00649,
                                     pressure = ef_air_pressure(500)))
 c(a = cal$a, b = cal$b, iterations = cal$iterations)
 #>           a           b  iterations 
-#> -87.4397761   0.2932606   6.0000000 
+#> -87.2631378   0.2926717  15.0000000 
 cal$pixels$h
-#> [1] 182.3605
+#> [1] 181.8722
 ```
