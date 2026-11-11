@@ -55,7 +55,8 @@ the preset (expert route).}
 An object of class \code{earthflux_result} (a list):
 \itemize{
 \item \code{layers}: \code{SpatRaster} on the working grid (MODIS sinusoidal, about
-1 km), \code{NA} outside the AOI polygon, with the layers \code{eta_24} (daily
+1 km), \code{NA} outside the AOI polygon and on the cells excluded by the
+terrain rule of the preset, with the layers \code{eta_24} (daily
 actual ET, mm d-1), \code{etrf} (-), \code{et_inst} (mm h-1), \code{le}, \code{h}, \code{g},
 \code{rn} (W m-2), \code{rah} (s m-1), \code{dt} (K), \code{rs_in}, \code{rl_in}, \code{rl_out}
 (W m-2), \code{tau_sw} (-), \code{zom} (m), \code{u_blend}, \code{u_star} (m s-1),
@@ -72,7 +73,9 @@ their target times, the method and the mid-points), \code{anchors}
 \item \code{qa}: flag words per stage, never combined bit by bit: \code{surface}
 (the words of the surface state), \code{forcing} (GWR stage, one layer per
 variable at the overpass time of each cell), \code{metric} (\code{flags_rad},
-\code{flags_g}, \code{flags_h}, \code{flags_et}) and their \code{flag_bits};
+\code{flags_g}, \code{flags_h}, \code{flags_et}) and their \code{flag_bits}; on the
+cells excluded by the terrain rule only \code{flags_h} is defined (bit of
+\code{EF_H_TERRAIN_RULE_APPLIED});
 \item \code{flags}: \code{earthflux_flag} records of the run: object and record
 flags of the forcing (e.g. \code{EF_WS_GRIDDED_FORCING},
 \code{EF_GWR_SINGLE_STATION}), the anchors and the calibration, and the
@@ -81,9 +84,10 @@ cell flags of the METRIC chain on the cells of the grid (with
 \item \code{provenance}: the preset (name, version, changes between versions,
 status, unverified elements), every effective option, the values
 derived for the scene (overpass times, day and UTC offset of the
-daily reference ET, regionalization method, datum elevation, ...),
-the counts of excluded cells (and of cells raised to the minimum
-z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
+daily reference ET, regionalization method, datum elevation, the
+reference elevation of the terrain rule, ...), the counts of excluded
+cells (among them \code{terrain_rule_excluded}, and the cells raised to
+the minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
 (without key) or the station table, attributions, the codes
 evaluated, versions, the \code{future} plan and timings.
 }
@@ -117,7 +121,12 @@ of the daily reference ET; each cell takes the values at its own
 overpass time (linear interpolation between mid-points); (8) solar
 geometry, pressure, roughness and wind at 200 m; (9) anchors, selected
 before the net radiation because the incoming longwave uses the
-temperature of the cold anchor (P0-3); (10) shortwave and longwave
+temperature of the cold anchor (P0-3), outside the cells excluded by the
+terrain rule of the preset (decision M5-25: elevation more than 500 m
+above or below the datum elevation of the calibration, i.e. the station,
+or without one the cold calibration point of a preliminary selection;
+those cells are not computed, are \code{NA} in every layer and are flagged
+with \code{EF_H_TERRAIN_RULE_APPLIED}); (10) shortwave and longwave
 radiation, net radiation, soil heat flux; (11) boundary conditions at the
 anchors and calibration of dT; (12) LE, instantaneous ET, ETrF and daily
 ETa. Values are never filled or truncated: excluded or undefined cells

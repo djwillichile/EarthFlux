@@ -86,6 +86,18 @@ ewf_terrain <- function(grid, base = 150, slope_m_per_cell = 4) {
   )
 }
 
+# The same synthetic plane with a "mountain" block: the columns from
+# `from_col` on at `height` metres (fictitious), for the terrain rule of
+# the presets (M5-25).
+ewf_terrain_mountain <- function(grid, from_col = 81L, height = 1200) {
+  ter <- ewf_terrain(grid)
+  z <- terra::values(ter$terrain[["elevation"]], mat = FALSE)
+  col <- terra::colFromCell(grid, seq_len(terra::ncell(grid)))
+  z[col >= from_col] <- height
+  terra::values(ter$terrain[["elevation"]]) <- z
+  ter
+}
+
 # Synthetic diurnal weather (fictitious) for hours `t` at longitude `lon`.
 ewf_weather <- function(t, lon, k = 0) {
   h <- as.numeric(format(t, "%H", tz = "UTC"))

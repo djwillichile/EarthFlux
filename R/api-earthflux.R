@@ -66,7 +66,8 @@
 #'
 #' @return An object of class `earthflux_result` (a list):
 #'   * `layers`: `SpatRaster` on the working grid (MODIS sinusoidal, about
-#'     1 km), `NA` outside the AOI polygon, with the layers `eta_24` (daily
+#'     1 km), `NA` outside the AOI polygon and on the cells excluded by the
+#'     terrain rule of the preset, with the layers `eta_24` (daily
 #'     actual ET, mm d-1), `etrf` (-), `et_inst` (mm h-1), `le`, `h`, `g`,
 #'     `rn` (W m-2), `rah` (s m-1), `dt` (K), `rs_in`, `rl_in`, `rl_out`
 #'     (W m-2), `tau_sw` (-), `zom` (m), `u_blend`, `u_star` (m s-1),
@@ -83,7 +84,9 @@
 #'   * `qa`: flag words per stage, never combined bit by bit: `surface`
 #'     (the words of the surface state), `forcing` (GWR stage, one layer per
 #'     variable at the overpass time of each cell), `metric` (`flags_rad`,
-#'     `flags_g`, `flags_h`, `flags_et`) and their `flag_bits`;
+#'     `flags_g`, `flags_h`, `flags_et`) and their `flag_bits`; on the
+#'     cells excluded by the terrain rule only `flags_h` is defined (bit of
+#'     `EF_H_TERRAIN_RULE_APPLIED`);
 #'   * `flags`: `earthflux_flag` records of the run: object and record
 #'     flags of the forcing (e.g. `EF_WS_GRIDDED_FORCING`,
 #'     `EF_GWR_SINGLE_STATION`), the anchors and the calibration, and the
@@ -92,9 +95,10 @@
 #'   * `provenance`: the preset (name, version, changes between versions,
 #'     status, unverified elements), every effective option, the values
 #'     derived for the scene (overpass times, day and UTC offset of the
-#'     daily reference ET, regionalization method, datum elevation, ...),
-#'     the counts of excluded cells (and of cells raised to the minimum
-#'     z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
+#'     daily reference ET, regionalization method, datum elevation, the
+#'     reference elevation of the terrain rule, ...), the counts of excluded
+#'     cells (among them `terrain_rule_excluded`, and the cells raised to
+#'     the minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
 #'     (without key) or the station table, attributions, the codes
 #'     evaluated, versions, the `future` plan and timings.
 #'
@@ -112,7 +116,12 @@
 #' overpass time (linear interpolation between mid-points); (8) solar
 #' geometry, pressure, roughness and wind at 200 m; (9) anchors, selected
 #' before the net radiation because the incoming longwave uses the
-#' temperature of the cold anchor (P0-3); (10) shortwave and longwave
+#' temperature of the cold anchor (P0-3), outside the cells excluded by the
+#' terrain rule of the preset (decision M5-25: elevation more than 500 m
+#' above or below the datum elevation of the calibration, i.e. the station,
+#' or without one the cold calibration point of a preliminary selection;
+#' those cells are not computed, are `NA` in every layer and are flagged
+#' with `EF_H_TERRAIN_RULE_APPLIED`); (10) shortwave and longwave
 #' radiation, net radiation, soil heat flux; (11) boundary conditions at the
 #' anchors and calibration of dT; (12) LE, instantaneous ET, ETrF and daily
 #' ETa. Values are never filled or truncated: excluded or undefined cells
@@ -338,11 +347,14 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
     names(r) <- name
     r
   }
-  # every layer is NA outside the AOI polygon (scalars of the flat preset
-  # included)
+  # every layer is NA outside the AOI polygon and on the cells excluded by
+  # the terrain rule of the preset (scalars of the flat preset and forcing
+  # layers included)
+  excluded <- mt$terrain_rule$excluded & in_aoi
+  computed <- in_aoi & !excluded
   layers <- terra::rast(unname(Map(function(v, nm) {
     v <- workflow_cells(v, n)
-    v[!in_aoi] <- NA_real_
+    v[!computed] <- NA_real_
     as_layer(v, nm)
   }, mt$layers, names(mt$layers))))
   units <- c(eta_24 = "mm d-1", etrf = "1", et_inst = "mm h-1",
@@ -362,13 +374,18 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
     rownames(b) <- NULL
     b
   }
+  # the words are NA where a stage did not run (outside the AOI, cells
+  # excluded by the terrain rule); the H word carries the bit of the rule
+  # on the excluded cells (M5-25)
   r <- mt$records
   words <- list(
-    flags_rad = workflow_flag_word(r$rs_in, in_aoi),
-    flags_g = workflow_flag_word(r$g, in_aoi),
-    flags_h = workflow_flag_word(c(r$zom, r$h), in_aoi),
-    flags_et = workflow_flag_word(r$eta_24, in_aoi)
+    flags_rad = workflow_flag_word(r$rs_in, computed),
+    flags_g = workflow_flag_word(r$g, computed),
+    flags_h = workflow_flag_word(c(r$zom, r$h), computed),
+    flags_et = workflow_flag_word(r$eta_24, computed)
   )
+  rule_word <- workflow_flag_word(r$terrain, excluded)
+  words$flags_h[excluded] <- rule_word[excluded]
   metric_words <- terra::rast(unname(Map(as_layer, words, names(words))))
   fwords <- terra::rast(unname(Map(function(w, nm) {
     w[!in_aoi] <- NA_integer_
@@ -396,9 +413,11 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
   anchors <- mt$objects$anchors
   cal <- mt$objects$h_calibration
   obj_flags <- Filter(function(f) !identical(f$scope, "cell"), cal$flags)
-  cell_flags <- unname(do.call(c, unname(mt$records)))
-  cell_flags <- workflow_merge_records(
-    if (is.null(cell_flags)) list() else cell_flags, in_aoi
+  cell_flags <- unname(do.call(c, unname(r[setdiff(names(r), "terrain")])))
+  cell_flags <- c(
+    workflow_merge_records(if (is.null(cell_flags)) list() else cell_flags,
+                           computed),
+    workflow_merge_records(r$terrain, excluded)
   )
   flags <- c(unname(forcing_flags), gwr_flags, unname(anchors$flags),
              unname(obj_flags), cell_flags)
@@ -491,6 +510,12 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
                                     "pixel (elevation model)")) NULL else
         scene$tau_elevation,
       datum_elevation = scene$datum_elevation,
+      terrain_rule = list(
+        reference_elevation = mt$terrain_rule$reference_elevation,
+        reference_source = mt$terrain_rule$reference_source,
+        max_elevation_difference =
+          mt$terrain_rule$max_elevation_difference
+      ),
       rl_in_cold_temperature = unname(mt$t_rl[["t_cold"]]),
       rl_in_cold_elevation = unname(mt$t_rl[["z_cold"]]),
       lambda = mt$objects$lambda,
@@ -507,6 +532,7 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
       ter$counts,
       fc$counts,
       zom_floor_applied = mt$zom_floor_applied,
+      terrain_rule_excluded = sum(excluded),
       eta_24_valid = cnt_eta
     ),
     surface_critical_by_code = ex$counts,

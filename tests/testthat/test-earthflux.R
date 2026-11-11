@@ -72,8 +72,11 @@ val <- function(r) terra::values(r, mat = FALSE)
 # public and internal functions of the stages and without the workflow
 # helpers (independent of R/api-*.R): C1 means the station values over the
 # whole grid, so the regionalization is replaced by the station series
-# interpolated (O3) to the overpass time of each cell.
-ewf_manual <- function(st, ter, aoi, stations, name) {
+# interpolated (O3) to the overpass time of each cell. `exclude`: cells
+# excluded by the terrain rule of the preset (M5-25), given here so that
+# the check stays independent of the workflow helpers: no anchor there and
+# NA in every returned layer.
+ewf_manual <- function(st, ter, aoi, stations, name, exclude = NULL) {
   p <- ef_preset(name)
   grid <- st$lst
   nr <- terra::nrow(grid)
@@ -153,6 +156,9 @@ ewf_manual <- function(st, ter, aoi, stations, name) {
     !is.na(mat(ndvi)) & !is.na(mat(lai)) & !is.na(mat(emis)) &
     !is.na(mat(z)) & !is.na(zom) & !is.na(u_b) & !is.na(mat(etr_inst)) &
     !is.na(geo$cos_zenith) & !is.na(mat(etr_24))
+  if (!is.null(exclude)) {
+    qa <- qa & !mat(exclude)
+  }
   d <- terra::distance(cbind(val(st$lonlat[["lon"]]),
                              val(st$lonlat[["lat"]])),
                        as.matrix(stations$stations[, c("lon", "lat")]),
@@ -208,13 +214,14 @@ ewf_manual <- function(st, ter, aoi, stations, name) {
   back <- function(m) {
     v <- if (is.null(dim(m))) rep(m, length(tt)) else as.vector(t(m))
     v[!inside] <- NA
+    if (!is.null(exclude)) v[exclude] <- NA
     v
   }
   list(eta_24 = back(eta), etrf = back(etrf), h = back(cal$pixels$h),
        rn = back(rn), g = back(g), le = back(le), rl_in = back(rl_in),
        tau_sw = back(tau),
-       etr_inst = etr_inst, etr_24 = etr_24, a = cal$a, b = cal$b,
-       cold = t_cold)
+       etr_inst = back(mat(etr_inst)), etr_24 = back(mat(etr_24)),
+       a = cal$a, b = cal$b, cold = t_cold)
 }
 
 # Presets ------------------------------------------------------------------------------
@@ -223,7 +230,7 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   tab <- ef_presets()
   expect_s3_class(tab, "data.frame")
   expect_identical(tab$name, c("idaho2002_elev", "idaho2002_flat"))
-  expect_identical(tab$version, c("3", "3"))
+  expect_identical(tab$version, c("4", "4"))
   expect_identical(tab$status, c("CANDIDATA", "CANDIDATA"))
   e <- ef_preset("idaho2002_elev")
   f <- ef_preset("idaho2002_flat")
@@ -249,7 +256,7 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   expect_identical(c(rule(e$anchors$relax[[1]], "cold", 1)$value,
                      rule(e$anchors$relax[[1]], "hot", 1)$value), c(0.8, 0.2))
   expect_identical(e$anchors$qa_exclude_codes, "EF_SURF_LAI_ASSIGNED")
-  expect_identical(names(e$changes), c("1", "2", "3"))
+  expect_identical(names(e$changes), c("1", "2", "3", "4"))
   # version 3 (M2-11): the convergence settings of H are written out in the
   # preset, one tolerance per phase
   expect_identical(
@@ -260,6 +267,14 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   )
   expect_identical(f$sensible_heat$control, e$sensible_heat$control)
   expect_true("M2-11" %in% e$decisions)
+  # version 4 (M5-25): the terrain rule, CANDIDATA, in both presets
+  expect_identical(e$terrain_rule$method, "datum_elevation_difference")
+  expect_identical(e$terrain_rule$max_elevation_difference, 500)
+  expect_identical(e$terrain_rule$flag, "EF_H_TERRAIN_RULE_APPLIED")
+  expect_match(e$terrain_rule$status, "CANDIDATA")
+  expect_identical(f$terrain_rule, e$terrain_rule)
+  expect_true("M5-25" %in% e$decisions)
+  expect_true("terrain_rule" %in% names(e$unverified))
   expect_identical(e$modis$surface_options$lai_nonveg, 0)
   expect_identical(e$modis$surface_options$albedo_method, "white_sky")
   expect_identical(c(e$sensible_heat$lapse_rate, f$sensible_heat$lapse_rate),
@@ -536,14 +551,160 @@ test_that("workflow_zom_floor() raises z_om to the minimum and keeps NA", {
                class = "earthflux_input_error")
 })
 
+test_that("the terrain rule excludes cells far from the datum (EF_H_TERRAIN_RULE_APPLIED)", {
+  ter_m <- ewf_terrain_mountain(st$lst)
+  calls <- ewf_mock(st, ter_m)
+  res <- ewf_run(aoi, ewf_date(), weather = sta1, preset = "idaho2002_elev",
+                 cache_dir = tempdir())
+  grid <- st$lst
+  inside <- val(terra::rasterize(terra::project(aoi, terra::crs(grid)), grid,
+                                 touches = TRUE, background = 0)) == 1
+  z <- val(ter_m$terrain[["elevation"]])
+  # one station at 150 m: the datum of the calibration, limit 500 m
+  excl <- inside & !is.na(z) & abs(z - 150) > 500
+  expect_gt(sum(excl), 100L)
+  expect_true(any(!is.na(val(st$lst))[excl]))
+  tr <- res$provenance$scene$terrain_rule
+  expect_identical(tr$reference_elevation, 150)
+  expect_identical(tr$reference_source, "representative station")
+  expect_identical(tr$max_elevation_difference, 500)
+  expect_identical(res$provenance$counts[["terrain_rule_excluded"]],
+                   sum(excl))
+  expect_output(print(res), sprintf("terrain rule: %d cells excluded",
+                                    sum(excl)))
+  expect_output(print(ef_preset("idaho2002_elev")), "Terrain rule")
+  # NA in every layer of the result, computed elsewhere
+  v <- terra::values(res$layers, mat = TRUE)
+  expect_true(all(is.na(v[excl, ])))
+  expect_gt(sum(!is.na(v[inside & !excl, "eta_24"])), 1000L)
+  expect_identical(res$provenance$counts[["eta_24_valid"]],
+                   sum(!is.na(v[, "eta_24"])))
+  # no anchor on an excluded cell
+  expect_false(any(excl[res$anchors$pixels$cell]))
+  # the record, the bit of the H word and no other word on those cells
+  rec <- Filter(function(f) f$code == "EF_H_TERRAIN_RULE_APPLIED", res$flags)
+  expect_length(rec, 1L)
+  expect_identical(rec[[1]]$index, which(excl))
+  expect_identical(rec[[1]]$target, "h")
+  expect_identical(rec[[1]]$severity, "info")
+  expect_identical(rec[[1]]$n_total, as.integer(terra::ncell(grid)))
+  reg <- ef_flag_registry()
+  b <- reg$bit[reg$code == "EF_H_TERRAIN_RULE_APPLIED"]
+  expect_identical(b, 11L)
+  expect_identical(reg$stage[reg$code == "EF_H_TERRAIN_RULE_APPLIED"], "H")
+  w <- as.integer(val(res$qa$metric$flags_h))
+  expect_identical(which(!is.na(w) & bitwAnd(w, bitwShiftL(1L, b)) != 0L),
+                   which(excl))
+  expect_true(all(w[excl] == bitwShiftL(1L, b)))
+  for (nm in c("flags_rad", "flags_g", "flags_et")) {
+    expect_true(all(is.na(val(res$qa$metric[[nm]])[excl])), info = nm)
+  }
+  # the other cell records never point at an excluded cell
+  other <- Filter(function(f) f$scope == "cell" &&
+                    f$code != "EF_H_TERRAIN_RULE_APPLIED", res$flags)
+  expect_true(all(vapply(other, function(f) !any(excl[f$index]), TRUE)))
+  expect_true("EF_H_TERRAIN_RULE_APPLIED" %in%
+                res$provenance$flags_evaluated_by_stage$metric)
+  # the cells kept equal the chain run step by step without anchors on
+  # the excluded cells
+  man <- ewf_manual(st, ter_m, aoi, sta1, "idaho2002_elev", exclude = excl)
+  for (nm in c("eta_24", "etrf", "h", "rn", "g", "le", "rl_in", "tau_sw",
+               "etr_inst", "etr_24")) {
+    expect_equal(val(res$layers[[nm]]), man[[nm]], tolerance = 1e-8,
+                 info = nm)
+  }
+  expect_equal(c(res$h_calibration$a, res$h_calibration$b),
+               c(man$a, man$b), tolerance = 1e-10)
+  # negative case: no cell far from the datum -> evaluated, no record
+  expect_false("EF_H_TERRAIN_RULE_APPLIED" %in%
+                 vapply(res_e$flags, `[[`, "", "code"))
+  expect_true("EF_H_TERRAIN_RULE_APPLIED" %in%
+                res_e$provenance$flags_evaluated_by_stage$metric)
+  expect_identical(res_e$provenance$counts[["terrain_rule_excluded"]], 0L)
+  wh <- as.integer(val(res_e$qa$metric$flags_h))
+  expect_false(any(!is.na(wh) & bitwAnd(wh, bitwShiftL(1L, b)) != 0L))
+})
+
+test_that("without a station the terrain rule refers to the cold calibration point", {
+  sta3 <- ewf_stations(lon = c(-72.9, -71.8, -72.9, -71.8),
+                       lat = c(-35.5, -35.5, -36.4, -36.4),
+                       elevation = c(120, 160, 220, 260))
+  ter_m <- ewf_terrain_mountain(st$lst)
+  calls <- ewf_mock(st, ter_m)
+  res <- ewf_run(aoi, ewf_date(), weather = sta3, preset = "idaho2002_flat")
+  tr <- res$provenance$scene$terrain_rule
+  expect_match(tr$reference_source, "preliminary anchor selection")
+  # the preliminary selection is the selection without the rule: the same
+  # criteria on the same cells, its cold point on the mountain terrain
+  calls0 <- ewf_mock(st, ter)
+  res0 <- ewf_run(aoi, ewf_date(), weather = sta3, preset = "idaho2002_flat")
+  px0 <- res0$anchors$pixels
+  z_m <- val(ter_m$terrain[["elevation"]])
+  expect_equal(tr$reference_elevation,
+               mean(z_m[px0$cell[px0$type == "cold"]]), tolerance = 1e-12)
+  excl <- !is.na(z_m) & abs(z_m - tr$reference_elevation) > 500
+  inside <- val(terra::rasterize(terra::project(aoi, terra::crs(st$lst)),
+                                 st$lst, touches = TRUE, background = 0)) == 1
+  expect_gt(sum(excl & inside), 100L)
+  expect_identical(res$provenance$counts[["terrain_rule_excluded"]],
+                   sum(excl & inside))
+  expect_true(all(is.na(terra::values(res$layers, mat = TRUE)[excl, ])))
+  expect_false(any(excl[res$anchors$pixels$cell]))
+  # the datum of Ts is the cold point of the final selection, within the
+  # limit of the reference
+  cp <- res$anchors$calibration_points
+  expect_identical(res$provenance$scene$datum_elevation,
+                   cp$elevation[cp$type == "cold"])
+  expect_lte(abs(res$provenance$scene$datum_elevation -
+                   tr$reference_elevation), 500)
+})
+
+test_that("workflow_terrain_rule() and workflow_terrain_reference() follow M5-25", {
+  z <- matrix(c(100, 649.9, 650, 650.1, NA, -400, -350, 1200), 2, 4)
+  r <- workflow_terrain_rule(z, reference = 150, max_difference = 500)
+  expect_identical(dim(r$excluded), dim(z))
+  expect_identical(as.vector(r$excluded),
+                   c(FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE))
+  rec <- r$flags[[1]]
+  expect_identical(rec$code, "EF_H_TERRAIN_RULE_APPLIED")
+  expect_identical(rec$index, c(4L, 6L, 8L))
+  expect_identical(rec$scope, "cell")
+  expect_identical(attr(r$flags, "evaluated"), "EF_H_TERRAIN_RULE_APPLIED")
+  none <- workflow_terrain_rule(c(140, NA, 600), 150, 500)
+  expect_length(none$flags, 0L)
+  expect_identical(none$excluded, c(FALSE, FALSE, FALSE))
+  expect_identical(attr(none$flags, "evaluated"), "EF_H_TERRAIN_RULE_APPLIED")
+  expect_error(workflow_terrain_rule(z, 150, 0), class = "earthflux_input_error")
+  expect_error(workflow_terrain_rule(z, NA_real_, 500),
+               class = "earthflux_input_error")
+  expect_error(workflow_terrain_rule(z, 150, Inf),
+               class = "earthflux_input_error")
+  # reference: the station when there is one (no selection), otherwise the
+  # cold calibration point of a selection on the QA it receives
+  qa <- matrix(TRUE, 2, 2)
+  never <- function(qa) stop("no selection expected")
+  expect_identical(workflow_terrain_reference(150, never, qa),
+                   list(elevation = 150, source = "representative station"))
+  seen <- NULL
+  sel <- function(qa) {
+    seen <<- qa
+    list(calibration_points = data.frame(type = c("cold", "hot"),
+                                         elevation = c(310, 120)))
+  }
+  ref <- workflow_terrain_reference(NULL, sel, qa)
+  expect_identical(ref$elevation, 310)
+  expect_match(ref$source, "cold calibration point")
+  expect_identical(seen, qa)
+})
+
 test_that("the provenance records every option of the preset", {
   pr <- res_e$provenance
   p <- ef_preset("idaho2002_elev")
   expect_identical(pr$preset$name, "idaho2002_elev")
-  expect_identical(pr$preset$version, "3")
+  expect_identical(pr$preset$version, "4")
   expect_identical(pr$preset$status, "CANDIDATA")
   expect_identical(pr$preset$unverified, p$unverified)
-  expect_identical(names(pr$preset$changes), c("1", "2", "3"))
+  expect_identical(names(pr$preset$changes), c("1", "2", "3", "4"))
   # effective convergence settings of the calibration of H (M2-11)
   expect_identical(pr$options$sensible_heat$control[c("tol", "maxit",
                                                       "pixel_tol",

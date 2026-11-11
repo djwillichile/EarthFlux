@@ -20,8 +20,10 @@ regionalization), \code{reference_et}, \code{radiation}, \code{soil_heat},
 \code{roughness}, \code{wind}, \code{lambda}, \code{anchors} (criteria built with
 \code{\link[=ef_anchor_criteria]{ef_anchor_criteria()}}, relaxation plan, aggregation, search area,
 anchor QA and boundary conditions), \code{sensible_heat} (with an
-\code{\link[=ef_h_control]{ef_h_control()}} list), \code{et}, and \code{unverified} (named character vector
-of the elements that are not \code{VERIFICADA}).
+\code{\link[=ef_h_control]{ef_h_control()}} list), \code{et}, \code{terrain_rule} (the terrain rule of
+version 4: method, limit \code{max_elevation_difference} in metres,
+reference elevation, flag and status) and \code{unverified} (named
+character vector of the elements that are not \code{VERIFICADA}).
 }
 \description{
 Returns every option that a preset sets, so that the choices made by
@@ -29,7 +31,7 @@ Returns every option that a preset sets, so that the choices made by
 is recorded in the provenance of the result.
 }
 \details{
-The two presets (decisions M5-08 to M5-24 and M2-11,
+The two presets (decisions M5-08 to M5-25 and M2-11,
 dev/specs/presets.md) share every option except the treatment of
 elevation:\tabular{lll}{
    Option \tab \code{idaho2002_elev} \tab \code{idaho2002_flat} \cr
@@ -74,9 +76,21 @@ candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
 flagged with \code{EF_ANCHOR_CRITERIA_RELAXED}; no anchor on cells with a
 warning or critical surface flag or an assigned LAI.
 
+Terrain rule (version 4, decision M5-25, \code{CANDIDATA}): one linear dT
+calibrated at two anchors with one weather forcing holds only near the
+elevation of the calibration (the manual assumes uniform climate,
+Waters et al., 2002, p. 70, and gives its lapse rate of 6.5 K per km
+under neutral conditions, appendix 12, p. 95). Cells whose elevation
+differs by more than 500 m from the datum elevation (the station; with
+no station, the cold calibration point of a preliminary selection
+without the rule) hold no anchor and are \code{NA} in every layer, flagged
+with \code{EF_H_TERRAIN_RULE_APPLIED}; the limit has no primary source. The
+slope is not used: the presets keep the flat projection.
+
 Versions: \code{"1"} (first presets); \code{"2"} (recalibrated anchor criteria,
 M5-23; minimum z_om, M5-24); \code{"3"} (convergence of the calibration of H,
-one tolerance per phase, M2-11); see the element \code{changes}.
+one tolerance per phase, M2-11); \code{"4"} (terrain rule, M5-25); see the
+element \code{changes}.
 }
 \section{Verification status}{
 

@@ -10,13 +10,16 @@
 #     -> LE -> ET_inst -> ETrF -> ETa_24
 #   keeping each intermediate product and the flags of every stage. Only
 #   ef_*() functions compute; this file passes their outputs on, applies the
-#   minimum z_om of the preset (workflow_zom_floor(), flagged, M5-24),
-#   converts between the terra cell order and the wide matrices of the core,
-#   and builds the flag words of the result.
+#   minimum z_om of the preset (workflow_zom_floor(), flagged, M5-24) and
+#   its terrain rule (workflow_terrain_rule(), flagged, M5-25), converts
+#   between the terra cell order and the wide matrices of the core, and
+#   builds the flag words of the result.
 #
 # Contents (all internal):
 #   workflow_matrix(), workflow_cells()   cell order <-> wide matrices
 #   workflow_zom_floor()                  minimum z_om of the preset (M5-24)
+#   workflow_terrain_reference()          reference elevation of the rule
+#   workflow_terrain_rule()               terrain rule of the preset (M5-25)
 #   workflow_anchor_qa()                  strict QA of the anchor candidates
 #   workflow_metric()                     the chain
 #   workflow_cell_records()               flag records -> terra cells
@@ -146,22 +149,42 @@ workflow_flag_word <- function(records, evaluated) {
 #' Raised by `workflow_zom_floor()`. It replaces `EF_H_ZOM_UNDEFINED`
 #' (M5-13, retired with its bit kept as occupied, `ef_flag_retired()`).
 #'
+#' `EF_H_TERRAIN_RULE_APPLIED` (decision M5-25, dev/specs/presets.md 4.1):
+#' the terrain rule of the preset excluded the cell, because its elevation
+#' differs from the reference elevation of the calibration (the datum of
+#' Ts) by more than the limit of the preset (500 m, `CANDIDATA`); the cell
+#' holds no anchor and is `NA` in every layer of the result. Class I-m (the
+#' limit is part of the rule of the preset), `info` (cause of an `NA`,
+#' dev/specs/flags.md 5.3), cell scope, bit 11 of the `H` stage (the next
+#' free bit, dev/specs/flags.md 6.4): the rule bounds the domain where one
+#' calibration of dT holds. Registered with its `CANDIDATA` limit by
+#' decision of the author (exception to dev/specs/flags.md 7, point 3, as
+#' `EF_H_ZOM_FLOOR_APPLIED`). Raised by `workflow_terrain_rule()`.
+#'
 #' @return A data frame built with `ef_flag_rows()`.
 #' @noRd
 ef_flags_workflow <- function() {
   ef_flag_rows(
-    code = "EF_H_ZOM_FLOOR_APPLIED",
-    stage = "H",
-    severity = "info",
-    scope = "cell",
-    bit = 1L,
-    error_class = NA_character_,
-    description = paste0(
-      "The momentum roughness length of the method is below the minimum ",
-      "of the preset and was raised to that minimum."
+    code = c("EF_H_ZOM_FLOOR_APPLIED", "EF_H_TERRAIN_RULE_APPLIED"),
+    stage = c("H", "H"),
+    severity = c("info", "info"),
+    scope = c("cell", "cell"),
+    bit = c(1L, 11L),
+    error_class = c(NA_character_, NA_character_),
+    description = c(
+      paste0(
+        "The momentum roughness length of the method is below the minimum ",
+        "of the preset and was raised to that minimum."
+      ),
+      paste0(
+        "The terrain rule of the preset excluded the cell: its elevation ",
+        "differs from the reference elevation of the calibration by more ",
+        "than the limit of the preset."
+      )
     ),
-    spec = "dev/specs/flags.md 4.2; dev/specs/sensible-heat.md 5.6",
-    since = "0.1.0.9000"
+    spec = c("dev/specs/flags.md 4.2; dev/specs/sensible-heat.md 5.6",
+             "dev/specs/flags.md 4.2; dev/specs/presets.md 4.1"),
+    since = c("0.1.0.9000", "0.1.0.9000")
   )
 }
 
@@ -192,6 +215,74 @@ workflow_zom_floor <- function(zom, zom_min) {
     flags = ef_flag_set(list(EF_H_ZOM_FLOOR_APPLIED = as.vector(floored)),
                         scope = "cell")
   )
+}
+
+#' Terrain rule of a preset
+#'
+#' Decision M5-25 (dev/specs/presets.md 4.1, `CANDIDATA`): METRIC calibrates
+#' one linear dT = a + b Ts_datum on two anchors and applies it with one
+#' weather forcing (Waters et al., 2002: "one basic assumption in SEBAL is
+#' that climate conditions are uniform within the area of interest",
+#' p. 70); the datum surface temperature corrects the elevation with one
+#' lapse rate, which the manual gives "under neutral stability conditions"
+#' (appendix 12, p. 95). The error of that correction grows with the
+#' distance in elevation to the datum, so the presets exclude the cells
+#' whose elevation differs from the reference elevation of the calibration
+#' by more than `max_difference`: they hold no anchor and are `NA` in every
+#' layer of the result, flagged with `EF_H_TERRAIN_RULE_APPLIED`. Cells
+#' without elevation are not flagged (they are `NA` anyway).
+#'
+#' \deqn{excluded = |z - z_{ref}| > \Delta z_{max}}
+#'
+#' @param elevation Numeric (matrix) \[m\].
+#' @param reference Numeric scalar \[m\]: reference elevation of the
+#'   calibration (`workflow_terrain_reference()`).
+#' @param max_difference Numeric scalar \[m\], `> 0`.
+#' @return A list: `excluded` (logical, the shape of `elevation`, no `NA`)
+#'   and `flags` (the result of `ef_flag_set()`, cell scope, positions of
+#'   `as.vector(elevation)`).
+#' @noRd
+workflow_terrain_rule <- function(elevation, reference, max_difference) {
+  check_scalar(max_difference, "max_difference", lower = 0,
+               lower_inclusive = FALSE)
+  check_scalar(reference, "reference")
+  if (!is.finite(reference) || !is.finite(max_difference)) {
+    ef_abort("`reference` and `max_difference` must be finite.",
+             class = "earthflux_input_error")
+  }
+  excluded <- !is.na(elevation) & abs(elevation - reference) > max_difference
+  list(
+    excluded = excluded,
+    flags = ef_flag_set(list(EF_H_TERRAIN_RULE_APPLIED = as.vector(excluded)),
+                        scope = "cell")
+  )
+}
+
+#' Reference elevation of the terrain rule
+#'
+#' The datum elevation of the calibration as the preset defines it
+#' (decision M5-12): the elevation of the representative station when
+#' there is one (C1), otherwise the elevation of the cold calibration
+#' point. In the second case the datum is only known after the anchor
+#' selection, so a preliminary selection with the same criteria and
+#' without the terrain rule gives it; the final selection then runs on the
+#' cells the rule keeps (decision M5-25).
+#'
+#' @param datum `NULL` or the elevation of the representative station.
+#' @param select A function of the anchor QA matrix returning an
+#'   `earthflux_anchors` object (the call of `ef_select_anchors()` of the
+#'   chain).
+#' @param qa Logical matrix: the strict anchor QA.
+#' @return A list: `elevation` \[m\] and `source` (character).
+#' @noRd
+workflow_terrain_reference <- function(datum, select, qa) {
+  if (!is.null(datum)) {
+    return(list(elevation = datum, source = "representative station"))
+  }
+  cp <- select(qa)$calibration_points
+  list(elevation = cp$elevation[cp$type == "cold"],
+       source = paste0("cold calibration point of a preliminary anchor ",
+                       "selection without the terrain rule"))
 }
 
 #' Strict QA of the anchor candidates
@@ -251,9 +342,12 @@ workflow_anchor_qa <- function(st, forcing, defined,
 #'   `datum_elevation` (`NULL`: the elevation of the cold calibration
 #'   point) and `etr_source`.
 #' @return A list with `layers` (named list of wide matrices), `objects`
-#'   (the classed results of the core) and `flags` (cell records on terra
-#'   cells per layer, `evaluated` codes) and `zom_floor_applied` (count of
-#'   cells raised to the minimum z_om).
+#'   (the classed results of the core), `records` (cell records on terra
+#'   cells per layer; `terrain` holds the record of the terrain rule),
+#'   `evaluated` (codes), `zom_floor_applied` (count of the cells kept by
+#'   the terrain rule and raised to the minimum z_om) and `terrain_rule`
+#'   (`excluded`, logical in terra cell order; `reference_elevation`,
+#'   `reference_source`, `max_elevation_difference`).
 #' @noRd
 workflow_metric <- function(x, preset, grid, scene) {
   nr <- terra::nrow(grid)
@@ -295,17 +389,44 @@ workflow_metric <- function(x, preset, grid, scene) {
   search <- if (is.null(x$search_area)) NULL else lapply(x$search_area, m)
   ext <- terra::ext(grid)
   a <- preset$anchors
-  anchors <- ef_select_anchors(
-    lst, ndvi, albedo, lai = lai, qa = qa, elevation = elevation,
-    utc_hour = m(x$utc_hour), search_area = search, criteria = a$criteria,
-    relax = a$relax, aggregate = a$aggregate,
-    cell_size = terra::res(grid)[1L],
-    origin = c(terra::xmin(ext), terra::ymax(ext)),
-    crs = terra::crs(grid, proj = TRUE)
-  )
+  select <- function(qa) {
+    ef_select_anchors(
+      lst, ndvi, albedo, lai = lai, qa = qa, elevation = elevation,
+      utc_hour = m(x$utc_hour), search_area = search, criteria = a$criteria,
+      relax = a$relax, aggregate = a$aggregate,
+      cell_size = terra::res(grid)[1L],
+      origin = c(terra::xmin(ext), terra::ymax(ext)),
+      crs = terra::crs(grid, proj = TRUE)
+    )
+  }
+
+  # Terrain rule (M5-25): cells far in elevation from the datum of the
+  # calibration hold no anchor and are not computed ------------------------
+  tr <- preset$terrain_rule
+  ref <- workflow_terrain_reference(scene$datum_elevation, select, qa)
+  rule <- workflow_terrain_rule(elevation, ref$elevation,
+                                tr$max_elevation_difference)
+  excluded <- rule$excluded
+  anchors <- select(qa & !excluded)
   cp <- anchors$calibration_points
   t_cold <- cp$lst[cp$type == "cold"]
   z_cold <- cp$elevation[cp$type == "cold"]
+  # the selection used the LST of every cell (homogeneity windows); the
+  # rest of the chain runs only on the cells the rule keeps
+  drop <- function(v) {
+    v[excluded] <- NA
+    v
+  }
+  lst <- drop(lst)
+  albedo <- drop(albedo)
+  ndvi <- drop(ndvi)
+  emissivity <- drop(emissivity)
+  elevation <- drop(elevation)
+  etr_inst <- drop(etr_inst)
+  etr_24 <- drop(etr_24)
+  zom <- drop(zom)
+  u_blend <- drop(u_blend)
+  pressure <- drop(pressure)
 
   # Shortwave: tau_sw from elevation (Eq. 11), Rs_in on the horizontal ---------
   r <- preset$radiation
@@ -368,13 +489,15 @@ workflow_metric <- function(x, preset, grid, scene) {
     zom = workflow_cell_records(c(zom_obj$flags, zu_flags$flags), "zom",
                                 nr, nc),
     h = workflow_cell_records(cal$flags, "h", nr, nc),
-    eta_24 = workflow_cell_records(eta$flags, "eta_24", nr, nc)
+    eta_24 = workflow_cell_records(eta$flags, "eta_24", nr, nc),
+    terrain = workflow_cell_records(rule$flags, "h", nr, nc)
   )
   evaluated <- unique(c(tau$provenance$flags_evaluated,
                         rs$provenance$flags_evaluated,
                         g$provenance$flags_evaluated,
                         zom_obj$provenance$flags_evaluated,
                         zu_flags$evaluated,
+                        ef_flags_evaluated(rule$flags),
                         cal$provenance$flags_evaluated,
                         eta$provenance$flags_evaluated))
 
@@ -396,6 +519,11 @@ workflow_metric <- function(x, preset, grid, scene) {
     evaluated = evaluated,
     t_rl = c(t_cold = t_cold, z_cold = z_cold),
     datum_elevation = datum,
-    zom_floor_applied = sum(zf$floored)
+    zom_floor_applied = sum(zf$floored & !excluded),
+    terrain_rule = list(excluded = workflow_cells(excluded, nr * nc),
+                        reference_elevation = ref$elevation,
+                        reference_source = ref$source,
+                        max_elevation_difference =
+                          tr$max_elevation_difference)
   )
 }

@@ -23,7 +23,7 @@ print.earthflux_preset <- function(x, ...) {
         paste(format(e), collapse = ", ")
     }, character(1))
     cat(sprintf("%s:\n", label))
-    cat(sprintf("  %-22s %s\n", names(v), v), sep = "")
+    cat(sprintf("  %-24s %s\n", names(v), v), sep = "")
   }
   show("MODIS", x$modis$surface_options)
   show("Terrain", x$terrain)
@@ -40,6 +40,11 @@ print.earthflux_preset <- function(x, ...) {
                               "etrf_hot")])
   show("Sensible heat", x$sensible_heat[c("lapse_rate", "datum_elevation")])
   show("ET", x$et)
+  if (!is.null(x$terrain_rule)) {
+    show("Terrain rule", x$terrain_rule[c("method",
+                                          "max_elevation_difference",
+                                          "flag", "status")])
+  }
   cat(sprintf("Unverified elements (%d): %s\n", length(x$unverified),
               paste(names(x$unverified), collapse = ", ")))
   cat("Anchor criteria: x$anchors$criteria; relaxation: x$anchors$relax.\n")
@@ -78,6 +83,13 @@ print.earthflux_result <- function(x, ...) {
     if (length(v) == 0L) return("all NA")
     sprintf("%.3g to %.3g %s (median %.3g, %d cells)", min(v), max(v),
             x$units[[nm]], stats::median(v), length(v))
+  }
+  tr <- sc$terrain_rule
+  if (!is.null(tr) && "terrain_rule_excluded" %in% names(p$counts)) {
+    cat(sprintf(paste0("  terrain rule: %d cells excluded (more than %g m ",
+                       "from the reference elevation %.0f m)\n"),
+                p$counts[["terrain_rule_excluded"]],
+                tr$max_elevation_difference, tr$reference_elevation))
   }
   cat(sprintf("  ETa_24: %s\n", rng("eta_24")))
   cat(sprintf("  ETrF:   %s\n", rng("etrf")))
