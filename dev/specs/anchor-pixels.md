@@ -59,9 +59,10 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 > **Actualización M5-25 (2026-11-10).** Respuesta parcial a Q-AP-10 en
 > los presets (no en el núcleo): la regla de terreno excluye de los
 > candidatos —y del resultado— las celdas a más de 500 m (`elev`; 250 m
-> en `flat` desde el 2026-11-11) de la elevación
-> de referencia de la calibración (la estación, o el punto frío de una
-> selección preliminar sin la regla), con `EF_H_TERRAIN_RULE_APPLIED`
+> en `flat` desde el 2026-11-11) por debajo o por encima del rango de
+> elevación de la calibración (desde el 2026-11-11: los puntos frío y
+> caliente de una selección preliminar sin la regla y, con una estación,
+> la estación; antes, solo el datum), con `EF_H_TERRAIN_RULE_APPLIED`
 > (`specs/presets.md` §4.1; evaluación en `verification/terrain-rule.md`).
 > En el Maule el ancla caliente deja de tener píxeles de ladera (antes
 > 115–2450 m, ahora 109–243 m) y el número de candidatos fríos pasa de 20
