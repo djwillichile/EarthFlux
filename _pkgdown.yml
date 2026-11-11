@@ -15,6 +15,9 @@ articles:
     contents:
       - earthflux-introduction
       - articles/cauquenes-example
+  - title: Methods
+    contents:
+      - articles/anchors-monin-obukhov
   - title: Development
     contents:
       - articles/design
