@@ -23,8 +23,10 @@ ef_preset(name)
 
 An object of class `earthflux_preset` (a list): `name`, `version`,
 `status`, `description`, `source`, `decisions`, `changes` (what each
-version changed) and the option blocks `modis` (product and the options
-of the MODIS surface state), `terrain`, `weather` (quality control, ERA5
+version changed) and the option blocks `modis`
+(`lst_product = "auto_view_angle"` with its candidates and
+`min_lst_coverage`, and the options of the MODIS surface state, among
+them `view_angle_max`), `terrain`, `weather` (quality control, ERA5
 options, regionalization), `reference_et`, `radiation`, `soil_heat`,
 `roughness`, `wind`, `lambda`, `anchors` (criteria built with
 [`ef_anchor_criteria()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_criteria.md),
@@ -39,7 +41,7 @@ the elements that are not `VERIFICADA`).
 
 ## Details
 
-The two presets (decisions M5-08 to M5-25 and M2-11,
+The two presets (decisions M5-08 to M5-27 and M2-11,
 dev/specs/presets.md) share every option except the treatment of
 elevation:
 
@@ -55,18 +57,24 @@ Neither uses the slope (forced to 0, flat projection, until decision
 RC-09 is resolved); both use the elevation of the elevation model for
 the air pressure, the anchors and the datum temperature.
 
-Common options: MODIS Terra LST (MOD11A1), white-sky albedo, emissivity
-from LAI, NDVI of MOD13A2, LAI 0 assigned to the non-vegetated classes,
-QA flagged (strict QA for the anchors), `min_valid_fraction = 1`;
-NASADEM elevation with water masked; quality control
-`"exclude_critical"`; ASCE alfalfa reference ET, hourly, with the
-`"rn_positive"` daytime rule and `"low_sun"` night cloudiness, the
-instantaneous value interpolated between hourly mid-points (O3) and the
-daily sum over the mean solar day of the AOI centroid; one station: its
-values over the whole grid (C1); several stations or ERA5: inverse
-distance weighting with power 2 (C2); ERA5 with the native cell
-elevation, trapezoid instantaneous values and the sea cells excluded;
-calibration of H with the convergence settings of
+Common options: MODIS LST of Terra (MOD11A1) or Aqua (MYD11A1), chosen
+per scene (`lst_product = "auto_view_angle"`, version 5, decision
+M5-27): both are downloaded and the one with the lowest median absolute
+view zenith angle over the AOI among those with at least 80 % of valid
+LST cells is used (the NDVI stays MOD13A2, Terra, with both); white-sky
+albedo, emissivity from LAI, NDVI of MOD13A2, LAI 0 assigned to the
+non-vegetated classes, QA flagged (strict QA for the anchors),
+`min_valid_fraction = 1`, LST cells observed at more than 40 degrees
+from nadir flagged with `EF_SURF_VIEW_ANGLE_HIGH`
+(`view_angle_max = 40`, decision M5-26); NASADEM elevation with water
+masked; quality control `"exclude_critical"`; ASCE alfalfa reference ET,
+hourly, with the `"rn_positive"` daytime rule and `"low_sun"` night
+cloudiness, the instantaneous value interpolated between hourly
+mid-points (O3) and the daily sum over the mean solar day of the AOI
+centroid; one station: its values over the whole grid (C1); several
+stations or ERA5: inverse distance weighting with power 2 (C2); ERA5
+with the native cell elevation, trapezoid instantaneous values and the
+sea cells excluded; calibration of H with the convergence settings of
 [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
 (`tol = 1e-6`, `pixel_tol = 1e-5`, written out in the preset); anchors
 selected before the net radiation (incoming longwave from the cold
@@ -85,7 +93,21 @@ homogeneous LST (standard deviation \<= 1.5 K in 3 x 3 cells); the
 coldest 20 % of the cold and the hottest 20 % of the hot candidates,
 averaged; one relaxation step (percentiles 0.80 and 0.20), flagged with
 `EF_ANCHOR_CRITERIA_RELAXED`; no anchor on cells with a warning or
-critical surface flag or an assigned LAI.
+critical surface flag, an assigned LAI or an LST observed at more than
+40 degrees from nadir.
+
+View angle (version 5, decisions M5-26 and M5-27, `CANDIDATA`): the
+footprint of a MODIS observation, 1 km at nadir, grows with the view
+zenith angle; MOD11A1/MYD11A1 average the overlapping observations of
+each 1 km cell with their overlapping areas as weights (Wan, 2019, p.
+16), so a cell observed far from nadir carries the LST of a larger,
+mixed area. On a sphere with the MODIS scan geometry (1 km pixels at
+nadir, 1354 pixels per scan line, Wan, 2019, p. 6; view zenith angles up
+to 65 degrees, p. 17), the footprint is 1.26 x 1.65 km at 40 degrees
+(twice the nadir area) and 1.85 x 3.9 km at 62 degrees: the presets flag
+the cells above 40 degrees, keep them out of the anchors and choose, per
+scene, the satellite observed closer to nadir. Neither 40 degrees nor
+the minimum coverage of 80 % has a primary source.
 
 Terrain rule (version 4, decision M5-25, `CANDIDATA`): one linear dT
 calibrated between two anchors with one weather forcing holds only over
@@ -111,8 +133,9 @@ slope is not used: the presets keep the flat projection.
 
 Versions: `"1"` (first presets); `"2"` (recalibrated anchor criteria,
 M5-23; minimum z_om, M5-24); `"3"` (convergence of the calibration of H,
-one tolerance per phase, M2-11); `"4"` (terrain rule, M5-25); see the
-element `changes`.
+one tolerance per phase, M2-11); `"4"` (terrain rule, M5-25); `"5"`
+(Terra/Aqua choice by view angle and view angle flag, M5-26, M5-27); see
+the element `changes`.
 
 ## Verification status
 
@@ -126,6 +149,11 @@ Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
 (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
 implementation. Advanced training and users manual* (Version 1.0).
 University of Idaho and Idaho Department of Water Resources.
+
+Wan, Z. (2019). *Collection-6 MODIS Land Surface Temperature Products
+Users' Guide* (with the Collection 6.1 cover page). ERI, University of
+California, Santa Barbara. NASA LP DAAC,
+<https://lpdaac.usgs.gov/documents/715/MOD11_User_Guide_V61.pdf>.
 
 ## See also
 
@@ -141,15 +169,16 @@ Other workflow functions:
 ``` r
 p <- ef_preset("idaho2002_elev")
 p
-#> <earthflux_preset> idaho2002_elev (version 4, CANDIDATA)
+#> <earthflux_preset> idaho2002_elev (version 5, CANDIDATA)
 #>   SEBAL-Idaho 2002 forms with the elevation adjustments of appendix 12
 #>   of the manual (datum surface temperature with a lapse rate of 0.0065
 #>   K/m, cold-pixel temperature of the incoming longwave adjusted by
 #>   elevation, shortwave transmissivity per pixel); flat projection
 #>   (slope 0); cells more than 500 m above or below the elevation range
-#>   of the calibration anchors excluded (M5-25).
+#>   of the calibration anchors excluded (M5-25); Terra or Aqua LST,
+#>   whichever was observed closer to nadir (M5-27).
 #> MODIS:
-#>   lst_product              MOD11A1
+#>   lst_product              auto_view_angle
 #>   albedo_method            white_sky
 #>   diffuse_fraction         NULL
 #>   emissivity_method        lai_empirical
@@ -157,6 +186,7 @@ p
 #>   composite_method         same_day        , period_pixel_lag, period          
 #>   resampling_method        mean
 #>   min_valid_fraction       1
+#>   view_angle_max           40
 #>   qa_policy                flag
 #>   mask_codes               NULL
 #>   lai_nonveg               0
@@ -219,7 +249,7 @@ p
 #>   max_elevation_difference 500
 #>   flag                     EF_H_TERRAIN_RULE_APPLIED
 #>   status                   CANDIDATA (M5-25)
-#> Unverified elements (12): anchor_criteria, modis_albedo, modis_matching, lai_nonveg, reference_et_time, regionalization, era5, station_roughness, zom_floor, wind_time, flat_projection, terrain_rule
+#> Unverified elements (13): anchor_criteria, modis_albedo, modis_matching, lai_nonveg, reference_et_time, regionalization, era5, station_roughness, zom_floor, wind_time, flat_projection, view_angle, terrain_rule
 #> Anchor criteria: x$anchors$criteria; relaxation: x$anchors$relax.
 p$anchors$criteria
 #> <earthflux_anchor_criteria> CANDIDATA - EarthFlux preset idaho2002 v2 (dev/specs/presets.md 4; DECISIONS.md M5-23): physical intent of Waters et al. (2002), pp. 23, 30-31 and appendix 7, with thresholds for 1 km MODIS pixels set from the Cauquenes and Maule scenes of 2019-02-15 (no primary source) 
@@ -231,5 +261,6 @@ names(p$unverified)
 #>  [1] "anchor_criteria"   "modis_albedo"      "modis_matching"   
 #>  [4] "lai_nonveg"        "reference_et_time" "regionalization"  
 #>  [7] "era5"              "station_roughness" "zom_floor"        
-#> [10] "wind_time"         "flat_projection"   "terrain_rule"     
+#> [10] "wind_time"         "flat_projection"   "view_angle"       
+#> [13] "terrain_rule"     
 ```

@@ -62,8 +62,9 @@ is recorded in the provenance of the result.</p>
     <p>An object of class <code>earthflux_preset</code> (a list): <code>name</code>,
 <code>version</code>, <code>status</code>, <code>description</code>, <code>source</code>, <code>decisions</code>, <code>changes</code>
 (what each version changed) and the
-option blocks <code>modis</code> (product and the options of the MODIS surface
-state), <code>terrain</code>, <code>weather</code> (quality control, ERA5 options,
+option blocks <code>modis</code> (<code>lst_product = "auto_view_angle"</code> with its
+candidates and <code>min_lst_coverage</code>, and the options of the MODIS surface
+state, among them <code>view_angle_max</code>), <code>terrain</code>, <code>weather</code> (quality control, ERA5 options,
 regionalization), <code>reference_et</code>, <code>radiation</code>, <code>soil_heat</code>,
 <code>roughness</code>, <code>wind</code>, <code>lambda</code>, <code>anchors</code> (criteria built with
 <code><a href="ef_anchor_criteria.html">ef_anchor_criteria()</a></code>, relaxation plan, aggregation, search area,
@@ -77,14 +78,21 @@ not <code>VERIFICADA</code>).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The two presets (decisions M5-08 to M5-25 and M2-11,
+    <p>The two presets (decisions M5-08 to M5-27 and M2-11,
 dev/specs/presets.md) share every option except the treatment of
 elevation:</p><table class="table table"><tr><td>Option</td><td><code>idaho2002_elev</code></td><td><code>idaho2002_flat</code></td></tr><tr><td>Lapse rate of the datum surface temperature (Eq. 12-7)</td><td>0.0065 K m-1</td><td>0</td></tr><tr><td>Temperature of the incoming longwave</td><td>cold-anchor Ts adjusted by elevation (Eq. 12-8)</td><td>cold-anchor Ts</td></tr><tr><td>Shortwave transmissivity (Eq. 11)</td><td>per pixel, from the elevation model</td><td>one for the scene</td></tr><tr><td>Limit of the terrain rule (M5-25)</td><td>500 m</td><td>250 m</td></tr></table><p>Neither uses the slope (forced to 0, flat projection, until decision
 RC-09 is resolved); both use the elevation of the elevation model for
 the air pressure, the anchors and the datum temperature.</p>
-<p>Common options: MODIS Terra LST (MOD11A1), white-sky albedo, emissivity
+<p>Common options: MODIS LST of Terra (MOD11A1) or Aqua (MYD11A1), chosen
+per scene (<code>lst_product = "auto_view_angle"</code>, version 5, decision
+M5-27): both are downloaded and the one with the lowest median absolute
+view zenith angle over the AOI among those with at least 80 % of valid
+LST cells is used (the NDVI stays MOD13A2, Terra, with both);
+white-sky albedo, emissivity
 from LAI, NDVI of MOD13A2, LAI 0 assigned to the non-vegetated classes,
-QA flagged (strict QA for the anchors), <code>min_valid_fraction = 1</code>;
+QA flagged (strict QA for the anchors), <code>min_valid_fraction = 1</code>, LST
+cells observed at more than 40 degrees from nadir flagged with
+<code>EF_SURF_VIEW_ANGLE_HIGH</code> (<code>view_angle_max = 40</code>, decision M5-26);
 NASADEM elevation with water masked; quality control
 <code>"exclude_critical"</code>; ASCE alfalfa reference ET, hourly, with the
 <code>"rn_positive"</code> daytime rule and <code>"low_sun"</code> night cloudiness, the
@@ -110,7 +118,21 @@ at or below the 10th percentile, NDVI &gt; 0 and albedo in
 cells); the coldest 20 % of the cold and the hottest 20 % of the hot
 candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
 flagged with <code>EF_ANCHOR_CRITERIA_RELAXED</code>; no anchor on cells with a
-warning or critical surface flag or an assigned LAI.</p>
+warning or critical surface flag, an assigned LAI or an LST observed at
+more than 40 degrees from nadir.</p>
+<p>View angle (version 5, decisions M5-26 and M5-27, <code>CANDIDATA</code>): the
+footprint of a MODIS observation, 1 km at nadir, grows with the view
+zenith angle; MOD11A1/MYD11A1 average the overlapping observations of
+each 1 km cell with their overlapping areas as weights (Wan, 2019,
+p. 16), so a cell observed far from nadir carries the LST of a larger,
+mixed area. On a sphere with the MODIS scan geometry (1 km pixels at
+nadir, 1354 pixels per scan line, Wan, 2019, p. 6; view zenith angles up
+to 65 degrees, p. 17), the
+footprint is 1.26 x 1.65 km at 40 degrees (twice the nadir area) and
+1.85 x 3.9 km at 62 degrees: the presets flag the cells above 40
+degrees, keep them out of the anchors and choose, per scene, the
+satellite observed closer to nadir. Neither 40 degrees nor the minimum
+coverage of 80 % has a primary source.</p>
 <p>Terrain rule (version 4, decision M5-25, <code>CANDIDATA</code>): one linear dT
 calibrated between two anchors with one weather forcing holds only over
 the elevations of the calibration (the manual assumes uniform climate,
@@ -135,8 +157,9 @@ error is the whole lapse rate, 6.5 K per km (1.5 / 6.5 = 231 m, limit
 presets keep the flat projection.</p>
 <p>Versions: <code>"1"</code> (first presets); <code>"2"</code> (recalibrated anchor criteria,
 M5-23; minimum z_om, M5-24); <code>"3"</code> (convergence of the calibration of H,
-one tolerance per phase, M2-11); <code>"4"</code> (terrain rule, M5-25); see the
-element <code>changes</code>.</p>
+one tolerance per phase, M2-11); <code>"4"</code> (terrain rule, M5-25); <code>"5"</code>
+(Terra/Aqua choice by view angle and view angle flag, M5-26, M5-27); see
+the element <code>changes</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="verification-status">Verification status<a class="anchor" aria-label="anchor" href="#verification-status"></a></h2>
@@ -151,6 +174,10 @@ element <code>unverified</code>.</p>
 (2002). <em>SEBAL: Surface Energy Balance Algorithms for Land. Idaho
 implementation. Advanced training and users manual</em> (Version 1.0).
 University of Idaho and Idaho Department of Water Resources.</p>
+<p>Wan, Z. (2019). <em>Collection-6 MODIS Land Surface Temperature Products
+Users' Guide</em> (with the Collection 6.1 cover page). ERI, University of
+California, Santa Barbara. NASA LP DAAC,
+<a href="https://lpdaac.usgs.gov/documents/715/MOD11_User_Guide_V61.pdf" class="external-link">https://lpdaac.usgs.gov/documents/715/MOD11_User_Guide_V61.pdf</a>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -164,15 +191,16 @@ University of Idaho and Idaho Department of Water Resources.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">ef_preset</span><span class="op">(</span><span class="st">"idaho2002_elev"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_preset&gt; idaho2002_elev (version 4, CANDIDATA)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_preset&gt; idaho2002_elev (version 5, CANDIDATA)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SEBAL-Idaho 2002 forms with the elevation adjustments of appendix 12</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   of the manual (datum surface temperature with a lapse rate of 0.0065</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   K/m, cold-pixel temperature of the incoming longwave adjusted by</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   elevation, shortwave transmissivity per pixel); flat projection</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   (slope 0); cells more than 500 m above or below the elevation range</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   of the calibration anchors excluded (M5-25).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   of the calibration anchors excluded (M5-25); Terra or Aqua LST,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   whichever was observed closer to nadir (M5-27).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> MODIS:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   lst_product              MOD11A1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   lst_product              auto_view_angle</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   albedo_method            white_sky</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   diffuse_fraction         NULL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   emissivity_method        lai_empirical</span>
@@ -180,6 +208,7 @@ University of Idaho and Idaho Department of Water Resources.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   composite_method         same_day        , period_pixel_lag, period          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   resampling_method        mean</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   min_valid_fraction       1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   view_angle_max           40</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   qa_policy                flag</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   mask_codes               NULL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lai_nonveg               0</span>
@@ -242,7 +271,7 @@ University of Idaho and Idaho Department of Water Resources.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   max_elevation_difference 500</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   flag                     EF_H_TERRAIN_RULE_APPLIED</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   status                   CANDIDATA (M5-25)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Unverified elements (12): anchor_criteria, modis_albedo, modis_matching, lai_nonveg, reference_et_time, regionalization, era5, station_roughness, zom_floor, wind_time, flat_projection, terrain_rule</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Unverified elements (13): anchor_criteria, modis_albedo, modis_matching, lai_nonveg, reference_et_time, regionalization, era5, station_roughness, zom_floor, wind_time, flat_projection, view_angle, terrain_rule</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Anchor criteria: x$anchors$criteria; relaxation: x$anchors$relax.</span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">anchors</span><span class="op">$</span><span class="va">criteria</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;earthflux_anchor_criteria&gt; CANDIDATA - EarthFlux preset idaho2002 v2 (dev/specs/presets.md 4; DECISIONS.md M5-23): physical intent of Waters et al. (2002), pp. 23, 30-31 and appendix 7, with thresholds for 1 km MODIS pixels set from the Cauquenes and Maule scenes of 2019-02-15 (no primary source) </span>
@@ -254,7 +283,8 @@ University of Idaho and Idaho Department of Water Resources.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "anchor_criteria"   "modis_albedo"      "modis_matching"   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [4] "lai_nonveg"        "reference_et_time" "regionalization"  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [7] "era5"              "station_roughness" "zom_floor"        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [10] "wind_time"         "flat_projection"   "terrain_rule"     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [10] "wind_time"         "flat_projection"   "view_angle"       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [13] "terrain_rule"     </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

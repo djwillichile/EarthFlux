@@ -43,9 +43,9 @@ Other workflow functions:
 ``` r
 ef_presets()
 #>             name version    status
-#> 1 idaho2002_elev       4 CANDIDATA
-#> 2 idaho2002_flat       4 CANDIDATA
-#>                                                                                                                                                                                                                                                                                                                                                                                   description
-#> 1 SEBAL-Idaho 2002 forms with the elevation adjustments of appendix 12 of the manual (datum surface temperature with a lapse rate of 0.0065 K/m, cold-pixel temperature of the incoming longwave adjusted by elevation, shortwave transmissivity per pixel); flat projection (slope 0); cells more than 500 m above or below the elevation range of the calibration anchors excluded (M5-25).
-#> 2                                         Base procedure of the SEBAL-Idaho 2002 manual for low relief: no lapse rate in the datum surface temperature, one cold-pixel temperature for the incoming longwave and one shortwave transmissivity for the scene; flat projection (slope 0); cells more than 250 m above or below the elevation range of the calibration anchors excluded (M5-25).
+#> 1 idaho2002_elev       5 CANDIDATA
+#> 2 idaho2002_flat       5 CANDIDATA
+#>                                                                                                                                                                                                                                                                                                                                                                                                                                                      description
+#> 1 SEBAL-Idaho 2002 forms with the elevation adjustments of appendix 12 of the manual (datum surface temperature with a lapse rate of 0.0065 K/m, cold-pixel temperature of the incoming longwave adjusted by elevation, shortwave transmissivity per pixel); flat projection (slope 0); cells more than 500 m above or below the elevation range of the calibration anchors excluded (M5-25); Terra or Aqua LST, whichever was observed closer to nadir (M5-27).
+#> 2                                         Base procedure of the SEBAL-Idaho 2002 manual for low relief: no lapse rate in the datum surface temperature, one cold-pixel temperature for the incoming longwave and one shortwave transmissivity for the scene; flat projection (slope 0); cells more than 250 m above or below the elevation range of the calibration anchors excluded (M5-25); Terra or Aqua LST, whichever was observed closer to nadir (M5-27).
 ```

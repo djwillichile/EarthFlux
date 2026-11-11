@@ -1,13 +1,14 @@
 # Actual evapotranspiration of a scene with a preset
 
 Runs the complete METRIC workflow for one area and one date: downloads
-and prepares the MODIS surface state (Terra LST, albedo, NDVI, LAI) and
-the NASADEM elevation model on the native 1 km MODIS grid, prepares the
-weather forcing from a station table or from ERA5 (Open-Meteo),
-regionalizes the reference evapotranspiration and the wind, selects the
-anchor pixels, calibrates the sensible heat flux and returns the daily
-actual evapotranspiration with every intermediate layer, the objects of
-each stage, flags and provenance.
+and prepares the MODIS surface state (LST of Terra or Aqua, whichever
+was observed closer to nadir, albedo, NDVI, LAI) and the NASADEM
+elevation model on the native 1 km MODIS grid, prepares the weather
+forcing from a station table or from ERA5 (Open-Meteo), regionalizes the
+reference evapotranspiration and the wind, selects the anchor pixels,
+calibrates the sensible heat flux and returns the daily actual
+evapotranspiration with every intermediate layer, the objects of each
+stage, flags and provenance.
 
 Every scientific option is set by the **preset** (no default, decision
 M5-04): see
@@ -127,39 +128,52 @@ An object of class `earthflux_result` (a list):
 
 - `provenance`: the preset (name, version, changes between versions,
   status, unverified elements), every effective option, the values
-  derived for the scene (overpass times, day and UTC offset of the daily
-  reference ET, regionalization method, datum elevation, the terrain
-  rule: its method, reference elevations (anchors of the preliminary
-  selection and the station), limit, kept range and the elevations of
-  the final anchors, ...), the counts of excluded cells (among them
-  `terrain_rule_excluded`, split into `terrain_rule_excluded_below` and
-  `terrain_rule_excluded_above` the range, and the cells raised to the
-  minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo
-  request (without key) or the station table, attributions, the codes
-  evaluated, versions, the `future` plan and timings.
+  derived for the scene (the LST product used and, with the automatic
+  choice, the statistics of both candidates (`lst_choice`), the view
+  angle of the LST (`view_angle`: median, threshold, flagged cells,
+  warning), overpass times, day and UTC offset of the daily reference
+  ET, regionalization method, datum elevation, the terrain rule: its
+  method, reference elevations (anchors of the preliminary selection and
+  the station), limit, kept range and the elevations of the final
+  anchors, ...), the counts of excluded cells (among them
+  `view_angle_high`, the cells of the AOI flagged
+  `EF_SURF_VIEW_ANGLE_HIGH`, `terrain_rule_excluded`, split into
+  `terrain_rule_excluded_below` and `terrain_rule_excluded_above` the
+  range, and the cells raised to the minimum z_om), the MODIS granules,
+  the NASADEM tiles, the Open-Meteo request (without key) or the station
+  table, attributions, the codes evaluated, versions, the `future` plan
+  and timings.
 
 ## Details
 
 Order of the workflow (dev/specs/presets.md section 2): (1) area checks
 and refusal of areas over several MODIS tiles **before any download**;
-(2) MODIS search, download and surface state; (3) cells outside the AOI
-polygon and cells with a critical surface flag (albedo above 1) are
-excluded and counted; (4) NASADEM elevation on the working grid (cells
-below the minimum valid fraction excluded); (5) weather table (station
-table or ERA5) and its quality control; (6) hourly and daily alfalfa
-reference ET of the stations; (7) regionalization of the hourly
-reference ET and wind at the hourly mid-points around the overpass and
-of the daily reference ET; each cell takes the values at its own
-overpass time (linear interpolation between mid-points); (8) solar
-geometry, pressure, roughness and wind at 200 m; (9) anchors, selected
-before the net radiation because the incoming longwave uses the
-temperature of the cold anchor (P0-3), outside the cells excluded by the
-terrain rule of the preset (decision M5-25: elevation more than 500 m,
-`idaho2002_elev`, or 250 m, `idaho2002_flat`, below or above the
-elevation range of the calibration, i.e. the cold and hot anchors of a
-preliminary selection without the rule and, with one station, the
-station; cells between the anchors are kept; the excluded cells are not
-computed, are `NA` in every layer and are flagged with
+(2) MODIS search, download and surface state; the presets download the
+LST of Terra (MOD11A1) and Aqua (MYD11A1) and use the one with the
+lowest median absolute view zenith angle over the area among those with
+at least 80 % of valid LST cells (decision M5-27); (3) cells outside the
+AOI polygon and cells with a critical surface flag (albedo above 1) are
+excluded and counted; the LST cells observed at more than the view angle
+threshold of the preset (40 degrees) are flagged
+`EF_SURF_VIEW_ANGLE_HIGH` and hold no anchor, and a warning of class
+`earthflux_view_angle_warning` is emitted when the median of the scene
+is above it (decision M5-26; if no cell is left for an anchor, the run
+stops with an `earthflux_anchor_error`); (4) NASADEM elevation on the
+working grid (cells below the minimum valid fraction excluded); (5)
+weather table (station table or ERA5) and its quality control; (6)
+hourly and daily alfalfa reference ET of the stations; (7)
+regionalization of the hourly reference ET and wind at the hourly
+mid-points around the overpass and of the daily reference ET; each cell
+takes the values at its own overpass time (linear interpolation between
+mid-points); (8) solar geometry, pressure, roughness and wind at 200 m;
+(9) anchors, selected before the net radiation because the incoming
+longwave uses the temperature of the cold anchor (P0-3), outside the
+cells excluded by the terrain rule of the preset (decision M5-25:
+elevation more than 500 m, `idaho2002_elev`, or 250 m, `idaho2002_flat`,
+below or above the elevation range of the calibration, i.e. the cold and
+hot anchors of a preliminary selection without the rule and, with one
+station, the station; cells between the anchors are kept; the excluded
+cells are not computed, are `NA` in every layer and are flagged with
 `EF_H_TERRAIN_RULE_APPLIED`); (10) shortwave and longwave radiation, net
 radiation, soil heat flux; (11) boundary conditions at the anchors and
 calibration of dT; (12) LE, instantaneous ET, ETrF and daily ETa. Values
