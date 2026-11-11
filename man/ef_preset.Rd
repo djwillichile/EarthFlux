@@ -20,8 +20,12 @@ regionalization), \code{reference_et}, \code{radiation}, \code{soil_heat},
 \code{roughness}, \code{wind}, \code{lambda}, \code{anchors} (criteria built with
 \code{\link[=ef_anchor_criteria]{ef_anchor_criteria()}}, relaxation plan, aggregation, search area,
 anchor QA and boundary conditions), \code{sensible_heat} (with an
-\code{\link[=ef_h_control]{ef_h_control()}} list), \code{et}, and \code{unverified} (named character vector
-of the elements that are not \code{VERIFICADA}).
+\code{\link[=ef_h_control]{ef_h_control()}} list), \code{et}, \code{terrain_rule} (the terrain rule of
+version 4: method \code{"anchor_elevation_range"}, limit
+\code{max_elevation_difference} in metres, 500 for \code{idaho2002_elev} and
+250 for \code{idaho2002_flat}, reference elevations, flag and status)
+and \code{unverified} (named character vector of the elements that are
+not \code{VERIFICADA}).
 }
 \description{
 Returns every option that a preset sets, so that the choices made by
@@ -29,13 +33,14 @@ Returns every option that a preset sets, so that the choices made by
 is recorded in the provenance of the result.
 }
 \details{
-The two presets (decisions M5-08 to M5-24 and M2-11,
+The two presets (decisions M5-08 to M5-25 and M2-11,
 dev/specs/presets.md) share every option except the treatment of
 elevation:\tabular{lll}{
    Option \tab \code{idaho2002_elev} \tab \code{idaho2002_flat} \cr
    Lapse rate of the datum surface temperature (Eq. 12-7) \tab 0.0065 K m-1 \tab 0 \cr
    Temperature of the incoming longwave \tab cold-anchor Ts adjusted by elevation (Eq. 12-8) \tab cold-anchor Ts \cr
    Shortwave transmissivity (Eq. 11) \tab per pixel, from the elevation model \tab one for the scene \cr
+   Limit of the terrain rule (M5-25) \tab 500 m \tab 250 m \cr
 }
 
 
@@ -74,9 +79,33 @@ candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
 flagged with \code{EF_ANCHOR_CRITERIA_RELAXED}; no anchor on cells with a
 warning or critical surface flag or an assigned LAI.
 
+Terrain rule (version 4, decision M5-25, \code{CANDIDATA}): one linear dT
+calibrated between two anchors with one weather forcing holds only over
+the elevations of the calibration (the manual assumes uniform climate,
+Waters et al., 2002, p. 70, and gives its lapse rate of 6.5 K per km
+under neutral conditions, appendix 12, p. 95). The reference is the
+elevation range of the calibration: the cold and hot calibration points
+of a preliminary anchor selection without the rule and, with one
+station, the station (datum of Ts and site of the forcing). Cells more
+than the limit of the preset below or above that range hold no anchor
+and are \code{NA} in every layer, flagged with \code{EF_H_TERRAIN_RULE_APPLIED};
+cells between the anchors are kept, however far from each. The final
+anchor selection runs on the kept cells; its anchors lie inside the
+kept range by construction, and the range is not recomputed from them.
+The limit keeps the error of the datum surface temperature beyond the
+calibrated range within the 1.5 K of the homogeneity tolerance of the
+anchors, rounded up to the next 50 m:
+with the lapse correction of \code{idaho2002_elev} the error is the
+difference to a dry adiabatic profile, 9.8 - 6.5 = 3.3 K per km
+(1.5 / 3.3 = 455 m, limit 500 m); without it (\code{idaho2002_flat}) the
+error is the whole lapse rate, 6.5 K per km (1.5 / 6.5 = 231 m, limit
+250 m). Neither limit has a primary source. The slope is not used: the
+presets keep the flat projection.
+
 Versions: \code{"1"} (first presets); \code{"2"} (recalibrated anchor criteria,
 M5-23; minimum z_om, M5-24); \code{"3"} (convergence of the calibration of H,
-one tolerance per phase, M2-11); see the element \code{changes}.
+one tolerance per phase, M2-11); \code{"4"} (terrain rule, M5-25); see the
+element \code{changes}.
 }
 \section{Verification status}{
 

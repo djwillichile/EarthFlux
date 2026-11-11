@@ -559,14 +559,17 @@ test_that("the EF_H_ registry rows follow dev/specs/flags.md section 4.2", {
   expect_true(all(rows$code %in% reg$code))
   # Not registered: no terrain method, no wind floor (SH-06). The minimum
   # of z_om (SH-02) is not part of the core: EF_H_ZOM_FLOOR_APPLIED is
-  # registered by the presets of earthflux() (ef_flags_workflow(), M5-24)
+  # registered by the presets of earthflux() (ef_flags_workflow(), M5-24),
+  # as is the terrain rule of the presets (EF_H_TERRAIN_RULE_APPLIED, M5-25)
   expect_false(any(c("EF_H_ZOM_TERRAIN_ADJUSTED",
                      "EF_H_WIND_FLOOR_APPLIED") %in% reg$code))
-  expect_false("EF_H_ZOM_FLOOR_APPLIED" %in% rows$code)
+  expect_false(any(c("EF_H_ZOM_FLOOR_APPLIED", "EF_H_TERRAIN_RULE_APPLIED")
+                   %in% rows$code))
   expect_identical(
     ef_flags_workflow()[, c("code", "stage", "severity", "scope", "bit")],
-    data.frame(code = "EF_H_ZOM_FLOOR_APPLIED", stage = "H",
-               severity = "info", scope = "cell", bit = 1L)
+    data.frame(code = c("EF_H_ZOM_FLOOR_APPLIED", "EF_H_TERRAIN_RULE_APPLIED"),
+               stage = c("H", "H"), severity = c("info", "info"),
+               scope = c("cell", "cell"), bit = c(1L, 11L))
   )
 })
 

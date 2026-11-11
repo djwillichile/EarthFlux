@@ -23,6 +23,7 @@
 #   workflow_preset_names()      names accepted by earthflux()
 #   workflow_preset_idaho2002()  builder of the two idaho2002 presets
 #   workflow_anchor_criteria()   anchor criteria of dev/specs/presets.md 4
+#   workflow_terrain_rule_options()  terrain rule of dev/specs/presets.md 4.1
 
 #' Names of the registered presets
 #'
@@ -90,6 +91,54 @@ workflow_anchor_criteria <- function(cold_ndvi = 0.90, hot_ndvi = 0.10) {
   )
 }
 
+#' Terrain rule of the idaho2002 presets
+#'
+#' Decision M5-25 (dev/specs/presets.md 4.1, `CANDIDATA`; amended on
+#' 2026-11-11): cells whose elevation lies more than `max_difference` below
+#' or above the elevation range of the calibration are removed from the
+#' anchor candidates and set to `NA` in every layer of the result, flagged
+#' with `EF_H_TERRAIN_RULE_APPLIED`. The range spans the cold and hot
+#' calibration points of a preliminary anchor selection without the rule
+#' and, with one representative station, the station (datum of Ts and site
+#' of the forcing): the linear dT is calibrated between the anchors, so the
+#' rule removes only the extrapolation beyond them, never the cells between
+#' them. The limit bounds the error of Ts_datum beyond the calibrated range
+#' by the 1.5 K of the homogeneity tolerance of the anchors, rounded up to
+#' the next multiple of 50 m:
+#'
+#' * `idaho2002_elev` (lapse rate 6.5 K per km, given by the manual "under
+#'   neutral stability conditions", Waters et al., 2002, appendix 12,
+#'   p. 95): against a dry adiabatic profile (g / c_p, about 9.8 K km-1)
+#'   the error is 3.3 K km-1; 1.5 / 3.3 = 0.455 km, limit 500 m (error at
+#'   the limit 1.65 K).
+#' * `idaho2002_flat` (no lapse correction): the error is the whole lapse
+#'   rate of the manual, 6.5 K km-1; 1.5 / 6.5 = 0.231 km, limit 250 m
+#'   (error at the limit 1.63 K).
+#'
+#' No primary source gives either limit.
+#'
+#' @param max_difference Numeric scalar \[m\]: the limit of the preset.
+#' @return A list (an option block of the preset).
+#' @noRd
+workflow_terrain_rule_options <- function(max_difference) {
+  list(
+    method = "anchor_elevation_range",
+    max_elevation_difference = max_difference,
+    reference = paste0(
+      "elevation range of the calibration: the cold and hot calibration ",
+      "points of a preliminary anchor selection without the rule, and the ",
+      "representative station (datum of Ts and site of the forcing) when ",
+      "there is one; cells kept from min - limit to max + limit"
+    ),
+    applies_to = paste0(
+      "anchor candidates (removed) and every layer of the result (NA); ",
+      "the excluded cells are not computed"
+    ),
+    flag = "EF_H_TERRAIN_RULE_APPLIED",
+    status = "CANDIDATA (M5-25)"
+  )
+}
+
 #' Build an idaho2002 preset
 #'
 #' @param terrain `"elev"` (elevation adjustments of appendix 12 of the
@@ -100,6 +149,9 @@ workflow_preset_idaho2002 <- function(terrain) {
   elev <- identical(terrain, "elev")
   name <- paste0("idaho2002_", terrain)
   lapse <- if (elev) 0.0065 else 0
+  # limit of the terrain rule (M5-25): error of Ts_datum of 1.5 K, 3.3 K
+  # per km with the lapse correction, 6.5 K per km without it
+  terrain_limit <- if (elev) 500 else 250
   unverified <- c(
     anchor_criteria = paste0(
       "anchor selection criteria (NDVI percentiles, albedo bands, ",
@@ -156,12 +208,22 @@ workflow_preset_idaho2002 <- function(terrain) {
     flat_projection = paste0(
       "slope forced to 0 (flat projection) until RC-09 is resolved; ",
       "elevation used"
+    ),
+    terrain_rule = paste0(
+      "exclusion of the cells more than ", terrain_limit, " m above or ",
+      "below the elevation range of the calibration (anchors of a ",
+      "preliminary selection and the station; no anchor, NA in every ",
+      "layer; EF_H_TERRAIN_RULE_APPLIED): limit set from the error of ",
+      "Ts_datum (", if (elev) "3.3" else "6.5", " K per km ",
+      if (elev) "with" else "without", " the lapse correction) against the ",
+      "1.5 K homogeneity tolerance of the anchors, without a primary ",
+      "source: CANDIDATA (M5-25)"
     )
   )
   structure(
     list(
       name = name,
-      version = "3",
+      version = "4",
       status = "CANDIDATA",
       description = if (elev) {
         paste0(
@@ -169,23 +231,28 @@ workflow_preset_idaho2002 <- function(terrain) {
           "appendix 12 of the manual (datum surface temperature with a ",
           "lapse rate of 0.0065 K/m, cold-pixel temperature of the incoming ",
           "longwave adjusted by elevation, shortwave transmissivity per ",
-          "pixel); flat projection (slope 0)."
+          "pixel); flat projection (slope 0); cells more than 500 m ",
+          "above or below the elevation range of the calibration anchors ",
+          "excluded (M5-25)."
         )
       } else {
         paste0(
           "Base procedure of the SEBAL-Idaho 2002 manual for low relief: ",
           "no lapse rate in the datum surface temperature, one cold-pixel ",
           "temperature for the incoming longwave and one shortwave ",
-          "transmissivity for the scene; flat projection (slope 0)."
+          "transmissivity for the scene; flat projection (slope 0); cells ",
+          "more than 250 m above or below the elevation range of the ",
+          "calibration anchors excluded (M5-25)."
         )
       },
       source = paste0(
         "Waters et al. (2002), SEBAL Idaho manual (pp. 10-38; appendices 7, ",
-        "8 and 12); dev/specs/presets.md; dev/DECISIONS.md M5-08 to M5-24 ",
+        "8 and 12); dev/specs/presets.md; dev/DECISIONS.md M5-08 to M5-25 ",
         "and M2-11"
       ),
       decisions = c("M5-04", "M5-08", "M5-09", "M5-11", "M5-12", "M5-14",
-                    "M5-15", "M5-16", "M5-17", "M5-23", "M5-24", "M2-11"),
+                    "M5-15", "M5-16", "M5-17", "M5-23", "M5-24", "M2-11",
+                    "M5-25"),
       changes = c(
         "1" = "first version (2026-11-06; M5-08 to M5-22)",
         "2" = paste0(
@@ -199,6 +266,19 @@ workflow_preset_idaho2002 <- function(terrain) {
           "tol = 1e-6 and maxit = 100 at the anchors, pixel_tol = 1e-5 and ",
           "pixel_maxit = 100 per pixel (were tol = 0.01 and maxit = 20 for ",
           "both; M2-11); H changes by up to about 1 W m-2 (2026-11-10)"
+        ),
+        "4" = paste0(
+          "terrain rule: cells more than 500 m (idaho2002_elev) or 250 m ",
+          "(idaho2002_flat, no lapse correction) below or above the ",
+          "elevation range of the calibration (cold and hot anchors of a ",
+          "preliminary selection without the rule and, with one station, ",
+          "the station) hold no anchor and are NA in every layer, flagged ",
+          "with EF_H_TERRAIN_RULE_APPLIED; cells between the anchors are ",
+          "kept (M5-25; Maule scene: 40 % (elev) and 46 % (flat) of the ",
+          "computed cells, above 803 m and 553 m; Cauquenes: none (elev) ",
+          "and 0.3 % (flat)) (2026-11-10; flat limit and range of the ",
+          "anchors, which replaced the datum elevation as reference, ",
+          "2026-11-11)"
         )
       ),
       modis = list(
@@ -310,6 +390,7 @@ workflow_preset_idaho2002 <- function(terrain) {
         )
       ),
       et = list(method = "etrf", reference = "alfalfa"),
+      terrain_rule = workflow_terrain_rule_options(terrain_limit),
       unverified = unverified
     ),
     class = "earthflux_preset"
@@ -369,11 +450,15 @@ ef_presets <- function() {
 #'   `roughness`, `wind`, `lambda`, `anchors` (criteria built with
 #'   [ef_anchor_criteria()], relaxation plan, aggregation, search area,
 #'   anchor QA and boundary conditions), `sensible_heat` (with an
-#'   [ef_h_control()] list), `et`, and `unverified` (named character vector
-#'   of the elements that are not `VERIFICADA`).
+#'   [ef_h_control()] list), `et`, `terrain_rule` (the terrain rule of
+#'   version 4: method `"anchor_elevation_range"`, limit
+#'   `max_elevation_difference` in metres, 500 for `idaho2002_elev` and
+#'   250 for `idaho2002_flat`, reference elevations, flag and status)
+#'   and `unverified` (named character vector of the elements that are
+#'   not `VERIFICADA`).
 #'
 #' @details
-#' The two presets (decisions M5-08 to M5-24 and M2-11,
+#' The two presets (decisions M5-08 to M5-25 and M2-11,
 #' dev/specs/presets.md) share every option except the treatment of
 #' elevation:
 #'
@@ -382,6 +467,7 @@ ef_presets <- function() {
 #' | Lapse rate of the datum surface temperature (Eq. 12-7) | 0.0065 K m-1 | 0 |
 #' | Temperature of the incoming longwave | cold-anchor Ts adjusted by elevation (Eq. 12-8) | cold-anchor Ts |
 #' | Shortwave transmissivity (Eq. 11) | per pixel, from the elevation model | one for the scene |
+#' | Limit of the terrain rule (M5-25) | 500 m | 250 m |
 #'
 #' Neither uses the slope (forced to 0, flat projection, until decision
 #' RC-09 is resolved); both use the elevation of the elevation model for
@@ -418,9 +504,33 @@ ef_presets <- function() {
 #' flagged with `EF_ANCHOR_CRITERIA_RELAXED`; no anchor on cells with a
 #' warning or critical surface flag or an assigned LAI.
 #'
+#' Terrain rule (version 4, decision M5-25, `CANDIDATA`): one linear dT
+#' calibrated between two anchors with one weather forcing holds only over
+#' the elevations of the calibration (the manual assumes uniform climate,
+#' Waters et al., 2002, p. 70, and gives its lapse rate of 6.5 K per km
+#' under neutral conditions, appendix 12, p. 95). The reference is the
+#' elevation range of the calibration: the cold and hot calibration points
+#' of a preliminary anchor selection without the rule and, with one
+#' station, the station (datum of Ts and site of the forcing). Cells more
+#' than the limit of the preset below or above that range hold no anchor
+#' and are `NA` in every layer, flagged with `EF_H_TERRAIN_RULE_APPLIED`;
+#' cells between the anchors are kept, however far from each. The final
+#' anchor selection runs on the kept cells; its anchors lie inside the
+#' kept range by construction, and the range is not recomputed from them.
+#' The limit keeps the error of the datum surface temperature beyond the
+#' calibrated range within the 1.5 K of the homogeneity tolerance of the
+#' anchors, rounded up to the next 50 m:
+#' with the lapse correction of `idaho2002_elev` the error is the
+#' difference to a dry adiabatic profile, 9.8 - 6.5 = 3.3 K per km
+#' (1.5 / 3.3 = 455 m, limit 500 m); without it (`idaho2002_flat`) the
+#' error is the whole lapse rate, 6.5 K per km (1.5 / 6.5 = 231 m, limit
+#' 250 m). Neither limit has a primary source. The slope is not used: the
+#' presets keep the flat projection.
+#'
 #' Versions: `"1"` (first presets); `"2"` (recalibrated anchor criteria,
 #' M5-23; minimum z_om, M5-24); `"3"` (convergence of the calibration of H,
-#' one tolerance per phase, M2-11); see the element `changes`.
+#' one tolerance per phase, M2-11); `"4"` (terrain rule, M5-25); see the
+#' element `changes`.
 #'
 #' @section Verification status:
 #' `CANDIDATA` (see [ef_presets()]); the unverified elements are in the

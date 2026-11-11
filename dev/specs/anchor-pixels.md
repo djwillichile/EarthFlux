@@ -55,6 +55,21 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 > separa ambos casos. Q-AP-10 (terreno) queda abierta: con un ancla
 > caliente en el valle, las laderas andinas sobre 1000 m quedan con
 > ETrF < 0 en el preset `elev`.
+>
+> **Actualización M5-25 (2026-11-10).** Respuesta parcial a Q-AP-10 en
+> los presets (no en el núcleo): la regla de terreno excluye de los
+> candidatos —y del resultado— las celdas a más de 500 m (`elev`; 250 m
+> en `flat` desde el 2026-11-11) por debajo o por encima del rango de
+> elevación de la calibración (desde el 2026-11-11: los puntos frío y
+> caliente de una selección preliminar sin la regla y, con una estación,
+> la estación; antes, solo el datum), con `EF_H_TERRAIN_RULE_APPLIED`
+> (`specs/presets.md` §4.1; evaluación en `verification/terrain-rule.md`).
+> En el Maule el ancla caliente deja de tener píxeles de ladera (antes
+> 115–2450 m, ahora 109–243 m) y el número de candidatos fríos pasa de 20
+> a 118, porque el dominio de percentiles del NDVI ya no incluye la
+> precordillera. `ef_select_anchors()` no cambia: la regla llega por `qa`.
+> La pendiente del ancla caliente del modelo de montaña (< 1 %, Waters et
+> al., 2002, p. 72) no se aplica: los presets usan la proyección plana.
 
 > **Estado de implementación (M2, 2026-11-04).** Implementado en
 > `R/metric-anchors.R` bajo las decisiones provisionales P0-8 y P0-9

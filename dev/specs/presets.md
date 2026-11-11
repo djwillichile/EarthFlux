@@ -2,8 +2,10 @@
 
 Estado: **implementada (M5, fase 2, 2026-11-06)** · Autor y mantenedor:
 Guillermo Servando Fuentes-Jaque · Decisiones: `DECISIONS.md` §1.5, M5-04
-y **M5-08 … M5-24** (presets versión 2 desde M5-23 y M5-24), **M2-11**
-(versión 3: convergencia de H por fase) · Documento
+y **M5-08 … M5-25** (presets versión 2 desde M5-23 y M5-24), **M2-11**
+(versión 3: convergencia de H por fase), **M5-25** (versión 4: regla de
+terreno; límite propio de `idaho2002_flat` y referencia = rango de
+elevación de las anclas desde el 2026-11-11) · Documento
 dueño de la arquitectura:
 `ARCHITECTURE.md` §6.7.
 
@@ -76,7 +78,7 @@ V#7; M5-11) las anclas se seleccionan **antes** de Rn (P0-3;
 | 10 | Geometría solar | `ef_solar_geometry(doy, utc_hour, lat, lon, slope = 0, aspect = 0)` | Grados → radianes |
 | 11 | Presión | `ef_air_pressure(elevación)` | Por celda en ambos presets |
 | 12 | Rugosidad, viento | `ef_zom(lai, method = "lai")`; z_om < 0,005 m → 0,005 m + `EF_H_ZOM_FLOOR_APPLIED` (`workflow_zom_floor()`); `ef_blending_wind(u2, height = 2, zom_station = 0.0144, d_station = 0)` | M5-24 (reemplaza M5-13), M5-14 |
-| 13 | Anclas | `ef_select_anchors(..., qa = QA estricto, search_area, criteria, relax, aggregate = "mean", cell_size, origin, crs)` | §4 |
+| 13 | Anclas y regla de terreno | Referencias: puntos frío y caliente de `ef_select_anchors()` sin la regla y, en C1, la estación (`workflow_terrain_reference()`); `workflow_terrain_rule()`: z < min(referencias) − límite o z > max(referencias) + límite (500 m `elev`, 250 m `flat`) → excluida; `ef_select_anchors(..., qa = QA estricto & !excluida, search_area, criteria, relax, aggregate = "mean", cell_size, origin, crs)` | §4, §4.1 (M5-25). La homogeneidad usa la LST de todas las celdas; desde aquí las celdas excluidas no se calculan (entradas `NA`) |
 | 14 | Onda corta | `ef_tau_sw(elevation, method = "elevation")` → `ef_rs_in(..., tau_beam = τ_sw, tau_diffuse = 0, slope = 0, method = "modelled")` | Ec. 12 exacta en el plano (hueco 4, M5-19) |
 | 15 | Onda larga | `ef_atm_emissivity(τ_sw)`, `ef_rl_in(T, ε_a)`, `ef_rl_out(lst, ε₀)` | T = T_cold (+ 0,0065·(z_frío − z) en `elev`, Ec. 12-8) |
 | 16 | Rn, G | `ef_net_radiation()` (misma ε₀ que RL↑, RC-14), `ef_g(..., method = "bastiaanssen")` | — |
@@ -87,7 +89,7 @@ V#7; M5-11) las anclas se seleccionan **antes** de Rn (P0-3;
 
 ## 3. Presets
 
-Dos presets (M5-09), **`CANDIDATA`**, versión interna **`"3"`** (registrada
+Dos presets (M5-09), **`CANDIDATA`**, versión interna **`"4"`** (registrada
 en la procedencia; un cambio de cualquier valor es una versión nueva).
 Versiones (elemento `changes` del preset y `provenance$preset$changes`):
 
@@ -96,6 +98,7 @@ Versiones (elemento `changes` del preset y `provenance$preset$changes`):
 | `"1"` | 2026-11-06 | Primera versión (M5-08 … M5-22) |
 | `"2"` | 2026-11-06 | Criterios de anclas recalibrados para MODIS a 1 km (M5-23, reemplaza M5-10; §4); mínimo de z_om de 0,005 m con `EF_H_ZOM_FLOOR_APPLIED` (M5-24, reemplaza M5-13); ninguna ancla en celdas con LAI asignado (`EF_SURF_LAI_ASSIGNED`) |
 | `"3"` | 2026-11-10 | Convergencia de la calibración de H con una tolerancia por fase (M2-11): `tol` = 10⁻⁶ y `maxit` = 100 en las anclas, `pixel_tol` = 10⁻⁵ y `pixel_maxit` = 100 por píxel (antes 0,01 y 20 en ambas fases), escritos en el preset para que un cambio de los defectos de `ef_h_control()` no lo cambie en silencio. H cambia hasta ~1,3 W m⁻² (en Cauquenes, −0,43 W m⁻² de media) |
+| `"4"` | 2026-11-10 (límite de `flat` y referencia = rango de las anclas: 2026-11-11) | Regla de terreno (M5-25, §4.1): celdas a más de 500 m (`idaho2002_elev`) o 250 m (`idaho2002_flat`, sin corrección por gradiente) por debajo o por encima del rango de elevación de la calibración (anclas preliminares y, en C1, la estación) sin ancla y `NA` en todas las capas, con `EF_H_TERRAIN_RULE_APPLIED`; los límites difieren por preset. Maule: 40 % (`elev`, todas sobre 803 m) y 46 % (`flat`) de las celdas calculadas excluidas; Cauquenes: ninguna (`elev`) y 0,3 % (`flat`, 18 celdas sobre 669 m). Con la referencia anterior (datum, hasta el 2026-11-11): Maule 41 % y 47 %, Cauquenes `flat` 44 % (casi todas bajo 169 m) |
  El
 estado va en la documentación y en la procedencia, **no en el nombre**
 (M5-08, que reescribe D-AP-01). Ninguno usa la pendiente: se fuerza a 0
@@ -145,6 +148,7 @@ estado va en la documentación y en la procedencia, **no en el nombre**
 | H | `ef_h_control()` | 200, 0,1, 2, ψ_m estable a 2 m (defectos); `tol` 10⁻⁶, `maxit` 100, `pixel_tol` 10⁻⁵, `pixel_maxit` 100, ω 0 (escritos en el preset; versión 3, M2-11; antes tol 0,01 y maxit 20 en ambas fases) | V-I / D(p) |
 | | `datum_elevation` | estación (C1) o punto de calibración frío (C2) | no afecta a H (`sensible-heat.md` §9.1); M5-20 |
 | ET | `ef_et_daily` | `"etrf"`, `reference = "alfalfa"` | V-I (V#46) |
+| Regla de terreno | `terrain_rule` | `method = "anchor_elevation_range"`, `max_elevation_difference` = 500 m (`elev`) / 250 m (`flat`), referencia = rango de elevación de la calibración (anclas preliminares y, en C1, la estación), `flag = "EF_H_TERRAIN_RULE_APPLIED"` | **C** (límite sin fuente); M5-25, §4.1 |
 
 ### 3.3 Elementos no verificados (`ef_preset(name)$unverified`)
 
@@ -155,7 +159,8 @@ paso), `modis_matching` (MP-07, MP-08, umbral de `min_valid_fraction`),
 (IDW C), `era5` (forzamiento grillado, `instant_values`, elevación nativa,
 exclusión de celdas marinas), `station_roughness` (h = 0,12 m, SH-04),
 `zom_floor` (mínimo de 0,005 m, SH-02, M5-24), `wind_time` (M5-14),
-`flat_projection` (RC-09).
+`flat_projection` (RC-09), `terrain_rule` (límite de 500 m en `elev` y
+250 m en `flat`, M5-25).
 
 No bloquean (formas V-I/V): Rn, τ, ε_a, RL↓/RL↑, G, z_om por LAI, u*, rah,
 ψ, L, dT, condiciones de borde, LE, ET_inst, ETrF, ETa₂₄, λ, Ecs. 12-7 y
@@ -202,7 +207,63 @@ ambas escenas; en Cauquenes 20,6 % de las celdas sigue con ETrF > 1,05 (el
 ancla fría cae en el borde de plantaciones costeras: la escena casi no
 tiene cultivo regado de cobertura plena) y en el Maule las laderas sobre
 1000 m quedan con ETrF < 0 (Ts_datum extrapolado sobre el ancla caliente;
-31,9 % de la escena con `elev`, 14,0 % con `flat`). Ver §8.
+31,9 % de la escena con `elev`, 14,0 % con `flat`). Ver §8. *Desde la
+versión 4 (M5-25), esas celdas se excluyen con la regla de terreno
+(§4.1).*
+
+### 4.1 Regla de terreno (ambos presets; `CANDIDATA`; M5-25)
+
+Versión 4. Una recta dT = a + b·Ts_datum calibrada entre dos anclas y
+aplicada con un forzamiento vale en el rango de elevación de la
+calibración:
+el manual supone clima uniforme y pide separar las regiones con otro clima
+(Waters et al., 2002, pp. 39, 70 y 79), da Γ = 6,5 K km⁻¹ "under neutral
+stability conditions" (ap. 12, p. 95) con el datum "usually at the
+weather station" (p. 96) y deja la montaña al modelo de montaña (ap. 12,
+pp. 93–97), no implementado aquí (RC-09, SH-03, SH-07).
+
+| Elemento | Valor |
+|---|---|
+| Condición | z < min(z_ref) − Δz_max o z > max(z_ref) + Δz_max: **500 m en `idaho2002_elev`, 250 m en `idaho2002_flat`**; las celdas entre las referencias se conservan aunque disten más del límite de cada una; celdas sin elevación no se marcan (ya son `NA`) |
+| z_ref (rango) | Puntos de calibración frío y caliente de una **selección preliminar** con los mismos criterios y sin la regla y, con una estación representativa (C1), la estación: datum de Ts (M5-12) y sitio del forzamiento, de modo que el rango contiene siempre el datum (`workflow_terrain_reference()`). Hasta el 2026-11-11 la referencia era solo el datum (estación o frío preliminar) y la condición \|z − z_ref\| > Δz_max |
+| Anclas finales | La selección final corre sobre las celdas conservadas; sus puntos de calibración quedan dentro del rango por construcción (medias de celdas de un intervalo de elevación). El rango preliminar no se recalcula con ellas (sin iteración: no hay punto fijo garantizado); se registran sus elevaciones |
+| Efecto | Sin ancla (QA de anclas) y sin cálculo: entradas `NA` desde la selección; `NA` en **todas** las capas de `layers` (también `tau_sw`, `etr_inst`, `etr_24`) |
+| Flag | `EF_H_TERRAIN_RULE_APPLIED` (I-m, `info`, `cell`, bit 11 de `H`); `flags_h` = solo ese bit en las celdas excluidas, `flags_rad`, `flags_g`, `flags_et` `NA` |
+| Procedencia | `counts$terrain_rule_excluded` (celdas del AOI), separado en `terrain_rule_excluded_below` y `terrain_rule_excluded_above`; `scene$terrain_rule` (`method`, `reference_elevations` con `cold`, `hot` y `station`, `reference_source`, `max_elevation_difference`, `range` con `lower` y `upper`, `anchor_elevations` de las anclas finales, `anchors_in_range`); `options$terrain_rule` |
+| Pendiente | No se usa: los presets siguen en proyección plana (RC-09) y `dem_method = "flat"` |
+
+Límites sin fuente primaria. El error de Ts_datum crece con la distancia
+en elevación fuera del rango calibrado; el límite es la distancia a la que alcanza la
+tolerancia de homogeneidad de LST de las anclas (1,5 K, §4), redondeada
+al múltiplo de 50 m superior:
+
+| Preset | Error de Ts_datum | 1,5 K / error | Límite | Error en el límite |
+|---|---|---|---|---|
+| `idaho2002_elev` | 9,8 − 6,5 = 3,3 K km⁻¹ (perfil adiabático seco g/c_p frente al Γ neutro del manual) | 455 m | 500 m | 1,65 K |
+| `idaho2002_flat` | 6,5 K km⁻¹ (Γ = 0: el gradiente completo del manual, p. 95) | 231 m | 250 m | 1,63 K |
+
+Con el mismo redondeo ambos presets admiten el mismo error en el límite
+(~1,6 K); 230 m daría una precisión que los datos del argumento no
+tienen. Hasta el 2026-11-11 `flat` usaba también 500 m (decisión del
+autor, opción B). Evaluación de coherencia (cota absoluta, pendiente,
+diferencia con la referencia y combinaciones) en
+`verification/terrain-rule.md`: en el Maule la regla excluye el 40,9 % de
+las celdas calculadas con `elev` (todas sobre 760 m; ETrF < 0 de 32,0 % a
+0,9 %) y el 47,2 % con `flat` (sobre 510 m y 48 celdas costeras bajo
+10 m; ETrF < 0 de 14,1 % a 0,4 %); el ancla caliente queda en el valle.
+En Cauquenes `elev` no excluye celdas; `flat` excluye el 44,5 %, casi todo
+**debajo** de la referencia (z < 169 m con z_ref = 419 m, el frío
+preliminar), y su ancla fría queda en un solo píxel
+(`EF_ANCHOR_SINGLE_PIXEL`): con 250 m la referencia en C2 pesa más
+(`verification/terrain-rule.md` §8). Esas cifras son de la referencia
+anterior (el datum). Con el rango de las anclas
+(`verification/terrain-rule.md` §10): Cauquenes `flat` excluye solo 18
+celdas (0,3 %, sobre 669 m; anclas iguales a las de la escena sin regla),
+Cauquenes `elev` ninguna, y el Maule 40,2 % (`elev`, sobre 803 m) y 45,6 %
+(`flat`, sobre 553 m y 48 celdas costeras bajo 10 m), casi como antes.
+Las celdas excluidas quedan **sin ETa**: una aplicación
+aparte (sub-imagen con su propio clima) o el modelo de montaña siguen
+pendientes.
 
 ## 5. Objeto `earthflux_result`
 
@@ -211,16 +272,16 @@ tiene cultivo regado de cobertura plena) y en el Maule las laderas sobre
 
 | Elemento | Contenido |
 |---|---|
-| `layers` | `SpatRaster` en la grilla de trabajo, `NA` fuera del polígono del AOI: `eta_24` (principal), `etrf`, `et_inst`, `le`, `h`, `g`, `rn`, `rah`, `dt`, `rs_in`, `rl_in`, `rl_out`, `tau_sw`, `zom`, `u_blend`, `u_star`, `ts_datum`, `air_density`, `pressure`, `etr_inst`, `etr_24` |
+| `layers` | `SpatRaster` en la grilla de trabajo, `NA` fuera del polígono del AOI y en las celdas excluidas por la regla de terreno (§4.1): `eta_24` (principal), `etrf`, `et_inst`, `le`, `h`, `g`, `rn`, `rah`, `dt`, `rs_in`, `rl_in`, `rl_out`, `tau_sw`, `zom`, `u_blend`, `u_star`, `ts_datum`, `air_density`, `pressure`, `etr_inst`, `etr_24` |
 | `units` | Unidades de `layers` |
 | `surface`, `terrain` | `earthflux_surface_state` completo (incl. `qa$flag_word`) y `earthflux_terrain` |
 | `weather` | `source`, `table` (tabla de estaciones), `qc`, `reference_et` (`earthflux_station_ref_et`) |
 | `forcing` | `surfaces` (`earthflux_surface` de `etr_inst`, `wind_speed_2m`, `etr_24`), `method`, `representative_station`, `mid_points`, `daily_target_time` |
 | `anchors`, `h_calibration` | `earthflux_anchors` (con `conditions`) y `earthflux_h_calibration` |
-| `qa` | Palabras de flags por etapa, **sin combinar bit a bit**: `surface` (las del estado), `forcing` (GWR: una capa por variable a la hora de paso de cada celda, OR de los dos puntos medios), `metric` (`flags_rad`, `flags_g`, `flags_h`, `flags_et`) y `flag_bits` por etapa. `NA` = no evaluado (fuera del AOI) |
+| `qa` | Palabras de flags por etapa, **sin combinar bit a bit**: `surface` (las del estado), `forcing` (GWR: una capa por variable a la hora de paso de cada celda, OR de los dos puntos medios), `metric` (`flags_rad`, `flags_g`, `flags_h`, `flags_et`) y `flag_bits` por etapa. `NA` = no evaluado (fuera del AOI; en las celdas excluidas por la regla de terreno solo `flags_h` está definida, con el bit de `EF_H_TERRAIN_RULE_APPLIED`) |
 | `flags` | Registros de objeto/registro del forzamiento (`EF_WS_GRIDDED_FORCING` subido desde `provenance$forcing`, hueco 9; `EF_GWR_*` con `target` = tabla de estaciones de la superficie), de las anclas y de la calibración, y los registros de celda de la cadena METRIC sobre las celdas de `terra` (`target` = capa, índices dentro del AOI). Los flags de registro del QC y de la ETr de estaciones quedan en `weather` |
 | `date`, `preset` | Fecha y el `earthflux_preset` usado |
-| `provenance` | `preset` (nombre, versión, estado, fuente, decisiones, elementos no verificados); `options` (**cada opción** del preset); `scene` (AOI, teselas, grilla, rango y número de horas de paso, fuente meteorológica, humedad, `utc_offset`, día de ETr₂₄, puntos medios, método y estación representativa, estaciones usadas y excluidas, elevación de τ y del datum, T_cold y z_frío de RL↓, λ, área de búsqueda, entradas del usuario); `counts` (celdas de la grilla y del AOI; dentro del AOI: críticas SURF, MDE sin dato o bajo la fracción válida mínima, fuera de dominio GWR, z_om indefinida, ETa válidas); `sources` (MODIS: granulos, DOI, caché; MDE: teselas, DOI, licencia; meteorología: petición Open-Meteo **sin clave**, `apikey_used`, licencia y atribución, o la procedencia de la tabla de estaciones); `attribution`; `flags_evaluated` y `flags_evaluated_by_stage`; `versions`; `execution` (plan `future`, inicio, duración) |
+| `provenance` | `preset` (nombre, versión, estado, fuente, decisiones, elementos no verificados); `options` (**cada opción** del preset); `scene` (AOI, teselas, grilla, rango y número de horas de paso, fuente meteorológica, humedad, `utc_offset`, día de ETr₂₄, puntos medios, método y estación representativa, estaciones usadas y excluidas, elevación de τ y del datum, `terrain_rule` (referencia, su fuente y el límite), T_cold y z_frío de RL↓, λ, área de búsqueda, entradas del usuario); `counts` (celdas de la grilla y del AOI; dentro del AOI: críticas SURF, MDE sin dato o bajo la fracción válida mínima, fuera de dominio GWR, z_om elevada al mínimo, excluidas por la regla de terreno, ETa válidas); `sources` (MODIS: granulos, DOI, caché; MDE: teselas, DOI, licencia; meteorología: petición Open-Meteo **sin clave**, `apikey_used`, licencia y atribución, o la procedencia de la tabla de estaciones); `attribution`; `flags_evaluated` y `flags_evaluated_by_stage`; `versions`; `execution` (plan `future`, inicio, duración) |
 
 Métodos: `print()` (preset, grilla, meteorología, anclas, a y b, rangos
 de ETa₂₄ y ETrF, flags), `summary()` (tabla de capas con unidad, n
@@ -251,8 +312,10 @@ orientación en la radiación (RC-09) y ajustes de montaña de z_om y viento
 (SH-03, SH-07); flags heredados en las anclas (`inherited_flags`); GWR (C3)
 como opción de un preset avanzado; distancia geodésica del ancla a la
 estación en `anchors$pixels` (hoy solo se usa para el área de búsqueda);
-regla de G y z_om para agua y nieve (G-D4); tratamiento del relieve en la
-calibración (laderas andinas con ETrF < 0 en el Maule, M5-23) y selección
+regla de G y z_om para agua y nieve (G-D4); ETa de las celdas excluidas
+por la regla de terreno (M5-25: sub-imagen con su propio clima y anclas,
+o modelo de montaña); referencia de la regla en C2 con el límite de
+250 m de `flat` (en Cauquenes excluye el llano bajo 169 m); selección
 sobre Ts o Ts_datum (D-AP-07).
 
 ## 7. Tests (`tests/testthat/test-earthflux.R`, sin red)
@@ -267,7 +330,16 @@ cada descarga; equivalencia con la cadena paso a paso (`elev` y `flat`);
 τ y RL↓ constantes en `flat` y variables en `elev`; capas, objetos, palabras
 y métodos `print()`, `summary()`, `plot()`; máscara del AOI; mínimo de
 z_om (caso positivo y negativo de `EF_H_ZOM_FLOOR_APPLIED`, bit 1; ninguna
-ancla en celdas con LAI asignado; `workflow_zom_floor()`); procedencia con
+ancla en celdas con LAI asignado; `workflow_zom_floor()`); regla de
+terreno (MDE sintético con un bloque a 1200 m: celdas excluidas `NA` en
+todas las capas, sin anclas, registro y bit 11 de `EF_H_TERRAIN_RULE_APPLIED`
+solo en `flags_h`, conteos y rango en la procedencia, equivalencia con
+la cadena paso a paso sin anclas en esas celdas; caso negativo con el MDE
+por defecto; en C2 el rango de las anclas de la selección sin la regla,
+con exclusión por debajo y por encima; en C1 la estación extiende el
+rango y se conservan celdas entre las anclas y la estación a más del
+límite de cada una; un bloque que `flat` excluye y `elev` conserva;
+`workflow_terrain_rule()` y `workflow_terrain_reference()`); procedencia con
 cada opción y los cambios entre versiones; criterios de anclas de la
 versión 2 (reglas, paso de relajación, anclas que cumplen las bandas de
 albedo y los umbrales de NDVI calculados); ruta experta; C2 con varias
@@ -316,3 +388,17 @@ en la procedencia ni en los flags); meteorología insuficiente.
    sola recta dT(Ts_datum) calibrada en el valle no representa la
    cordillera. El mínimo de z_om agrega 15 celdas con ETa en Cauquenes y
    4259 en el Maule (roca andina, ETrF mediana −2,97, marcadas).
+5. **Regla de terreno (M5-25, 2026-11-10;
+   `verification/terrain-rule.md`).** Maule, `elev`: sin regla, ETrF
+   mediana −0,51 entre 1000 y 2000 m (64,5 % < 0) y −2,93 sobre 2000 m
+   (98,6 % < 0); con la regla (z_ref = 260 m, límite 500 m) se excluyen
+   10 460 celdas del AOI (10 151 con ETa), ETrF < 0 de la escena 32,0 →
+   0,9 %, ancla caliente de 115–2450 m a 109–243 m, frío 260 → 271 m.
+   Cauquenes: sin cambio (elevación 5–787 m, z_ref = 419 m). `flat` con
+   su límite de 250 m (2026-11-11): Maule 12 167 celdas del AOI excluidas
+   (11 710 con ETa), ETrF < 0 14,1 → 0,4 %; Cauquenes 2948 (2933 con ETa,
+   44,5 %), 2915 de ellas bajo 169 m, ancla fría de un píxel. La pendiente efectiva sola no resuelve la cordillera (mesetas
+   altas) y la cota absoluta es regional. Con la referencia = rango de
+   las anclas (2026-11-11, §10 de la evaluación): Cauquenes `flat` 18
+   celdas del AOI excluidas (sobre 669 m), anclas de la escena sin regla;
+   Maule 10 295 (`elev`) y 11 735 (`flat`) celdas del AOI excluidas.
