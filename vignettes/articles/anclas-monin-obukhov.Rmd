@@ -26,7 +26,7 @@ energía METRIC. Este artículo explica, paso a paso, cómo lo estima METRIC
 (Allen et al., 2007): la calibración interna con un píxel ancla caliente y
 uno frío, y la iteración de Monin–Obukhov que corrige la resistencia
 aerodinámica por la estabilidad atmosférica. Cada ecuación se ejecuta sobre
-la escena MODIS de la provincia de Cauquenes incluida en el paquete (15 de
+la escena MODIS de la provincia de Cauquenes incluida en el paquete (14 de
 febrero de 2019; véase el artículo
 [Example scene: Cauquenes](cauquenes-example.html), en inglés) con las
 funciones exportadas de EarthFlux, y la iteración se escribe a mano y se
@@ -194,8 +194,10 @@ lat <- matrix(lonlat[, 2], terra::nrow(r), byrow = TRUE)
 summary(as.vector(utc_hour))
 ```
 
-El paso del satélite ocurre cerca de las 14:08 UTC (09:20 hora solar media
-local), con algunas celdas observadas más tarde, hasta las 15:50 UTC.
+El paso del satélite ocurre cerca de las 15:02 UTC (10:12 hora solar media
+local); todas las celdas de la provincia fueron observadas en la misma
+pasada de Terra, entre las 15:01 y las 15:07 UTC, a 12–18 grados del
+nadir.
 
 La escena no tiene modelo de elevación. **Solo para este artículo**, la
 elevación se fija en 150 m uniformes, aproximadamente la elevación de la
@@ -231,7 +233,7 @@ wx$utc_mid <- wx$utc_start + 0.5
 
 deg <- pi / 180
 ra <- ef_ra_period(lat = station$lat * deg, lon = station$lon * deg,
-                   doy = 46, utc_mid = wx$utc_mid, period_hours = 1,
+                   doy = 45, utc_mid = wx$utc_mid, period_hours = 1,
                    standard = "asce")
 ea <- ef_ea_dewpoint(wx$dewpoint)
 rn_ref <- ef_ref_net_radiation(
@@ -301,8 +303,10 @@ Los píxeles ancla se seleccionan antes de la radiación neta, porque la
 radiación de onda larga incidente de los presets usa la temperatura de
 superficie del píxel frío (Waters et al., 2002, p. 23, ec. 23). Los
 candidatos deben pasar el control de calidad estricto de los presets:
-ningún flag `warning` o `critical` (bits 6–14) y ningún LAI asignado
-(bit 15, `EF_SURF_LAI_ASSIGNED`) en las palabras de flags de las variables
+ningún flag `warning` o `critical` (bits 6–14, y el bit 16,
+`EF_SURF_VIEW_ANGLE_HIGH`: una LST observada a más de 40 grados del nadir;
+ninguna en esta escena) y ningún LAI asignado (bit 15,
+`EF_SURF_LAI_ASSIGNED`) en las palabras de flags de las variables
 de superficie, todas las subceldas de 500 m de los insumos agregados
 válidas y todos los insumos definidos.
 
@@ -312,7 +316,7 @@ geo <- ef_solar_geometry(doy = doy, utc_hour = utc_hour, lat = lat * deg,
 
 qa <- inside & !is.na(lst) & !is.na(albedo) & !is.na(ndvi) & !is.na(lai) &
   !is.na(emissivity) & !is.na(etr_inst) & !is.na(geo$cos_zenith)
-excluded_bits <- sum(2^(6:15))
+excluded_bits <- sum(2^(6:16))
 for (l in c("lst", "albedo", "ndvi", "lai", "emissivity")) {
   word <- as_mat(paste0("flags_", l))
   qa <- qa & !is.na(word) & bitwAnd(word, excluded_bits) == 0
@@ -355,10 +359,10 @@ names(n_cold) <- funnel$filter[funnel$type == "cold"]
 
 El embudo muestra qué pocas celdas de una escena de 1 km se parecen a un
 predio bien regado y con cobertura completa: `r n_cold[["ndvi >= p0.9"]]`
-celdas pasan el percentil de NDVI, pero solo
-`r n_cold[["albedo between [0.14, 0.26]"]]` de ellas tienen un albedo
-propio de un cultivo, y al final queda `r n_cold[["selected"]]` píxel como
-píxel frío (flag `EF_ANCHOR_SINGLE_PIXEL`).
+celdas pasan el percentil de NDVI, pero la banda de albedo propia de un
+cultivo deja `r n_cold[["albedo between [0.14, 0.26]"]]` de ellas, y al
+final queda `r n_cold[["selected"]]` píxel como píxel frío (flag
+`EF_ANCHOR_SINGLE_PIXEL`).
 
 Ahora la radiación neta y el flujo de calor del suelo (transmisividad de
 onda corta a partir de la elevación, Waters et al., 2002, p. 18, ec. 11;
@@ -480,7 +484,7 @@ calibración caliente.* Los píxeles calientes están entre las celdas más
 cálidas y menos verdes, en el oriente de la provincia. El píxel frío es una
 celda verde (NDVI `r coma(round(cp_tab$ndvi[cp_tab$type == "cold"], 2))`)
 del poniente, pero su albedo,
-`r coma(round(cp_tab$albedo[cp_tab$type == "cold"], 3))`, está apenas
+`r coma(round(cp_tab$albedo[cp_tab$type == "cold"], 4))`, está apenas
 dentro del límite inferior de 0,14 que usa el preset para dejar fuera los
 doseles forestales oscuros: a 1 km bien puede ser una mezcla de plantación
 forestal y predios agrícolas. Es el tipo de compromiso al que vuelve la
@@ -498,7 +502,7 @@ plot(NA, xlim = range(ts_all, na.rm = TRUE), ylim = c(-8, 16),
      main = "Recta de dT calibrada y sus iteraciones")
 rect(ts_hot, -20, 400, 40, col = "#FEE0D2", border = NA)
 rect(0, -20, ts_cold, 40, col = "#DEEBF7", border = NA)
-text(mean(c(par("usr")[1], ts_cold)), -7, cex = 0.8, col = "#2B5C8A",
+text(par("usr")[1], -7, adj = c(-0.03, 0.5), cex = 0.8, col = "#2B5C8A",
      "extrapolado: más frío que el píxel frío")
 text(mean(c(ts_hot, par("usr")[2])), 11.5, srt = 90, cex = 0.8,
      col = "#99341F", "extrapolado")
@@ -986,9 +990,10 @@ la fase B (negativo: inestable, $H > 0$; positivo: estable, $H < 0$).
 Centro y derecha: el número de iteraciones que cada celda necesitó para
 alcanzar `pixel_tol`.*
 
-La mayor parte de la escena es inestable; las celdas estables son las más
-frías que el punto donde la recta calibrada cruza $dT = 0$, sobre todo la
-franja costera fresca del poniente. Ninguna celda dejó de converger. ¿Qué
+Casi toda la escena es inestable: solo `r sum(zeta > 0, na.rm = TRUE)`
+celdas son estables, las más frías que el punto donde la recta calibrada
+cruza $dT = 0$ (`r coma(round(-cal$a / cal$b, 1))` K), en la franja
+costera fresca del poniente. Ninguna celda dejó de converger. ¿Qué
 celdas necesitan más iteraciones?
 
 ```{r iterations-by-class}

@@ -12,6 +12,15 @@ Decisiones: `DECISIONS.md` §1.5, M5-23 y M5-24. Especificación:
 > estado `CANDIDATA` de los criterios. No se versionan datos descargados:
 > solo números.
 
+> **Nota (2026-11-11; M4-27, M5-26, M5-27).** Estas corridas usan el
+> 2019-02-15 con Terra (MOD11A1), fecha en que la provincia de Cauquenes
+> se observó a 61–62° del nadir (huellas de ~1,9 × 3,9 km; véase
+> `specs/modis-products.md` §5.1 e). Desde el 2026-11-11 la escena de
+> ejemplo `cauquenes_modis` es del 2019-02-14 (Terra a 12–18°) y los
+> presets versión 5 eligen Aqua (42°) para el 2019-02-15. Las cifras de
+> este documento se conservan como registro de la evaluación; no
+> describen la escena de ejemplo actual.
+
 ## 1. Escenas y corridas
 
 | | Cauquenes | Maule |

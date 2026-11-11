@@ -102,8 +102,11 @@ esa fecha. D1 se releyó el 2026-11-11 para el ángulo de visión (§5.1 e).
 >    Cauquenes en `inst/extdata/cauquenes-province.gpkg` (DPA 2023, desde
 >    `thermify`) con `aoi_cauquenes()`; script reproducible
 >    `data-raw/modis-example.R` (CMR + LP DAAC con `EARTHDATA_TOKEN` del
->    entorno), con la fecha **2019-02-15** (Terra, decisión del autor,
->    M4-27) y `lai_nonveg = 0` (M4-28). **Hecho** (2026-11-05): escena
+>    entorno), con la fecha **2019-02-14** (Terra; decisión del autor del
+>    2026-11-11, que reemplazó el 2019-02-15 del 2026-11-04, observado a
+>    61–62° del nadir; M4-27, §5.1 e) y `lai_nonveg = 0` (M4-28).
+>    **Hecho** (2026-11-05; regenerada el 2026-11-11 con la fecha nueva,
+>    60 KB, 22 capas con `view_angle` y `flags_view_angle`): escena
 >    generada desde los granulos reales y versionada como el dataset
 >    `cauquenes_modis` (`data/cauquenes_modis.rda`, 58 KB, 20 capas;
 >    decisión del autor: un único objeto, como `cauquenes` de `thermify`,
@@ -1323,15 +1326,22 @@ de magnitud, nieve, agua. Si un caso no aparece en el recorte real, se
 agrega un fixture **sintético** marcado como tal (nunca presentado como
 dato real). AOI y fecha: decisión MP-12.
 
-**Escena de ejemplo (MP-12, decidida por el autor el 2026-11-04; M4-26,
-M4-27).** Provincia de Cauquenes; **2019-02-15** (UTC), Terra, tesela
-h12v12 (3 % de nubosidad de tesela), colección 061; opciones explícitas de
+**Escena de ejemplo (MP-12, decidida por el autor el 2026-11-04; fecha
+cambiada por el autor el 2026-11-11; M4-26, M4-27).** Provincia de
+Cauquenes; **2019-02-14** (UTC), Terra, tesela h12v12, colección 061,
+provincia observada a 12–18° del nadir (mediana 15°, 98,1 % de LST
+válida; paso a las ~15:02 UTC, 10:12 h solar media); hasta el 2026-11-11,
+**2019-02-15** (3 % de nubosidad de tesela), observada a 61–62° (§5.1 e);
+opciones explícitas de
 `data-raw/modis-example.R` (MOD11A1, albedo `"white_sky"`, E3 con
 `lai_nonveg = 0`, MOD13A2 con `"period_pixel_lag"`, MCD43A3 con
 `"same_day"`, MCD15A2H con `"period"`, `"mean"`, `min_valid_fraction = 1`,
-`qa_policy = "flag"`).
+`qa_policy = "flag"`; desde el 2026-11-11 `view_angle_max = 40`).
 
-**Estado (2026-11-05): hecho.** La escena se generó desde los granulos
+**Estado (2026-11-05): hecho; regenerada el 2026-11-11** para el
+2019-02-14 (`data/cauquenes_modis.rda`, 22 capas, 60 KB: se agregan
+`view_angle` y `flags_view_angle`; ninguna celda con
+`EF_SURF_VIEW_ANGLE_HIGH`). La escena se generó desde los granulos
 reales y se versiona como un único dataset, `cauquenes_modis`
 (`data/cauquenes_modis.rda`, `PackedSpatRaster` de 20 capas, 58 KB),
 por decisión del autor, en lugar de los 14 archivos de
@@ -1486,7 +1496,7 @@ resultado con distinto tamaño de bloque y en secuencial vs paralelo
 | MP-09 | Política QA por defecto | `"flag"` vs `"mask"` | `"flag"`; anclas con filtro estricto |
 | MP-10 | Formatos de entrada | Solo HDF4; HDF4 + convertidos | HDF4 + convertidos con declaración obligatoria |
 | MP-11 | Escala/offset | Automático GDAL vs ficha interna | Ficha interna (§11.3) |
-| MP-12 | Datos de ejemplo | AOI, fecha, productos | AOI: **provincia de Cauquenes, Región del Maule** (decisión del autor, 2026-11-04; área de estudio habitual, también en `thermify`). Fecha: **2019-02-15**, Terra, tesela h12v12, 3 % de nubosidad de tesela (**decisión del autor, 2026-11-04**; M4-27). Pendiente: ejecutar el script y versionar la escena (§12) |
+| MP-12 | Datos de ejemplo | AOI, fecha, productos | AOI: **provincia de Cauquenes, Región del Maule** (decisión del autor, 2026-11-04; área de estudio habitual, también en `thermify`). Fecha: **2019-02-14**, Terra, tesela h12v12 (**decisión del autor, 2026-11-11**, M4-27: la provincia se observó a 12–18° del nadir; reemplaza el **2019-02-15** de la decisión del 2026-11-04, observado a 61–62°, §5.1 e). Escena versionada como `cauquenes_modis` (§12) |
 | MP-13 | Migración a C7 de tierra | Esperar / soportar ambas | Fichas por colección; C6.1 hasta que C7 de tierra esté documentada |
 | MP-14 | Continuidad | VIIRS (VJ1/VJ2), Landsat, Sentinel-3 | Módulo de sensor separado; fuera de M4 |
 
