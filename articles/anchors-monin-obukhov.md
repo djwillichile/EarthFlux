@@ -9,7 +9,7 @@ balance. This article explains, step by step, how METRIC (Allen et al.,
 2007) estimates it: the internal calibration with a hot and a cold
 anchor pixel, and the Monin–Obukhov iteration that corrects the
 aerodynamic resistance for atmospheric stability. Every equation is run
-on the packaged MODIS scene of the Cauquenes province (15 February 2019,
+on the packaged MODIS scene of the Cauquenes province (14 February 2019,
 see the article [Example scene:
 Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md))
 with the exported functions of EarthFlux, and the iteration is written
@@ -176,11 +176,12 @@ lon <- matrix(lonlat[, 1], terra::nrow(r), byrow = TRUE)
 lat <- matrix(lonlat[, 2], terra::nrow(r), byrow = TRUE)
 summary(as.vector(utc_hour))
 #>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.     NAs 
-#>   14.11   14.12   14.13   14.18   14.14   15.84    5936
+#>   15.02   15.03   15.04   15.06   15.11   15.12    5885
 ```
 
-The overpass is at about 14:08 UTC (09:20 local mean solar time), with a
-few cells observed later, up to 15:50 UTC.
+The overpass is at about 15:02 UTC (10:12 local mean solar time); every
+cell of the province was observed by the same Terra pass, between 15:01
+and 15:07 UTC, at 12 to 18 degrees from nadir.
 
 The scene has no elevation model. **For this article only**, the
 elevation is set to a uniform 150 m, roughly the elevation of the town
@@ -217,7 +218,7 @@ wx$utc_mid <- wx$utc_start + 0.5
 
 deg <- pi / 180
 ra <- ef_ra_period(lat = station$lat * deg, lon = station$lon * deg,
-                   doy = 46, utc_mid = wx$utc_mid, period_hours = 1,
+                   doy = 45, utc_mid = wx$utc_mid, period_hours = 1,
                    standard = "asce")
 ea <- ef_ea_dewpoint(wx$dewpoint)
 rn_ref <- ef_ref_net_radiation(
@@ -241,10 +242,10 @@ wx$etr <- ef_ref_et(
 )$et_ref
 wx
 #>   utc_start air_temperature dewpoint wind_2m solar_radiation utc_mid       etr
-#> 1        13            19.0     10.0     1.8            2.10    13.5 0.4279352
-#> 2        14            21.5     10.0     2.2            2.62    14.5 0.5854770
-#> 3        15            24.0     10.2     2.6            2.98    15.5 0.7255116
-#> 4        16            26.0     10.2     3.0            3.18    16.5 0.8344484
+#> 1        13            19.0     10.0     1.8            2.10    13.5 0.4283063
+#> 2        14            21.5     10.0     2.2            2.62    14.5 0.5857801
+#> 3        15            24.0     10.2     2.6            2.98    15.5 0.7257824
+#> 4        16            26.0     10.2     3.0            3.18    16.5 0.8347101
 ```
 
 As in the presets of
@@ -289,17 +290,18 @@ u_blend <- ef_blending_wind(wind_2m, height = w$height,
                             d_station = w$d_station,
                             blending_height = w$blending_height)
 range(u_blend, na.rm = TRUE) # m s-1 at 200 m
-#> [1] 3.951541 5.288491
+#> [1] 4.654201 4.733223
 ```
 
 The anchors are selected before the net radiation, because the incoming
 longwave radiation of the presets uses the surface temperature of the
 cold anchor (Waters et al., 2002, p. 23, Eq. 23). The candidates must
 pass the strict quality control of the presets: no `warning` or
-`critical` flag (bits 6–14) and no assigned LAI (bit 15,
-`EF_SURF_LAI_ASSIGNED`) in the flag words of the surface variables,
-every 500 m sub-cell of the aggregated inputs valid, and every input
-defined.
+`critical` flag (bits 6–14, and bit 16, `EF_SURF_VIEW_ANGLE_HIGH`, an
+LST observed more than 40 degrees from nadir; none in this scene) and no
+assigned LAI (bit 15, `EF_SURF_LAI_ASSIGNED`) in the flag words of the
+surface variables, every 500 m sub-cell of the aggregated inputs valid,
+and every input defined.
 
 ``` r
 
@@ -308,7 +310,7 @@ geo <- ef_solar_geometry(doy = doy, utc_hour = utc_hour, lat = lat * deg,
 
 qa <- inside & !is.na(lst) & !is.na(albedo) & !is.na(ndvi) & !is.na(lai) &
   !is.na(emissivity) & !is.na(etr_inst) & !is.na(geo$cos_zenith)
-excluded_bits <- sum(2^(6:15))
+excluded_bits <- sum(2^(6:16))
 for (l in c("lst", "albedo", "ndvi", "lai", "emissivity")) {
   word <- as_mat(paste0("flags_", l))
   qa <- qa & !is.na(word) & bitwAnd(word, excluded_bits) == 0
@@ -318,7 +320,7 @@ qa <- qa & as_mat("valid_fraction_albedo") == 1 &
 qa[is.na(qa)] <- FALSE
 c(province = sum(inside), usable_for_anchors = sum(qa))
 #>           province usable_for_anchors 
-#>               3779               2703
+#>               3779               3214
 ```
 
 The selection criteria of the preset (`CANDIDATA`, decision M5-23)
@@ -346,27 +348,27 @@ anchors <- ef_select_anchors(
 funnel <- anchors$funnel
 funnel[funnel$filter != "total", c("type", "filter", "n")]
 #>    type                      filter    n
-#> 2  cold                      usable 2703
-#> 3  cold                       valid 2703
-#> 4  cold           percentile_domain 2703
-#> 5  cold                ndvi >= p0.9  271
-#> 6  cold albedo between [0.14, 0.26]    7
-#> 7  cold                 homogeneity    5
+#> 2  cold                      usable 3214
+#> 3  cold                       valid 3214
+#> 4  cold           percentile_domain 3214
+#> 5  cold                ndvi >= p0.9  322
+#> 6  cold albedo between [0.14, 0.26]    1
+#> 7  cold                 homogeneity    1
 #> 8  cold                    selected    1
-#> 10  hot                      usable 2703
-#> 11  hot                       valid 2703
-#> 12  hot           percentile_domain 2703
-#> 13  hot                ndvi <= p0.1  271
-#> 14  hot                    ndvi > 0  271
-#> 15  hot albedo between [0.18, 0.35]  246
-#> 16  hot                 homogeneity  208
-#> 17  hot                    selected   42
+#> 10  hot                      usable 3214
+#> 11  hot                       valid 3214
+#> 12  hot           percentile_domain 3214
+#> 13  hot                ndvi <= p0.1  322
+#> 14  hot                    ndvi > 0  322
+#> 15  hot albedo between [0.18, 0.35]  292
+#> 16  hot                 homogeneity  173
+#> 17  hot                    selected   35
 ```
 
 The funnel shows how few cells of a 1 km scene look like a well-watered
-full-cover field: 271 cells pass the NDVI percentile, but only 7 of them
-have a crop-like albedo, and 1 pixel is finally the cold anchor (flag
-`EF_ANCHOR_SINGLE_PIXEL`).
+full-cover field: 322 cells pass the NDVI percentile, but the albedo
+band of a crop leaves 1 of them, and 1 pixel is finally the cold anchor
+(flag `EF_ANCHOR_SINGLE_PIXEL`).
 
 Now the net radiation and the soil heat flux (shortwave transmissivity
 from elevation, Waters et al., 2002, p. 18, Eq. 11; incoming longwave
@@ -412,12 +414,12 @@ anchors <- ef_anchor_conditions(
 cp_tab <- anchors$calibration_points
 cp_tab[, c("type", "n_pixels", "lst", "ndvi", "albedo", "rn", "g",
            "le_target", "h_target", "zom", "u_blend")]
-#>   type n_pixels      lst      ndvi    albedo       rn        g le_target
-#> 1 cold        1 300.4000 0.8174000 0.1407500 523.8690 38.87824  376.6475
-#> 2  hot       42 307.2995 0.2916667 0.1995774 447.0312 79.93581    0.0000
-#>   h_target         zom  u_blend
-#> 1 108.3433 0.111600000 3.966880
-#> 2 367.0954 0.009021429 3.990879
+#>   type n_pixels      lst      ndvi    albedo       rn         g le_target
+#> 1 cold        1 302.1600 0.8174000 0.1402500 625.9263  49.41471  471.5484
+#> 2  hot       35 315.7583 0.3026657 0.1969643 501.6956 111.37051    0.0000
+#>   h_target         zom u_blend
+#> 1 104.9632 0.111600000 4.66291
+#> 2 390.3251 0.009244286 4.72021
 ```
 
 At the cold anchor, most of the available energy is evaporated
@@ -471,18 +473,18 @@ cal <- ef_calibrate_h(
 )
 c(a = cal$a, b = cal$b, iterations = cal$iterations,
   converged = cal$converged)
-#>            a            b   iterations    converged 
-#> -154.3451605    0.5199804   18.0000000    1.0000000
+#>           a           b  iterations   converged 
+#> -87.5585185   0.2953382  17.0000000   1.0000000
 cal$anchors[, c("type", "ts_datum", "h_target", "dt", "rah", "u_star",
                 "obukhov_length", "h")]
 #>   type ts_datum h_target       dt      rah    u_star obukhov_length        h
-#> 1  hot 307.2995 367.0954 5.444556 16.93990 0.2611358      -4.233083 367.0954
-#> 2 cold 300.4000 108.3433 1.856939 19.79312 0.3178788     -25.571069 108.3433
+#> 1  hot 315.7583 390.3251 5.696970 16.22914 0.2974710      -5.886905 390.3251
+#> 2 cold 302.1600 104.9632 1.680877 18.37427 0.3559409     -37.033272 104.9632
 ```
 
 Each anchor reproduces its target $`H`$ exactly. At the cold anchor,
-$`\rho_{air} c_p / r_{ah}`$ = 58 W m⁻² K⁻¹: a bias of 1 K in $`dT`$
-there would be a bias of 58 W m⁻² in $`H`$, or 0.09 mm h⁻¹ of
+$`\rho_{air} c_p / r_{ah}`$ = 62 W m⁻² K⁻¹: a bias of 1 K in $`dT`$
+there would be a bias of 62 W m⁻² in $`H`$, or 0.09 mm h⁻¹ of
 evapotranspiration, which is why $`dT`$ is calibrated rather than
 measured. Where are the anchors, and what does the calibrated line look
 like?
@@ -520,11 +522,11 @@ terra::plot(
 ![](anchors-monin-obukhov_files/figure-html/anchor-maps-1.png)
 
 *The anchor pixels on the land surface temperature and on the NDVI of
-the scene: the cold anchor (blue triangle) and the 42 pixels of the hot
+the scene: the cold anchor (blue triangle) and the 35 pixels of the hot
 anchor (red circles), whose mean is the hot calibration point.* The hot
 pixels are among the warmest and least green cells, in the east of the
 province. The cold anchor is a green cell (NDVI 0.82) in the west, but
-its albedo, 0.141, is just inside the lower limit of 0.14 that the
+its albedo, 0.1403, is just inside the lower limit of 0.14 that the
 preset uses to leave out dark forest canopies: at 1 km it may well be a
 mixture of plantation and fields. This is the kind of compromise that
 section 4 comes back to. The coolest cells of the scene, along the
@@ -542,7 +544,7 @@ plot(NA, xlim = range(ts_all, na.rm = TRUE), ylim = c(-8, 16),
      main = "Calibrated dT line and its iterates")
 rect(ts_hot, -20, 400, 40, col = "#FEE0D2", border = NA)
 rect(0, -20, ts_cold, 40, col = "#DEEBF7", border = NA)
-text(mean(c(par("usr")[1], ts_cold)), -7, cex = 0.8, col = "#2B5C8A",
+text(par("usr")[1], -7, adj = c(-0.03, 0.5), cex = 0.8, col = "#2B5C8A",
      "extrapolated: colder than the cold anchor")
 text(mean(c(ts_hot, par("usr")[2])), 11.5, srt = 90, cex = 0.8,
      col = "#99341F", "extrapolated")
@@ -571,7 +573,7 @@ gives a different pair $`(dT_{hot}, dT_{cold})`$ and therefore a
 different line (grey; the first one is the steepest); the final line
 (black) passes through both anchors. The rug marks the temperature of
 every cell of the scene: many cells are colder than the cold anchor
-(shaded blue; below about 296.8 K their $`dT`$, and so their $`H`$, is
+(shaded blue; below about 296.5 K their $`dT`$, and so their $`H`$, is
 negative) and a few are hotter than the hot anchor (shaded red). In both
 regions $`dT`$ is extrapolated.*
 
@@ -581,7 +583,7 @@ c(below_cold = sum(ts_all < an$ts_datum[an$type == "cold"], na.rm = TRUE),
   above_hot = sum(ts_all > an$ts_datum[an$type == "hot"], na.rm = TRUE),
   cells = sum(!is.na(ts_all)))
 #> below_cold  above_hot      cells 
-#>       1114         38       3656
+#>        679         35       3707
 ```
 
 These cells are flagged `EF_H_DT_EXTRAPOLATED_COLD` and
@@ -784,30 +786,30 @@ co <- ef_dt_coef(ts_datum[1], ts_datum[2], dt[1], dt[2])
 
 signif(head(hist_a[, c("iteration", "a", "b", "dt_hot", "dt_cold", "L_hot",
                        "L_cold", "rah_hot", "rah_cold", "change")], 8), 4)
-#>   iteration       a      b dt_hot dt_cold  L_hot  L_cold rah_hot rah_cold
-#> 1         0      NA     NA  0.000   0.000    Inf     Inf  44.680    33.65
-#> 2         1 -495.10 1.6590 14.620   3.177 -1.021  -8.097   8.378    13.64
-#> 3         2  -56.94 0.1938  2.611   1.274 -8.232 -44.340  21.670    22.43
-#> 4         3 -212.20 0.7133  7.029   2.108 -3.291 -20.650  15.220    18.70
-#> 5         4 -133.80 0.4512  4.866   1.753 -4.702 -28.010  17.670    20.25
-#> 6         5 -163.20 0.5495  5.692   1.900 -4.058 -24.630  16.650    19.60
-#> 7         6 -150.90 0.5083  5.346   1.839 -4.307 -25.970  17.060    19.87
-#> 8         7 -155.80 0.5247  5.485   1.864 -4.204 -25.410  16.890    19.76
+#>   iteration       a      b dt_hot dt_cold   L_hot L_cold rah_hot rah_cold
+#> 1         0      NA     NA  0.000   0.000     Inf    Inf  37.690    28.63
+#> 2         1 -238.20 0.7971 13.470   2.634  -1.600 -13.57   9.034    14.00
+#> 3         2  -39.05 0.1335  3.092   1.277 -10.370 -56.96  19.640    20.01
+#> 4         3 -111.90 0.3764  6.952   1.833  -4.797 -31.72  15.010    17.75
+#> 5         4  -78.89 0.2665  5.246   1.623  -6.379 -39.32  16.710    18.61
+#> 6         5  -91.01 0.3068  5.875   1.703  -5.709 -36.21  16.050    18.28
+#> 7         6  -86.24 0.2910  5.629   1.673  -5.957 -37.35  16.300    18.41
+#> 8         7  -88.07 0.2970  5.723   1.684  -5.860 -36.91  16.200    18.36
 #>     change
 #> 1       NA
-#> 2 4.334000
-#> 3 0.613300
-#> 4 0.423700
-#> 5 0.139000
-#> 6 0.061760
-#> 7 0.024220
-#> 8 0.009992
+#> 2 3.172000
+#> 3 0.540000
+#> 4 0.308800
+#> 5 0.102200
+#> 6 0.041650
+#> 7 0.015650
+#> 8 0.006067
 ```
 
 The first iterate is far off. With the neutral resistance of the smooth
-hot anchor, 44.7 s m⁻¹, the hot anchor needs $`dT`$ = 14.6 K to carry
+hot anchor, 37.7 s m⁻¹, the hot anchor needs $`dT`$ = 13.5 K to carry
 its $`H`$; such a $`dT`$ with that resistance means very unstable air
-($`L`$ = -1 m), the resistance falls to 8.4 s m⁻¹, the next $`dT`$ is
+($`L`$ = -1.6 m), the resistance falls to 9 s m⁻¹, the next $`dT`$ is
 too small, and so on: the iterates oscillate around the fixed point with
 a shrinking amplitude.
 
@@ -830,7 +832,7 @@ c(iterations_equal = nrow(mine) == cal$iterations,
   ),
   a_diff = co$a - cal$a, b_diff = co$b - cal$b)
 #>   iterations_equal max_rel_diff_trace             a_diff             b_diff 
-#>       1.000000e+00       5.282326e-15       0.000000e+00       0.000000e+00
+#>       1.000000e+00       2.866581e-15       1.136868e-13      -3.885781e-16
 ```
 
 Phase B for every cell of the scene, with $`(a^*, b^*)`$ fixed. Each
@@ -867,7 +869,7 @@ c(cells = sum(!is.na(h_mo)),
   max_abs_diff_h = max(abs(h_mo - v(cal$pixels$h)), na.rm = TRUE),
   same_iterations = all(n_iter == v(cal$pixels$iterations), na.rm = TRUE))
 #>              cells same_missing_cells     max_abs_diff_h    same_iterations 
-#>       3.655000e+03       1.000000e+00       2.273737e-13       1.000000e+00
+#>       3.706000e+03       1.000000e+00       2.842171e-13       1.000000e+00
 ```
 
 Both phases written by hand give the same iterates, the same
@@ -931,11 +933,11 @@ the fixed point. The dashed lines in the panels of $`a`$ and $`b`$ are
 the calibrated values $`(a^*, b^*)`$; the last panel shows the
 convergence statistic on a logarithmic scale against `tol`.* Both
 anchors are unstable ($`L < 0`$), the hot anchor much more so ($`L`$ =
--4.2 m, against -25.6 m at the cold anchor): its converged resistance is
-38 % of the neutral one. After the first iterations the error shrinks by
-a roughly constant factor of about 2.5 per iteration (a straight line on
+-5.9 m, against -37 m at the cold anchor): its converged resistance is
+43 % of the neutral one. After the first iterations the error shrinks by
+a roughly constant factor of about 2.6 per iteration (a straight line on
 the logarithmic scale): the iteration contracts linearly, and reaching
-`tol` = $`10^{-6}`$ takes 18 iterations instead of the 7 needed for a
+`tol` = $`10^{-6}`$ takes 17 iterations instead of the 7 needed for a
 tolerance of 1 %.
 
 ### Why the stability correction matters
@@ -962,9 +964,9 @@ rbind(neutral = c(a = co_n$a, b = co_n$b, dt_hot = dt_n[1],
                   dt_cold = dt_n[2]),
       monin_obukhov = c(a = cal$a, b = cal$b, dt_hot = cal$anchors$dt[1],
                         dt_cold = cal$anchors$dt[2]))
-#>                       a         b    dt_hot  dt_cold
-#> neutral       -467.6372 1.5671802 13.956505 3.143708
-#> monin_obukhov -154.3452 0.5199804  5.444556 1.856939
+#>                        a         b   dt_hot  dt_cold
+#> neutral       -226.48736 0.7582021 12.92124 2.610996
+#> monin_obukhov  -87.55852 0.2953382  5.69697 1.680877
 
 # Difference of H (W m-2) by position with respect to the anchors
 region <- cut(v(lst), c(-Inf, ts_cold, ts_hot, Inf),
@@ -977,9 +979,9 @@ stats_by <- function(x) {
 }
 round(do.call(rbind, tapply(h_mo - h_neutral, region, stats_by)), 1)
 #>                           min median   max cells
-#> colder than cold anchor   0.4   94.4 472.9  1113
-#> between the anchors     -60.0  -17.0  13.4  2504
-#> hotter than hot anchor  -17.2   -0.1  10.4    38
+#> colder than cold anchor   0.1   12.4 136.6   679
+#> between the anchors     -45.5  -16.3  13.9  2992
+#> hotter than hot anchor  -11.5    1.0  18.8    35
 ```
 
 ``` r
@@ -1027,12 +1029,12 @@ par(op)
 and with the Monin–Obukhov iteration (same anchors, same targets), their
 difference, and both against the surface temperature. In the maps,
 values beyond the ends of the colour scales are shown with the extreme
-colours (the neutral $`H`$ goes down to -590 W m⁻²).*
+colours (the neutral $`H`$ goes down to -173 W m⁻²).*
 
 Both calibrations agree at the two anchors, by construction, and yet
 they are very different. Without the stability correction the resistance
-of the hot anchor is about 2.6 times too high, so the hot anchor needs a
-$`dT`$ of 14 K instead of 5.4 K, and the line is 3 times steeper.
+of the hot anchor is about 2.3 times too high, so the hot anchor needs a
+$`dT`$ of 12.9 K instead of 5.7 K, and the line is 2.6 times steeper.
 Between the anchors the two fields differ by some tens of W m⁻², of the
 same order as the effect of a 1 K bias in $`dT`$. Beyond the cold anchor
 the steep neutral line, extrapolated, gives strongly negative fluxes in
@@ -1076,17 +1078,17 @@ par(op)
 c(unstable = sum(zeta < 0, na.rm = TRUE), stable = sum(zeta > 0, na.rm = TRUE),
   not_converged = sum(!cal$pixels$converged, na.rm = TRUE))
 #>      unstable        stable not_converged 
-#>          3053           602             0
+#>          3691            15             0
 ```
 
 *Left: the stability parameter $`z_2/L`$ of each cell after phase B
 (negative: unstable, $`H > 0`$; positive: stable, $`H < 0`$). Centre and
 right: the number of iterations each cell needed to reach `pixel_tol`.*
 
-Most of the scene is unstable; the stable cells are those colder than
-the point where the calibrated line crosses $`dT = 0`$, mostly the cool
-coastal strip in the west. No cell failed to converge. Which cells need
-more iterations?
+Almost the whole scene is unstable: only 15 cells are stable, those
+colder than the point where the calibrated line crosses $`dT = 0`$
+(296.5 K), on the cool coastal strip in the west. No cell failed to
+converge. Which cells need more iterations?
 
 ``` r
 
@@ -1097,13 +1099,13 @@ cells <- cells[!is.na(cells$iterations), ]
 round(stats::aggregate(cbind(ts, lai, zom, h, zeta) ~ iterations,
                        data = cells, FUN = stats::median), 3)
 #>   iterations     ts   lai   zom       h   zeta
-#> 1          2 296.81 3.787 0.068  -0.318  0.001
-#> 2          3 296.30 5.525 0.099  -9.283  0.022
-#> 3          4 305.08 0.800 0.014 267.770 -0.338
-#> 4          5 305.80 0.850 0.015 301.656 -0.336
-#> 5          6 304.00 1.425 0.026 231.230 -0.232
-#> 6          7 300.68 3.825 0.069 112.481 -0.101
-#> 7          8 300.64 5.750 0.104 115.545 -0.084
+#> 1          2 296.42 3.925 0.071  -0.520  0.001
+#> 2          3 296.08 0.650 0.012  -3.327  0.010
+#> 3          4 313.06 0.562 0.010 321.116 -0.287
+#> 4          5 311.18 0.750 0.013 279.348 -0.236
+#> 5          6 308.50 1.200 0.022 223.063 -0.168
+#> 6          7 303.12 3.775 0.068 118.096 -0.074
+#> 7          8 302.54 5.775 0.104 112.351 -0.059
 ```
 
 Cells close to neutral ($`H \approx 0`$, $`z_2/L \approx 0`$) converge

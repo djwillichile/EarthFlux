@@ -14,7 +14,7 @@ METRIC (Allen et al., 2007): la calibración interna con un píxel ancla
 caliente y uno frío, y la iteración de Monin–Obukhov que corrige la
 resistencia aerodinámica por la estabilidad atmosférica. Cada ecuación
 se ejecuta sobre la escena MODIS de la provincia de Cauquenes incluida
-en el paquete (15 de febrero de 2019; véase el artículo [Example scene:
+en el paquete (14 de febrero de 2019; véase el artículo [Example scene:
 Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md),
 en inglés) con las funciones exportadas de EarthFlux, y la iteración se
 escribe a mano y se contrasta con
@@ -191,12 +191,13 @@ lon <- matrix(lonlat[, 1], terra::nrow(r), byrow = TRUE)
 lat <- matrix(lonlat[, 2], terra::nrow(r), byrow = TRUE)
 summary(as.vector(utc_hour))
 #>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.     NAs 
-#>   14.11   14.12   14.13   14.18   14.14   15.84    5936
+#>   15.02   15.03   15.04   15.06   15.11   15.12    5885
 ```
 
-El paso del satélite ocurre cerca de las 14:08 UTC (09:20 hora solar
-media local), con algunas celdas observadas más tarde, hasta las 15:50
-UTC.
+El paso del satélite ocurre cerca de las 15:02 UTC (10:12 hora solar
+media local); todas las celdas de la provincia fueron observadas en la
+misma pasada de Terra, entre las 15:01 y las 15:07 UTC, a 12–18 grados
+del nadir.
 
 La escena no tiene modelo de elevación. **Solo para este artículo**, la
 elevación se fija en 150 m uniformes, aproximadamente la elevación de la
@@ -234,7 +235,7 @@ wx$utc_mid <- wx$utc_start + 0.5
 
 deg <- pi / 180
 ra <- ef_ra_period(lat = station$lat * deg, lon = station$lon * deg,
-                   doy = 46, utc_mid = wx$utc_mid, period_hours = 1,
+                   doy = 45, utc_mid = wx$utc_mid, period_hours = 1,
                    standard = "asce")
 ea <- ef_ea_dewpoint(wx$dewpoint)
 rn_ref <- ef_ref_net_radiation(
@@ -258,10 +259,10 @@ wx$etr <- ef_ref_et(
 )$et_ref
 wx
 #>   utc_start air_temperature dewpoint wind_2m solar_radiation utc_mid       etr
-#> 1        13            19.0     10.0     1.8            2.10    13.5 0.4279352
-#> 2        14            21.5     10.0     2.2            2.62    14.5 0.5854770
-#> 3        15            24.0     10.2     2.6            2.98    15.5 0.7255116
-#> 4        16            26.0     10.2     3.0            3.18    16.5 0.8344484
+#> 1        13            19.0     10.0     1.8            2.10    13.5 0.4283063
+#> 2        14            21.5     10.0     2.2            2.62    14.5 0.5857801
+#> 3        15            24.0     10.2     2.6            2.98    15.5 0.7257824
+#> 4        16            26.0     10.2     3.0            3.18    16.5 0.8347101
 ```
 
 Como en los presets de
@@ -307,17 +308,19 @@ u_blend <- ef_blending_wind(wind_2m, height = w$height,
                             d_station = w$d_station,
                             blending_height = w$blending_height)
 range(u_blend, na.rm = TRUE) # m s-1 a 200 m
-#> [1] 3.951541 5.288491
+#> [1] 4.654201 4.733223
 ```
 
 Los píxeles ancla se seleccionan antes de la radiación neta, porque la
 radiación de onda larga incidente de los presets usa la temperatura de
 superficie del píxel frío (Waters et al., 2002, p. 23, ec. 23). Los
 candidatos deben pasar el control de calidad estricto de los presets:
-ningún flag `warning` o `critical` (bits 6–14) y ningún LAI asignado
-(bit 15, `EF_SURF_LAI_ASSIGNED`) en las palabras de flags de las
-variables de superficie, todas las subceldas de 500 m de los insumos
-agregados válidas y todos los insumos definidos.
+ningún flag `warning` o `critical` (bits 6–14, y el bit 16,
+`EF_SURF_VIEW_ANGLE_HIGH`: una LST observada a más de 40 grados del
+nadir; ninguna en esta escena) y ningún LAI asignado (bit 15,
+`EF_SURF_LAI_ASSIGNED`) en las palabras de flags de las variables de
+superficie, todas las subceldas de 500 m de los insumos agregados
+válidas y todos los insumos definidos.
 
 ``` r
 
@@ -326,7 +329,7 @@ geo <- ef_solar_geometry(doy = doy, utc_hour = utc_hour, lat = lat * deg,
 
 qa <- inside & !is.na(lst) & !is.na(albedo) & !is.na(ndvi) & !is.na(lai) &
   !is.na(emissivity) & !is.na(etr_inst) & !is.na(geo$cos_zenith)
-excluded_bits <- sum(2^(6:15))
+excluded_bits <- sum(2^(6:16))
 for (l in c("lst", "albedo", "ndvi", "lai", "emissivity")) {
   word <- as_mat(paste0("flags_", l))
   qa <- qa & !is.na(word) & bitwAnd(word, excluded_bits) == 0
@@ -336,7 +339,7 @@ qa <- qa & as_mat("valid_fraction_albedo") == 1 &
 qa[is.na(qa)] <- FALSE
 c(province = sum(inside), usable_for_anchors = sum(qa))
 #>           province usable_for_anchors 
-#>               3779               2703
+#>               3779               3214
 ```
 
 Los criterios de selección del preset (`CANDIDATA`, decisión M5-23)
@@ -364,27 +367,27 @@ anchors <- ef_select_anchors(
 funnel <- anchors$funnel
 funnel[funnel$filter != "total", c("type", "filter", "n")]
 #>    type                      filter    n
-#> 2  cold                      usable 2703
-#> 3  cold                       valid 2703
-#> 4  cold           percentile_domain 2703
-#> 5  cold                ndvi >= p0.9  271
-#> 6  cold albedo between [0.14, 0.26]    7
-#> 7  cold                 homogeneity    5
+#> 2  cold                      usable 3214
+#> 3  cold                       valid 3214
+#> 4  cold           percentile_domain 3214
+#> 5  cold                ndvi >= p0.9  322
+#> 6  cold albedo between [0.14, 0.26]    1
+#> 7  cold                 homogeneity    1
 #> 8  cold                    selected    1
-#> 10  hot                      usable 2703
-#> 11  hot                       valid 2703
-#> 12  hot           percentile_domain 2703
-#> 13  hot                ndvi <= p0.1  271
-#> 14  hot                    ndvi > 0  271
-#> 15  hot albedo between [0.18, 0.35]  246
-#> 16  hot                 homogeneity  208
-#> 17  hot                    selected   42
+#> 10  hot                      usable 3214
+#> 11  hot                       valid 3214
+#> 12  hot           percentile_domain 3214
+#> 13  hot                ndvi <= p0.1  322
+#> 14  hot                    ndvi > 0  322
+#> 15  hot albedo between [0.18, 0.35]  292
+#> 16  hot                 homogeneity  173
+#> 17  hot                    selected   35
 ```
 
 El embudo muestra qué pocas celdas de una escena de 1 km se parecen a un
-predio bien regado y con cobertura completa: 271 celdas pasan el
-percentil de NDVI, pero solo 7 de ellas tienen un albedo propio de un
-cultivo, y al final queda 1 píxel como píxel frío (flag
+predio bien regado y con cobertura completa: 322 celdas pasan el
+percentil de NDVI, pero la banda de albedo propia de un cultivo deja 1
+de ellas, y al final queda 1 píxel como píxel frío (flag
 `EF_ANCHOR_SINGLE_PIXEL`).
 
 Ahora la radiación neta y el flujo de calor del suelo (transmisividad de
@@ -431,12 +434,12 @@ anchors <- ef_anchor_conditions(
 cp_tab <- anchors$calibration_points
 cp_tab[, c("type", "n_pixels", "lst", "ndvi", "albedo", "rn", "g",
            "le_target", "h_target", "zom", "u_blend")]
-#>   type n_pixels      lst      ndvi    albedo       rn        g le_target
-#> 1 cold        1 300.4000 0.8174000 0.1407500 523.8690 38.87824  376.6475
-#> 2  hot       42 307.2995 0.2916667 0.1995774 447.0312 79.93581    0.0000
-#>   h_target         zom  u_blend
-#> 1 108.3433 0.111600000 3.966880
-#> 2 367.0954 0.009021429 3.990879
+#>   type n_pixels      lst      ndvi    albedo       rn         g le_target
+#> 1 cold        1 302.1600 0.8174000 0.1402500 625.9263  49.41471  471.5484
+#> 2  hot       35 315.7583 0.3026657 0.1969643 501.6956 111.37051    0.0000
+#>   h_target         zom u_blend
+#> 1 104.9632 0.111600000 4.66291
+#> 2 390.3251 0.009244286 4.72021
 ```
 
 En el píxel frío, la mayor parte de la energía disponible se evapora
@@ -490,18 +493,18 @@ cal <- ef_calibrate_h(
 )
 c(a = cal$a, b = cal$b, iterations = cal$iterations,
   converged = cal$converged)
-#>            a            b   iterations    converged 
-#> -154.3451605    0.5199804   18.0000000    1.0000000
+#>           a           b  iterations   converged 
+#> -87.5585185   0.2953382  17.0000000   1.0000000
 cal$anchors[, c("type", "ts_datum", "h_target", "dt", "rah", "u_star",
                 "obukhov_length", "h")]
 #>   type ts_datum h_target       dt      rah    u_star obukhov_length        h
-#> 1  hot 307.2995 367.0954 5.444556 16.93990 0.2611358      -4.233083 367.0954
-#> 2 cold 300.4000 108.3433 1.856939 19.79312 0.3178788     -25.571069 108.3433
+#> 1  hot 315.7583 390.3251 5.696970 16.22914 0.2974710      -5.886905 390.3251
+#> 2 cold 302.1600 104.9632 1.680877 18.37427 0.3559409     -37.033272 104.9632
 ```
 
 Cada píxel ancla reproduce exactamente su $`H`$ objetivo. En el píxel
-frío, $`\rho_{air} c_p / r_{ah}`$ = 58 W m⁻² K⁻¹: un sesgo de 1 K en
-$`dT`$ allí sería un sesgo de 58 W m⁻² en $`H`$, o 0,09 mm h⁻¹ de
+frío, $`\rho_{air} c_p / r_{ah}`$ = 62 W m⁻² K⁻¹: un sesgo de 1 K en
+$`dT`$ allí sería un sesgo de 62 W m⁻² en $`H`$, o 0,09 mm h⁻¹ de
 evapotranspiración; por eso $`dT`$ se calibra en lugar de medirse.
 ¿Dónde están los píxeles ancla y cómo se ve la recta calibrada?
 
@@ -538,11 +541,11 @@ terra::plot(
 ![](anclas-monin-obukhov_files/figure-html/anchor-maps-1.png)
 
 *Los píxeles ancla sobre la temperatura de superficie y sobre el NDVI de
-la escena: el píxel frío (triángulo azul) y los 42 píxeles del ancla
+la escena: el píxel frío (triángulo azul) y los 35 píxeles del ancla
 caliente (círculos rojos), cuya media es el punto de calibración
 caliente.* Los píxeles calientes están entre las celdas más cálidas y
 menos verdes, en el oriente de la provincia. El píxel frío es una celda
-verde (NDVI 0,82) del poniente, pero su albedo, 0,141, está apenas
+verde (NDVI 0,82) del poniente, pero su albedo, 0,1403, está apenas
 dentro del límite inferior de 0,14 que usa el preset para dejar fuera
 los doseles forestales oscuros: a 1 km bien puede ser una mezcla de
 plantación forestal y predios agrícolas. Es el tipo de compromiso al que
@@ -561,7 +564,7 @@ plot(NA, xlim = range(ts_all, na.rm = TRUE), ylim = c(-8, 16),
      main = "Recta de dT calibrada y sus iteraciones")
 rect(ts_hot, -20, 400, 40, col = "#FEE0D2", border = NA)
 rect(0, -20, ts_cold, 40, col = "#DEEBF7", border = NA)
-text(mean(c(par("usr")[1], ts_cold)), -7, cex = 0.8, col = "#2B5C8A",
+text(par("usr")[1], -7, adj = c(-0.03, 0.5), cex = 0.8, col = "#2B5C8A",
      "extrapolado: más frío que el píxel frío")
 text(mean(c(ts_hot, par("usr")[2])), 11.5, srt = 90, cex = 0.8,
      col = "#99341F", "extrapolado")
@@ -591,7 +594,7 @@ lo tanto, una recta distinta (gris; la primera es la de mayor
 pendiente); la recta final (negra) pasa por ambos píxeles ancla. Las
 marcas sobre el eje (*rug*) señalan la temperatura de cada celda de la
 escena: muchas celdas son más frías que el píxel frío (zona azul; bajo
-unos 296,8 K su $`dT`$, y por ende su $`H`$, es negativo) y algunas son
+unos 296,5 K su $`dT`$, y por ende su $`H`$, es negativo) y algunas son
 más calientes que el píxel caliente (zona roja). En ambas regiones
 $`dT`$ se extrapola.*
 
@@ -601,7 +604,7 @@ c(below_cold = sum(ts_all < an$ts_datum[an$type == "cold"], na.rm = TRUE),
   above_hot = sum(ts_all > an$ts_datum[an$type == "hot"], na.rm = TRUE),
   cells = sum(!is.na(ts_all)))
 #> below_cold  above_hot      cells 
-#>       1114         38       3656
+#>        679         35       3707
 ```
 
 Estas celdas llevan los flags `EF_H_DT_EXTRAPOLATED_COLD` y
@@ -810,31 +813,31 @@ co <- ef_dt_coef(ts_datum[1], ts_datum[2], dt[1], dt[2])
 
 signif(head(hist_a[, c("iteration", "a", "b", "dt_hot", "dt_cold", "L_hot",
                        "L_cold", "rah_hot", "rah_cold", "change")], 8), 4)
-#>   iteration       a      b dt_hot dt_cold  L_hot  L_cold rah_hot rah_cold
-#> 1         0      NA     NA  0.000   0.000    Inf     Inf  44.680    33.65
-#> 2         1 -495.10 1.6590 14.620   3.177 -1.021  -8.097   8.378    13.64
-#> 3         2  -56.94 0.1938  2.611   1.274 -8.232 -44.340  21.670    22.43
-#> 4         3 -212.20 0.7133  7.029   2.108 -3.291 -20.650  15.220    18.70
-#> 5         4 -133.80 0.4512  4.866   1.753 -4.702 -28.010  17.670    20.25
-#> 6         5 -163.20 0.5495  5.692   1.900 -4.058 -24.630  16.650    19.60
-#> 7         6 -150.90 0.5083  5.346   1.839 -4.307 -25.970  17.060    19.87
-#> 8         7 -155.80 0.5247  5.485   1.864 -4.204 -25.410  16.890    19.76
+#>   iteration       a      b dt_hot dt_cold   L_hot L_cold rah_hot rah_cold
+#> 1         0      NA     NA  0.000   0.000     Inf    Inf  37.690    28.63
+#> 2         1 -238.20 0.7971 13.470   2.634  -1.600 -13.57   9.034    14.00
+#> 3         2  -39.05 0.1335  3.092   1.277 -10.370 -56.96  19.640    20.01
+#> 4         3 -111.90 0.3764  6.952   1.833  -4.797 -31.72  15.010    17.75
+#> 5         4  -78.89 0.2665  5.246   1.623  -6.379 -39.32  16.710    18.61
+#> 6         5  -91.01 0.3068  5.875   1.703  -5.709 -36.21  16.050    18.28
+#> 7         6  -86.24 0.2910  5.629   1.673  -5.957 -37.35  16.300    18.41
+#> 8         7  -88.07 0.2970  5.723   1.684  -5.860 -36.91  16.200    18.36
 #>     change
 #> 1       NA
-#> 2 4.334000
-#> 3 0.613300
-#> 4 0.423700
-#> 5 0.139000
-#> 6 0.061760
-#> 7 0.024220
-#> 8 0.009992
+#> 2 3.172000
+#> 3 0.540000
+#> 4 0.308800
+#> 5 0.102200
+#> 6 0.041650
+#> 7 0.015650
+#> 8 0.006067
 ```
 
 La primera iteración está muy lejos de la solución. Con la resistencia
-neutra del píxel caliente, de superficie lisa, 44,7 s m⁻¹, el píxel
-caliente necesita un $`dT`$ = 14,6 K para transportar su $`H`$; un
+neutra del píxel caliente, de superficie lisa, 37,7 s m⁻¹, el píxel
+caliente necesita un $`dT`$ = 13,5 K para transportar su $`H`$; un
 $`dT`$ así, con esa resistencia, implica un aire muy inestable ($`L`$ =
--1 m), la resistencia cae a 8,4 s m⁻¹, el $`dT`$ siguiente resulta
+-1,6 m), la resistencia cae a 9 s m⁻¹, el $`dT`$ siguiente resulta
 demasiado pequeño, y así sucesivamente: las iteraciones oscilan en torno
 al punto fijo con una amplitud decreciente.
 
@@ -857,7 +860,7 @@ c(iterations_equal = nrow(mine) == cal$iterations,
   ),
   a_diff = co$a - cal$a, b_diff = co$b - cal$b)
 #>   iterations_equal max_rel_diff_trace             a_diff             b_diff 
-#>       1.000000e+00       5.282326e-15       0.000000e+00       0.000000e+00
+#>       1.000000e+00       2.866581e-15       1.136868e-13      -3.885781e-16
 ```
 
 La fase B para cada celda de la escena, con $`(a^*, b^*)`$ fijos. Cada
@@ -894,7 +897,7 @@ c(cells = sum(!is.na(h_mo)),
   max_abs_diff_h = max(abs(h_mo - v(cal$pixels$h)), na.rm = TRUE),
   same_iterations = all(n_iter == v(cal$pixels$iterations), na.rm = TRUE))
 #>              cells same_missing_cells     max_abs_diff_h    same_iterations 
-#>       3.655000e+03       1.000000e+00       2.273737e-13       1.000000e+00
+#>       3.706000e+03       1.000000e+00       2.842171e-13       1.000000e+00
 ```
 
 Ambas fases escritas a mano entregan las mismas iteraciones, los mismos
@@ -959,11 +962,11 @@ el punto fijo. Las líneas segmentadas en los paneles de $`a`$ y $`b`$
 son los valores calibrados $`(a^*, b^*)`$; el último panel muestra el
 estadístico de convergencia en escala logarítmica frente a `tol`.* Ambos
 píxeles ancla son inestables ($`L < 0`$), el caliente mucho más ($`L`$ =
--4,2 m, frente a -25,6 m en el píxel frío): su resistencia convergida es
-el 38 % de la neutra. Después de las primeras iteraciones, el error se
-reduce en un factor aproximadamente constante, de cerca de 2,5 por
+-5,9 m, frente a -37 m en el píxel frío): su resistencia convergida es
+el 43 % de la neutra. Después de las primeras iteraciones, el error se
+reduce en un factor aproximadamente constante, de cerca de 2,6 por
 iteración (una recta en escala logarítmica): la iteración converge
-linealmente, y alcanzar `tol` = $`10^{-6}`$ toma 18 iteraciones en lugar
+linealmente, y alcanzar `tol` = $`10^{-6}`$ toma 17 iteraciones en lugar
 de las 7 que bastarían para una tolerancia de 1 %.
 
 ### Por qué importa la corrección de estabilidad
@@ -991,9 +994,9 @@ rbind(neutral = c(a = co_n$a, b = co_n$b, dt_hot = dt_n[1],
                   dt_cold = dt_n[2]),
       monin_obukhov = c(a = cal$a, b = cal$b, dt_hot = cal$anchors$dt[1],
                         dt_cold = cal$anchors$dt[2]))
-#>                       a         b    dt_hot  dt_cold
-#> neutral       -467.6372 1.5671802 13.956505 3.143708
-#> monin_obukhov -154.3452 0.5199804  5.444556 1.856939
+#>                        a         b   dt_hot  dt_cold
+#> neutral       -226.48736 0.7582021 12.92124 2.610996
+#> monin_obukhov  -87.55852 0.2953382  5.69697 1.680877
 
 # Diferencia de H (W m-2) según la posición respecto de los píxeles ancla
 region <- cut(v(lst), c(-Inf, ts_cold, ts_hot, Inf),
@@ -1006,9 +1009,9 @@ stats_by <- function(x) {
 }
 round(do.call(rbind, tapply(h_mo - h_neutral, region, stats_by)), 1)
 #>                           min median   max cells
-#> colder than cold anchor   0.4   94.4 472.9  1113
-#> between the anchors     -60.0  -17.0  13.4  2504
-#> hotter than hot anchor  -17.2   -0.1  10.4    38
+#> colder than cold anchor   0.1   12.4 136.6   679
+#> between the anchors     -45.5  -16.3  13.9  2992
+#> hotter than hot anchor  -11.5    1.0  18.8    35
 ```
 
 ``` r
@@ -1057,21 +1060,21 @@ neutra y con la iteración de Monin–Obukhov (mismos píxeles ancla, mismos
 objetivos), su diferencia, y ambos en función de la temperatura de
 superficie. En los mapas, los valores que exceden los extremos de las
 escalas de color se muestran con los colores extremos (el $`H`$ neutro
-baja hasta -590 W m⁻²).*
+baja hasta -173 W m⁻²).*
 
 Ambas calibraciones coinciden en los dos píxeles ancla, por
 construcción, y sin embargo son muy distintas. Sin la corrección de
-estabilidad, la resistencia del píxel caliente es unas 2,6 veces
-demasiado alta, por lo que el píxel caliente necesita un $`dT`$ de 14 K
-en lugar de 5,4 K, y la recta tiene una pendiente 3 veces mayor. Entre
-los píxeles ancla, los dos campos difieren en algunas decenas de W m⁻²,
-del mismo orden que el efecto de un sesgo de 1 K en $`dT`$. Más allá del
-píxel frío, la recta neutra, más empinada y extrapolada, entrega flujos
-fuertemente negativos en las celdas frescas de la costa, mientras que la
-corrección de estabilidad los limita: allí el aire es estable,
-$`\psi_h`$ se vuelve negativa, $`r_{ah}`$ crece y amortigua el flujo
-descendente. La corrección no es un refinamiento: cambia la calibración
-misma.
+estabilidad, la resistencia del píxel caliente es unas 2,3 veces
+demasiado alta, por lo que el píxel caliente necesita un $`dT`$ de 12,9
+K en lugar de 5,7 K, y la recta tiene una pendiente 2,6 veces mayor.
+Entre los píxeles ancla, los dos campos difieren en algunas decenas de W
+m⁻², del mismo orden que el efecto de un sesgo de 1 K en $`dT`$. Más
+allá del píxel frío, la recta neutra, más empinada y extrapolada,
+entrega flujos fuertemente negativos en las celdas frescas de la costa,
+mientras que la corrección de estabilidad los limita: allí el aire es
+estable, $`\psi_h`$ se vuelve negativa, $`r_{ah}`$ crece y amortigua el
+flujo descendente. La corrección no es un refinamiento: cambia la
+calibración misma.
 
 ### Estabilidad y convergencia celda por celda
 
@@ -1108,7 +1111,7 @@ par(op)
 c(unstable = sum(zeta < 0, na.rm = TRUE), stable = sum(zeta > 0, na.rm = TRUE),
   not_converged = sum(!cal$pixels$converged, na.rm = TRUE))
 #>      unstable        stable not_converged 
-#>          3053           602             0
+#>          3691            15             0
 ```
 
 *Izquierda: el parámetro de estabilidad $`z_2/L`$ de cada celda después
@@ -1116,9 +1119,9 @@ de la fase B (negativo: inestable, $`H > 0`$; positivo: estable,
 $`H < 0`$). Centro y derecha: el número de iteraciones que cada celda
 necesitó para alcanzar `pixel_tol`.*
 
-La mayor parte de la escena es inestable; las celdas estables son las
-más frías que el punto donde la recta calibrada cruza $`dT = 0`$, sobre
-todo la franja costera fresca del poniente. Ninguna celda dejó de
+Casi toda la escena es inestable: solo 15 celdas son estables, las más
+frías que el punto donde la recta calibrada cruza $`dT = 0`$ (296,5 K),
+en la franja costera fresca del poniente. Ninguna celda dejó de
 converger. ¿Qué celdas necesitan más iteraciones?
 
 ``` r
@@ -1130,13 +1133,13 @@ cells <- cells[!is.na(cells$iterations), ]
 round(stats::aggregate(cbind(ts, lai, zom, h, zeta) ~ iterations,
                        data = cells, FUN = stats::median), 3)
 #>   iterations     ts   lai   zom       h   zeta
-#> 1          2 296.81 3.787 0.068  -0.318  0.001
-#> 2          3 296.30 5.525 0.099  -9.283  0.022
-#> 3          4 305.08 0.800 0.014 267.770 -0.338
-#> 4          5 305.80 0.850 0.015 301.656 -0.336
-#> 5          6 304.00 1.425 0.026 231.230 -0.232
-#> 6          7 300.68 3.825 0.069 112.481 -0.101
-#> 7          8 300.64 5.750 0.104 115.545 -0.084
+#> 1          2 296.42 3.925 0.071  -0.520  0.001
+#> 2          3 296.08 0.650 0.012  -3.327  0.010
+#> 3          4 313.06 0.562 0.010 321.116 -0.287
+#> 4          5 311.18 0.750 0.013 279.348 -0.236
+#> 5          6 308.50 1.200 0.022 223.063 -0.168
+#> 6          7 303.12 3.775 0.068 118.096 -0.074
+#> 7          8 302.54 5.775 0.104 112.351 -0.059
 ```
 
 Las celdas cercanas a la neutralidad ($`H \approx 0`$,

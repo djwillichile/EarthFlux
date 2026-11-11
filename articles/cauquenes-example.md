@@ -1,11 +1,15 @@
-# Example scene: Cauquenes, 15 February 2019
+# Example scene: Cauquenes, 14 February 2019
 
 EarthFlux ships one real MODIS scene, the dataset `cauquenes_modis`: the
 surface state of the METRIC chain over the Cauquenes province (Maule
-Region, Chile) for 15 February 2019 (UTC; Terra overpass), built from
-the official MODIS collection 6.1 granules of tile h12v12 with the
-package’s MODIS preprocessing. This article shows its layers, how to
-read its flag words and where it comes from.
+Region, Chile) for 14 February 2019 (UTC; Terra overpass at about 15:02
+UTC, 10:12 local mean solar time), built from the official MODIS
+collection 6.1 granules of tile h12v12 with the package’s MODIS
+preprocessing. The date was chosen because Terra observed the province
+close to nadir that day (view zenith angle of 12 to 18 degrees, see
+below); until 11 November 2026 the scene was 15 February 2019, observed
+at 61 to 62 degrees. This article shows its layers, how to read its flag
+words and where it comes from.
 
 > **Experimental.** EarthFlux 0.1.0 is an experimental release. Most of
 > the options used to build the scene (albedo, assigned LAI of the
@@ -29,14 +33,14 @@ library(EarthFlux)
 r <- terra::unwrap(cauquenes_modis)
 r
 #> class       : SpatRaster
-#> size        : 88, 109, 20  (nrow, ncol, nlyr)
+#> size        : 88, 109, 22  (nrow, ncol, nlyr)
 #> resolution  : 926.6254, 926.6254  (x, y)
 #> extent      : -6569774, -6468772, -4032674, -3951131  (xmin, xmax, ymin, ymax)
 #> coord. ref. : +proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs
 #> source(s)   : memory
 #> names       :    lst,  albedo,   ndvi, lai, emissivity, emis_31, ...
-#> min values  : 289.82, 0.02475, 0.0821,   0,       0.95,   0.974, ...
-#> max values  : 308.26,   0.233,  0.896, 6.8,       0.98,   0.984, ...
+#> min values  : 292.84, 0.02575, 0.0821,   0,       0.95,    0.97, ...
+#> max values  : 318.56,   0.235,  0.896, 6.8,       0.98,    0.99, ...
 #> unit        :      K,       -,      -, m2 m-2,          -,       -, ...
 ```
 
@@ -53,19 +57,21 @@ data.frame(layer = names(r), unit = terra::units(r))
 #> 5             emissivity      -
 #> 6                emis_31      -
 #> 7                emis_32      -
-#> 8                    doy      -
-#> 9               utc_hour      h
-#> 10         ndvi_lag_days      d
-#> 11 valid_fraction_albedo      -
-#> 12    valid_fraction_lai      -
-#> 13             flags_lst   bits
-#> 14   flags_overpass_time   bits
-#> 15          flags_albedo   bits
-#> 16            flags_ndvi   bits
-#> 17             flags_lai   bits
-#> 18      flags_emissivity   bits
-#> 19         flags_emis_31   bits
-#> 20         flags_emis_32   bits
+#> 8             view_angle degree
+#> 9                    doy      -
+#> 10              utc_hour      h
+#> 11         ndvi_lag_days      d
+#> 12 valid_fraction_albedo      -
+#> 13    valid_fraction_lai      -
+#> 14             flags_lst   bits
+#> 15   flags_overpass_time   bits
+#> 16          flags_albedo   bits
+#> 17            flags_ndvi   bits
+#> 18             flags_lai   bits
+#> 19      flags_emissivity   bits
+#> 20      flags_view_angle   bits
+#> 21         flags_emis_31   bits
+#> 22         flags_emis_32   bits
 ```
 
 The grid is the native 1 km sinusoidal grid of the MOD11A1 file. Cells
@@ -88,12 +94,12 @@ to_lonlat <- function(x, method = "bilinear") {
 vars <- c("lst", "albedo", "ndvi", "lai", "emissivity", "utc_hour")
 terra::global(r[[vars]], c("min", "max", "mean"), na.rm = TRUE)
 #>                  min       max        mean
-#> lst        289.82000 308.26000 302.2553063
-#> albedo       0.02475   0.23300   0.1531856
+#> lst        292.84000 318.56000 307.3137901
+#> albedo       0.02575   0.23500   0.1536066
 #> ndvi         0.08210   0.89600   0.5433044
 #> lai          0.00000   6.80000   2.4266808
 #> emissivity   0.95000   0.98000   0.9668765
-#> utc_hour    14.10953  15.83827  14.1766055
+#> utc_hour    15.01811  15.12028  15.0621751
 ```
 
 ## Maps
@@ -120,10 +126,10 @@ terra::plot(
 
 Every variable has an integer flag word per cell (`flags_lst`,
 `flags_albedo`, `flags_ndvi`, `flags_lai`, `flags_emissivity`,
-`flags_overpass_time`, `flags_emis_31`, `flags_emis_32`). Bit `b` is set
-when the flag of that bit applies to the layer in that cell; a value of
-0 means that no flag applies. The bits of the surface stage are
-documented in
+`flags_overpass_time`, `flags_view_angle`, `flags_emis_31`,
+`flags_emis_32`). Bit `b` is set when the flag of that bit applies to
+the layer in that cell; a value of 0 means that no flag applies. The
+bits of the surface stage are documented in
 [`?cauquenes_modis`](https://djwillichile.github.io/EarthFlux/reference/cauquenes_modis.md)
 and listed as `flag_bits` in the provenance file of the scene
 (`data-raw/cauquenes_modis.yml` of the source repository):
@@ -131,15 +137,17 @@ and listed as `flag_bits` in the provenance file of the scene
 ``` r
 
 flag_bits <- data.frame(
-  bit = 0:15,
+  bit = 0:16,
   code = c(
     "EF_INPUT_NA", "EF_SURF_FILL", "EF_SURF_CLOUD", "EF_SURF_NOT_PRODUCED",
     "EF_SURF_DN_OUT_OF_RANGE", "EF_SURF_LAI_NONVEG", "EF_SURF_QA_OTHER",
     "EF_SURF_CLOUD_ADJACENT", "EF_SURF_SNOW", "EF_SURF_WATER",
     "EF_SURF_SALT_PAN", "EF_SURF_LAI_BACKUP", "EF_SURF_ALBEDO_MAGNITUDE",
-    "EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1", "EF_SURF_LAI_ASSIGNED"
+    "EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1", "EF_SURF_LAI_ASSIGNED",
+    "EF_SURF_VIEW_ANGLE_HIGH"
   ),
-  severity = c(rep("info", 6), rep("warning", 8), "critical", "info")
+  severity = c(rep("info", 6), rep("warning", 8), "critical", "info",
+               "warning")
 )
 flag_bits
 #>    bit                     code severity
@@ -159,6 +167,7 @@ flag_bits
 #> 14  13 EF_SURF_OVERPASS_MISSING  warning
 #> 15  14       EF_SURF_ALBEDO_GT1 critical
 #> 16  15     EF_SURF_LAI_ASSIGNED     info
+#> 17  16  EF_SURF_VIEW_ANGLE_HIGH  warning
 ```
 
 A bit is tested with `bitwAnd(value, 2^b) > 0`. The small helper below
@@ -183,7 +192,7 @@ cloud <- has_flag(r[["flags_lst"]], "EF_SURF_CLOUD")
 n_cloud <- terra::global(cloud, "sum", na.rm = TRUE)$sum
 c(province = n_province, cloud = n_cloud)
 #> province    cloud 
-#>     3779       72
+#>     3779       21
 ```
 
 Cells whose LAI was assigned by the option `lai_nonveg` (LAI 0 for the
@@ -220,28 +229,40 @@ rownames(counts) <- flag_bits$code
 counts[rowSums(counts) > 0, , drop = FALSE]
 #>                          flags_lst flags_overpass_time flags_albedo flags_ndvi
 #> EF_INPUT_NA                      0                   0            0          0
-#> EF_SURF_FILL                   123                 123            0         34
-#> EF_SURF_CLOUD                   72                   0            0          0
+#> EF_SURF_FILL                    72                  72            0         34
+#> EF_SURF_CLOUD                   21                   0            0          0
 #> EF_SURF_NOT_PRODUCED            51                   0            0         34
-#> EF_SURF_QA_OTHER               709                   0            0          0
+#> EF_SURF_QA_OTHER                16                   0            0          0
 #> EF_SURF_CLOUD_ADJACENT           0                   0            0         34
 #> EF_SURF_SNOW                     0                   0            0         34
 #> EF_SURF_WATER                    0                   0            0        271
 #> EF_SURF_LAI_BACKUP               0                   0            0          0
-#> EF_SURF_ALBEDO_MAGNITUDE         0                   0          110          0
+#> EF_SURF_ALBEDO_MAGNITUDE         0                   0          121          0
 #> EF_SURF_LAI_ASSIGNED             0                   0            0          0
-#>                          flags_lai flags_emissivity flags_emis_31 flags_emis_32
-#> EF_INPUT_NA                      0                1             0             0
-#> EF_SURF_FILL                     1                0            70            70
-#> EF_SURF_CLOUD                    0                0             0             0
-#> EF_SURF_NOT_PRODUCED             1                0             0             0
-#> EF_SURF_QA_OTHER               131                0             0             0
-#> EF_SURF_CLOUD_ADJACENT           0                0             0             0
-#> EF_SURF_SNOW                     0                0             0             0
-#> EF_SURF_WATER                  476                0             0             0
-#> EF_SURF_LAI_BACKUP              10                0             0             0
-#> EF_SURF_ALBEDO_MAGNITUDE         0                0             0             0
-#> EF_SURF_LAI_ASSIGNED           120              120             0             0
+#>                          flags_lai flags_emissivity flags_view_angle
+#> EF_INPUT_NA                      0                1                0
+#> EF_SURF_FILL                     1                0               72
+#> EF_SURF_CLOUD                    0                0                0
+#> EF_SURF_NOT_PRODUCED             1                0                0
+#> EF_SURF_QA_OTHER               131                0                0
+#> EF_SURF_CLOUD_ADJACENT           0                0                0
+#> EF_SURF_SNOW                     0                0                0
+#> EF_SURF_WATER                  476                0                0
+#> EF_SURF_LAI_BACKUP              10                0                0
+#> EF_SURF_ALBEDO_MAGNITUDE         0                0                0
+#> EF_SURF_LAI_ASSIGNED           120              120                0
+#>                          flags_emis_31 flags_emis_32
+#> EF_INPUT_NA                          0             0
+#> EF_SURF_FILL                        65            65
+#> EF_SURF_CLOUD                        0             0
+#> EF_SURF_NOT_PRODUCED                 0             0
+#> EF_SURF_QA_OTHER                     0             0
+#> EF_SURF_CLOUD_ADJACENT               0             0
+#> EF_SURF_SNOW                         0             0
+#> EF_SURF_WATER                        0             0
+#> EF_SURF_LAI_BACKUP                   0             0
+#> EF_SURF_ALBEDO_MAGNITUDE             0             0
+#> EF_SURF_LAI_ASSIGNED                 0             0
 ```
 
 ``` r
@@ -253,6 +274,35 @@ terra::plot(to_lonlat(flagged, method = "near"),
 ```
 
 ![](cauquenes-example_files/figure-html/flag-maps-1.png)
+
+## View angle of the LST
+
+The layer `view_angle` holds the absolute view zenith angle of the MODIS
+observation of each LST cell (degrees, from `Day_view_angl`). The MODIS
+footprint is 1 km at nadir and grows with the angle, and MOD11A1
+averages the overlapping footprints on its 1 km grid, so an LST observed
+far from nadir is the temperature of a larger, mixed area. The presets
+of
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+flag the LST cells observed at more than 40 degrees
+(`EF_SURF_VIEW_ANGLE_HIGH`, bit 16 of `flags_lst`), keep them out of the
+anchors and choose, for each scene, the satellite (Terra or Aqua)
+observed closer to nadir. On this date the province was observed at 12
+to 18 degrees, so no cell is flagged:
+
+``` r
+
+terra::global(r[["view_angle"]], c("min", "max", "mean"), na.rm = TRUE)
+#>            min max     mean
+#> view_angle  12  18 15.33531
+view_high <- has_flag(r[["flags_lst"]], "EF_SURF_VIEW_ANGLE_HIGH")
+terra::global(view_high, "sum", na.rm = TRUE)$sum
+#> [1] 0
+terra::plot(to_lonlat(r[["view_angle"]]),
+            main = "View zenith angle of the LST (degrees)")
+```
+
+![](cauquenes-example_files/figure-html/view-angle-1.png)
 
 ## Emitted longwave radiation
 
@@ -271,8 +321,8 @@ terra::values(rl_out) <- ef_rl_out(
 )
 names(rl_out) <- "rl_out"
 terra::global(rl_out, c("min", "max", "mean"), na.rm = TRUE)
-#>             min      max     mean
-#> rl_out 383.4013 489.6118 458.0683
+#>             min      max    mean
+#> rl_out 400.9196 557.6736 489.555
 terra::plot(to_lonlat(rl_out), main = "Emitted longwave radiation (W m-2)")
 ```
 
@@ -281,14 +331,14 @@ terra::plot(to_lonlat(rl_out), main = "Emitted longwave radiation (W m-2)")
 ## Provenance
 
 Official MODIS collection 6.1 granules of tile h12v12 from the NASA LP
-DAAC cloud archive (LPCLOUD), found with NASA CMR and downloaded on 5
-November 2026
+DAAC cloud archive (LPCLOUD), found with NASA CMR and downloaded between
+5 and 11 November 2026
 ([`?cauquenes_modis`](https://djwillichile.github.io/EarthFlux/reference/cauquenes_modis.md)):
 
 | Role | Granule | Period | DOI |
 |----|----|----|----|
-| LST, band 31/32 emissivities, view time | `MOD11A1.A2019046.h12v12.061.2020344054048.hdf` | 2019-02-15 | [10.5067/MODIS/MOD11A1.061](https://doi.org/10.5067/MODIS/MOD11A1.061) |
-| Albedo | `MCD43A3.A2019046.h12v12.061.2020290040302.hdf` | 2019-02-15 (window 2019-02-07 to 2019-02-22) | [10.5067/MODIS/MCD43A3.061](https://doi.org/10.5067/MODIS/MCD43A3.061) |
+| LST, band 31/32 emissivities, view time and view angle | `MOD11A1.A2019045.h12v12.061.2020344043116.hdf` | 2019-02-14 | [10.5067/MODIS/MOD11A1.061](https://doi.org/10.5067/MODIS/MOD11A1.061) |
+| Albedo | `MCD43A3.A2019045.h12v12.061.2020290034937.hdf` | 2019-02-14 (window 2019-02-06 to 2019-02-21) | [10.5067/MODIS/MCD43A3.061](https://doi.org/10.5067/MODIS/MCD43A3.061) |
 | NDVI | `MOD13A2.A2019033.h12v12.061.2020287215652.hdf` | 2019-02-02 to 2019-02-17 | [10.5067/MODIS/MOD13A2.061](https://doi.org/10.5067/MODIS/MOD13A2.061) |
 | LAI | `MCD15A2H.A2019041.h12v12.061.2020288004458.hdf` | 2019-02-10 to 2019-02-17 | [10.5067/MODIS/MCD15A2H.061](https://doi.org/10.5067/MODIS/MCD15A2H.061) |
 
@@ -298,8 +348,8 @@ NDVI of the MOD13A2 composite whose period contains the date, matched
 per pixel with its composite day; LAI of the MCD15A2H composite whose
 period contains the date; 500 m inputs aggregated with the mean, only
 where every 500 m sub-cell is valid; broadband emissivity from LAI; LAI
-0 assigned to the non-vegetated MCD15A2H classes 249-254; QA policy
-`"flag"`.
+0 assigned to the non-vegetated MCD15A2H classes 249-254; LST cells
+observed at more than 40 degrees from nadir flagged; QA policy `"flag"`.
 
 The area of interest is the official boundary of the Cauquenes province
 (DPA 2023, SUBDERE, published through IDE Chile), shipped in

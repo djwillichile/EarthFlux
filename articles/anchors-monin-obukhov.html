@@ -75,7 +75,7 @@ step by step, how METRIC (Allen et al., 2007) estimates it: the internal
 calibration with a hot and a cold anchor pixel, and the Monin–Obukhov
 iteration that corrects the aerodynamic resistance for atmospheric
 stability. Every equation is run on the packaged MODIS scene of the
-Cauquenes province (15 February 2019, see the article <a href="cauquenes-example.html">Example scene: Cauquenes</a>) with the
+Cauquenes province (14 February 2019, see the article <a href="cauquenes-example.html">Example scene: Cauquenes</a>) with the
 exported functions of EarthFlux, and the iteration is written out by
 hand and checked against <code><a href="../reference/ef_calibrate_h.html">ef_calibrate_h()</a></code>.</p>
 <p>Equation and page numbers refer to the SEBAL Idaho manual of the
@@ -310,9 +310,10 @@ matrix):</p>
 <span><span class="va">lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">lonlat</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">utc_hour</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.     NAs </span></span>
-<span><span class="co">#&gt;   14.11   14.12   14.13   14.18   14.14   15.84    5936</span></span></code></pre></div>
-<p>The overpass is at about 14:08 UTC (09:20 local mean solar time),
-with a few cells observed later, up to 15:50 UTC.</p>
+<span><span class="co">#&gt;   15.02   15.03   15.04   15.06   15.11   15.12    5885</span></span></code></pre></div>
+<p>The overpass is at about 15:02 UTC (10:12 local mean solar time);
+every cell of the province was observed by the same Terra pass, between
+15:01 and 15:07 UTC, at 12 to 18 degrees from nadir.</p>
 <p>The scene has no elevation model. <strong>For this article
 only</strong>, the elevation is set to a uniform 150 m, roughly the
 elevation of the town of Cauquenes. This is the situation of the preset
@@ -344,7 +345,7 @@ of the ASCE standardized equation (ASCE-EWRI, 2005):</p>
 <span></span>
 <span><span class="va">deg</span> <span class="op">&lt;-</span> <span class="va">pi</span> <span class="op">/</span> <span class="fl">180</span></span>
 <span><span class="va">ra</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ef_ra_period.html">ef_ra_period</a></span><span class="op">(</span>lat <span class="op">=</span> <span class="va">station</span><span class="op">$</span><span class="va">lat</span> <span class="op">*</span> <span class="va">deg</span>, lon <span class="op">=</span> <span class="va">station</span><span class="op">$</span><span class="va">lon</span> <span class="op">*</span> <span class="va">deg</span>,</span>
-<span>                   doy <span class="op">=</span> <span class="fl">46</span>, utc_mid <span class="op">=</span> <span class="va">wx</span><span class="op">$</span><span class="va">utc_mid</span>, period_hours <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                   doy <span class="op">=</span> <span class="fl">45</span>, utc_mid <span class="op">=</span> <span class="va">wx</span><span class="op">$</span><span class="va">utc_mid</span>, period_hours <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                   standard <span class="op">=</span> <span class="st">"asce"</span><span class="op">)</span></span>
 <span><span class="va">ea</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ef_ea.html">ef_ea_dewpoint</a></span><span class="op">(</span><span class="va">wx</span><span class="op">$</span><span class="va">dewpoint</span><span class="op">)</span></span>
 <span><span class="va">rn_ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ef_ref_net_radiation.html">ef_ref_net_radiation</a></span><span class="op">(</span></span>
@@ -368,10 +369,10 @@ of the ASCE standardized equation (ASCE-EWRI, 2005):</p>
 <span><span class="op">)</span><span class="op">$</span><span class="va">et_ref</span></span>
 <span><span class="va">wx</span></span>
 <span><span class="co">#&gt;   utc_start air_temperature dewpoint wind_2m solar_radiation utc_mid       etr</span></span>
-<span><span class="co">#&gt; 1        13            19.0     10.0     1.8            2.10    13.5 0.4279352</span></span>
-<span><span class="co">#&gt; 2        14            21.5     10.0     2.2            2.62    14.5 0.5854770</span></span>
-<span><span class="co">#&gt; 3        15            24.0     10.2     2.6            2.98    15.5 0.7255116</span></span>
-<span><span class="co">#&gt; 4        16            26.0     10.2     3.0            3.18    16.5 0.8344484</span></span></code></pre></div>
+<span><span class="co">#&gt; 1        13            19.0     10.0     1.8            2.10    13.5 0.4283063</span></span>
+<span><span class="co">#&gt; 2        14            21.5     10.0     2.2            2.62    14.5 0.5857801</span></span>
+<span><span class="co">#&gt; 3        15            24.0     10.2     2.6            2.98    15.5 0.7257824</span></span>
+<span><span class="co">#&gt; 4        16            26.0     10.2     3.0            3.18    16.5 0.8347101</span></span></code></pre></div>
 <p>As in the presets of <code><a href="../reference/earthflux.html">earthflux()</a></code>, each cell takes the
 values at its own overpass time, by linear interpolation between the
 mid-points of the hours:</p>
@@ -408,22 +409,24 @@ grass (Waters et al., 2002, p. 26, Eqs. 27 and 29):</p>
 <span>                            d_station <span class="op">=</span> <span class="va">w</span><span class="op">$</span><span class="va">d_station</span>,</span>
 <span>                            blending_height <span class="op">=</span> <span class="va">w</span><span class="op">$</span><span class="va">blending_height</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">u_blend</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># m s-1 at 200 m</span></span>
-<span><span class="co">#&gt; [1] 3.951541 5.288491</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 4.654201 4.733223</span></span></code></pre></div>
 <p>The anchors are selected before the net radiation, because the
 incoming longwave radiation of the presets uses the surface temperature
 of the cold anchor (Waters et al., 2002, p. 23, Eq. 23). The candidates
 must pass the strict quality control of the presets: no
-<code>warning</code> or <code>critical</code> flag (bits 6–14) and no
-assigned LAI (bit 15, <code>EF_SURF_LAI_ASSIGNED</code>) in the flag
-words of the surface variables, every 500 m sub-cell of the aggregated
-inputs valid, and every input defined.</p>
+<code>warning</code> or <code>critical</code> flag (bits 6–14, and bit
+16, <code>EF_SURF_VIEW_ANGLE_HIGH</code>, an LST observed more than 40
+degrees from nadir; none in this scene) and no assigned LAI (bit 15,
+<code>EF_SURF_LAI_ASSIGNED</code>) in the flag words of the surface
+variables, every 500 m sub-cell of the aggregated inputs valid, and
+every input defined.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">geo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ef_solar_geometry.html">ef_solar_geometry</a></span><span class="op">(</span>doy <span class="op">=</span> <span class="va">doy</span>, utc_hour <span class="op">=</span> <span class="va">utc_hour</span>, lat <span class="op">=</span> <span class="va">lat</span> <span class="op">*</span> <span class="va">deg</span>,</span>
 <span>                         lon <span class="op">=</span> <span class="va">lon</span> <span class="op">*</span> <span class="va">deg</span>, slope <span class="op">=</span> <span class="fl">0</span>, aspect <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">qa</span> <span class="op">&lt;-</span> <span class="va">inside</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">lst</span><span class="op">)</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">albedo</span><span class="op">)</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">ndvi</span><span class="op">)</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">lai</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>  <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">emissivity</span><span class="op">)</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">etr_inst</span><span class="op">)</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">geo</span><span class="op">$</span><span class="va">cos_zenith</span><span class="op">)</span></span>
-<span><span class="va">excluded_bits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fl">2</span><span class="op">^</span><span class="op">(</span><span class="fl">6</span><span class="op">:</span><span class="fl">15</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">excluded_bits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fl">2</span><span class="op">^</span><span class="op">(</span><span class="fl">6</span><span class="op">:</span><span class="fl">16</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">l</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lst"</span>, <span class="st">"albedo"</span>, <span class="st">"ndvi"</span>, <span class="st">"lai"</span>, <span class="st">"emissivity"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">word</span> <span class="op">&lt;-</span> <span class="fu">as_mat</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"flags_"</span>, <span class="va">l</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">qa</span> <span class="op">&lt;-</span> <span class="va">qa</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">word</span><span class="op">)</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/bitwise.html" class="external-link">bitwAnd</a></span><span class="op">(</span><span class="va">word</span>, <span class="va">excluded_bits</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span></span>
@@ -433,7 +436,7 @@ inputs valid, and every input defined.</p>
 <span><span class="va">qa</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">qa</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>province <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">inside</span><span class="op">)</span>, usable_for_anchors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">qa</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;           province usable_for_anchors </span></span>
-<span><span class="co">#&gt;               3779               2703</span></span></code></pre></div>
+<span><span class="co">#&gt;               3779               3214</span></span></code></pre></div>
 <p>The selection criteria of the preset (<code>CANDIDATA</code>,
 decision M5-23) translate the physical intent of the manual (Waters et
 al., 2002, pp. 23, 30–31 and appendix 7) into thresholds for 1 km MODIS
@@ -459,25 +462,25 @@ pixels.</p>
 <span><span class="va">funnel</span> <span class="op">&lt;-</span> <span class="va">anchors</span><span class="op">$</span><span class="va">funnel</span></span>
 <span><span class="va">funnel</span><span class="op">[</span><span class="va">funnel</span><span class="op">$</span><span class="va">filter</span> <span class="op">!=</span> <span class="st">"total"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"type"</span>, <span class="st">"filter"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;    type                      filter    n</span></span>
-<span><span class="co">#&gt; 2  cold                      usable 2703</span></span>
-<span><span class="co">#&gt; 3  cold                       valid 2703</span></span>
-<span><span class="co">#&gt; 4  cold           percentile_domain 2703</span></span>
-<span><span class="co">#&gt; 5  cold                ndvi &gt;= p0.9  271</span></span>
-<span><span class="co">#&gt; 6  cold albedo between [0.14, 0.26]    7</span></span>
-<span><span class="co">#&gt; 7  cold                 homogeneity    5</span></span>
+<span><span class="co">#&gt; 2  cold                      usable 3214</span></span>
+<span><span class="co">#&gt; 3  cold                       valid 3214</span></span>
+<span><span class="co">#&gt; 4  cold           percentile_domain 3214</span></span>
+<span><span class="co">#&gt; 5  cold                ndvi &gt;= p0.9  322</span></span>
+<span><span class="co">#&gt; 6  cold albedo between [0.14, 0.26]    1</span></span>
+<span><span class="co">#&gt; 7  cold                 homogeneity    1</span></span>
 <span><span class="co">#&gt; 8  cold                    selected    1</span></span>
-<span><span class="co">#&gt; 10  hot                      usable 2703</span></span>
-<span><span class="co">#&gt; 11  hot                       valid 2703</span></span>
-<span><span class="co">#&gt; 12  hot           percentile_domain 2703</span></span>
-<span><span class="co">#&gt; 13  hot                ndvi &lt;= p0.1  271</span></span>
-<span><span class="co">#&gt; 14  hot                    ndvi &gt; 0  271</span></span>
-<span><span class="co">#&gt; 15  hot albedo between [0.18, 0.35]  246</span></span>
-<span><span class="co">#&gt; 16  hot                 homogeneity  208</span></span>
-<span><span class="co">#&gt; 17  hot                    selected   42</span></span></code></pre></div>
+<span><span class="co">#&gt; 10  hot                      usable 3214</span></span>
+<span><span class="co">#&gt; 11  hot                       valid 3214</span></span>
+<span><span class="co">#&gt; 12  hot           percentile_domain 3214</span></span>
+<span><span class="co">#&gt; 13  hot                ndvi &lt;= p0.1  322</span></span>
+<span><span class="co">#&gt; 14  hot                    ndvi &gt; 0  322</span></span>
+<span><span class="co">#&gt; 15  hot albedo between [0.18, 0.35]  292</span></span>
+<span><span class="co">#&gt; 16  hot                 homogeneity  173</span></span>
+<span><span class="co">#&gt; 17  hot                    selected   35</span></span></code></pre></div>
 <p>The funnel shows how few cells of a 1 km scene look like a
-well-watered full-cover field: 271 cells pass the NDVI percentile, but
-only 7 of them have a crop-like albedo, and 1 pixel is finally the cold
-anchor (flag <code>EF_ANCHOR_SINGLE_PIXEL</code>).</p>
+well-watered full-cover field: 322 cells pass the NDVI percentile, but
+the albedo band of a crop leaves 1 of them, and 1 pixel is finally the
+cold anchor (flag <code>EF_ANCHOR_SINGLE_PIXEL</code>).</p>
 <p>Now the net radiation and the soil heat flux (shortwave
 transmissivity from elevation, Waters et al., 2002, p. 18, Eq. 11;
 incoming longwave with the cold anchor temperature, Eqs. 21–23;
@@ -526,12 +529,12 @@ wind at 200 m, pressure):</p>
 <span><span class="va">cp_tab</span> <span class="op">&lt;-</span> <span class="va">anchors</span><span class="op">$</span><span class="va">calibration_points</span></span>
 <span><span class="va">cp_tab</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"type"</span>, <span class="st">"n_pixels"</span>, <span class="st">"lst"</span>, <span class="st">"ndvi"</span>, <span class="st">"albedo"</span>, <span class="st">"rn"</span>, <span class="st">"g"</span>,</span>
 <span>           <span class="st">"le_target"</span>, <span class="st">"h_target"</span>, <span class="st">"zom"</span>, <span class="st">"u_blend"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   type n_pixels      lst      ndvi    albedo       rn        g le_target</span></span>
-<span><span class="co">#&gt; 1 cold        1 300.4000 0.8174000 0.1407500 523.8690 38.87824  376.6475</span></span>
-<span><span class="co">#&gt; 2  hot       42 307.2995 0.2916667 0.1995774 447.0312 79.93581    0.0000</span></span>
-<span><span class="co">#&gt;   h_target         zom  u_blend</span></span>
-<span><span class="co">#&gt; 1 108.3433 0.111600000 3.966880</span></span>
-<span><span class="co">#&gt; 2 367.0954 0.009021429 3.990879</span></span></code></pre></div>
+<span><span class="co">#&gt;   type n_pixels      lst      ndvi    albedo       rn         g le_target</span></span>
+<span><span class="co">#&gt; 1 cold        1 302.1600 0.8174000 0.1402500 625.9263  49.41471  471.5484</span></span>
+<span><span class="co">#&gt; 2  hot       35 315.7583 0.3026657 0.1969643 501.6956 111.37051    0.0000</span></span>
+<span><span class="co">#&gt;   h_target         zom u_blend</span></span>
+<span><span class="co">#&gt; 1 104.9632 0.111600000 4.66291</span></span>
+<span><span class="co">#&gt; 2 390.3251 0.009244286 4.72021</span></span></code></pre></div>
 <p>At the cold anchor, most of the available energy is evaporated
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mi>E</mi><mo>=</mo><mn>1.05</mn><mspace width="0.167em"></mspace><mi>λ</mi><mspace width="0.167em"></mspace><mi>E</mi><msub><mi>T</mi><mrow><mi>r</mi><mo>,</mo><mi>i</mi><mi>n</mi><mi>s</mi><mi>t</mi></mrow></msub></mrow><annotation encoding="application/x-tex">LE = 1.05\,\lambda\,ET_{r,inst}</annotation></semantics></math>)
 and
@@ -583,20 +586,20 @@ decision M2-11):</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">a</span>, b <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">b</span>, iterations <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">iterations</span>,</span>
 <span>  converged <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">converged</span><span class="op">)</span></span>
-<span><span class="co">#&gt;            a            b   iterations    converged </span></span>
-<span><span class="co">#&gt; -154.3451605    0.5199804   18.0000000    1.0000000</span></span>
+<span><span class="co">#&gt;           a           b  iterations   converged </span></span>
+<span><span class="co">#&gt; -87.5585185   0.2953382  17.0000000   1.0000000</span></span>
 <span><span class="va">cal</span><span class="op">$</span><span class="va">anchors</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"type"</span>, <span class="st">"ts_datum"</span>, <span class="st">"h_target"</span>, <span class="st">"dt"</span>, <span class="st">"rah"</span>, <span class="st">"u_star"</span>,</span>
 <span>                <span class="st">"obukhov_length"</span>, <span class="st">"h"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   type ts_datum h_target       dt      rah    u_star obukhov_length        h</span></span>
-<span><span class="co">#&gt; 1  hot 307.2995 367.0954 5.444556 16.93990 0.2611358      -4.233083 367.0954</span></span>
-<span><span class="co">#&gt; 2 cold 300.4000 108.3433 1.856939 19.79312 0.3178788     -25.571069 108.3433</span></span></code></pre></div>
+<span><span class="co">#&gt; 1  hot 315.7583 390.3251 5.696970 16.22914 0.2974710      -5.886905 390.3251</span></span>
+<span><span class="co">#&gt; 2 cold 302.1600 104.9632 1.680877 18.37427 0.3559409     -37.033272 104.9632</span></span></code></pre></div>
 <p>Each anchor reproduces its target
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>
 exactly. At the cold anchor,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ρ</mi><mrow><mi>a</mi><mi>i</mi><mi>r</mi></mrow></msub><msub><mi>c</mi><mi>p</mi></msub><mi>/</mi><msub><mi>r</mi><mrow><mi>a</mi><mi>h</mi></mrow></msub></mrow><annotation encoding="application/x-tex">\rho_{air} c_p / r_{ah}</annotation></semantics></math>
-= 58 W m⁻² K⁻¹: a bias of 1 K in
+= 62 W m⁻² K⁻¹: a bias of 1 K in
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">dT</annotation></semantics></math>
-there would be a bias of 58 W m⁻² in
+there would be a bias of 62 W m⁻² in
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>,
 or 0.09 mm h⁻¹ of evapotranspiration, which is why
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">dT</annotation></semantics></math>
@@ -631,15 +634,15 @@ the calibrated line look like?</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="anchors-monin-obukhov_files/figure-html/anchor-maps-1.png" class="r-plt" alt="" width="100%"></p>
 <p><em>The anchor pixels on the land surface temperature and on the NDVI
-of the scene: the cold anchor (blue triangle) and the 42 pixels of the
+of the scene: the cold anchor (blue triangle) and the 35 pixels of the
 hot anchor (red circles), whose mean is the hot calibration point.</em>
 The hot pixels are among the warmest and least green cells, in the east
 of the province. The cold anchor is a green cell (NDVI 0.82) in the
-west, but its albedo, 0.141, is just inside the lower limit of 0.14 that
-the preset uses to leave out dark forest canopies: at 1 km it may well
-be a mixture of plantation and fields. This is the kind of compromise
-that section 4 comes back to. The coolest cells of the scene, along the
-coast, are colder than the cold anchor.</p>
+west, but its albedo, 0.1403, is just inside the lower limit of 0.14
+that the preset uses to leave out dark forest canopies: at 1 km it may
+well be a mixture of plantation and fields. This is the kind of
+compromise that section 4 comes back to. The coolest cells of the scene,
+along the coast, are colder than the cold anchor.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ts_all</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">cal</span><span class="op">$</span><span class="va">pixels</span><span class="op">$</span><span class="va">ts_datum</span><span class="op">)</span></span>
 <span><span class="va">an</span> <span class="op">&lt;-</span> <span class="va">cal</span><span class="op">$</span><span class="va">anchors</span></span>
@@ -651,7 +654,7 @@ coast, are colder than the cold anchor.</p>
 <span>     main <span class="op">=</span> <span class="st">"Calibrated dT line and its iterates"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/rect.html" class="external-link">rect</a></span><span class="op">(</span><span class="va">ts_hot</span>, <span class="op">-</span><span class="fl">20</span>, <span class="fl">400</span>, <span class="fl">40</span>, col <span class="op">=</span> <span class="st">"#FEE0D2"</span>, border <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/rect.html" class="external-link">rect</a></span><span class="op">(</span><span class="fl">0</span>, <span class="op">-</span><span class="fl">20</span>, <span class="va">ts_cold</span>, <span class="fl">40</span>, col <span class="op">=</span> <span class="st">"#DEEBF7"</span>, border <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/text.html" class="external-link">text</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="st">"usr"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">ts_cold</span><span class="op">)</span><span class="op">)</span>, <span class="op">-</span><span class="fl">7</span>, cex <span class="op">=</span> <span class="fl">0.8</span>, col <span class="op">=</span> <span class="st">"#2B5C8A"</span>,</span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/text.html" class="external-link">text</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="st">"usr"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">-</span><span class="fl">7</span>, adj <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.03</span>, <span class="fl">0.5</span><span class="op">)</span>, cex <span class="op">=</span> <span class="fl">0.8</span>, col <span class="op">=</span> <span class="st">"#2B5C8A"</span>,</span>
 <span>     <span class="st">"extrapolated: colder than the cold anchor"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/text.html" class="external-link">text</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">ts_hot</span>, <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="st">"usr"</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>, <span class="fl">11.5</span>, srt <span class="op">=</span> <span class="fl">90</span>, cex <span class="op">=</span> <span class="fl">0.8</span>,</span>
 <span>     col <span class="op">=</span> <span class="st">"#99341F"</span>, <span class="st">"extrapolated"</span><span class="op">)</span></span>
@@ -679,7 +682,7 @@ space. Each iteration of section 3 gives a different pair
 and therefore a different line (grey; the first one is the steepest);
 the final line (black) passes through both anchors. The rug marks the
 temperature of every cell of the scene: many cells are colder than the
-cold anchor (shaded blue; below about 296.8 K their
+cold anchor (shaded blue; below about 296.5 K their
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">dT</annotation></semantics></math>,
 and so their
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>,
@@ -692,7 +695,7 @@ is extrapolated.</em></p>
 <span>  above_hot <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">ts_all</span> <span class="op">&gt;</span> <span class="va">an</span><span class="op">$</span><span class="va">ts_datum</span><span class="op">[</span><span class="va">an</span><span class="op">$</span><span class="va">type</span> <span class="op">==</span> <span class="st">"hot"</span><span class="op">]</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  cells <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">ts_all</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; below_cold  above_hot      cells </span></span>
-<span><span class="co">#&gt;       1114         38       3656</span></span></code></pre></div>
+<span><span class="co">#&gt;        679         35       3707</span></span></code></pre></div>
 <p>These cells are flagged <code>EF_H_DT_EXTRAPOLATED_COLD</code> and
 <code>EF_H_DT_EXTRAPOLATED_HOT</code>; they are computed with the same
 line, not truncated.</p>
@@ -969,34 +972,34 @@ constants are those recorded by <code><a href="../reference/ef_calibrate_h.html"
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">hist_a</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"iteration"</span>, <span class="st">"a"</span>, <span class="st">"b"</span>, <span class="st">"dt_hot"</span>, <span class="st">"dt_cold"</span>, <span class="st">"L_hot"</span>,</span>
 <span>                       <span class="st">"L_cold"</span>, <span class="st">"rah_hot"</span>, <span class="st">"rah_cold"</span>, <span class="st">"change"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   iteration       a      b dt_hot dt_cold  L_hot  L_cold rah_hot rah_cold</span></span>
-<span><span class="co">#&gt; 1         0      NA     NA  0.000   0.000    Inf     Inf  44.680    33.65</span></span>
-<span><span class="co">#&gt; 2         1 -495.10 1.6590 14.620   3.177 -1.021  -8.097   8.378    13.64</span></span>
-<span><span class="co">#&gt; 3         2  -56.94 0.1938  2.611   1.274 -8.232 -44.340  21.670    22.43</span></span>
-<span><span class="co">#&gt; 4         3 -212.20 0.7133  7.029   2.108 -3.291 -20.650  15.220    18.70</span></span>
-<span><span class="co">#&gt; 5         4 -133.80 0.4512  4.866   1.753 -4.702 -28.010  17.670    20.25</span></span>
-<span><span class="co">#&gt; 6         5 -163.20 0.5495  5.692   1.900 -4.058 -24.630  16.650    19.60</span></span>
-<span><span class="co">#&gt; 7         6 -150.90 0.5083  5.346   1.839 -4.307 -25.970  17.060    19.87</span></span>
-<span><span class="co">#&gt; 8         7 -155.80 0.5247  5.485   1.864 -4.204 -25.410  16.890    19.76</span></span>
+<span><span class="co">#&gt;   iteration       a      b dt_hot dt_cold   L_hot L_cold rah_hot rah_cold</span></span>
+<span><span class="co">#&gt; 1         0      NA     NA  0.000   0.000     Inf    Inf  37.690    28.63</span></span>
+<span><span class="co">#&gt; 2         1 -238.20 0.7971 13.470   2.634  -1.600 -13.57   9.034    14.00</span></span>
+<span><span class="co">#&gt; 3         2  -39.05 0.1335  3.092   1.277 -10.370 -56.96  19.640    20.01</span></span>
+<span><span class="co">#&gt; 4         3 -111.90 0.3764  6.952   1.833  -4.797 -31.72  15.010    17.75</span></span>
+<span><span class="co">#&gt; 5         4  -78.89 0.2665  5.246   1.623  -6.379 -39.32  16.710    18.61</span></span>
+<span><span class="co">#&gt; 6         5  -91.01 0.3068  5.875   1.703  -5.709 -36.21  16.050    18.28</span></span>
+<span><span class="co">#&gt; 7         6  -86.24 0.2910  5.629   1.673  -5.957 -37.35  16.300    18.41</span></span>
+<span><span class="co">#&gt; 8         7  -88.07 0.2970  5.723   1.684  -5.860 -36.91  16.200    18.36</span></span>
 <span><span class="co">#&gt;     change</span></span>
 <span><span class="co">#&gt; 1       NA</span></span>
-<span><span class="co">#&gt; 2 4.334000</span></span>
-<span><span class="co">#&gt; 3 0.613300</span></span>
-<span><span class="co">#&gt; 4 0.423700</span></span>
-<span><span class="co">#&gt; 5 0.139000</span></span>
-<span><span class="co">#&gt; 6 0.061760</span></span>
-<span><span class="co">#&gt; 7 0.024220</span></span>
-<span><span class="co">#&gt; 8 0.009992</span></span></code></pre></div>
+<span><span class="co">#&gt; 2 3.172000</span></span>
+<span><span class="co">#&gt; 3 0.540000</span></span>
+<span><span class="co">#&gt; 4 0.308800</span></span>
+<span><span class="co">#&gt; 5 0.102200</span></span>
+<span><span class="co">#&gt; 6 0.041650</span></span>
+<span><span class="co">#&gt; 7 0.015650</span></span>
+<span><span class="co">#&gt; 8 0.006067</span></span></code></pre></div>
 <p>The first iterate is far off. With the neutral resistance of the
-smooth hot anchor, 44.7 s m⁻¹, the hot anchor needs
+smooth hot anchor, 37.7 s m⁻¹, the hot anchor needs
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">dT</annotation></semantics></math>
-= 14.6 K to carry its
+= 13.5 K to carry its
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>;
 such a
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">dT</annotation></semantics></math>
 with that resistance means very unstable air
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>L</mi><annotation encoding="application/x-tex">L</annotation></semantics></math>
-= -1 m), the resistance falls to 8.4 s m⁻¹, the next
+= -1.6 m), the resistance falls to 9 s m⁻¹, the next
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">dT</annotation></semantics></math>
 is too small, and so on: the iterates oscillate around the fixed point
 with a shrinking amplitude.</p>
@@ -1016,7 +1019,7 @@ the calibrated coefficients:</p>
 <span>  <span class="op">)</span>,</span>
 <span>  a_diff <span class="op">=</span> <span class="va">co</span><span class="op">$</span><span class="va">a</span> <span class="op">-</span> <span class="va">cal</span><span class="op">$</span><span class="va">a</span>, b_diff <span class="op">=</span> <span class="va">co</span><span class="op">$</span><span class="va">b</span> <span class="op">-</span> <span class="va">cal</span><span class="op">$</span><span class="va">b</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   iterations_equal max_rel_diff_trace             a_diff             b_diff </span></span>
-<span><span class="co">#&gt;       1.000000e+00       5.282326e-15       0.000000e+00       0.000000e+00</span></span></code></pre></div>
+<span><span class="co">#&gt;       1.000000e+00       2.866581e-15       1.136868e-13      -3.885781e-16</span></span></code></pre></div>
 <p>Phase B for every cell of the scene, with
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><msup><mi>a</mi><mo>*</mo></msup><mo>,</mo><msup><mi>b</mi><mo>*</mo></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(a^*, b^*)</annotation></semantics></math>
 fixed. Each cell starts from neutral and stops when its own
@@ -1051,7 +1054,7 @@ has converged:</p>
 <span>  max_abs_diff_h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">h_mo</span> <span class="op">-</span> <span class="fu">v</span><span class="op">(</span><span class="va">cal</span><span class="op">$</span><span class="va">pixels</span><span class="op">$</span><span class="va">h</span><span class="op">)</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  same_iterations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">n_iter</span> <span class="op">==</span> <span class="fu">v</span><span class="op">(</span><span class="va">cal</span><span class="op">$</span><span class="va">pixels</span><span class="op">$</span><span class="va">iterations</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;              cells same_missing_cells     max_abs_diff_h    same_iterations </span></span>
-<span><span class="co">#&gt;       3.655000e+03       1.000000e+00       2.273737e-13       1.000000e+00</span></span></code></pre></div>
+<span><span class="co">#&gt;       3.706000e+03       1.000000e+00       2.842171e-13       1.000000e+00</span></span></code></pre></div>
 <p>Both phases written by hand give the same iterates, the same
 coefficients and the same
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>
@@ -1120,13 +1123,13 @@ against <code>tol</code>.</em> Both anchors are unstable
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mo>&lt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">L &lt; 0</annotation></semantics></math>),
 the hot anchor much more so
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>L</mi><annotation encoding="application/x-tex">L</annotation></semantics></math>
-= -4.2 m, against -25.6 m at the cold anchor): its converged resistance
-is 38 % of the neutral one. After the first iterations the error shrinks
-by a roughly constant factor of about 2.5 per iteration (a straight line
-on the logarithmic scale): the iteration contracts linearly, and
-reaching <code>tol</code> =
+= -5.9 m, against -37 m at the cold anchor): its converged resistance is
+43 % of the neutral one. After the first iterations the error shrinks by
+a roughly constant factor of about 2.6 per iteration (a straight line on
+the logarithmic scale): the iteration contracts linearly, and reaching
+<code>tol</code> =
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mrow><mi>−</mi><mn>6</mn></mrow></msup><annotation encoding="application/x-tex">10^{-6}</annotation></semantics></math>
-takes 18 iterations instead of the 7 needed for a tolerance of 1 %.</p>
+takes 17 iterations instead of the 7 needed for a tolerance of 1 %.</p>
 </div>
 <div class="section level3">
 <h3 id="why-the-stability-correction-matters">Why the stability correction matters<a class="anchor" aria-label="anchor" href="#why-the-stability-correction-matters"></a>
@@ -1153,9 +1156,9 @@ anchors still reproduce their targets exactly.</p>
 <span>                  dt_cold <span class="op">=</span> <span class="va">dt_n</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>      monin_obukhov <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">a</span>, b <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">b</span>, dt_hot <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">anchors</span><span class="op">$</span><span class="va">dt</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
 <span>                        dt_cold <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">anchors</span><span class="op">$</span><span class="va">dt</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                       a         b    dt_hot  dt_cold</span></span>
-<span><span class="co">#&gt; neutral       -467.6372 1.5671802 13.956505 3.143708</span></span>
-<span><span class="co">#&gt; monin_obukhov -154.3452 0.5199804  5.444556 1.856939</span></span>
+<span><span class="co">#&gt;                        a         b   dt_hot  dt_cold</span></span>
+<span><span class="co">#&gt; neutral       -226.48736 0.7582021 12.92124 2.610996</span></span>
+<span><span class="co">#&gt; monin_obukhov  -87.55852 0.2953382  5.69697 1.680877</span></span>
 <span></span>
 <span><span class="co"># Difference of H (W m-2) by position with respect to the anchors</span></span>
 <span><span class="va">region</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="fu">v</span><span class="op">(</span><span class="va">lst</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="cn">Inf</span>, <span class="va">ts_cold</span>, <span class="va">ts_hot</span>, <span class="cn">Inf</span><span class="op">)</span>,</span>
@@ -1168,9 +1171,9 @@ anchors still reproduce their targets exactly.</p>
 <span><span class="op">}</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/tapply.html" class="external-link">tapply</a></span><span class="op">(</span><span class="va">h_mo</span> <span class="op">-</span> <span class="va">h_neutral</span>, <span class="va">region</span>, <span class="va">stats_by</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                           min median   max cells</span></span>
-<span><span class="co">#&gt; colder than cold anchor   0.4   94.4 472.9  1113</span></span>
-<span><span class="co">#&gt; between the anchors     -60.0  -17.0  13.4  2504</span></span>
-<span><span class="co">#&gt; hotter than hot anchor  -17.2   -0.1  10.4    38</span></span></code></pre></div>
+<span><span class="co">#&gt; colder than cold anchor   0.1   12.4 136.6   679</span></span>
+<span><span class="co">#&gt; between the anchors     -45.5  -16.3  13.9  2992</span></span>
+<span><span class="co">#&gt; hotter than hot anchor  -11.5    1.0  18.8    35</span></span></code></pre></div>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">h_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">5</span>, <span class="st">"Blues 3"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>,</span>
 <span>            <span class="fu"><a href="https://rdrr.io/r/base/rev.html" class="external-link">rev</a></span><span class="op">(</span><span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">10</span>, <span class="st">"Reds 3"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
@@ -1211,14 +1214,14 @@ targets), their difference, and both against the surface temperature. In
 the maps, values beyond the ends of the colour scales are shown with the
 extreme colours (the neutral
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>
-goes down to -590 W m⁻²).</em></p>
+goes down to -173 W m⁻²).</em></p>
 <p>Both calibrations agree at the two anchors, by construction, and yet
 they are very different. Without the stability correction the resistance
-of the hot anchor is about 2.6 times too high, so the hot anchor needs a
+of the hot anchor is about 2.3 times too high, so the hot anchor needs a
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">dT</annotation></semantics></math>
-of 14 K instead of 5.4 K, and the line is 3 times steeper. Between the
-anchors the two fields differ by some tens of W m⁻², of the same order
-as the effect of a 1 K bias in
+of 12.9 K instead of 5.7 K, and the line is 2.6 times steeper. Between
+the anchors the two fields differ by some tens of W m⁻², of the same
+order as the effect of a 1 K bias in
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">dT</annotation></semantics></math>.
 Beyond the cold anchor the steep neutral line, extrapolated, gives
 strongly negative fluxes in the cool coastal cells, while the stability
@@ -1260,7 +1263,7 @@ it changes the calibration itself.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>unstable <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">zeta</span> <span class="op">&lt;</span> <span class="fl">0</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, stable <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">zeta</span> <span class="op">&gt;</span> <span class="fl">0</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  not_converged <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">!</span><span class="va">cal</span><span class="op">$</span><span class="va">pixels</span><span class="op">$</span><span class="va">converged</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      unstable        stable not_converged </span></span>
-<span><span class="co">#&gt;          3053           602             0</span></span></code></pre></div>
+<span><span class="co">#&gt;          3691            15             0</span></span></code></pre></div>
 <p><em>Left: the stability parameter
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>z</mi><mn>2</mn></msub><mi>/</mi><mi>L</mi></mrow><annotation encoding="application/x-tex">z_2/L</annotation></semantics></math>
 of each cell after phase B (negative: unstable,
@@ -1269,11 +1272,11 @@ positive: stable,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>H</mi><mo>&lt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">H &lt; 0</annotation></semantics></math>).
 Centre and right: the number of iterations each cell needed to reach
 <code>pixel_tol</code>.</em></p>
-<p>Most of the scene is unstable; the stable cells are those colder than
-the point where the calibrated line crosses
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">dT = 0</annotation></semantics></math>,
-mostly the cool coastal strip in the west. No cell failed to converge.
-Which cells need more iterations?</p>
+<p>Almost the whole scene is unstable: only 15 cells are stable, those
+colder than the point where the calibrated line crosses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>T</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">dT = 0</annotation></semantics></math>
+(296.5 K), on the cool coastal strip in the west. No cell failed to
+converge. Which cells need more iterations?</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>iterations <span class="op">=</span> <span class="fu">v</span><span class="op">(</span><span class="va">cal</span><span class="op">$</span><span class="va">pixels</span><span class="op">$</span><span class="va">iterations</span><span class="op">)</span>, ts <span class="op">=</span> <span class="fu">v</span><span class="op">(</span><span class="va">lst</span><span class="op">)</span>,</span>
 <span>                    lai <span class="op">=</span> <span class="fu">v</span><span class="op">(</span><span class="va">lai</span><span class="op">)</span>, zom <span class="op">=</span> <span class="fu">v</span><span class="op">(</span><span class="va">zom</span><span class="op">)</span>, h <span class="op">=</span> <span class="fu">v</span><span class="op">(</span><span class="va">cal</span><span class="op">$</span><span class="va">pixels</span><span class="op">$</span><span class="va">h</span><span class="op">)</span>,</span>
@@ -1282,13 +1285,13 @@ Which cells need more iterations?</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">ts</span>, <span class="va">lai</span>, <span class="va">zom</span>, <span class="va">h</span>, <span class="va">zeta</span><span class="op">)</span> <span class="op">~</span> <span class="va">iterations</span>,</span>
 <span>                       data <span class="op">=</span> <span class="va">cells</span>, FUN <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   iterations     ts   lai   zom       h   zeta</span></span>
-<span><span class="co">#&gt; 1          2 296.81 3.787 0.068  -0.318  0.001</span></span>
-<span><span class="co">#&gt; 2          3 296.30 5.525 0.099  -9.283  0.022</span></span>
-<span><span class="co">#&gt; 3          4 305.08 0.800 0.014 267.770 -0.338</span></span>
-<span><span class="co">#&gt; 4          5 305.80 0.850 0.015 301.656 -0.336</span></span>
-<span><span class="co">#&gt; 5          6 304.00 1.425 0.026 231.230 -0.232</span></span>
-<span><span class="co">#&gt; 6          7 300.68 3.825 0.069 112.481 -0.101</span></span>
-<span><span class="co">#&gt; 7          8 300.64 5.750 0.104 115.545 -0.084</span></span></code></pre></div>
+<span><span class="co">#&gt; 1          2 296.42 3.925 0.071  -0.520  0.001</span></span>
+<span><span class="co">#&gt; 2          3 296.08 0.650 0.012  -3.327  0.010</span></span>
+<span><span class="co">#&gt; 3          4 313.06 0.562 0.010 321.116 -0.287</span></span>
+<span><span class="co">#&gt; 4          5 311.18 0.750 0.013 279.348 -0.236</span></span>
+<span><span class="co">#&gt; 5          6 308.50 1.200 0.022 223.063 -0.168</span></span>
+<span><span class="co">#&gt; 6          7 303.12 3.775 0.068 118.096 -0.074</span></span>
+<span><span class="co">#&gt; 7          8 302.54 5.775 0.104 112.351 -0.059</span></span></code></pre></div>
 <p>Cells close to neutral
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>H</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">H \approx 0</annotation></semantics></math>,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>z</mi><mn>2</mn></msub><mi>/</mi><mi>L</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">z_2/L \approx 0</annotation></semantics></math>)

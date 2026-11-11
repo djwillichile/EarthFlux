@@ -155,7 +155,7 @@ scale factors, fill values, quality bits) are verified against the
 official user guides; the conversions (albedo, aggregation) are
 candidates and the LAI-based emissivity follows the SEBAL Idaho manual.
 The dataset `cauquenes_modis` is the output of this preprocessing for
-the Cauquenes province on 15 February 2019; see the article [Example
+the Cauquenes province on 14 February 2019; see the article [Example
 scene:
 Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md).
 

@@ -66,7 +66,8 @@ What 0.1.0 includes:
   parallel, and spatial block cross-validation.
 - **MODIS preprocessing** (internal, not exported yet) into the surface
   state of the METRIC chain, and the example scene `cauquenes_modis`
-  (Cauquenes province, Chile, 15 February 2019).
+  (Cauquenes province, Chile, 15 February 2019; 14 February 2019 in the
+  development version, a date observed closer to nadir).
 
 What 0.1.0 does **not** include: the integrated
 [`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
@@ -139,8 +140,9 @@ or the development version with `pak::pak("djwillichile/EarthFlux")`.
 ## Example
 
 The packaged scene `cauquenes_modis` is the MODIS surface state of the
-Cauquenes province (Maule Region, Chile) on 15 February 2019 (Terra
-overpass), on the 1 km sinusoidal grid. It is a packed `terra` raster:
+Cauquenes province (Maule Region, Chile) on 14 February 2019 (Terra
+overpass at about 10:12 local solar time, observed 12 to 18 degrees from
+nadir), on the 1 km sinusoidal grid. It is a packed `terra` raster:
 
 ``` r
 
@@ -156,8 +158,8 @@ data.frame(layer = names(r), unit = terra::units(r))[1:9, ]
 #> 5 emissivity      -
 #> 6    emis_31      -
 #> 7    emis_32      -
-#> 8        doy      -
-#> 9   utc_hour      h
+#> 8 view_angle degree
+#> 9        doy      -
 ```
 
 The longwave radiation emitted by the surface follows from the land
@@ -173,13 +175,13 @@ terra::values(rl_out) <- ef_rl_out(
 )
 names(rl_out) <- "rl_out"
 terra::global(rl_out, c("min", "mean", "max"), na.rm = TRUE)
-#>             min     mean      max
-#> rl_out 383.4013 458.0683 489.6118
+#>             min    mean      max
+#> rl_out 400.9196 489.555 557.6736
 
 # Computed on the native grid; shown in geographic coordinates (EPSG:4326)
 rl_out_lonlat <- terra::project(rl_out, "EPSG:4326", method = "bilinear")
 terra::plot(rl_out_lonlat,
-            main = "Emitted longwave radiation (W m-2), 2019-02-15")
+            main = "Emitted longwave radiation (W m-2), 2019-02-14")
 ```
 
 ![](reference/figures/README-example-rl-out-1.png)
@@ -525,7 +527,7 @@ Atmospheric and thermodynamic quantities used by several modules
 ## Datasets
 
 - [`cauquenes_modis`](https://djwillichile.github.io/EarthFlux/reference/cauquenes_modis.md)
-  : MODIS example scene of the Cauquenes province (15 February 2019)
+  : MODIS example scene of the Cauquenes province (14 February 2019)
 
 # Articles
 
@@ -533,7 +535,7 @@ Atmospheric and thermodynamic quantities used by several modules
 
 - [Introduction to
   EarthFlux](https://djwillichile.github.io/EarthFlux/articles/earthflux-introduction.md):
-- [Example scene: Cauquenes, 15 February
+- [Example scene: Cauquenes, 14 February
   2019](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md):
 
 ### Methods

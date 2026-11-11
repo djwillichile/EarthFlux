@@ -252,4 +252,4 @@ Atmospheric and thermodynamic quantities used by several modules
 ## Datasets
 
 - [`cauquenes_modis`](https://djwillichile.github.io/EarthFlux/reference/cauquenes_modis.md)
-  : MODIS example scene of the Cauquenes province (15 February 2019)
+  : MODIS example scene of the Cauquenes province (14 February 2019)

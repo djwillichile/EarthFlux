@@ -75,7 +75,7 @@ ef_net_radiation(
 ## Example scene
 
 The dataset `cauquenes_modis` holds the MODIS surface state of the
-Cauquenes province (Maule Region, Chile) for 15 February 2019. The
+Cauquenes province (Maule Region, Chile) for 14 February 2019. The
 emitted longwave radiation of its cells follows from the land surface
 temperature (K) and the broadband emissivity:
 
@@ -88,7 +88,7 @@ rl_out <- ef_rl_out(
 )
 summary(rl_out) # W m-2; NA outside the province and where LST is missing
 #>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.     NAs 
-#>   383.4   444.1   467.8   458.1   476.2   489.6    5937
+#>   400.9   467.8   493.5   489.6   510.0   557.7    5886
 ```
 
 ## Next steps
