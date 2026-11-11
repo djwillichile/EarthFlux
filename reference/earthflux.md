@@ -93,11 +93,12 @@ earthflux(
 An object of class `earthflux_result` (a list):
 
 - `layers`: `SpatRaster` on the working grid (MODIS sinusoidal, about 1
-  km), `NA` outside the AOI polygon, with the layers `eta_24` (daily
-  actual ET, mm d-1), `etrf` (-), `et_inst` (mm h-1), `le`, `h`, `g`,
-  `rn` (W m-2), `rah` (s m-1), `dt` (K), `rs_in`, `rl_in`, `rl_out` (W
-  m-2), `tau_sw` (-), `zom` (m), `u_blend`, `u_star` (m s-1), `ts_datum`
-  (K), `air_density` (kg m-3), `pressure` (kPa), `etr_inst` (mm h-1) and
+  km), `NA` outside the AOI polygon and on the cells excluded by the
+  terrain rule of the preset, with the layers `eta_24` (daily actual ET,
+  mm d-1), `etrf` (-), `et_inst` (mm h-1), `le`, `h`, `g`, `rn` (W m-2),
+  `rah` (s m-1), `dt` (K), `rs_in`, `rl_in`, `rl_out` (W m-2), `tau_sw`
+  (-), `zom` (m), `u_blend`, `u_star` (m s-1), `ts_datum` (K),
+  `air_density` (kg m-3), `pressure` (kPa), `etr_inst` (mm h-1) and
   `etr_24` (mm d-1) of the reference (alfalfa);
 
 - `units`: named character vector of the units of `layers`;
@@ -114,7 +115,9 @@ An object of class `earthflux_result` (a list):
 - `qa`: flag words per stage, never combined bit by bit: `surface` (the
   words of the surface state), `forcing` (GWR stage, one layer per
   variable at the overpass time of each cell), `metric` (`flags_rad`,
-  `flags_g`, `flags_h`, `flags_et`) and their `flag_bits`;
+  `flags_g`, `flags_h`, `flags_et`) and their `flag_bits`; on the cells
+  excluded by the terrain rule only `flags_h` is defined (bit of
+  `EF_H_TERRAIN_RULE_APPLIED`);
 
 - `flags`: `earthflux_flag` records of the run: object and record flags
   of the forcing (e.g. `EF_WS_GRIDDED_FORCING`,
@@ -125,11 +128,15 @@ An object of class `earthflux_result` (a list):
 - `provenance`: the preset (name, version, changes between versions,
   status, unverified elements), every effective option, the values
   derived for the scene (overpass times, day and UTC offset of the daily
-  reference ET, regionalization method, datum elevation, ...), the
-  counts of excluded cells (and of cells raised to the minimum z_om),
-  the MODIS granules, the NASADEM tiles, the Open-Meteo request (without
-  key) or the station table, attributions, the codes evaluated,
-  versions, the `future` plan and timings.
+  reference ET, regionalization method, datum elevation, the terrain
+  rule: its method, reference elevations (anchors of the preliminary
+  selection and the station), limit, kept range and the elevations of
+  the final anchors, ...), the counts of excluded cells (among them
+  `terrain_rule_excluded`, split into `terrain_rule_excluded_below` and
+  `terrain_rule_excluded_above` the range, and the cells raised to the
+  minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo
+  request (without key) or the station table, attributions, the codes
+  evaluated, versions, the `future` plan and timings.
 
 ## Details
 
@@ -146,11 +153,18 @@ of the daily reference ET; each cell takes the values at its own
 overpass time (linear interpolation between mid-points); (8) solar
 geometry, pressure, roughness and wind at 200 m; (9) anchors, selected
 before the net radiation because the incoming longwave uses the
-temperature of the cold anchor (P0-3); (10) shortwave and longwave
-radiation, net radiation, soil heat flux; (11) boundary conditions at
-the anchors and calibration of dT; (12) LE, instantaneous ET, ETrF and
-daily ETa. Values are never filled or truncated: excluded or undefined
-cells are `NA` and flagged or counted.
+temperature of the cold anchor (P0-3), outside the cells excluded by the
+terrain rule of the preset (decision M5-25: elevation more than 500 m,
+`idaho2002_elev`, or 250 m, `idaho2002_flat`, below or above the
+elevation range of the calibration, i.e. the cold and hot anchors of a
+preliminary selection without the rule and, with one station, the
+station; cells between the anchors are kept; the excluded cells are not
+computed, are `NA` in every layer and are flagged with
+`EF_H_TERRAIN_RULE_APPLIED`); (10) shortwave and longwave radiation, net
+radiation, soil heat flux; (11) boundary conditions at the anchors and
+calibration of dT; (12) LE, instantaneous ET, ETrF and daily ETa. Values
+are never filled or truncated: excluded or undefined cells are `NA` and
+flagged or counted.
 
 Errors: missing or unknown `preset` (`earthflux_missing_input`,
 `earthflux_unknown_method`), invalid inputs (`earthflux_input_error`),

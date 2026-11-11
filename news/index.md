@@ -108,6 +108,31 @@
   `pixel_maxit = 100`; decision M2-11) and recorded in the provenance
   with every other option. H changes by up to about 1.3 W m-2.
 
+- Presets `idaho2002_elev` and `idaho2002_flat` version 4: a terrain
+  rule (decision M5-25, `CANDIDATA`). One linear dT calibrated between
+  two anchors with one weather forcing only holds over the elevations of
+  the calibration, so cells more than the limit of the preset below or
+  above the elevation range of the calibration hold no anchor and are
+  `NA` in every layer of the result. The range spans the cold and hot
+  anchors of a preliminary anchor selection without the rule and, with
+  one station, the station (the datum of the surface temperature and the
+  site of the forcing); cells between the anchors are kept, however far
+  from each. The limits differ per preset: 500 m for `idaho2002_elev`,
+  whose lapse correction leaves an error of about 3.3 K per km in the
+  datum surface temperature, and 250 m for `idaho2002_flat`, which has
+  no lapse correction (6.5 K per km); both keep that error within the
+  1.5 K homogeneity tolerance of the anchors. They are flagged with the
+  new `EF_H_TERRAIN_RULE_APPLIED` (info, cell scope, bit 11 of the H
+  word; the other words are `NA` there) and counted in the provenance
+  (`terrain_rule_excluded`, below and above the range, with the
+  reference elevations, the kept range and the final anchors in
+  `scene$terrain_rule`). On the Maule scene of 2019-02-15 the elev
+  preset loses the Andes above about 800 m (40 % of the computed cells),
+  where ETrF was mostly negative, and keeps the hot anchor in valley
+  fields; the flat preset loses 46 %. On the Cauquenes scene the elev
+  preset is unchanged and the flat preset loses 18 cells above 669 m.
+  The excluded cells get no ETa.
+
 ### Bug fixes
 
 - The MODIS readers and `modis_provenance()` now work with older and

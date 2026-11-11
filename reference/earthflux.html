@@ -142,7 +142,8 @@ the preset (expert route).</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>earthflux_result</code> (a list):</p><ul><li><p><code>layers</code>: <code>SpatRaster</code> on the working grid (MODIS sinusoidal, about
-1 km), <code>NA</code> outside the AOI polygon, with the layers <code>eta_24</code> (daily
+1 km), <code>NA</code> outside the AOI polygon and on the cells excluded by the
+terrain rule of the preset, with the layers <code>eta_24</code> (daily
 actual ET, mm d-1), <code>etrf</code> (-), <code>et_inst</code> (mm h-1), <code>le</code>, <code>h</code>, <code>g</code>,
 <code>rn</code> (W m-2), <code>rah</code> (s m-1), <code>dt</code> (K), <code>rs_in</code>, <code>rl_in</code>, <code>rl_out</code>
 (W m-2), <code>tau_sw</code> (-), <code>zom</code> (m), <code>u_blend</code>, <code>u_star</code> (m s-1),
@@ -159,7 +160,9 @@ their target times, the method and the mid-points), <code>anchors</code>
 <li><p><code>qa</code>: flag words per stage, never combined bit by bit: <code>surface</code>
 (the words of the surface state), <code>forcing</code> (GWR stage, one layer per
 variable at the overpass time of each cell), <code>metric</code> (<code>flags_rad</code>,
-<code>flags_g</code>, <code>flags_h</code>, <code>flags_et</code>) and their <code>flag_bits</code>;</p></li>
+<code>flags_g</code>, <code>flags_h</code>, <code>flags_et</code>) and their <code>flag_bits</code>; on the
+cells excluded by the terrain rule only <code>flags_h</code> is defined (bit of
+<code>EF_H_TERRAIN_RULE_APPLIED</code>);</p></li>
 <li><p><code>flags</code>: <code>earthflux_flag</code> records of the run: object and record
 flags of the forcing (e.g. <code>EF_WS_GRIDDED_FORCING</code>,
 <code>EF_GWR_SINGLE_STATION</code>), the anchors and the calibration, and the
@@ -168,9 +171,13 @@ cell flags of the METRIC chain on the cells of the grid (with
 <li><p><code>provenance</code>: the preset (name, version, changes between versions,
 status, unverified elements), every effective option, the values
 derived for the scene (overpass times, day and UTC offset of the
-daily reference ET, regionalization method, datum elevation, ...),
-the counts of excluded cells (and of cells raised to the minimum
-z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
+daily reference ET, regionalization method, datum elevation, the
+terrain rule: its method, reference elevations (anchors of the
+preliminary selection and the station), limit, kept range and the
+elevations of the final anchors, ...), the counts of excluded
+cells (among them <code>terrain_rule_excluded</code>, split into
+<code>terrain_rule_excluded_below</code> and <code>terrain_rule_excluded_above</code> the
+range, and the cells raised to the minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
 (without key) or the station table, attributions, the codes
 evaluated, versions, the <code>future</code> plan and timings.</p></li>
 </ul></div>
@@ -189,7 +196,14 @@ of the daily reference ET; each cell takes the values at its own
 overpass time (linear interpolation between mid-points); (8) solar
 geometry, pressure, roughness and wind at 200 m; (9) anchors, selected
 before the net radiation because the incoming longwave uses the
-temperature of the cold anchor (P0-3); (10) shortwave and longwave
+temperature of the cold anchor (P0-3), outside the cells excluded by the
+terrain rule of the preset (decision M5-25: elevation more than 500 m,
+<code>idaho2002_elev</code>, or 250 m, <code>idaho2002_flat</code>, below or above the
+elevation range of the calibration, i.e. the cold and hot anchors of a
+preliminary selection without the rule and, with one station, the
+station; cells between the anchors are kept; the excluded cells are
+not computed, are <code>NA</code> in every layer and are flagged
+with <code>EF_H_TERRAIN_RULE_APPLIED</code>); (10) shortwave and longwave
 radiation, net radiation, soil heat flux; (11) boundary conditions at the
 anchors and calibration of dT; (12) LE, instantaneous ET, ETrF and daily
 ETa. Values are never filled or truncated: excluded or undefined cells
