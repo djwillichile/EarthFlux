@@ -1,0 +1,453 @@
+% references.bib -- EarthFlux manuscript (METRIC/MODIS, Cauquenes, Chile)
+% Verified 2026-11-05 against Crossref (journal/book DOIs), DataCite (MODIS 10.5067 DOIs,
+% CRAN DOI), publisher pages (Wiley, FAO, R Journal) and BCN LeyChile.
+% Encoding: UTF-8 (use biber/biblatex or a UTF-8 aware BibTeX setup).
+
+% ---------------------------------------------------------------- METRIC / SEBAL
+@article{allen2007metric1,
+  author  = {Allen, Richard G. and Tasumi, Masahiro and Trezza, Ricardo},
+  title   = {Satellite-Based Energy Balance for Mapping Evapotranspiration with Internalized Calibration ({METRIC})---Model},
+  journal = {Journal of Irrigation and Drainage Engineering},
+  year    = {2007},
+  volume  = {133},
+  number  = {4},
+  pages   = {380--394},
+  doi     = {10.1061/(ASCE)0733-9437(2007)133:4(380)}
+}
+
+@article{allen2007metric2,
+  author  = {Allen, Richard G. and Tasumi, Masahiro and Morse, Anthony and Trezza, Ricardo and Wright, James L. and Bastiaanssen, Wim and Kramber, William and Lorite, Ignacio and Robison, Clarence W.},
+  title   = {Satellite-Based Energy Balance for Mapping Evapotranspiration with Internalized Calibration ({METRIC})---Applications},
+  journal = {Journal of Irrigation and Drainage Engineering},
+  year    = {2007},
+  volume  = {133},
+  number  = {4},
+  pages   = {395--406},
+  doi     = {10.1061/(ASCE)0733-9437(2007)133:4(395)}
+}
+
+@article{bastiaanssen1998sebal1,
+  author  = {Bastiaanssen, W. G. M. and Menenti, M. and Feddes, R. A. and Holtslag, A. A. M.},
+  title   = {A remote sensing surface energy balance algorithm for land ({SEBAL}). 1. {F}ormulation},
+  journal = {Journal of Hydrology},
+  year    = {1998},
+  volume  = {212--213},
+  pages   = {198--212},
+  doi     = {10.1016/S0022-1694(98)00253-4}
+}
+
+@article{bastiaanssen1998sebal2,
+  author  = {Bastiaanssen, W. G. M. and Pelgrum, H. and Wang, J. and Ma, Y. and Moreno, J. F. and Roerink, G. J. and van der Wal, T.},
+  title   = {A remote sensing surface energy balance algorithm for land ({SEBAL}). 2. {V}alidation},
+  journal = {Journal of Hydrology},
+  year    = {1998},
+  volume  = {212--213},
+  pages   = {213--229},
+  doi     = {10.1016/S0022-1694(98)00254-6},
+}
+
+@techreport{waters2002sebal,
+  author      = {Waters, Ralf and Allen, Richard and Tasumi, Masahiro and Trezza, Ricardo and Bastiaanssen, Wim},
+  title       = {{SEBAL}: Surface Energy Balance Algorithms for Land. {I}daho Implementation. {A}dvanced Training and Users Manual, Version 1.0},
+  institution = {Idaho Department of Water Resources},
+  address     = {Boise, ID, USA},
+  year        = {2002},
+  month       = aug,
+}
+
+@phdthesis{tasumi2003phd,
+  author = {Tasumi, Masahiro},
+  title  = {Progress in Operational Estimation of Regional Evapotranspiration Using Satellite Imagery},
+  school = {University of Idaho},
+  address = {Moscow, ID, USA},
+  year   = {2003},
+}
+
+@article{tasumi2008albedo,
+  author  = {Tasumi, Masahiro and Allen, Richard G. and Trezza, Ricardo},
+  title   = {At-Surface Reflectance and Albedo from Satellite for Operational Calculation of Land Surface Energy Balance},
+  journal = {Journal of Hydrologic Engineering},
+  year    = {2008},
+  volume  = {13},
+  number  = {2},
+  pages   = {51--63},
+  doi     = {10.1061/(ASCE)1084-0699(2008)13:2(51)}
+}
+
+@article{allen2011sebalmetric,
+  author  = {Allen, Richard and Irmak, Ayse and Trezza, Ricardo and Hendrickx, Jan M. H. and Bastiaanssen, Wim and Kjaersgaard, Jeppe},
+  title   = {Satellite-based {ET} estimation in agriculture using {SEBAL} and {METRIC}},
+  journal = {Hydrological Processes},
+  year    = {2011},
+  volume  = {25},
+  number  = {26},
+  pages   = {4011--4027},
+  doi     = {10.1002/hyp.8408}
+}
+
+% ---------------------------------------------------------------- Reference ET
+@book{allen1998fao56,
+  author    = {Allen, Richard G. and Pereira, Luis S. and Raes, Dirk and Smith, Martin},
+  title     = {Crop Evapotranspiration: Guidelines for Computing Crop Water Requirements},
+  series    = {FAO Irrigation and Drainage Paper},
+  number    = {56},
+  publisher = {Food and Agriculture Organization of the United Nations (FAO)},
+  address   = {Rome},
+  year      = {1998},
+  pages     = {300},
+  isbn      = {92-5-104219-5},
+  url       = {https://www.fao.org/3/X0490E/x0490e00.htm}
+}
+
+@book{asce2005standardized,
+  author    = {{ASCE-EWRI}},
+  editor    = {Allen, Richard G. and Walter, Ivan A. and Elliott, Ronald L. and Howell, Terry A. and Itenfisu, Daniel and Jensen, Marvin E. and Snyder, Richard L.},
+  title     = {The {ASCE} Standardized Reference Evapotranspiration Equation},
+  publisher = {American Society of Civil Engineers},
+  address   = {Reston, VA, USA},
+  year      = {2005},
+  doi       = {10.1061/9780784408056},
+}
+
+% ---------------------------------------------------------------- GWR / interpolation
+@article{brunsdon1996gwr,
+  author  = {Brunsdon, Chris and Fotheringham, A. Stewart and Charlton, Martin E.},
+  title   = {Geographically Weighted Regression: A Method for Exploring Spatial Nonstationarity},
+  journal = {Geographical Analysis},
+  year    = {1996},
+  volume  = {28},
+  number  = {4},
+  pages   = {281--298},
+  doi     = {10.1111/j.1538-4632.1996.tb00936.x}
+}
+
+@book{fotheringham2002gwr,
+  author    = {Fotheringham, A. Stewart and Brunsdon, Chris and Charlton, Martin},
+  title     = {Geographically Weighted Regression: The Analysis of Spatially Varying Relationships},
+  publisher = {John Wiley \& Sons},
+  address   = {Chichester, UK},
+  year      = {2002},
+  isbn      = {978-0-471-49616-8},
+}
+
+@article{gollini2015gwmodel,
+  author  = {Gollini, Isabella and Lu, Binbin and Charlton, Martin and Brunsdon, Christopher and Harris, Paul},
+  title   = {{GWmodel}: An {R} Package for Exploring Spatial Heterogeneity Using Geographically Weighted Models},
+  journal = {Journal of Statistical Software},
+  year    = {2015},
+  volume  = {63},
+  number  = {17},
+  doi     = {10.18637/jss.v063.i17},
+}
+
+@article{wheeler2005multicollinearity,
+  author  = {Wheeler, David and Tiefelsdorf, Michael},
+  title   = {Multicollinearity and correlation among local regression coefficients in geographically weighted regression},
+  journal = {Journal of Geographical Systems},
+  year    = {2005},
+  volume  = {7},
+  number  = {2},
+  pages   = {161--187},
+  doi     = {10.1007/s10109-005-0155-6}
+}
+
+@article{li2014interpolation,
+  author  = {Li, Jin and Heap, Andrew D.},
+  title   = {Spatial interpolation methods applied in the environmental sciences: A review},
+  journal = {Environmental Modelling \& Software},
+  year    = {2014},
+  volume  = {53},
+  pages   = {173--189},
+  doi     = {10.1016/j.envsoft.2013.12.008}
+}
+
+% ---------------------------------------------------------------- Software
+@article{olmedo2016water,
+  author  = {Olmedo, Guillermo Federico and Ortega-Farías, Samuel and de la Fuente-Sáiz, Daniel and Fonseca-Luego, David and Fuentes-Peñailillo, Fernando},
+  title   = {water: Tools and Functions to Estimate Actual Evapotranspiration Using Land Surface Energy Balance Models in {R}},
+  journal = {The R Journal},
+  year    = {2016},
+  volume  = {8},
+  number  = {2},
+  pages   = {352--369},
+  doi     = {10.32614/RJ-2016-051}
+}
+
+@manual{hijmans_terra,
+  author       = {Hijmans, Robert J.},
+  title        = {terra: Spatial Data Analysis},
+  note         = {R package version 1.7-65},
+  organization = {The R Foundation},
+  year         = {2023},
+  doi          = {10.32614/CRAN.package.terra},
+  url          = {https://CRAN.R-project.org/package=terra}
+}
+
+@manual{rcoreteam,
+  author       = {{R Core Team}},
+  title        = {R: A Language and Environment for Statistical Computing},
+  organization = {R Foundation for Statistical Computing},
+  address      = {Vienna, Austria},
+  year         = {2024},
+  url          = {https://www.R-project.org/},
+  note         = {R version 4.3.3}
+}
+
+% ---------------------------------------------------------------- MODIS
+@article{wan2014mod11c6,
+  author  = {Wan, Zhengming},
+  title   = {New refinements and validation of the collection-6 {MODIS} land-surface temperature/emissivity product},
+  journal = {Remote Sensing of Environment},
+  year    = {2014},
+  volume  = {140},
+  pages   = {36--45},
+  doi     = {10.1016/j.rse.2013.08.027}
+}
+
+@misc{wan2021mod11a1,
+  author       = {Wan, Zhengming and Hook, Simon and Hulley, Glynn},
+  title        = {{MODIS/Terra} Land Surface Temperature/Emissivity Daily {L3} Global 1km {SIN} Grid {V061}},
+  howpublished = {NASA Land Processes Distributed Active Archive Center},
+  year         = {2021},
+  doi          = {10.5067/MODIS/MOD11A1.061}
+}
+
+@article{schaaf2002brdf,
+  author  = {Schaaf, Crystal B. and Gao, Feng and Strahler, Alan H. and Lucht, Wolfgang and Li, Xiaowen and Tsang, Trevor and Strugnell, Nicholas C. and Zhang, Xiaoyang and Jin, Yufang and Muller, Jan-Peter and Lewis, Philip and Barnsley, Michael and Hobson, Paul and Disney, Mathias and Roberts, Gareth and Dunderdale, Michael and Doll, Christopher and d'Entremont, Robert P. and Hu, Baoxin and Liang, Shunlin and Privette, Jeffrey L. and Roy, David},
+  title   = {First operational {BRDF}, albedo nadir reflectance products from {MODIS}},
+  journal = {Remote Sensing of Environment},
+  year    = {2002},
+  volume  = {83},
+  number  = {1--2},
+  pages   = {135--148},
+  doi     = {10.1016/S0034-4257(02)00091-3}
+}
+
+@misc{schaaf2021mcd43a3,
+  author       = {Schaaf, Crystal and Wang, Zhuosen},
+  title        = {{MODIS/Terra+Aqua} {BRDF}/Albedo Daily {L3} Global - 500m {V061}},
+  howpublished = {NASA Land Processes Distributed Active Archive Center},
+  year         = {2021},
+  doi          = {10.5067/MODIS/MCD43A3.061}
+}
+
+@misc{myneni2021mcd15a2h,
+  author       = {Myneni, Ranga and Knyazikhin, Yuri and Park, Taejin},
+  title        = {{MODIS/Terra+Aqua} Leaf Area Index/{FPAR} 8-Day {L4} Global 500m {SIN} Grid {V061}},
+  howpublished = {NASA Land Processes Distributed Active Archive Center},
+  year         = {2021},
+  doi          = {10.5067/MODIS/MCD15A2H.061}
+}
+
+@misc{didan2021mod13a2,
+  author       = {Didan, Kamel},
+  title        = {{MODIS/Terra} Vegetation Indices 16-Day {L3} Global 1km {SIN} Grid {V061}},
+  howpublished = {NASA Land Processes Distributed Active Archive Center},
+  year         = {2021},
+  doi          = {10.5067/MODIS/MOD13A2.061}
+}
+
+% ---------------------------------------------------------------- Regional climate (Chile)
+@article{garreaud2017megadrought,
+  author  = {Garreaud, René D. and Alvarez-Garreton, Camila and Barichivich, Jonathan and Boisier, Juan Pablo and Christie, Duncan and Galleguillos, Mauricio and LeQuesne, Carlos and McPhee, James and Zambrano-Bigiarini, Mauricio},
+  title   = {The 2010--2015 megadrought in central {C}hile: impacts on regional hydroclimate and vegetation},
+  journal = {Hydrology and Earth System Sciences},
+  year    = {2017},
+  volume  = {21},
+  number  = {12},
+  pages   = {6307--6327},
+  doi     = {10.5194/hess-21-6307-2017}
+}
+
+@article{garreaud2020megadrought,
+  author  = {Garreaud, René D. and Boisier, Juan P. and Rondanelli, Roberto and Montecinos, Aldo and Sepúlveda, Hector H. and Veloso-Aguila, Daniel},
+  title   = {The Central {C}hile Mega Drought (2010--2018): A climate dynamics perspective},
+  journal = {International Journal of Climatology},
+  year    = {2020},
+  volume  = {40},
+  number  = {1},
+  pages   = {421--439},
+  doi     = {10.1002/joc.6219},
+}
+
+@misc{ley21435,
+  author       = {{Ministerio de Obras Públicas}},
+  title        = {Ley N.° 21.435: Reforma el {C}ódigo de {A}guas},
+  howpublished = {Biblioteca del Congreso Nacional de Chile (LeyChile). Promulgada el 25 de marzo de 2022; publicada en el Diario Oficial el 6 de abril de 2022},
+  year         = {2022},
+  url          = {https://www.bcn.cl/leychile/navegar?idNorma=1174443},
+}
+
+% ---------------------------------------------------------------- Validation / statistics
+@article{roberts2017cv,
+  author  = {Roberts, David R. and Bahn, Volker and Ciuti, Simone and Boyce, Mark S. and Elith, Jane and Guillera-Arroita, Gurutzeta and Hauenstein, Severin and Lahoz-Monfort, José J. and Schröder, Boris and Thuiller, Wilfried and Warton, David I. and Wintle, Brendan A. and Hartig, Florian and Dormann, Carsten F.},
+  title   = {Cross-validation strategies for data with temporal, spatial, hierarchical, or phylogenetic structure},
+  journal = {Ecography},
+  year    = {2017},
+  volume  = {40},
+  number  = {8},
+  pages   = {913--929},
+  doi     = {10.1111/ecog.02881}
+}
+
+@article{valavi2019blockcv,
+  author  = {Valavi, Roozbeh and Elith, Jane and Lahoz-Monfort, José J. and Guillera-Arroita, Gurutzeta},
+  title   = {{blockCV}: An {R} package for generating spatially or environmentally separated folds for k-fold cross-validation of species distribution models},
+  journal = {Methods in Ecology and Evolution},
+  year    = {2019},
+  volume  = {10},
+  number  = {2},
+  pages   = {225--232},
+  doi     = {10.1111/2041-210X.13107},
+}
+
+@article{willmott2005mae,
+  author  = {Willmott, Cort J. and Matsuura, Kenji},
+  title   = {Advantages of the mean absolute error ({MAE}) over the root mean square error ({RMSE}) in assessing average model performance},
+  journal = {Climate Research},
+  year    = {2005},
+  volume  = {30},
+  number  = {1},
+  pages   = {79--82},
+  doi     = {10.3354/cr030079}
+}
+
+% ---------------------------------------------------------------- Chilean ET studies (Maule / Talca)
+@article{carrascobenavides2014metric,
+  author  = {Carrasco-Benavides, Marcos and Ortega-Farías, Samuel and Lagos, Luis and Kleissl, Jan and Morales-Salinas, Luis and Kilic, Ayse},
+  title   = {Parameterization of the Satellite-Based Model ({METRIC}) for the Estimation of Instantaneous Surface Energy Balance Components over a Drip-Irrigated Vineyard},
+  journal = {Remote Sensing},
+  year    = {2014},
+  volume  = {6},
+  number  = {11},
+  pages   = {11342--11371},
+  doi     = {10.3390/rs61111342}
+}
+
+@article{pobleteecheverria2012merlot,
+  author  = {Poblete-Echeverría, Carlos and Ortega-Farías, Samuel},
+  title   = {Calibration and validation of a remote sensing algorithm to estimate energy balance components and daily actual evapotranspiration over a drip-irrigated {M}erlot vineyard},
+  journal = {Irrigation Science},
+  year    = {2012},
+  volume  = {30},
+  number  = {6},
+  pages   = {537--553},
+  doi     = {10.1007/s00271-012-0381-x}
+}
+
+@article{ortegafarias2010twolayer,
+  author  = {Ortega-Farías, S. and Poblete-Echeverría, C. and Brisson, N.},
+  title   = {Parameterization of a two-layer model for estimating vineyard evapotranspiration using meteorological measurements},
+  journal = {Agricultural and Forest Meteorology},
+  year    = {2010},
+  volume  = {150},
+  number  = {2},
+  pages   = {276--286},
+  doi     = {10.1016/j.agrformet.2009.11.012}
+}
+
+@article{ortegafarias2016uav,
+  author  = {Ortega-Farías, Samuel and Ortega-Salazar, Samuel and Poblete, Tomas and Kilic, Ayse and Allen, Richard and Poblete-Echeverría, Carlos and Ahumada-Orellana, Luis and Zuñiga, Mauricio and Sepúlveda, Daniel},
+  title   = {Estimation of Energy Balance Components over a Drip-Irrigated Olive Orchard Using Thermal and Multispectral Cameras Placed on a Helicopter-Based Unmanned Aerial Vehicle ({UAV})},
+  journal = {Remote Sensing},
+  year    = {2016},
+  volume  = {8},
+  number  = {8},
+  pages   = {638},
+  doi     = {10.3390/rs8080638}
+}
+
+@article{carrascobenavides2022footprint,
+  author  = {Carrasco-Benavides, Marcos and Ortega-Farías, Samuel and Gil, Pilar M. and Knopp, Daniel and Morales-Salinas, Luis and Lagos, L. Octavio and de la Fuente, Daniel and López-Olivari, Rafael and Fuentes, Sigfredo},
+  title   = {Assessment of the vineyard water footprint by using ancillary data and {EEFlux} satellite images. {E}xamples in the {C}hilean central zone},
+  journal = {Science of the Total Environment},
+  year    = {2022},
+  volume  = {811},
+  pages   = {152452},
+  doi     = {10.1016/j.scitotenv.2021.152452}
+}
+
+@article{galdonruiz2023murcia,
+  author  = {Galdón-Ruíz, Alfonso and Fuentes-Jaque, Guillermo and Soto, Jesús and Morales-Salinas, Luis},
+  title   = {A simple method for the estimation of minimum and maximum air temperature monthly mean maps using {MODIS} images in the region of {M}urcia, {S}pain},
+  journal = {Revista de Teledetección},
+  year    = {2023},
+  number  = {61},
+  pages   = {59--71},
+  doi     = {10.4995/raet.2023.18909}
+}
+
+% ---------------------------------------------------------------- Anchor pixels / scale
+@article{long2011sebalsensitivity,
+  author  = {Long, Di and Singh, Vijay P. and Li, Zhao-Liang},
+  title   = {How sensitive is {SEBAL} to changes in input variables, domain size and satellite sensor?},
+  journal = {Journal of Geophysical Research: Atmospheres},
+  year    = {2011},
+  volume  = {116},
+  number  = {D21},
+  doi     = {10.1029/2011JD016542},
+}
+
+@article{long2013endmember,
+  author  = {Long, Di and Singh, Vijay P.},
+  title   = {Assessing the impact of end-member selection on the accuracy of satellite-based spatial variability models for actual evapotranspiration estimation},
+  journal = {Water Resources Research},
+  year    = {2013},
+  volume  = {49},
+  number  = {5},
+  pages   = {2601--2618},
+  doi     = {10.1002/wrcr.20208}
+}
+
+@article{tang2013scale,
+  author  = {Tang, Ronglin and Li, Zhao-Liang and Chen, Kun-Shan and Jia, Yuanyuan and Li, Chuanrong and Sun, Xiaomin},
+  title   = {Spatial-scale effect on the {SEBAL} model for evapotranspiration estimation using remote sensing data},
+  journal = {Agricultural and Forest Meteorology},
+  year    = {2013},
+  volume  = {174--175},
+  pages   = {28--42},
+  doi     = {10.1016/j.agrformet.2013.01.008}
+}
+
+@article{bhattarai2017endmember,
+  author  = {Bhattarai, Nishan and Quackenbush, Lindi J. and Im, Jungho and Shaw, Stephen B.},
+  title   = {A new optimized algorithm for automating endmember pixel selection in the {SEBAL} and {METRIC} models},
+  journal = {Remote Sensing of Environment},
+  year    = {2017},
+  volume  = {196},
+  pages   = {178--192},
+  doi     = {10.1016/j.rse.2017.05.009}
+}
+
+% ---------------------------------------------------------------- Reviews
+@article{fisher2017future,
+  author  = {Fisher, Joshua B. and Melton, Forrest and Middleton, Elizabeth and Hain, Christopher and Anderson, Martha and Allen, Richard and McCabe, Matthew F. and Hook, Simon and Baldocchi, Dennis and Townsend, Philip A. and Kilic, Ayse and Tu, Kevin and Miralles, Diego D. and Perret, Johan and Lagouarde, Jean-Pierre and Waliser, Duane and Purdy, Adam J. and French, Andrew and Schimel, David and Famiglietti, James S. and Stephens, Graeme and Wood, Eric F.},
+  title   = {The future of evapotranspiration: Global requirements for ecosystem functioning, carbon and climate feedbacks, agricultural management, and water resources},
+  journal = {Water Resources Research},
+  year    = {2017},
+  volume  = {53},
+  number  = {4},
+  pages   = {2618--2626},
+  doi     = {10.1002/2016WR020175}
+}
+
+@article{kalma2008review,
+  author  = {Kalma, Jetse D. and McVicar, Tim R. and McCabe, Matthew F.},
+  title   = {Estimating Land Surface Evaporation: A Review of Methods Using Remotely Sensed Surface Temperature Data},
+  journal = {Surveys in Geophysics},
+  year    = {2008},
+  volume  = {29},
+  number  = {4--5},
+  pages   = {421--469},
+  doi     = {10.1007/s10712-008-9037-z}
+}
+
+@software{fuentesjaque2026earthflux,
+  author    = {Fuentes-Jaque, Guillermo Servando},
+  title     = {{EarthFlux}: Land-Surface Energy and Water Fluxes from Earth Observation Data},
+  year      = {2026},
+  version   = {0.1.0},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.23981326},
+  url       = {https://github.com/djwillichile/EarthFlux}
+}

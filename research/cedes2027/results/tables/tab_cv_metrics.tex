@@ -1,0 +1,30 @@
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Validación cruzada espacial anidada de la regionalización a la hora del paso (14:00 UTC, enero--marzo de 2019).}\label{tab:cv}
+\begin{threeparttable}
+\begin{tabular}{llrlrlrr}
+\toprule
+Variable & Config. & $n$ & RMSE [IC 95\,\%] & MAE & Sesgo [IC 95\,\%] & $r$ & Fallidas \\
+\midrule
+$T_a$ (\si{\celsius}) & C1 & 5498 & 2,70 [2,57; 2,84] & 2,10 & -0,16 [-0,38; 0,07] & 0,70 & 0 \\
+ & C1-lap & 5498 & 2,77 [2,64; 2,90] & 2,17 & -0,05 [-0,27; 0,18] & 0,68 & 0 \\
+ & C2-OLS & 5588 & 2,46 [2,36; 2,57] & 1,92 & -0,01 [-0,02; 0,00] & 0,75 & 0 \\
+ & C2-IDW & 5588 & 2,32 [2,22; 2,42] & 1,83 & 0,01 [-0,01; 0,03] & 0,78 & 0 \\
+ & C3-GWR & 5588 & 2,40 [2,29; 2,51] & 1,85 & -0,04 [-0,07; -0,02] & 0,76 & 0 \\
+$e_a$ (\si{\kilo\pascal}) & C1 & 5495 & 0,209 [0,195; 0,222] & 0,153 & -0,024 [-0,043; -0,005] & 0,69 & 0 \\
+ & C2-OLS & 5585 & 0,188 [0,178; 0,198] & 0,135 & 0,003 [0,002; 0,004] & 0,73 & 0 \\
+ & C2-IDW & 5585 & 0,169 [0,161; 0,178] & 0,120 & -0,005 [-0,006; -0,003] & 0,79 & 0 \\
+ & C3-GWR & 5585 & 0,174 [0,166; 0,184] & 0,122 & -0,002 [-0,004; 0,000] & 0,77 & 0 \\
+$u_2$ (\si{\metre\per\second}) & C1 & 505 & 1,51 [1,37; 1,64] & 1,20 & 0,63 [0,46; 0,80] & 0,52 & 0 \\
+ & C2-OLS & 595 & 7,39 [1,48; 12,69] & 1,57 & 0,10 [-0,22; 0,70] & 0,08 & 0 \\
+ & C2-IDW & 595 & 1,19 [1,10; 1,29] & 0,91 & -0,04 [-0,06; -0,02] & 0,58 & 0 \\
+ & C3-GWR & 0 & \multicolumn{4}{l}{no factible (sin ancho de banda factible)} & 595 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item $n$: predicciones fuera de muestra. Sesgo = predicho $-$ observado. IC: \emph{bootstrap} de días completos ($B = 2000$).
+\item C1 no se evalúa en su propia estación. Fallidas: predicciones cuyo pliegue no pudo ajustarse con las estaciones de entrenamiento (p.\,ej., GWR o regresión global con menos estaciones que parámetros + 3).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

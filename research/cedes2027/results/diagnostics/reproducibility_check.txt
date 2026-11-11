@@ -1,0 +1,23 @@
+Reproducibility check - 2026-11-05T19:30:15Z
+Full rerun: CEDES_SKIP_DOWNLOAD=1 CEDES_WORKERS=4 Rscript research/cedes2027/scripts/run_all.R
+MD5 comparison of the 17 CSV result tables against the previous run:
+results/tables/claims_register.csv: FAILED
+results/tables/cv_metrics.csv: OK
+results/tables/cv_paired_vs_gwr.csv: OK
+results/tables/cv_residual_moran_summary.csv: OK
+results/tables/cv_station_density.csv: OK
+results/tables/cv_station_density_summary.csv: OK
+results/tables/forcing_range_check.csv: OK
+results/tables/metric_calibration.csv: OK
+results/tables/metric_differences_vs_C1.csv: OK
+results/tables/metric_summary.csv: OK
+results/tables/sensitivity_SA_anchors.csv: OK
+results/tables/sensitivity_SB_modis.csv: OK
+results/tables/sensitivity_SC_structural.csv: OK
+results/tables/sensitivity_forcing_effect.csv: OK
+results/tables/sensitivity_summary.csv: OK
+results/tables/station_inventory.csv: OK
+results/validation/cv_predictions.csv: OK
+md5sum: WARNING: 1 computed checksum did NOT match
+
+The only difference in claims_register.csv is the short git commit of the code (macro EarthFluxCommit: f2103cb -> b23db10); every scientific number is identical.

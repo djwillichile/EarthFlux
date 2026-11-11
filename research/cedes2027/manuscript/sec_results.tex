@@ -1,0 +1,261 @@
+\section{Resultados}\label{sec:results}
+
+\subsection{Verificación de componentes}\label{sec:res-verif}
+
+La tabla~\ref{tab:verification} resume el estado de los componentes de la
+cadena usada. De las \VerRows{} formulaciones del núcleo contrastadas por el
+paquete con el manual de los autores del método \parencite{waters2002sebal},
+\VerVerified{} están verificadas palabra por palabra, \VerCorroborated{}
+corroboradas y \VerCandidate{} siguen como candidatas; el contraste detectó
+\VerDiscrepancies{} discrepancias, \VerFixed{} de ellas corregidas en el
+código. En este entorno de ejecución (R~4.3.3, \pkg{terra}~1.7-65) se
+ejecutaron \NTests{} bloques de pruebas con \NExpectations{} expectativas:
+\NTestsPassed{} bloques aprobados, \NTestsFailed{} fallos, \NTestsSkipped{}
+omitidos por requerir dependencias opcionales y \NTestsError{} con error,
+todos en la lectura de archivos HDF de MODIS por una incompatibilidad con
+la versión local de \pkg{terra}; esa lectura no se usa en el estudio, que
+parte de la escena ya preprocesada. Las pruebas de la cadena METRIC verifican
+el cierre de energía en las anclas ($H = H_{target}$ con tolerancia relativa
+$10^{-10}$), $LE = \Rnet - G - H$ en cada píxel y la reproducción de las
+condiciones de borde de $\ETrF$; el núcleo GWR coincide con \pkg{GWmodel}
+hasta $10^{-10}$. Dos componentes centrales de este estudio siguen como
+candidatos: la transmisividad particionada de Allen y los criterios de
+selección de anclas.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Componentes de la cadena METRIC usada, estado de verificación y
+pruebas (fuente: \texttt{config/verification\_map.csv} y
+\texttt{dev/VERIFICATION.md} del paquete).}\label{tab:verification}
+\input{../results/tables/tab_verification.tex}
+\end{table}
+
+\subsection{Regionalización meteorológica}\label{sec:res-reg}
+
+La regla D-02 seleccionó como estación representativa
+\emph{\RepStationName}, a \RepStationDist{}~km del centroide de la provincia: la estación más
+cercana con registros completos de temperatura, humedad y viento. La validación
+cruzada espacial (\NFolds{} pliegues, \NCVDays{} días, \NCVPred
+predicciones fuera de muestra) entregó los errores de la tabla~\ref{tab:cv}
+y la figura~\ref{fig:cv}.
+
+Para la temperatura del aire, todas las alternativas espaciales superaron a
+la estación representativa (RMSE C1 = \CVTaCOneRmse{}~\si{\celsius},
+IC~95\,\% [\CVTaCOneRmseLo; \CVTaCOneRmseHi]). La corrección por gradiente
+vertical no mejoró a C1 (C1-lap: \CVTaCOneLapRmse{}~\si{\celsius}), lo que
+indica que la diferencia entre la estación y el resto del territorio no es
+principalmente altitudinal. GWR (\CVTaCThreeGWRRmse{}~\si{\celsius}
+[\CVTaCThreeGWRRmseLo; \CVTaCThreeGWRRmseHi]) superó a C1 y a la regresión
+global (\CVTaCTwoOLSRmse{}~\si{\celsius}); en la comparación pareada, su error
+cuadrático fue menor que el de C1 en \PairTaCOneDse{}~\si{\celsius\squared}
+en promedio (IC [\PairTaCOneLo; \PairTaCOneHi]) y que el de C2-OLS en
+\PairTaCTwoOLSDse{}~\si{\celsius\squared} ([\PairTaCTwoOLSLo; \PairTaCTwoOLSHi]).
+Sin embargo, el método de menor error fue IDW (\CVTaCTwoIDWRmse{}~\si{\celsius}
+[\CVTaCTwoIDWRmseLo; \CVTaCTwoIDWRmseHi]): la diferencia pareada GWR$-$IDW fue
+positiva, \PairTaCTwoIDWDse{}~\si{\celsius\squared} (IC
+[\PairTaCTwoIDWLo; \PairTaCTwoIDWHi]), y GWR tuvo menor error absoluto que IDW
+solo en el \PairTaCTwoIDWShare\,\% de las predicciones. El patrón se repite
+para la presión de vapor: IDW (\CVEaCTwoIDWRmse{}~kPa) $<$ GWR
+(\CVEaCThreeGWRRmse{}~kPa) $<$ OLS (\CVEaCTwoOLSRmse{}~kPa) $<$ C1
+(\CVEaCOneRmse{}~kPa), con la diferencia GWR$-$IDW también positiva
+([\PairEaCTwoIDWLo; \PairEaCTwoIDWHi]~\si{\kilo\pascal\squared}). Los sesgos
+medios fueron pequeños para todos los métodos espaciales ($|$sesgo$|$ $\le$
+\num{0.05}~\si{\celsius}).
+
+Los residuos de C1 y de la regresión global conservaron dependencia
+espacial (I de Moran mediano \MoranTaCOneI{} y \MoranTaCTwoOLSI{} para la
+temperatura, significativo en el \MoranTaCOneSig\,\% y \MoranTaCTwoOLSSig\,\%
+de los instantes), mientras que IDW y GWR la eliminaron casi por completo
+(\MoranTaCTwoIDWSig\,\% y \MoranTaCThreeGWRSig\,\% de instantes
+significativos). La densidad de la red condicionó a GWR más que a IDW
+(figura~\ref{fig:density}): con \DensTaCThreeGWRQuarterN{} estaciones (25\,\%)
+el RMSE de la temperatura fue \DensTaCThreeGWRQuarter{}~\si{\celsius} con GWR y
+\DensTaCTwoIDWQuarter{}~\si{\celsius} con IDW, frente a \DensTaCThreeGWRAll{} y
+\DensTaCTwoIDWAll{}~\si{\celsius} con la red completa.
+
+El viento solo se mide en \NStationsWind{} estaciones. Con ellas, GWR no pudo
+ajustarse en ninguno de los \CVWindCThreeGWRTotal{} casos de validación
+(sin ancho de banda factible), y la regresión global produjo predicciones
+fuera del dominio físico (máximo \CVWindOLSMax{}~\si{\metre\per\second};
+\CVWindOLSNeg{} predicciones negativas) con RMSE de
+\CVWindCTwoOLSRmse{}~\si{\metre\per\second}, frente a \CVWindCOneRmse{} de C1
+y \CVWindCTwoIDWRmse{}~\si{\metre\per\second} de IDW.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig03_cv_rmse.pdf}
+\caption{Error medio cuadrático fuera de muestra (RMSE) por variable y
+configuración, en validación cruzada espacial anidada de \NCVDays{} días, con
+IC~95\,\% por \emph{bootstrap} de días. GWR del viento no fue factible (sin
+ancho de banda factible en ningún pliegue); el gradiente vertical de C1-lap
+solo se aplica a la temperatura del aire.}\label{fig:cv}
+\end{figure}
+
+\input{../results/tables/tab_cv_metrics.tex}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{fig09_density.pdf}
+\caption{RMSE de validación cruzada según la fracción de estaciones
+disponible (media de 10 subconjuntos aleatorios en 30 días; la barra indica
+$\pm 1$ desviación estándar).}\label{fig:density}
+\end{figure}
+
+\subsection{Campos meteorológicos y balance de energía superficial}\label{sec:res-eb}
+
+A la hora del paso, la escena recibió de C1 un valor único de temperatura
+(\MFTaCOneMean~\si{\celsius}), presión de vapor (\MFEaCOneMean~kPa) y viento
+(\MFWindCOneMean~\si{\metre\per\second}). Las configuraciones espaciales
+produjeron campos con medias y amplitudes distintas
+(figura~\ref{fig:forcing}): la temperatura media fue \MFTaCTwoIDWMean~\si{\celsius}
+(DE espacial \MFTaCTwoIDWSd) con IDW y \MFTaCThreeGWRMean~\si{\celsius}
+(DE \MFTaCThreeGWRSd) con GWR. El campo de GWR presentó máximos locales de
+hasta \RangeTaCThreeGWRMax~\si{\celsius} en la Cordillera de la Costa, por
+encima del máximo observado en las estaciones a esa hora
+(\RangeTaCThreeGWRObsMax~\si{\celsius}) en el \RangeTaCThreeGWRAbove\,\% de
+las celdas procesadas: los coeficientes locales se extrapolan en terreno sin
+estaciones, un problema que la validación cruzada en las estaciones no puede
+detectar. Ninguna otra configuración salió del rango observado. La $\ETr^{24}$
+media de la escena fue \MFEtrDayCOneMean~mm/d con C1, \MFEtrDayCThreeGWRMean~mm/d
+con GWR, \MFEtrDayCTwoIDWMean~mm/d con IDW y \MFEtrDayCTwoOLSMean~mm/d con la
+regresión global. Estos resultados confirman H1: las configuraciones
+producen diferencias espaciales identificables en las variables que entran
+en METRIC (salvo el viento de GWR, que no fue factible).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig04_forcing_maps.pdf}
+\caption{Temperatura del aire, presión de vapor y viento a 2~m regionalizados
+a las 14:00~UTC del 15 de febrero de 2019, por configuración, en la grilla
+UTM~18S de 1~km que rodea la escena (mostrada en WGS~84). Escala común por fila,
+con valores fuera del rango P1--P99 saturados (p.\,ej., los máximos locales de
+GWR y la extrapolación del viento por regresión global). El gradiente de C1-lap
+solo se aplica a la temperatura (en las otras filas equivale a C1); GWR del
+viento no fue factible y en METRIC se usó el campo de C1 (D-14).}\label{fig:forcing}
+\end{figure}
+
+Las celdas ancla fueron idénticas en \NRunsSameAnchors{} de las \NRuns{}
+corridas; la excepción es C2-OLS, cuyo dominio válido se redujo a
+\OLSValidCells{} celdas porque el viento regionalizado
+salió del dominio físico, de modo que sus anclas se seleccionaron dentro de
+ese dominio y C2-OLS no es comparable con el resto. Los cambios del forzamiento se tradujeron en cambios de la
+calibración: $b$ varió entre \CalCThreeGWRB{} (GWR) y \CalCTwoIDWB{} (IDW) y
+$a$ entre \CalCThreeGWRA{} y \CalCTwoIDWA~K (tabla~\ref{tab:metric}). La
+radiación neta media aumentó \DRnCThreeGWRMean~\si{\watt\per\square\metre}
+con GWR respecto de C1 (\MRnCOneMean{} frente a \MRnCThreeGWRMean~\si{\watt\per\square\metre})
+y el calor sensible \DHCThreeGWRMean~\si{\watt\per\square\metre} (P5--P95:
+\DHCThreeGWRLo{} a \DHCThreeGWRHi), de modo que el calor latente instantáneo
+casi no cambió (\MLECOneMean{} frente a \MLECThreeGWRMean~\si{\watt\per\square\metre})
+y la fracción $\ETrF$ media tampoco (\MEtrfCOneMean{} frente a
+\MEtrfCThreeGWRMean; diferencia \DEtrfCThreeGWRPct\,\%). Con IDW, cuyo campo
+de viento difiere del de C1, $\ETrF$ disminuyó \DEtrfCTwoIDWPct\,\%. La
+figura~\ref{fig:eb} muestra los cuatro flujos por configuración.
+
+\input{../results/tables/tab_metric_summary.tex}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig05_energy_balance.pdf}
+\caption{Radiación neta ($R_n$), flujo de calor del suelo ($G$), calor sensible
+($H$) y calor latente ($LE$) instantáneos (\si{\watt\per\square\metre}) a la
+hora del paso, por configuración. Cada fila tiene su propia escala (P1--P99,
+valores fuera del rango saturados). C2-OLS tiene celdas sin datos donde el viento
+regionalizado salió del dominio físico. Mostrado en WGS~84.}\label{fig:eb}
+\end{figure}
+
+\subsection{Evapotranspiración real}\label{sec:res-eta}
+
+La $\ETa$ media de la escena fue \MEtaCOneMean~mm/d con C1,
+\MEtaCOneLapMean~mm/d con C1-lap, \MEtaCTwoIDWMean~mm/d con IDW,
+\MEtaCThreeGWRMean~mm/d con GWR y \MEtaCTwoOLSMean~mm/d con la regresión
+global, esta última sobre solo \OLSValidCells{} celdas
+válidas (figura~\ref{fig:eta}). Frente a C1, GWR redujo la $\ETa$ media en
+\DEtaCThreeGWRMean~mm/d (\DEtaCThreeGWRPct\,\%), con diferencias locales
+entre \DEtaCThreeGWRLo{} y \DEtaCThreeGWRHi~mm/d (P5--P95) y
+$|\Delta\ETa| > 0{,}5$~mm/d en el \DEtaCThreeGWRShare\,\% de las celdas; IDW la
+redujo en \DEtaCTwoIDWMean~mm/d (\DEtaCTwoIDWPct\,\%). Expresado como volumen sobre las
+\VolArea~km² de celdas válidas en todas las corridas (la grilla sinusoidal es de
+área igual), la $\ETa$ diaria de la escena fue de \VolCOne{} millones de m³ con
+C1, \VolCThreeGWR{} millones con GWR y \VolCTwoIDW{} millones con IDW: GWR estima
+\VolDiffAbsCThreeGWR{} millones de m³ menos en un solo día, el equivalente a un
+caudal medio de unos \VolDiffFlowCThreeGWR~m³/s (tabla en
+\texttt{results/tables/eta\_volume.csv}). Es un desacuerdo entre modelos, no un
+volumen ahorrado ni perdido. La correlación espacial
+entre los mapas fue alta (el patrón relativo se conserva), por lo que las
+configuraciones cambian sobre todo el nivel y la amplitud de $\ETa$, no su
+estructura.
+
+La sustitución de una variable por vez (figura~\ref{fig:attr}) muestra que
+el efecto no es uniforme entre vías de entrada (H2). La $\ETr^{24}$
+regionalizada explicó casi todo el cambio: por sí sola modificó la $\ETa$
+en \DEtaOatEtrDayMean~mm/d (\DEtaOatEtrDayPct\,\%). La $\ETr$ instantánea,
+que actúa a través de la condición del ancla fría, cambió la calibración
+($a$ = \CalOatEtrInstA~K; $b$ = \CalOatEtrInstB) con un efecto medio de
+\DEtaOatEtrInstMean~mm/d y compensaciones locales (P5--P95:
+\DEtaOatEtrInstLo{} a \DEtaOatEtrInstHi~mm/d). La temperatura del aire
+contribuyó \DEtaOatTaMean~mm/d, la presión de vapor \DEtaOatEaMean~mm/d y el
+viento (campo IDW, D-16) \DEtaOatWindMean~mm/d. Sin el viento, que en la
+corrida conjunta de GWR es el de C1, la suma de los efectos individuales
+($T_a$, $e_a$, $\ETr$ instantánea y $\ETr^{24}$) es prácticamente igual al
+efecto conjunto (\DEtaCThreeGWRMean~mm/d): en esta escena, los efectos son
+aproximadamente aditivos. En síntesis, la calibración interna absorbió casi
+por completo el efecto del forzamiento sobre el balance instantáneo, y la
+diferencia de $\ETa$ entró por la extrapolación diaria.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig06_eta_maps.pdf}
+\caption{Arriba: $\ETa$ diaria (mm/d) de la provincia de Cauquenes, 15 de
+febrero de 2019, por configuración. Abajo: diferencia respecto de C1 (mm/d),
+alineada bajo cada mapa; la columna de C1 queda vacía por ser la referencia.
+Escala común por fila; valores fuera del rango P1--P99 saturados. C2-OLS solo
+tiene datos donde el viento regionalizado quedó en el rango físico. Fuentes:
+MODIS C6.1, DMC, INIA, FDF, NOAA ISD, Copernicus GLO-90. Mostrado en
+WGS~84.}\label{fig:eta}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{fig07_attribution.pdf}
+\caption{Cambio de la $\ETa$ media de la escena al reemplazar una sola
+entrada de C1 por su campo regionalizado (C3-GWR; viento: C2-IDW). Barras de
+error: P5--P95 de las diferencias por celda. Línea discontinua: sustitución
+completa por C3-GWR.}\label{fig:attr}
+\end{figure}
+
+\subsection{Validación independiente}\label{sec:res-val}
+
+No se dispuso de mediciones independientes de $\ETa$ o de flujo de calor
+latente para el área y la fecha (sección~\ref{sec:validation-data}). Por lo
+tanto, no se calcularon métricas de exactitud de $\ETa$ y \textbf{ninguna de
+las diferencias anteriores puede interpretarse como mejora o deterioro de la
+exactitud}. La única validación independiente del estudio es la de las
+variables meteorológicas (sección~\ref{sec:res-reg}), evaluada fuera de
+muestra en \NCVDays{} días.
+
+\subsection{Sensibilidad y robustez}\label{sec:res-sens}
+
+Las \NMC{} réplicas de criterios de anclas y condiciones de borde (S-A)
+produjeron una dispersión de la $\ETa$ media de la escena de
+\SACOneSd~mm/d (DE) con el forzamiento C1 y \SACThreeGWRSd~mm/d con GWR; el
+ruido de los insumos MODIS (S-B) produjo \SBCOneSd{} y \SBCThreeGWRSd~mm/d,
+respectivamente (figura~\ref{fig:sens}). En cada réplica, la diferencia
+pareada GWR$-$C1 se mantuvo: \SAEffMean~mm/d (P2,5--P97,5:
+\SAEffLo{} a \SAEffHi) bajo S-A y \SBEffMean~mm/d (\SBEffLo{} a \SBEffHi) bajo
+S-B, con el mismo signo en el \SAEffSign\,\% y \SBEffSign\,\% de las réplicas.
+Las alternativas estructurales (S-C) modificaron la $\ETa$ media de C1 de
+\SCBaseCOne{} a \SCgTasumiCOne~mm/d (G de Tasumi), \SCZomFloorCOne~mm/d (piso
+de rugosidad de 0,01~m) y \SCAggregateMeanCOne~mm/d (anclas por media). El ruido de LST desplazó hacia arriba la $\ETa$ media de C1
+(intervalo \SBCOneLo--\SBCOneHi~mm/d frente a \SCBaseCOne~mm/d sin ruido), porque
+la selección de anclas por extremos de LST es sensible al ruido por píxel. Todas
+las calibraciones convergieron (\SACOneConv\,\% y \SBCOneConv\,\% de las
+réplicas).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{fig08_sensitivity.pdf}
+\caption{Distribución de la $\ETa$ media de la escena en \NMC{} réplicas
+Monte Carlo de los criterios de anclas y condiciones de borde (S-A) y del
+ruido de los insumos MODIS (S-B), con los forzamientos C1 y
+C3-GWR.}\label{fig:sens}
+\end{figure}

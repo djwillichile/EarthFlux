@@ -1,0 +1,83 @@
+\section{Introducción}\label{sec:intro}
+
+La evapotranspiración real ($\ETa$) es la componente del ciclo hidrológico
+que devuelve a la atmósfera la mayor parte de la precipitación continental
+y, en términos energéticos, el flujo de calor latente que cierra el balance
+de energía de la superficie terrestre \parencite{fisher2017future}. En
+cuencas agrícolas y forestales es, además, la medida física del uso
+consuntivo del agua: la fracción que no retorna a cauces ni acuíferos. En
+Chile central, la megasequía iniciada en 2010
+\parencite{garreaud2017megadrought,garreaud2020megadrought} y la reforma del
+Código de Aguas de 2022 \parencite{ley21435} han desplazado la discusión
+pública desde el agua asignada hacia el agua efectivamente consumida. Un
+mapa de $\ETa$ es, por ello, un insumo para balances hídricos de cuenca, la
+fiscalización del uso consuntivo, la evaluación de programas de riego y la
+valoración de servicios ecosistémicos de regulación hídrica. La utilidad de
+ese insumo depende, sin embargo, de que su incertidumbre sea conocida.
+
+Los modelos de balance de energía superficial alimentados por observaciones
+de la Tierra estiman $\ETa$ como residuo del balance
+$\Rnet = G + H + LE$ \parencite{kalma2008review}. SEBAL
+\parencite{bastiaanssen1998sebal1,bastiaanssen1998sebal2} y su derivado
+METRIC \parencite{allen2007metric1,allen2007metric2} evitan la medición
+directa del gradiente de temperatura aire--superficie mediante una
+calibración interna: en dos píxeles ancla, uno frío y bien regado y otro
+caliente y seco, se imponen condiciones de borde que fijan una relación
+lineal entre ese gradiente y la temperatura superficial. METRIC ancla además
+la calibración a la evapotranspiración de referencia de alfalfa ($\ETr$) y
+extrapola al día mediante la fracción $\ETrF = ET_{inst}/\ETr$
+\parencite{allen2007metric1,allen2011sebalmetric}. En la mayoría de las
+aplicaciones operativas, el forzamiento meteorológico ---temperatura y
+humedad del aire, viento y $\ETr$--- proviene de una única estación
+considerada representativa de toda la escena.
+
+Ese supuesto es débil en territorios heterogéneos. El forzamiento entra en
+METRIC por al menos cinco vías: la radiación de onda larga incidente
+(temperatura del aire), la transmisividad atmosférica (presión de vapor), el
+viento a la altura de mezcla (velocidad del viento), la condición del ancla
+fría ($\ETr$ instantánea) y la extrapolación diaria ($\ETr$ de 24~h). Parte
+de los sesgos se absorbe en la calibración interna, de modo que su efecto
+sobre $\ETa$ no es evidente \emph{a priori}
+\parencite{long2011sebalsensitivity,long2013endmember}. La regresión
+geográficamente ponderada (GWR) permite representar variables
+meteorológicas como superficies cuya relación con predictores como la
+elevación varía en el espacio \parencite{brunsdon1996gwr,fotheringham2002gwr},
+pero su ventaja frente a interpoladores más simples no está garantizada:
+depende de la densidad de la red, de la heterogeneidad del fenómeno y de la
+estabilidad de los coeficientes locales
+\parencite{wheeler2005multicollinearity,li2014interpolation}. Una mejor
+interpolación de la temperatura del aire tampoco implica, por sí sola, una
+mejor $\ETa$, porque la calibración interna de METRIC puede compensar o
+amplificar las diferencias.
+
+El software disponible no facilita contrastar esas preguntas. El paquete de
+R \pkg{water} \parencite{olmedo2016water} implementa METRIC para Landsat con
+una estación meteorológica; otras implementaciones son cerradas o están
+acopladas a un sensor y a un forzamiento fijo. EarthFlux
+\parencite{fuentesjaque2026earthflux} es un paquete de R de código abierto
+que implementa la cadena METRIC como funciones independientes del sensor,
+con forzamiento meteorológico intercambiable ---estación representativa,
+regresión global, IDW o GWR--- bajo una interfaz común, validación cruzada
+espacial y diagnósticos explícitos en lugar de correcciones silenciosas.
+
+Este trabajo usa EarthFlux para responder la pregunta: \emph{¿en qué medida
+la representación espacial de las condiciones meteorológicas mediante GWR
+modifica la $\ETa$ estimada con METRIC y MODIS, en comparación con
+configuraciones meteorológicas convencionales?} Se contrastan cuatro
+hipótesis: (H1) los métodos de regionalización producen diferencias
+espaciales identificables en las variables meteorológicas de METRIC; (H2)
+esas diferencias se propagan de manera no uniforme hacia los componentes del
+balance y la $\ETa$; (H3) la utilidad de GWR depende de la densidad de
+estaciones, la heterogeneidad espacial y la configuración del modelo; y (H4)
+una mayor complejidad metodológica no garantiza mayor exactitud. Se
+distinguen expresamente cuatro niveles de evidencia que suelen confundirse:
+la verificación de la implementación de las ecuaciones, las pruebas de
+software, la validación de las variables meteorológicas regionalizadas y la
+validación empírica de $\ETa$. Las contribuciones son: (i) una
+implementación verificable y reproducible de METRIC con forzamiento espacial;
+(ii) una evaluación fuera de muestra, con validación cruzada espacial
+anidada, de la regionalización de las variables de METRIC en la región del
+Maule; (iii) la cuantificación de cómo esas diferencias se propagan a
+$\Rnet$, $G$, $H$, $LE$ y $\ETa$ en una escena real, separando el efecto de
+cada vía de entrada; y (iv) la comparación de ese efecto con la
+incertidumbre de la calibración y de los insumos satelitales.

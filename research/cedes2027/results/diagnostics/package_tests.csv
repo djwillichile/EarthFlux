@@ -1,0 +1,615 @@
+"file","test","nb","failed","skipped","error","warning","real"
+"test-aerodynamics.R","SH-14.1: wind speed at the blending height (neutral profile)",3,0,FALSE,FALSE,0,0.103
+"test-aerodynamics.R","SH-14.1: neutral friction velocity and aerodynamic resistance",3,0,FALSE,FALSE,0,0.00800000000000001
+"test-aerodynamics.R","momentum roughness methods give their equations",7,0,FALSE,FALSE,0,0.0370000000000008
+"test-aerodynamics.R","ef_zom() dispatches identically to the method functions",6,0,FALSE,FALSE,0,0.085
+"test-aerodynamics.R","ef_zom() returns a classed object with flags and provenance",11,0,FALSE,FALSE,0,0.117
+"test-aerodynamics.R","ef_zom() requires an explicit, known method and its arguments",5,0,FALSE,FALSE,0,0.0379999999999994
+"test-aerodynamics.R","roughness inputs are validated",10,0,FALSE,FALSE,0,0.0620000000000003
+"test-aerodynamics.R","NA propagates and dim is kept in the aerodynamic functions",8,0,FALSE,FALSE,0,0.0469999999999997
+"test-aerodynamics.R","wind, friction velocity and resistance inputs are validated",12,0,FALSE,FALSE,0,0.0640000000000001
+"test-aerodynamics.R","friction velocity is NA where its denominator is not positive",3,0,FALSE,FALSE,0,0.0200000000000005
+"test-aerodynamics.R","SH-14.4: one unstable stability step at the hot anchor",7,0,FALSE,FALSE,0,0.0250000000000004
+"test-aerodynamics.R","SH-14.4: stable branch and the two options of SH-11",6,0,FALSE,FALSE,0,0.0259999999999998
+"test-aerodynamics.R","SH-11: the stability step uses stable_psi_m_height only if L > 0",7,0,FALSE,FALSE,0,0.0350000000000001
+"test-aerodynamics.R","neutral stability (H = 0) gives L = Inf and zero corrections",8,0,FALSE,FALSE,0,0.0280000000000005
+"test-aerodynamics.R","an undefined friction velocity in the stability step is NA",2,0,FALSE,FALSE,0,0.00899999999999945
+"test-anchor-conditions.R","section 2.5: cold anchor targets and sensitivity to ETr_inst",13,0,FALSE,FALSE,0,0.404
+"test-anchor-conditions.R","the calibration points carry what the H calibration consumes",15,0,FALSE,FALSE,0,0.0719999999999992
+"test-anchor-conditions.R","ETrF of the cold anchor is recovered with the same lambda",2,0,FALSE,FALSE,0,0.032
+"test-anchor-conditions.R","the hot condition is explicit: etrf_hot or le_hot",14,0,FALSE,FALSE,0,0.273
+"test-anchor-conditions.R","ETr_inst and lambda are evaluated at each anchor pixel",15,0,FALSE,FALSE,0,0.0990000000000002
+"test-anchor-conditions.R","recomputing the conditions replaces the stage [B] flags",5,0,FALSE,FALSE,0,0.0490000000000004
+"test-anchor-conditions.R","inputs of the boundary conditions are validated",21,0,FALSE,FALSE,0,0.387
+"test-anchor-conditions.R","zom, u_blend and pressure are passed through to the points",18,0,FALSE,FALSE,0,0.303
+"test-anchor-conditions.R","a hand-built earthflux_anchors object has the H interface names",4,0,FALSE,FALSE,0,0.048
+"test-anchors.R","percentile thresholds are stats::quantile() of the domain",9,0,FALSE,FALSE,0,0.495
+"test-anchors.R","criteria constructors validate their arguments",32,0,FALSE,FALSE,0,0.199999999999999
+"test-anchors.R","case P1: percentile thresholds, domain, funnel and anchors",31,0,FALSE,FALSE,0,0.149999999999999
+"test-anchors.R","case P1-q6: the quantile type changes the result and is recorded",5,0,FALSE,FALSE,0,0.0440000000000005
+"test-anchors.R","a vector and a 1 x n matrix give the same anchors",5,0,FALSE,FALSE,0,0.0780000000000003
+"test-anchors.R","case S1: homogeneous block interiors are selected, traps are not",17,0,FALSE,FALSE,0,0.11
+"test-anchors.R","land cover rules select by class codes",3,0,FALSE,FALSE,0,0.0800000000000001
+"test-anchors.R","the selection is deterministic and leaves the RNG untouched",9,0,FALSE,FALSE,0,0.105
+"test-anchors.R","ties at the pick limit are resolved by cell number and flagged",5,0,FALSE,FALSE,0,0.109
+"test-anchors.R","manual anchors with the automatic cells reproduce the audit table",10,0,FALSE,FALSE,0,0.151
+"test-anchors.R","flags derived from the origin match the provenance (R19)",7,0,FALSE,FALSE,0,0.0730000000000004
+"test-anchors.R","cell numbers follow the terra (row-major) order",3,0,FALSE,FALSE,0,0.0299999999999994
+"test-anchors.R","explicit anchors are validated",19,0,FALSE,FALSE,0,0.154999999999999
+"test-anchors.R","no candidates raises a classed error with the funnel",8,0,FALSE,FALSE,0,0.236000000000001
+"test-anchors.R","an empty percentile domain raises a classed error",3,0,FALSE,FALSE,0,0.0150000000000006
+"test-anchors.R","an inverted automatic selection raises earthflux_anchor_inverted",3,0,FALSE,FALSE,0,0.0279999999999987
+"test-anchors.R","inputs of the automatic selection are validated",14,0,FALSE,FALSE,0,0.108000000000001
+"test-anchors.R","criteria are relaxed only with an explicit plan, and flagged",10,0,FALSE,FALSE,0,0.115
+"test-anchors.R","dropping the homogeneity test in a relaxation step is flagged",4,0,FALSE,FALSE,0,0.0670000000000002
+"test-anchors.R","a staged search records where each class was found",6,0,FALSE,FALSE,0,0.167
+"test-anchors.R","incomplete homogeneity windows are excluded or flagged",12,0,FALSE,FALSE,0,0.130999999999998
+"test-anchors.R","different overpass times within a class are flagged",5,0,FALSE,FALSE,0,0.105
+"test-anchors.R","upstream cell flags are inherited by the anchor pixels",6,0,FALSE,FALSE,0,0.0850000000000009
+"test-anchors.R","coordinates, distance to a station and window size are recorded",5,0,FALSE,FALSE,0,0.0670000000000002
+"test-anchors.R","water, missing cells and unused variables do not change anchors",6,0,FALSE,FALSE,0,0.199
+"test-anchors.R","calibration points use the explicit aggregate",3,0,FALSE,FALSE,0,0.0670000000000002
+"test-anchors.R","print() summarises the anchor set",2,0,FALSE,FALSE,0,0.0690000000000008
+"test-anchors.R","the anchor stage registers only the class I codes it raises",6,0,FALSE,FALSE,0,0.0280000000000005
+"test-classes.R","new_ef_object() builds a classed list with flags",5,0,FALSE,FALSE,0,0.0149999999999988
+"test-classes.R","new_ef_object() requires a flags element of flag records",3,0,FALSE,FALSE,0,0.0210000000000008
+"test-classes.R","new_ef_object() validates names and class",6,0,FALSE,FALSE,0,0.0370000000000008
+"test-constants.R","constants have the specified values",9,0,FALSE,FALSE,0,0.0339999999999989
+"test-constants.R","the solar constant is FAO-56 Eq. 21 converted to W m-2",1,0,FALSE,FALSE,0,0.00300000000000011
+"test-constants.R","constants are single finite positive numbers",30,0,FALSE,FALSE,0,0.0600000000000005
+"test-constants.R","constants are internal",1,0,FALSE,FALSE,0,0.00499999999999901
+"test-diagnostics.R","the registry has the documented columns and types",12,0,FALSE,FALSE,0,0.0250000000000004
+"test-diagnostics.R","R1: codes are unique",1,0,FALSE,FALSE,0,0.00699999999999967
+"test-diagnostics.R","R2-R3: codes follow the closed pattern and match their stage",3,0,FALSE,FALSE,0,0.0190000000000001
+"test-diagnostics.R","R4: severities are valid and ordered info < warning < critical",2,0,FALSE,FALSE,0,0.0120000000000005
+"test-diagnostics.R","R5: scopes are subsets of cell, record and object",1,0,FALSE,FALSE,0,0.0080000000000009
+"test-diagnostics.R","R6-R8: bits are present only for cell scope and do not overlap",5,0,FALSE,FALSE,0,0.0310000000000006
+"test-diagnostics.R","R9: critical codes declare an error counterpart or object scope",1,0,FALSE,FALSE,0,0.00600000000000023
+"test-diagnostics.R","R10: class II codes are not registered",2,0,FALSE,FALSE,0,0.00699999999999967
+"test-diagnostics.R","R11: every registered code is exercised by a module test",1,0,FALSE,FALSE,0,0.0259999999999998
+"test-diagnostics.R","R15: no code coincides with an object of the package",1,0,FALSE,FALSE,0,0.00699999999999967
+"test-diagnostics.R","R17: descriptions are one sentence ending with a period",3,0,FALSE,FALSE,0,0.0130000000000017
+"test-diagnostics.R","the cached registry is identical to a fresh build",3,0,FALSE,FALSE,0,0.0120000000000005
+"test-diagnostics.R","the registry build rejects duplicated codes and bit clashes",3,0,FALSE,FALSE,0,0.0499999999999989
+"test-diagnostics.R","every stage function returns registry rows",20,0,FALSE,FALSE,0,0.0840000000000014
+"test-diagnostics.R","ef_flag_rows() builds valid rows",4,0,FALSE,FALSE,0,0.0210000000000008
+"test-diagnostics.R","ef_flag_rows() rejects malformed rows",18,0,FALSE,FALSE,0,0.137
+"test-diagnostics.R","ef_flag() records flagged positions without altering values",10,0,FALSE,FALSE,0,0.0359999999999996
+"test-diagnostics.R","ef_flag() handles empty and all-false masks",4,0,FALSE,FALSE,0,0.0149999999999988
+"test-diagnostics.R","ef_flag() requires an explicit scope when several are registered",3,0,FALSE,FALSE,0,0.0180000000000007
+"test-diagnostics.R","ef_flag() requires an explicit decision about NA",2,0,FALSE,FALSE,0,0.011000000000001
+"test-diagnostics.R","ef_flag() rejects unknown codes",1,0,FALSE,FALSE,0,0.00699999999999967
+"test-diagnostics.R","check_flag_list() accepts only lists of flag records",5,0,FALSE,FALSE,0,0.0220000000000002
+"test-diagnostics.R","ef_flag_set() keeps flagged codes and records the evaluated ones",8,0,FALSE,FALSE,0,0.0229999999999997
+"test-diagnostics.R","ef_input_na_flags() builds EF_INPUT_NA over the common length",6,0,FALSE,FALSE,0,0.0190000000000001
+"test-diagnostics.R","ef_flags_combine() returns plain records and evaluated codes",7,0,FALSE,FALSE,0,0.0260000000000016
+"test-et.R","case A2: 490 W m-2 with lambda = 2.45e6 J kg-1 is 0.72 mm h-1",4,0,FALSE,FALSE,0,0.0220000000000002
+"test-et.R","case B: temperature-dependent lambda from ef_lambda()",4,0,FALSE,FALSE,0,0.0150000000000006
+"test-et.R","case C2: negative LE gives negative ET, unchanged and silent",2,0,FALSE,FALSE,0,0.00499999999999901
+"test-et.R","case D: LE = 612.5 W m-2 gives 0.9 mm h-1",1,0,FALSE,FALSE,0,0.00300000000000011
+"test-et.R","case E: recycling of lambda and NA propagation without warnings",6,0,FALSE,FALSE,0,0.0150000000000006
+"test-et.R","case F: FAO-56 magnitude anchors (detect a missing factor 1000)",7,0,FALSE,FALSE,0,0.020999999999999
+"test-et.R","unit guard: lambda outside [1e6, 1e7] J kg-1 is rejected",7,0,FALSE,FALSE,0,0.0389999999999997
+"test-et.R","ef_et_inst() rejects infinite LE, bad types, lengths and dims",7,0,FALSE,FALSE,0,0.048
+"test-et.R","ef_et_inst() keeps the dim of matrix input",2,0,FALSE,FALSE,0,0.00699999999999967
+"test-et.R","round trip LE -> ET_inst -> LE on the specified grid",2,0,FALSE,FALSE,0,0.00999999999999979
+"test-et.R","case A5: inverse of 0.72 mm h-1 is 490 W m-2",2,0,FALSE,FALSE,0,0.00799999999999912
+"test-et.R","case A3 and C3: ETrF = ET_inst / ETr_inst",4,0,FALSE,FALSE,0,0.016
+"test-et.R","case D: a high ETrF (1.2) is returned unchanged",1,0,FALSE,FALSE,0,0.00300000000000011
+"test-et.R","etr_inst <= 0 raises a classed domain error (ET-D6)",4,0,FALSE,FALSE,0,0.0240000000000009
+"test-et.R","ef_etrf() recycles, keeps dim and propagates NA",7,0,FALSE,FALSE,0,0.027000000000001
+"test-et.R","the reference type is required and checked (section 6.4)",7,0,FALSE,FALSE,0,0.0570000000000004
+"test-et.R","case A4 and C4: ETa_24 = ETrF * ETr_24",3,0,FALSE,FALSE,0,0.00999999999999979
+"test-et.R","etr_24 < 0 is a domain error; etr_24 = 0 is allowed",5,0,FALSE,FALSE,0,0.0429999999999993
+"test-et.R","ef_et_daily_etrf() recycles, keeps dim and propagates NA",7,0,FALSE,FALSE,0,0.0350000000000001
+"test-et.R","dispatcher ef_et_daily() is identical to the direct call",2,0,FALSE,FALSE,0,0.0419999999999998
+"test-et.R","dispatcher ef_et_daily() returns a classed object with flags",11,0,FALSE,FALSE,0,0.0460000000000012
+"test-et.R","dispatcher: method has no default and is matched exactly",4,0,FALSE,FALSE,0,0.0309999999999988
+"test-et.R","dispatcher: missing method arguments raise a classed error",4,0,FALSE,FALSE,0,0.0240000000000009
+"test-et.R","case A: full chain Rn, G, H -> LE -> ET_inst -> ETrF -> ETa_24",6,0,FALSE,FALSE,0,0.0150000000000006
+"test-et.R","case C: EF_ET_NEGATIVE is raised on each layer with its indices",12,0,FALSE,FALSE,0,0.0329999999999995
+"test-et.R","EF_ET_NEGATIVE is not raised without negative values",8,0,FALSE,FALSE,0,0.0179999999999989
+"test-et.R","ef_diagnose_et() rejects non-numeric layers",1,0,FALSE,FALSE,0,0.0109999999999992
+"test-forcing-chain.R","stations, QC, regionalization and one METRIC step connect",53,0,FALSE,FALSE,0,3.83
+"test-forcing-chain.R","station reference ET feeds ETrF and daily ET on a few pixels",22,0,FALSE,FALSE,0,1.317
+"test-forcing-derived.R","V1: psychrometric constant at 1800 m (FAO-56 example 2)",4,0,FALSE,FALSE,0,0.0139999999999993
+"test-forcing-derived.R","ef_psychrometric() checks the domain and keeps NA and dim",7,0,FALSE,FALSE,0,0.0579999999999998
+"test-forcing-derived.R","V2: saturation vapour pressure (FAO-56 example 3)",6,0,FALSE,FALSE,0,0.0139999999999993
+"test-forcing-derived.R","ef_es() and ef_es_slope() check the domain, NA and dim",10,0,FALSE,FALSE,0,0.0790000000000006
+"test-forcing-derived.R","ef_es_slope() reproduces FAO-56 examples 18 and 19",4,0,FALSE,FALSE,0,0.00900000000000034
+"test-forcing-derived.R","V3: actual vapour pressure from daily data (FAO-56 example 5)",5,0,FALSE,FALSE,0,0.036999999999999
+"test-forcing-derived.R","V4: vapour pressure deficit (FAO-56 example 6)",2,0,FALSE,FALSE,0,0.00500000000000256
+"test-forcing-derived.R","ef_ea_daily() requires an explicit method and its inputs",5,0,FALSE,FALSE,0,0.0289999999999999
+"test-forcing-derived.R","ef_ea_daily() checks the domain, NA, recycling and dim",8,0,FALSE,FALSE,0,0.0399999999999991
+"test-forcing-derived.R","ASCE-EWRI daily ea: Eq. 13 (rhmin) and Eq. 14 (rhmean_tmean)",6,0,FALSE,FALSE,0,0.0189999999999984
+"test-forcing-derived.R","the ASCE-EWRI ea methods require their inputs only",6,0,FALSE,FALSE,0,0.0439999999999969
+"test-forcing-derived.R","ef_ea_rh() reproduces FAO-56 example 19",6,0,FALSE,FALSE,0,0.0179999999999971
+"test-forcing-derived.R","ef_ea_tmin() needs an explicit k0 (FAO-56 Eq. 48)",7,0,FALSE,FALSE,0,0.0339999999999989
+"test-forcing-derived.R","V17: dew point and FAO-56 annex 3 Eq. 3-11",9,0,FALSE,FALSE,0,0.0399999999999991
+"test-forcing-derived.R","V12-V13: wind at 2 m (FAO-56 example 14, annex 2 table 2.9)",4,0,FALSE,FALSE,0,0.0069999999999979
+"test-forcing-derived.R","ef_wind_2m() checks the domain, NA, recycling and dim",8,0,FALSE,FALSE,0,0.0749999999999993
+"test-forcing-derived.R","V6: latitude conversion to radians (FAO-56 example 7)",1,0,FALSE,FALSE,0,0.00600000000000023
+"test-forcing-derived.R","V7-V8: daily Ra and daylight hours (FAO-56 examples 8-9)",7,0,FALSE,FALSE,0,0.0160000000000018
+"test-forcing-derived.R","V9: daily Ra at 22 degrees 54' S on 15 May (FAO-56 ex. 10-11)",3,0,FALSE,FALSE,0,0.0269999999999975
+"test-forcing-derived.R","ef_ra_daily() handles polar day and night without NaN",6,0,FALSE,FALSE,0,0.0340000000000025
+"test-forcing-derived.R","ef_ra_daily() checks the domain, NA, recycling and dim",7,0,FALSE,FALSE,0,0.0420000000000016
+"test-forcing-derived.R","V15: Ra of 14:00-15:00 local standard time (FAO-56 example 19)",7,0,FALSE,FALSE,0,0.0510000000000019
+"test-forcing-derived.R","V16: night period 02:00-03:00 has Ra = 0 (midpoint criterion)",2,0,FALSE,FALSE,0,0.0069999999999979
+"test-forcing-derived.R","Eq. 31 with Lz, Lm in local time equals the UTC form",3,0,FALSE,FALSE,0,0.00999999999999801
+"test-forcing-derived.R","sum of hourly Ra approximates the daily Ra",6,0,FALSE,FALSE,0,0.0289999999999999
+"test-forcing-derived.R","ef_ra_period() checks the domain, NA, recycling and dim",8,0,FALSE,FALSE,0,0.0449999999999982
+"test-forcing-derived.R","ASCE-EWRI Eq. 56: Ra of the sunlit part of sunrise and sunset",7,0,FALSE,FALSE,0,0.0210000000000008
+"test-forcing-derived.R","ASCE-EWRI Eq. 56 leaves polar day and half-hour periods intact",3,0,FALSE,FALSE,0,0.0160000000000018
+"test-forcing-derived.R","ef_ra_period() requires an explicit standard",4,0,FALSE,FALSE,0,0.0309999999999988
+"test-forcing-derived.R","ef_rso() follows FAO-56 Eq. 37 (cases V14-V15)",8,0,FALSE,FALSE,0,0.0269999999999975
+"test-gwr-bandwidth.R","ef_gwr_search() validates its settings and has no hidden defaults",18,0,FALSE,FALSE,0,0.236000000000001
+"test-gwr-bandwidth.R","G7: AICc and CV selection on the synthetic reference",21,0,FALSE,FALSE,0,0.916
+"test-gwr-bandwidth.R","a minimum at a search bound is returned and flagged",7,0,FALSE,FALSE,0,0.203000000000003
+"test-gwr-bandwidth.R","a multimodal profile is flagged and the profile kept",7,0,FALSE,FALSE,0,0.498999999999999
+"test-gwr-bandwidth.R","ties of the criterion select the smallest bandwidth",2,0,FALSE,FALSE,0,0.00999999999999801
+"test-gwr-bandwidth.R","G6: bandwidths with undefined AICc are infeasible, not selected",9,0,FALSE,FALSE,0,0.0800000000000018
+"test-gwr-bandwidth.R","no feasible bandwidth raises a classed error with the profile",4,0,FALSE,FALSE,0,0.0500000000000007
+"test-gwr-bandwidth.R","the global model preferred is flagged (and the optimum returned)",4,0,FALSE,FALSE,0,0.136000000000003
+"test-gwr-bandwidth.R","few stations (n = 15): feasible result and recorded profile",4,0,FALSE,FALSE,0,0.0949999999999989
+"test-gwr-bandwidth.R","min_neighbours changes the bounds and the feasibility rule",10,0,FALSE,FALSE,0,0.343
+"test-gwr-bandwidth.R","the search is deterministic",1,0,FALSE,FALSE,0,0.0479999999999983
+"test-gwr-bandwidth.R","a bandwidth object must match the fit",5,0,FALSE,FALSE,0,0.0569999999999986
+"test-gwr-crosscheck.R","G2 (six stations, gaussian 20 km) agrees with GWmodel",1,0,TRUE,FALSE,0,0.00799999999999912
+"test-gwr-crosscheck.R","fixed kernels on the synthetic reference agree with GWmodel",1,0,TRUE,FALSE,0,0.0339999999999989
+"test-gwr-crosscheck.R","adaptive kernels (k counting the point itself) agree",1,0,TRUE,FALSE,0,0.00900000000000034
+"test-gwr-crosscheck.R","tr(S) recovered from GWmodel's AICc and RSS agrees",1,0,TRUE,FALSE,0,0.00600000000000023
+"test-gwr-crosscheck.R","block predictions agree with GWmodel::gwr.predict()",1,0,TRUE,FALSE,0,0.0069999999999979
+"test-gwr-crosscheck.R","AICc evaluated in a common bandwidth agrees along the profile",1,0,TRUE,FALSE,0,0.00600000000000023
+"test-gwr-fit.R","G1a: boxcar b = 15 km at S1 reproduces the hand computation",6,0,FALSE,FALSE,0,0.0330000000000013
+"test-gwr-fit.R","G1b: gaussian b = 10 km at S1 reproduces the hand computation",5,0,FALSE,FALSE,0,0.0300000000000011
+"test-gwr-fit.R","G2: full gaussian fit with b = 20 km matches section 10",16,0,FALSE,FALSE,0,0.106000000000002
+"test-gwr-fit.R","LOO shortcut equals LOO by definition (own weight set to zero)",3,0,FALSE,FALSE,0,0.0350000000000001
+"test-gwr-fit.R","moment/Cholesky solver equals the QR reference to 1e-10",24,0,FALSE,FALSE,0,0.276
+"test-gwr-fit.R","internal scaling changes neither coefficients nor predictions",5,0,FALSE,FALSE,0,0.0459999999999994
+"test-gwr-fit.R","AICc identity with K = tr(S) + 1 (section 4.1)",5,0,FALSE,FALSE,0,0.0279999999999987
+"test-gwr-fit.R","G4: GWR tends to the global OLS fit",16,0,FALSE,FALSE,0,0.100999999999999
+"test-gwr-fit.R","G5: a rank-deficient station design is an error, not a fallback",5,0,FALSE,FALSE,0,0.0310000000000024
+"test-gwr-fit.R","G6: AICc is undefined when n - 2 - tr(S) <= 0",8,0,FALSE,FALSE,0,0.0629999999999988
+"test-gwr-fit.R","stations with too few neighbours are flagged (record scope)",7,0,FALSE,FALSE,0,0.0579999999999998
+"test-gwr-fit.R","G7: synthetic reference of 150 stations (integration)",8,0,FALSE,FALSE,0,0.212000000000003
+"test-gwr-fit.R","results do not depend on the order of the stations",4,0,FALSE,FALSE,0,0.189
+"test-gwr-fit.R","the fit is deterministic and keeps the documented structure",10,0,FALSE,FALSE,0,0.0510000000000019
+"test-gwr-predict.R","prediction at the stations reproduces the fitted values",12,0,FALSE,FALSE,0,0.245000000000001
+"test-gwr-predict.R","the result does not depend on the block size",10,0,FALSE,FALSE,0,0.727999999999998
+"test-gwr-predict.R","missing covariates or coordinates give NA and EF_INPUT_NA",7,0,FALSE,FALSE,0,0.0309999999999988
+"test-gwr-predict.R","covariate extrapolation and convex hull flags (section 6.3)",6,0,FALSE,FALSE,0,0.0250000000000021
+"test-gwr-predict.R","convex hull handles collinear and coincident stations",5,0,FALSE,FALSE,0,0.0180000000000007
+"test-gwr-predict.R","local range, few neighbours and singular cells (compact kernel)",14,0,FALSE,FALSE,0,0.0530000000000008
+"test-gwr-predict.R","the flag word packs the registry bits",1,0,FALSE,FALSE,0,0.0169999999999995
+"test-gwr-predict.R","prediction inputs are validated",9,0,FALSE,FALSE,0,0.0609999999999999
+"test-gwr.R","kernel values at r = 0, 0.5, 1, 2 follow section 3.4",10,0,FALSE,FALSE,0,0.0370000000000026
+"test-gwr.R","compact kernels give zero weight beyond the bandwidth",4,0,FALSE,FALSE,0,0.0129999999999981
+"test-gwr.R","G3: adaptive bandwidth counts the point itself (bisquare at S1)",6,0,FALSE,FALSE,0,0.0259999999999998
+"test-gwr.R","the kernel requested is the kernel used and recorded",9,0,FALSE,FALSE,0,0.0749999999999993
+"test-gwr.R","kernel and criterion have no default",7,0,FALSE,FALSE,0,0.0749999999999993
+"test-gwr.R","input errors carry the classes of section 9.3",18,0,FALSE,FALSE,0,0.177
+"test-gwr.R","n < p + 3 raises earthflux_gwr_insufficient_stations",4,0,FALSE,FALSE,0,0.0240000000000009
+"test-gwr.R","stations with NA are excluded with their reason, never silently",10,0,FALSE,FALSE,0,0.0529999999999973
+"test-gwr.R","ef_flags_gwr() registers class I codes with the planned bits",3,0,FALSE,FALSE,0,0.0139999999999993
+"test-gwr.R","print, summary and as.data.frame describe the fit",8,0,FALSE,FALSE,0,0.106999999999999
+"test-latent-heat.R","case A1: LE = 600 - 60 - 50 = 490 W m-2",3,0,FALSE,FALSE,0,0.00600000000000023
+"test-latent-heat.R","case C1: negative LE is returned unchanged and silently",2,0,FALSE,FALSE,0,0.00499999999999901
+"test-latent-heat.R","identity: LE + G + H equals Rn on a grid with mixed signs",1,0,FALSE,FALSE,0,0.00700000000000145
+"test-latent-heat.R","negative H (advection) gives LE above Rn - G, unchanged",1,0,FALSE,FALSE,0,0.00400000000000134
+"test-latent-heat.R","scalar arguments are recycled to the common length",2,0,FALSE,FALSE,0,0.00400000000000134
+"test-latent-heat.R","integer inputs are accepted",1,0,FALSE,FALSE,0,0.00600000000000023
+"test-latent-heat.R","matrices keep their dim; mismatched dims are rejected",3,0,FALSE,FALSE,0,0.0130000000000017
+"test-latent-heat.R","incompatible and zero lengths raise classed input errors",2,0,FALSE,FALSE,0,0.0139999999999993
+"test-latent-heat.R","missing values propagate element by element without warnings",4,0,FALSE,FALSE,0,0.0130000000000017
+"test-latent-heat.R","infinite values raise a domain error in each argument",6,0,FALSE,FALSE,0,0.0500000000000007
+"test-latent-heat.R","non-numeric inputs raise a classed input error",3,0,FALSE,FALSE,0,0.0200000000000031
+"test-metric-chain.R","the chain runs end to end and keeps the dim of the scene",44,0,FALSE,FALSE,0,0.123999999999999
+"test-metric-chain.R","energy closure holds at the anchors and in every pixel",8,0,FALSE,FALSE,0,0.032
+"test-metric-chain.R","ETrF at the anchors equals the imposed boundary conditions",4,0,FALSE,FALSE,0,0.0199999999999996
+"test-metric-chain.R","the flags of every object are valid and consistent",41,0,FALSE,FALSE,0,0.123999999999999
+"test-metric-chain.R","the per-pixel phase is invariant to splitting the scene",9,0,FALSE,FALSE,0,0.32
+"test-metric-chain.R","both values of SH-11 are run (decision P0-2, default 2 m)",9,0,FALSE,FALSE,0,0.248999999999999
+"test-modis-io.R","converted DN files are read with an explicit declaration",3,0,FALSE,TRUE,0,0.199999999999999
+"test-modis-io.R","a NoData equal to the fill value is read back as the fill DN",5,0,FALSE,FALSE,0,0.357000000000003
+"test-modis-io.R","converted files declared as scaled are turned back into DN",1,0,FALSE,TRUE,0,0.0689999999999991
+"test-modis-io.R","a wrong or missing declaration is refused (no double scaling)",7,0,FALSE,FALSE,0,0.152999999999999
+"test-modis-io.R","file scale metadata is checked against the table, never applied",5,0,FALSE,FALSE,0,0.134999999999998
+"test-modis-io.R","the AOI is cropped in the native grid of the raster",7,0,FALSE,FALSE,0,0.184000000000001
+"test-modis-io.R","adjacent tiles are mosaicked; incompatible tiles are refused",0,0,FALSE,TRUE,0,0.0240000000000009
+"test-modis-io.R","subdataset names are split into grid and SDS name",2,0,FALSE,FALSE,0,0.0100000000000016
+"test-modis-io.R","layers are matched exactly, with official alternatives",4,0,FALSE,FALSE,0,0.0509999999999984
+"test-modis-io.R","raw DN are read from HDF4 without GDAL scaling and cropped",4,0,FALSE,TRUE,0,0.423000000000002
+"test-modis-io.R","the HDF4 reader restores the fill and checks the file",7,0,FALSE,FALSE,0,0.311
+"test-modis-io.R","the HDF4 reader checks the cell size of the sinusoidal grid",1,0,FALSE,FALSE,0,0.0489999999999995
+"test-modis-io.R","reading HDF4 needs the driver; a missing driver is a classed error",2,0,FALSE,FALSE,0,0.0300000000000011
+"test-modis-io.R","the Cauquenes province boundary is shipped and usable as AOI",7,0,FALSE,FALSE,0,0.097999999999999
+"test-modis-prep.R","view time -> UTC reproduces cases V1-V4 of section 6.2",7,0,FALSE,FALSE,0,0.032
+"test-modis-prep.R","view time -> UTC handles the year boundary and per-pixel dates",2,0,FALSE,FALSE,0,0.0479999999999983
+"test-modis-prep.R","view time -> UTC keeps dim and recycles length-1 inputs",5,0,FALSE,FALSE,0,0.0249999999999986
+"test-modis-prep.R","view time -> UTC result rounding to 24 h is set to 0 h",3,0,FALSE,FALSE,0,0.0120000000000005
+"test-modis-prep.R","view time -> UTC validates its inputs with classed errors",10,0,FALSE,FALSE,0,0.0579999999999998
+"test-modis-prep.R","overpass -> solar geometry applies the equation of time once",2,0,FALSE,FALSE,0,0.0100000000000016
+"test-modis-prep.R","view time -> UTC on a SpatRaster equals the numeric path",8,0,FALSE,FALSE,0,0.131
+"test-modis-prep.R","cell centre coordinates follow the sinusoidal definition",5,0,FALSE,FALSE,0,0.0609999999999999
+"test-modis-prep.R","broadband albedo options A1-A3 follow their formulas",7,0,FALSE,FALSE,0,0.0589999999999975
+"test-modis-prep.R","albedo > 1 is kept and returned in the gt1 mask",5,0,FALSE,FALSE,0,0.0279999999999987
+"test-modis-prep.R","albedo method and inputs are checked with classed errors",18,0,FALSE,FALSE,0,0.0820000000000007
+"test-modis-prep.R","albedo on SpatRasters equals the numeric path",4,0,FALSE,FALSE,0,0.0569999999999986
+"test-modis-prep.R","broadband emissivity E3 follows 0.95 + 0.01 LAI capped at 0.98",4,0,FALSE,FALSE,0,0.0449999999999982
+"test-modis-prep.R","broadband emissivity rejects TODO methods and misuse",11,0,FALSE,FALSE,0,0.0600000000000023
+"test-modis-prep.R","NDVI from reflectance reproduces case N1 and its masks",7,0,FALSE,FALSE,0,0.0479999999999983
+"test-modis-prep.R","NDVI on SpatRasters equals the numeric path",2,0,FALSE,FALSE,0,0.0380000000000003
+"test-modis-prep.R","composite matching T1 selects the period containing the date",8,0,FALSE,FALSE,0,0.0599999999999987
+"test-modis-prep.R","composite matching T2 returns the lag per pixel",9,0,FALSE,FALSE,0,0.0819999999999972
+"test-modis-prep.R","composite matching same_day selects the daily file of the date",5,0,FALSE,FALSE,0,0.0219999999999985
+"test-modis-prep.R","composite matching checks its method and inputs",11,0,FALSE,FALSE,0,0.0590000000000011
+"test-modis-prep.R","aggregation G1: mean of the valid sub-cells and valid fraction",5,0,FALSE,FALSE,0,0.245999999999999
+"test-modis-prep.R","aggregation: median, modal (ties to smallest) and any",6,0,FALSE,FALSE,0,0.164999999999999
+"test-modis-prep.R","aggregation by factor 1 keeps values and reports 0/1 fraction",2,0,FALSE,FALSE,0,0.0410000000000004
+"test-modis-prep.R","aggregation handles several layers",4,0,FALSE,FALSE,0,0.0670000000000002
+"test-modis-prep.R","aggregation rejects misaligned grids and bad arguments",11,0,FALSE,FALSE,0,0.0689999999999991
+"test-modis-surface.R","modis_source() declares HDF4 and converted files",19,0,FALSE,FALSE,0,0.129000000000001
+"test-modis-surface.R","modis_surface_options() has no defaults for scientific choices",13,0,FALSE,FALSE,0,0.164000000000001
+"test-modis-surface.R","planned options raise earthflux_method_not_implemented",10,0,FALSE,FALSE,0,0.0940000000000012
+"test-modis-surface.R","modis_surface_options() takes an explicit LAI of non-vegetated classes",7,0,FALSE,FALSE,0,0.0539999999999985
+"test-modis-surface.R","modis_surface_options() checks the coupling of the choices",13,0,FALSE,FALSE,0,0.117000000000001
+"test-modis-surface.R","the surface state holds the contract on the working grid",0,0,FALSE,TRUE,0,2.007
+"test-modis-surface.R","the overpass flag is raised only where the LST is valid",0,0,FALSE,TRUE,0,2.186
+"test-modis-surface.R","albedo above 1 is kept with the critical flag and excluded",0,0,FALSE,TRUE,0,1.983
+"test-modis-surface.R","flags of the inputs reach the layers of the state",0,0,FALSE,TRUE,0,2.047
+"test-modis-surface.R","an explicit LAI of non-vegetated classes reaches LAI and emissivity",0,0,FALSE,TRUE,0,2.053
+"test-modis-surface.R","a mixed cell averages the assigned and the retrieved LAI",0,0,FALSE,TRUE,0,1.958
+"test-modis-surface.R","the band 31/32 emissivities of MOD11A1 are carried, not used",0,0,FALSE,TRUE,0,1.33
+"test-modis-surface.R","a cell without enough valid sub-cells is NA with its cause",0,0,FALSE,TRUE,0,1.588
+"test-modis-surface.R","qa_policy = 'mask' sets the listed conditions to NA and counts",0,0,FALSE,TRUE,0,1.62
+"test-modis-surface.R","the area of interest crops every product to the same grid",0,0,FALSE,TRUE,0,1.962
+"test-modis-surface.R","modis_surface_state() refuses inconsistent inputs",12,0,FALSE,FALSE,0,6.188
+"test-modis-surface.R","a diffuse fraction raster on the working grid is used",0,0,FALSE,TRUE,0,2.228
+"test-modis-surface.R","the provenance records granules, DOIs, methods and versions",0,0,FALSE,TRUE,0,2.288
+"test-modis-surface.R","the DOI table and the cached product table are consistent",4,0,FALSE,FALSE,0,0.314999999999998
+"test-modis.R","the product table covers the verified products of collection 6.1",11,0,FALSE,FALSE,0,0.0670000000000002
+"test-modis.R","modis_product_spec() returns one sheet and refuses unverified ones",10,0,FALSE,FALSE,0,0.104000000000006
+"test-modis.R","rows carry the verified facts of the sheets",15,0,FALSE,FALSE,0,0.0889999999999986
+"test-modis.R","DERIVADA physical ranges follow from the verified values",8,0,FALSE,FALSE,0,0.0609999999999999
+"test-modis.R","the sinusoidal grid constants and tile extents are consistent",9,0,FALSE,FALSE,0,0.0690000000000026
+"test-modis.R","modis_parse_filename() follows the MODIS naming convention",12,0,FALSE,FALSE,0,0.153000000000006
+"test-modis.R","S1-S3: LST DN is scaled with 0.02 and fill is NA with a mask",4,0,FALSE,FALSE,0,0.0309999999999988
+"test-modis.R","DN outside the valid range and not fill are NA with their mask",3,0,FALSE,FALSE,0,0.0230000000000032
+"test-modis.R","S4: band emissivity uses DN * 0.002 + 0.49",5,0,FALSE,FALSE,0,0.0399999999999991
+"test-modis.R","S5: view angle uses DN * 1 - 65 (signed)",6,0,FALSE,FALSE,0,0.0300000000000011
+"test-modis.R","S6: view time uses DN * 0.1 h",3,0,FALSE,FALSE,0,0.0279999999999987
+"test-modis.R","S7: NDVI of MOD13 uses DN * 0.0001 with fill -3000",6,0,FALSE,FALSE,0,0.0439999999999969
+"test-modis.R","S8: LAI uses DN * 0.1; classes 249-254 are NA, kept and flagged",9,0,FALSE,FALSE,0,0.0739999999999981
+"test-modis.R","lai_nonveg is checked: NULL, one number or a value per class",11,0,FALSE,FALSE,0,0.0919999999999987
+"test-modis.R","lai_nonveg assigns the non-vegetated classes with their own flag",16,0,FALSE,FALSE,0,0.167999999999999
+"test-modis.R","lai_nonveg: QA of the absent retrieval and masked codes",9,0,FALSE,FALSE,0,0.194000000000003
+"test-modis.R","S9: albedo uses (DN - 0) * 0.001; values above 1 are kept",2,0,FALSE,FALSE,0,0.019999999999996
+"test-modis.R","S10: surface reflectance fill -28672 is NA",4,0,FALSE,FALSE,0,0.0360000000000014
+"test-modis.R","modis_apply_scale() keeps dim, propagates NA and checks DN",10,0,FALSE,FALSE,0,0.0940000000000012
+"test-modis.R","vector and SpatRaster inputs give the same result",5,0,FALSE,FALSE,0,0.125999999999998
+"test-modis.R","modis_qa_field() extracts bit fields with bit 0 least significant",14,0,FALSE,FALSE,0,0.106000000000002
+"test-modis.R","Q1-Q2: QC_Day decodes MODLAND and the error categories",9,0,FALSE,FALSE,0,0.0849999999999937
+"test-modis.R","Q3: MOD21 QC = 2 is MODLAND 10 (cloud)",7,0,FALSE,FALSE,0,0.0689999999999955
+"test-modis.R","Q4: the QC_500m_1 fill is recognised without uint32 overflow",8,0,FALSE,FALSE,0,0.0679999999999978
+"test-modis.R","Q5: FparLai_QC = 64 is SCF_QC 010 (backup method)",5,0,FALSE,FALSE,0,0.046999999999997
+"test-modis.R","MODLAND 00/01/10/11 map to none/QA_OTHER/CLOUD/NOT_PRODUCED",12,0,FALSE,FALSE,0,0.132999999999996
+"test-modis.R","MOD09 state bits raise adjacent cloud, snow, water and salt pan",10,0,FALSE,FALSE,0,0.103999999999999
+"test-modis.R","MOD13 VI Quality bits and reliability codes are decoded",7,0,FALSE,FALSE,0,0.0739999999999981
+"test-modis.R","MCD15 extra QC, MCD43 mandatory quality and MCD43A2 snow",5,0,FALSE,FALSE,0,0.078000000000003
+"test-modis.R","the surface stage registers its codes with the bits of 6.4",10,0,FALSE,FALSE,0,0.119
+"test-modis.R","modis_lst() keeps values under 'flag' and NA only documented causes",18,0,FALSE,FALSE,0,0.152999999999999
+"test-modis.R","qa_policy 'mask' sets the listed codes to NA and counts them",5,0,FALSE,FALSE,0,0.112000000000002
+"test-modis.R","the QA policy has no default and is checked",13,0,FALSE,FALSE,0,0.147999999999996
+"test-modis.R","modis_variable() checks the QA layers it receives",4,0,FALSE,FALSE,0,0.0769999999999982
+"test-modis.R","NDVI, albedo and reflectance go through the common engine",9,0,FALSE,FALSE,0,0.139000000000003
+"test-modis.R","modis_lai() combines both QC layers and states the extra one",7,0,FALSE,FALSE,0,0.142000000000003
+"test-modis.R","modis_land_cover() returns classes and the decoded QC",8,0,FALSE,FALSE,0,0.110999999999997
+"test-modis.R","modis_flag_word() sets the registry bits of the active codes",8,0,FALSE,FALSE,0,0.125
+"test-pipeline.R","integrated pipeline: tests pending implementation",1,0,TRUE,FALSE,0,0.00600000000000023
+"test-radiation.R","reference case matches the hand computation",3,0,FALSE,FALSE,0,0.00999999999999801
+"test-radiation.R","total upwelling longwave with emissivity = 1 is equivalent",1,0,FALSE,FALSE,0,0.00600000000000023
+"test-radiation.R","albedo = 0 and emissivity = 1 reduce to rs_in + rl_in - rl_out",1,0,FALSE,FALSE,0,0.0069999999999979
+"test-radiation.R","cancelling longwave terms leave the absorbed shortwave",1,0,FALSE,FALSE,0,0.007000000000005
+"test-radiation.R","scalar arguments are recycled to the common length",3,0,FALSE,FALSE,0,0.00900000000000034
+"test-radiation.R","integer inputs are accepted",1,0,FALSE,FALSE,0,0.007000000000005
+"test-radiation.R","incompatible lengths raise a classed input error",3,0,FALSE,FALSE,0,0.0489999999999995
+"test-radiation.R","NA and NaN propagate without warnings or errors",5,0,FALSE,FALSE,0,0.0309999999999988
+"test-radiation.R","albedo outside [0, 1] raises a domain error; bounds are allowed",5,0,FALSE,FALSE,0,0.0499999999999972
+"test-radiation.R","emissivity outside (0, 1] raises a domain error; 1 is allowed",5,0,FALSE,FALSE,0,0.0549999999999997
+"test-radiation.R","negative rs_in raises a domain error; zero is allowed",3,0,FALSE,FALSE,0,0.0230000000000032
+"test-radiation.R","non-positive rl_in raises a domain error",3,0,FALSE,FALSE,0,0.0380000000000038
+"test-radiation.R","non-positive rl_out raises a domain error",3,0,FALSE,FALSE,0,0.0429999999999993
+"test-radiation.R","infinite values are rejected for every argument",6,0,FALSE,FALSE,0,0.088000000000001
+"test-radiation.R","domain errors are also input errors",4,0,FALSE,FALSE,0,0.0150000000000006
+"test-radiation.R","non-numeric inputs raise a classed input error",4,0,FALSE,FALSE,0,0.0419999999999945
+"test-radiation.R","matrix inputs keep their dim",3,0,FALSE,FALSE,0,0.0239999999999938
+"test-radiation.R","arrays with different dim raise a classed input error",1,0,FALSE,FALSE,0,0.0260000000000034
+"test-radiation.R","negative net radiation is returned unchanged",3,0,FALSE,FALSE,0,0.0120000000000005
+"test-radiation.R","T1-T3: partitioned transmissivity matches the hand computation",11,0,FALSE,FALSE,0,0.0279999999999987
+"test-radiation.R","both branches of the diffuse transmissivity are used as written",4,0,FALSE,FALSE,0,0.0130000000000052
+"test-radiation.R","beam transmissivity is monotonic in its inputs and below 0.98",5,0,FALSE,FALSE,0,0.019999999999996
+"test-radiation.R","partitioned transmissivity: domain errors, NA and dim",17,0,FALSE,FALSE,0,0.151000000000003
+"test-radiation.R","elevation transmissivity: values, linearity, domain and NA",8,0,FALSE,FALSE,0,0.0620000000000047
+"test-radiation.R","ef_tau_sw() dispatches to its methods without changing results",8,0,FALSE,FALSE,0,0.0590000000000046
+"test-radiation.R","ef_tau_sw() returns a type-stable object with flags",17,0,FALSE,FALSE,0,0.135999999999996
+"test-radiation.R","atmospheric emissivity matches the hand computation",3,0,FALSE,FALSE,0,0.0150000000000006
+"test-radiation.R","atmospheric emissivity: domain, values above 1, NA and dim",10,0,FALSE,FALSE,0,0.0820000000000007
+"test-radiation.R","S1: flat terrain",6,0,FALSE,FALSE,0,0.0140000000000029
+"test-radiation.R","S2-S4: north, south and self-shaded south-facing slopes",11,0,FALSE,FALSE,0,0.0229999999999961
+"test-radiation.R","flat-terrain identity: Rs = Gsc * dr * cos(theta_h) * tau_sw",3,0,FALSE,FALSE,0,0.0240000000000009
+"test-radiation.R","conservation: rho_g = 0 and slope -> 0 recover the horizontal",1,0,FALSE,FALSE,0,0.0109999999999957
+"test-radiation.R","ground_albedo is required only on slopes",5,0,FALSE,FALSE,0,0.0510000000000019
+"test-radiation.R","modelled shortwave: domain errors, NA and dim",21,0,FALSE,FALSE,0,0.177999999999997
+"test-radiation.R","measured path with the clear-sky partition reproduces the model",5,0,FALSE,FALSE,0,0.0210000000000008
+"test-radiation.R","measured shortwave: components, domain errors and NA",10,0,FALSE,FALSE,0,0.155000000000001
+"test-radiation.R","ef_rs_in() dispatches to its methods without changing results",16,0,FALSE,FALSE,0,0.102000000000004
+"test-radiation.R","ef_rs_in() flags missing inputs and self-shaded planes",6,0,FALSE,FALSE,0,0.041000000000011
+"test-radiation.R","L1: incoming longwave matches the hand computation",2,0,FALSE,FALSE,0,0.00900000000000034
+"test-radiation.R","incoming longwave: identities, recycling, domain and NA",12,0,FALSE,FALSE,0,0.0889999999999986
+"test-radiation.R","O1-O2: emitted longwave matches the hand computation",2,0,FALSE,FALSE,0,0.00600000000000023
+"test-radiation.R","emitted longwave: identities, domain, NA and dim",12,0,FALSE,FALSE,0,0.350999999999999
+"test-radiation.R","radiation components chain into ef_net_radiation()",5,0,FALSE,FALSE,0,0.0159999999999911
+"test-radiation.R","full chain from the overpass time keeps shape and propagates NA",3,0,FALSE,FALSE,0,0.0249999999999915
+"test-radiation.R","EF_RAD_* codes are registered with the planned bits",4,0,FALSE,FALSE,0,0.027000000000001
+"test-radiation.R","EF_RAD_SELF_SHADED marks planes facing away from the sun",6,0,FALSE,FALSE,0,0.0190000000000055
+"test-radiation.R","EF_RAD_ATM_EMISSIVITY_GT1 marks emissivities above 1",4,0,FALSE,FALSE,0,0.0130000000000052
+"test-radiation.R","EF_RAD_RS_GT_RA compares measured Rs with the extraterrestrial",4,0,FALSE,FALSE,0,0.0160000000000053
+"test-radiation.R","EF_RAD_RN_NEGATIVE marks negative net radiation",4,0,FALSE,FALSE,0,0.0219999999999914
+"test-radiation.R","diagnostics evaluate only the codes whose inputs are given",9,0,FALSE,FALSE,0,0.0319999999999965
+"test-reference-et.R","V14: FAO-56 example 18, intermediate values",18,0,FALSE,FALSE,0,0.0190000000000055
+"test-reference-et.R","V14: FAO-56 example 18, daily grass ETo = 3.9 mm d-1",13,0,FALSE,FALSE,0,0.0789999999999935
+"test-reference-et.R","A4: daily tall reference with ASCE-EWRI constants",6,0,FALSE,FALSE,0,0.0210000000000008
+"test-reference-et.R","V10-V11: daily Rnl and Rn (FAO-56 examples 11 and 12)",9,0,FALSE,FALSE,0,0.0220000000000056
+"test-reference-et.R","V15: FAO-56 example 19, 14:00-15:00, ETo = 0.63 mm h-1",13,0,FALSE,FALSE,0,0.0420000000000016
+"test-reference-et.R","V16: FAO-56 example 19, 02:00-03:00, ETo = 0.00 mm h-1",11,0,FALSE,FALSE,0,0.0369999999999919
+"test-reference-et.R","A1-A3: hourly constants of FAO-56 and ASCE-EWRI (Table 1)",7,0,FALSE,FALSE,0,0.0390000000000015
+"test-reference-et.R","ef_ref_et() hourly ASCE uses Cd by day and night per position",5,0,FALSE,FALSE,0,0.0300000000000011
+"test-reference-et.R","the constants table records source and status per row",9,0,FALSE,FALSE,0,0.0450000000000017
+"test-reference-et.R","the ASCE-EWRI rows are Table 1 and Eqs. 30, 65-66 of the report",7,0,FALSE,FALSE,0,0.0430000000000064
+"test-reference-et.R","ef_ref_et() requires explicit reference, timestep and standard",5,0,FALSE,FALSE,0,0.0480000000000018
+"test-reference-et.R","FAO-56 with the alfalfa reference is a classed error",4,0,FALSE,FALSE,0,0.019999999999996
+"test-reference-et.R","daytime is required for hourly ASCE and refused for daily",7,0,FALSE,FALSE,0,0.0620000000000118
+"test-reference-et.R","ef_ref_et() checks the domain of its inputs",8,0,FALSE,FALSE,0,0.070999999999998
+"test-reference-et.R","ef_ref_et() propagates NA, keeps dim and flags EF_INPUT_NA",6,0,FALSE,FALSE,0,0.027000000000001
+"test-reference-et.R","negative reference ET is kept and flagged EF_WS_ETR_NEGATIVE",8,0,FALSE,FALSE,0,0.0280000000000058
+"test-reference-et.R","Rs/Rso is limited to 1 only in the cloudiness term (flagged)",8,0,FALSE,FALSE,0,0.027000000000001
+"test-reference-et.R","hourly Rnl uses sigma / 24 and T_hr; daily the mean of T^4",3,0,FALSE,FALSE,0,0.0120000000000005
+"test-reference-et.R","ASCE-EWRI net radiation: sigma of Eqs. 17 and 44",8,0,FALSE,FALSE,0,0.0309999999999917
+"test-reference-et.R","ASCE-EWRI limits 0.3 <= Rs/Rso <= 1 (Eqs. 18 and 45), flagged",9,0,FALSE,FALSE,0,0.0379999999999967
+"test-reference-et.R","ef_ref_net_radiation() requires an explicit standard",2,0,FALSE,FALSE,0,0.0130000000000052
+"test-reference-et.R","ef_ref_net_radiation() checks timestep, inputs and domain",12,0,FALSE,FALSE,0,0.0729999999999933
+"test-reference-et.R","ef_ref_net_radiation() keeps dim and propagates NA",8,0,FALSE,FALSE,0,0.0309999999999917
+"test-reference-et.R","the ASCE-EWRI daytime rule Rn > 0 makes Rn = 0 night-time",2,0,FALSE,FALSE,0,0.0120000000000005
+"test-reference-et.R","ef_ref_soil_heat_flux() uses the ratios of the constants table",9,0,FALSE,FALSE,0,0.0499999999999972
+"test-reference-et.R","the stage registers its four class I codes",9,0,FALSE,FALSE,0,0.0330000000000013
+"test-reference-et.R","O3: reference ET at the overpass by linear interpolation",5,0,FALSE,FALSE,0,0.0379999999999967
+"test-reference-et.R","D1: daily sums of complete days and the day definition",9,0,FALSE,FALSE,0,0.0759999999999934
+"test-regionalize-cv.R","ef_spatial_folds() assigns square tiles deterministically",11,0,FALSE,FALSE,0,0.128999999999991
+"test-regionalize-cv.R","ef_spatial_folds() rejects invalid inputs",8,0,FALSE,FALSE,0,0.0559999999999974
+"test-regionalize-cv.R","cross-validation predicts each fold from the other folds",13,0,FALSE,FALSE,0,0.218000000000004
+"test-regionalize-cv.R","folds of size one give leave-one-out residuals",3,0,FALSE,FALSE,0,1.02499999999999
+"test-regionalize-cv.R","the same folds give paired predictions for C1, C2 and C3",17,0,FALSE,FALSE,0,1.251
+"test-regionalize-cv.R","reselect_bandwidth = FALSE keeps the bandwidth of all stations",7,0,FALSE,FALSE,0,1.721
+"test-regionalize-cv.R","failed folds are reported, never dropped",7,0,FALSE,FALSE,0,0.0649999999999977
+"test-regionalize-cv.R","cross-validation is reproducible and independent of the plan",4,0,TRUE,FALSE,0,0.259
+"test-regionalize-cv.R","ef_regionalize_cv() rejects invalid inputs",7,0,FALSE,FALSE,0,0.0649999999999977
+"test-regionalize-methods.R","ef_method_gwr() validates a fixed bandwidth or a selection",9,0,FALSE,FALSE,0,0.0470000000000113
+"test-regionalize-methods.R","ef_method_gwr() has no defaults for the scientific choices",12,0,FALSE,FALSE,0,0.0769999999999982
+"test-regionalize-methods.R","ef_method_station() requires the representative station",10,0,FALSE,FALSE,0,0.070999999999998
+"test-regionalize-methods.R","ef_method_ols() and ef_method_idw() build C2 methods",10,0,FALSE,FALSE,0,0.0810000000000031
+"test-regionalize-methods.R","ef_predict_control() validates the settings",14,0,FALSE,FALSE,0,0.0919999999999987
+"test-regionalize.R","every method returns the same earthflux_surface structure",100,0,FALSE,FALSE,0,0.635999999999996
+"test-regionalize.R","GWR surfaces equal the numeric core at every cell",9,0,FALSE,FALSE,0,0.176000000000002
+"test-regionalize.R","a bandwidth selected by criterion is recorded per fit",6,0,FALSE,FALSE,0,0.227999999999994
+"test-regionalize.R","the global regression reproduces the OLS reference of GWR",11,0,FALSE,FALSE,0,0.213000000000008
+"test-regionalize.R","IDW interpolates with the given or selected power",7,0,FALSE,FALSE,0,0.167000000000002
+"test-regionalize.R","C1 gives the representative station value, or the lapse rate",10,0,FALSE,FALSE,0,0.204999999999998
+"test-regionalize.R","the block size does not change the result (exact blocks)",52,0,FALSE,FALSE,0,2.33999999999999
+"test-regionalize.R","the result does not depend on the order of the stations",2,0,FALSE,FALSE,0,0.241
+"test-regionalize.R","cells with a missing covariate are NA with EF_INPUT_NA",18,0,FALSE,FALSE,0,0.284999999999997
+"test-regionalize.R","extrapolation flags follow the bits of the registry",12,0,FALSE,FALSE,0,0.286999999999992
+"test-regionalize.R","values outside the physical domain are kept and flagged critical",10,0,FALSE,FALSE,0,0.167000000000002
+"test-regionalize.R","QC policy and exclusions are explicit and recorded",16,0,FALSE,FALSE,0,0.457999999999998
+"test-regionalize.R","covariates at the stations can come from a table",4,0,FALSE,FALSE,0,0.263000000000005
+"test-regionalize.R","surface covariates need an explicit declaration (GW-07)",11,0,FALSE,FALSE,0,0.171999999999997
+"test-regionalize.R","surfaces are written to files; files of a failed call are removed",12,0,FALSE,FALSE,0,0.444000000000003
+"test-regionalize.R","the input of ef_station_qc() is accepted",3,0,FALSE,FALSE,0,0.0829999999999984
+"test-regionalize.R","ef_regionalize() rejects invalid inputs with classed errors",31,0,FALSE,FALSE,0,0.507000000000005
+"test-regionalize.R","the execution plan is recorded and left untouched",9,0,FALSE,FALSE,0,0.164000000000001
+"test-regionalize.R","sequential and parallel (2 workers) results are identical",1,0,TRUE,FALSE,0,0.007000000000005
+"test-sensible-heat.R","SH-14.2: air density from pressure and temperature",3,0,FALSE,FALSE,0,0.00900000000000034
+"test-sensible-heat.R","air density, Ts_datum and H validate inputs and keep shape",16,0,FALSE,FALSE,0,0.100000000000009
+"test-sensible-heat.R","SH-14.3: dT calibration from two anchors (neutral, first step)",12,0,FALSE,FALSE,0,0.0390000000000015
+"test-sensible-heat.R","ef_dt_coef() rejects swapped or equal anchor temperatures",5,0,FALSE,FALSE,0,0.0240000000000009
+"test-sensible-heat.R","ef_h_control() defaults follow the SEBAL Idaho manual (SH-11)",17,0,FALSE,FALSE,0,0.102000000000004
+"test-sensible-heat.R","SH-14.5: iteration with tol = 0.01 and damping 0 or 0.5",16,0,FALSE,FALSE,0,0.0499999999999972
+"test-sensible-heat.R","SH-14.5: fixed point, independent of damping (properties 1-2)",14,0,FALSE,FALSE,0,0.109999999999999
+"test-sensible-heat.R","SH-14.5/14.6: anchors reproduce H_target (property 3)",12,0,FALSE,FALSE,0,0.146999999999991
+"test-sensible-heat.R","SH-14.5: phase B of the interior pixel at the fixed point",6,0,FALSE,FALSE,0,0.0529999999999973
+"test-sensible-heat.R","SH-14.5: unstable correction lowers rah at both anchors (property 4)",2,0,FALSE,FALSE,0,0.0320000000000107
+"test-sensible-heat.R","SH-14.5: non-convergence is reported, never silent (property 5)",12,0,FALSE,FALSE,0,0.0560000000000116
+"test-sensible-heat.R","SH-14.5: swapped or equal anchors are calibration errors (property 6)",2,0,FALSE,FALSE,0,0.0139999999999958
+"test-sensible-heat.R","SH-14.5: phase B is block-size invariant (property 7)",9,0,FALSE,FALSE,0,0.0820000000000078
+"test-sensible-heat.R","SH-11: both stable_psi_m_height options with a stable cold anchor",10,0,FALSE,FALSE,0,0.0489999999999924
+"test-sensible-heat.R","ef_calibrate_h() accepts an earthflux_anchors object",4,0,FALSE,FALSE,0,0.054000000000002
+"test-sensible-heat.R","ef_calibrate_h() validates the calibration points",8,0,FALSE,FALSE,0,0.0579999999999927
+"test-sensible-heat.R","ef_calibrate_h() validates control, lapse rate and datum",5,0,FALSE,FALSE,0,0.0740000000000123
+"test-sensible-heat.R","ef_calibrate_h() validates pixels, propagates NA and keeps dim",20,0,FALSE,FALSE,0,0.171999999999997
+"test-sensible-heat.R","the EF_H_ registry rows follow dev/specs/flags.md section 4.2",6,0,FALSE,FALSE,0,0.0290000000000106
+"test-sensible-heat.R","EF_H_DT_SLOPE_NONPOSITIVE is a critical object flag",6,0,FALSE,FALSE,0,0.0379999999999967
+"test-sensible-heat.R","cell flags of phase B: extrapolation, negative H, H > Rn - G",14,0,FALSE,FALSE,0,0.0869999999999891
+"test-sensible-heat.R","EF_H_USTAR_INVALID and EF_H_PIXEL_NOT_CONVERGED in phase B",11,0,FALSE,FALSE,0,0.0600000000000023
+"test-sensible-heat.R","ef_diagnose_sensible_heat() builds cell flags from outputs",11,0,FALSE,FALSE,0,0.0360000000000014
+"test-sensible-heat.R","the calibration object records control, constants and provenance",13,0,FALSE,FALSE,0,0.0810000000000031
+"test-shared-physics.R","air pressure matches the hand-computed FAO-56 Eq. 7 values",2,0,FALSE,FALSE,0,0.007000000000005
+"test-shared-physics.R","air pressure decreases monotonically with elevation",2,0,FALSE,FALSE,0,0.007000000000005
+"test-shared-physics.R","air pressure keeps dim, accepts integers and propagates NA",5,0,FALSE,FALSE,0,0.0169999999999959
+"test-shared-physics.R","air pressure rejects invalid input with classed errors",10,0,FALSE,FALSE,0,0.0650000000000119
+"test-shared-physics.R","the constant method returns the FAO-56 value",2,0,FALSE,FALSE,0,0.0100000000000051
+"test-shared-physics.R","the fao56 method matches case B",1,0,FALSE,FALSE,0,0.00400000000000489
+"test-shared-physics.R","the fao56 method keeps dim and propagates NA",3,0,FALSE,FALSE,0,0.0109999999999957
+"test-shared-physics.R","method has no default and must match exactly",6,0,FALSE,FALSE,0,0.0220000000000056
+"test-shared-physics.R","the fao56 method validates temperature",7,0,FALSE,FALSE,0,0.0370000000000061
+"test-shared-physics.R","the lambda unit guard accepts J kg-1 and rejects other units",7,0,FALSE,FALSE,0,0.0490000000000066
+"test-soil-heat.R","Bastiaanssen cases B1-B5 match the hand computation",18,0,FALSE,FALSE,0,0.0530000000000115
+"test-soil-heat.R","Bastiaanssen G/Rn of B1-B5 matches the hand computation",2,0,FALSE,FALSE,0,0.0100000000000051
+"test-soil-heat.R","B6: NDVI enters with an even power (limitation documented)",2,0,FALSE,FALSE,0,0.0100000000000051
+"test-soil-heat.R","Bastiaanssen accepts the bounds of albedo and NDVI",3,0,FALSE,FALSE,0,0.0130000000000052
+"test-soil-heat.R","Bastiaanssen vectorised result equals the case-by-case result",1,0,FALSE,FALSE,0,0.007000000000005
+"test-soil-heat.R","Tasumi cases T1-T8 match the hand computation",28,0,FALSE,FALSE,0,0.070999999999998
+"test-soil-heat.R","Tasumi G/Rn of T1-T7 matches the hand computation",3,0,FALSE,FALSE,0,0.0190000000000055
+"test-soil-heat.R","T6: LAI = 0.5 belongs to the vegetated branch (discontinuity)",3,0,FALSE,FALSE,0,0.0160000000000053
+"test-soil-heat.R","Tasumi vectorised result equals the case-by-case result",1,0,FALSE,FALSE,0,0.00600000000000023
+"test-soil-heat.R","G is returned in W m-2 and lst is read in K",5,0,FALSE,FALSE,0,0.0160000000000053
+"test-soil-heat.R","negative and zero Rn are accepted and returned unchanged",6,0,FALSE,FALSE,0,0.0250000000000057
+"test-soil-heat.R","integer inputs are accepted",2,0,FALSE,FALSE,0,0.00900000000000034
+"test-soil-heat.R","scalar arguments are recycled to the common length",2,0,FALSE,FALSE,0,0.007000000000005
+"test-soil-heat.R","NA in any Bastiaanssen input gives NA only at that position",13,0,FALSE,FALSE,0,0.0400000000000063
+"test-soil-heat.R","NA in any Tasumi input gives NA only at that position",8,0,FALSE,FALSE,0,0.0230000000000103
+"test-soil-heat.R","Tasumi: NA lst gives NA also in the vegetated branch (G-D5)",2,0,FALSE,FALSE,0,0.00900000000000034
+"test-soil-heat.R","EF_INPUT_NA marks the positions with a missing required input",4,0,FALSE,FALSE,0,0.0160000000000053
+"test-soil-heat.R","impossible values raise a classed domain error",12,0,FALSE,FALSE,0,0.0690000000000026
+"test-soil-heat.R","the dispatcher propagates domain errors",3,0,FALSE,FALSE,0,0.00600000000000023
+"test-soil-heat.R","infinite values are rejected for every argument",8,0,FALSE,FALSE,0,0.0510000000000019
+"test-soil-heat.R","non-numeric inputs raise a classed input error",4,0,FALSE,FALSE,0,0.0300000000000011
+"test-soil-heat.R","incompatible or zero lengths raise a classed input error",4,0,FALSE,FALSE,0,0.0230000000000103
+"test-soil-heat.R","matrix inputs keep their dim; different dims are rejected",9,0,FALSE,FALSE,0,0.0360000000000014
+"test-soil-heat.R","a missing or unknown method raises a classed error",7,0,FALSE,FALSE,0,0.0390000000000015
+"test-soil-heat.R","an input required by the method raises earthflux_missing_input",7,0,FALSE,FALSE,0,0.0460000000000065
+"test-soil-heat.R","the dispatcher is identical to the direct call",2,0,FALSE,FALSE,0,0.0110000000000099
+"test-soil-heat.R","arguments not used by the method do not alter the result",2,0,FALSE,FALSE,0,0.0100000000000051
+"test-soil-heat.R","the dispatcher returns the documented object",24,0,FALSE,FALSE,0,0.0769999999999982
+"test-soil-heat.R","g_rn_ratio * rn equals g where rn != 0 and is NA where rn = 0",4,0,FALSE,FALSE,0,0.0250000000000057
+"test-soil-heat.R","the stage registers its class I codes with the documented bits",6,0,FALSE,FALSE,0,0.0240000000000009
+"test-soil-heat.R","B5: a negative ratio is flagged and kept unchanged",7,0,FALSE,FALSE,0,0.0219999999999914
+"test-soil-heat.R","B4 and B6 raise no flag (EF_G_NDVI_NONPOSITIVE is class II)",1,0,FALSE,FALSE,0,0.00600000000000023
+"test-soil-heat.R","T7: available energy Rn - G <= 0 is flagged and kept",4,0,FALSE,FALSE,0,0.0150000000000006
+"test-soil-heat.R","T8: Rn = 0 is flagged; G is computed without division",3,0,FALSE,FALSE,0,0.0120000000000005
+"test-soil-heat.R","negative Rn: RN_NONPOSITIVE, and RATIO_NEGATIVE only if G > 0",3,0,FALSE,FALSE,0,0.0120000000000005
+"test-soil-heat.R","T4: the bare-soil branch is flagged only for Tasumi",4,0,FALSE,FALSE,0,0.0160000000000053
+"test-soil-heat.R","flagged values are identical to the method function",2,0,FALSE,FALSE,0,0.0169999999999959
+"test-soil-heat.R","cell diagnostics ignore missing values",6,0,FALSE,FALSE,0,0.0189999999999912
+"test-soil-heat.R","G chains with ef_net_radiation()",7,0,FALSE,FALSE,0,0.0269999999999868
+"test-solar-geometry.R","G6: declination and inverse distance at calendar dates",4,0,FALSE,FALSE,0,0.007000000000005
+"test-solar-geometry.R","FAO-56 example 8 (J = 246): dr = 0.985, declination = 0.120",2,0,FALSE,FALSE,0,0.00500000000000966
+"test-solar-geometry.R","FAO-56 example 19 (J = 274): dr, declination, Sc, hour angle",5,0,FALSE,FALSE,0,0.007000000000005
+"test-solar-geometry.R","G5: equation of time and hour angle at J = 81",2,0,FALSE,FALSE,0,0.00499999999999545
+"test-solar-geometry.R","hour angle equals FAO-56 Eq. 31 with west longitudes in 0-360",2,0,FALSE,FALSE,0,0.00699999999999079
+"test-solar-geometry.R","G1: north-facing slope normal to the sun gives cos = 1",2,0,FALSE,FALSE,0,0.00399999999999068
+"test-solar-geometry.R","G2-G3: south-facing slope and horizontal plane",3,0,FALSE,FALSE,0,0.00500000000000966
+"test-solar-geometry.R","G4: east/west symmetry over a grid of hour angles",2,0,FALSE,FALSE,0,0.00499999999999545
+"test-solar-geometry.R","slope = 0 gives cos_incidence = cos_zenith on a grid",3,0,FALSE,FALSE,0,0.00900000000000034
+"test-solar-geometry.R","north-south reflection is a symmetry; aspect + pi is not",2,0,FALSE,FALSE,0,0.00600000000000023
+"test-solar-geometry.R","at noon in the south: north slope > horizontal > south slope",2,0,FALSE,FALSE,0,0.00400000000000489
+"test-solar-geometry.R","ef_solar_geometry assembles its auxiliaries",5,0,FALSE,FALSE,0,0.0169999999999959
+"test-solar-geometry.R","outputs share the common length and dim of the inputs",7,0,FALSE,FALSE,0,0.0250000000000057
+"test-solar-geometry.R","NA propagates only to the outputs that depend on it",8,0,FALSE,FALSE,0,0.027000000000001
+"test-solar-geometry.R","angles in degrees and out-of-domain values raise domain errors",14,0,FALSE,FALSE,0,0.0949999999999989
+"test-solar-geometry.R","non-integer doy is an input error, not a domain error",6,0,FALSE,FALSE,0,0.0320000000000107
+"test-solar-geometry.R","type, length and dim errors are classed",7,0,FALSE,FALSE,0,0.0429999999999922
+"test-station-qc.R","the station QC codes are registered with their class",11,0,FALSE,FALSE,0,0.0470000000000113
+"test-station-qc.R","class II station codes and not-evaluated codes stay unregistered",6,0,FALSE,FALSE,0,0.0220000000000056
+"test-station-qc.R","ef_station_qc() never modifies the stations or the observations",8,0,FALSE,FALSE,0,0.0539999999999878
+"test-station-qc.R","clean data raise no flag but record the codes evaluated",7,0,FALSE,FALSE,0,0.0609999999999928
+"test-station-qc.R","EF_WS_OUT_OF_DOMAIN flags impossible values, not their bounds",14,0,FALSE,FALSE,0,0.11699999999999
+"test-station-qc.R","EF_WS_OUT_OF_DOMAIN covers the daily fields; NA is not flagged",4,0,FALSE,FALSE,0,0.0859999999999985
+"test-station-qc.R","EF_WS_TMIN_GT_TMAX flags both variables of the record",7,0,FALSE,FALSE,0,0.0550000000000068
+"test-station-qc.R","EF_WS_RH_GT100 flags values above 100 % as info",6,0,FALSE,FALSE,0,0.0690000000000026
+"test-station-qc.R","EF_WS_TDEW_GT_TAIR flags Tdew > T without tolerance",6,0,FALSE,FALSE,0,0.0660000000000025
+"test-station-qc.R","EF_WS_TDEW_GT_TAIR flags vapour pressure above e0(T)",10,0,FALSE,FALSE,0,0.102000000000004
+"test-station-qc.R","both QC-04 variants flag the air temperature once per record",4,0,FALSE,FALSE,0,0.0420000000000016
+"test-station-qc.R","station_ra_window() is the sunlit integral of FAO-56 Eq. 28",8,0,FALSE,FALSE,0,0.0369999999999919
+"test-station-qc.R","EF_WS_RS_GT_RA flags Rs above Ra of the record window",9,0,FALSE,FALSE,0,0.0849999999999937
+"test-station-qc.R","EF_WS_RS_GT_RA uses the sunlit window and skips night windows",4,0,FALSE,FALSE,0,0.0830000000000126
+"test-station-qc.R","EF_WS_RS_GT_RA compares daily means with the daily Ra",2,0,FALSE,FALSE,0,0.039999999999992
+"test-station-qc.R","EF_WS_RS_GT_RA is not evaluated for instantaneous values",4,0,FALSE,FALSE,0,0.0530000000000115
+"test-station-qc.R","negative solar radiation and precipitation are out of domain",4,0,FALSE,FALSE,0,0.0360000000000014
+"test-station-qc.R","EF_WS_TIME_GAP and EF_WS_TIME_IRREGULAR follow the declared step",6,0,FALSE,FALSE,0,0.0459999999999923
+"test-station-qc.R","time steps are evaluated per station and in time order",4,0,FALSE,FALSE,0,0.0790000000000077
+"test-station-qc.R","EF_WS_HEIGHT_MISSING flags values measured at an unknown height",5,0,FALSE,FALSE,0,0.0499999999999972
+"test-station-qc.R","EF_WS_HEIGHT_NONSTANDARD flags temperature and humidity off 2 m",7,0,FALSE,FALSE,0,0.0879999999999939
+"test-station-qc.R","$qc and the record flags are equivalent views",24,0,FALSE,FALSE,0,0.137
+"test-station-qc.R","qc_policy sets the status; the default excludes critical values",13,0,FALSE,FALSE,0,0.122
+"test-station-qc.R","exclusions are counted in the provenance",18,0,FALSE,FALSE,0,0.106000000000009
+"test-station-qc.R","ef_station_qc() can be rerun and checks its input",4,0,FALSE,FALSE,0,0.0810000000000031
+"test-station-qc.R","print summarises the quality control",6,0,FALSE,FALSE,0,0.13000000000001
+"test-station-ref-et.R","V15-V16: FAO-56 example 19 through ef_station_ref_et()",20,0,FALSE,FALSE,0,0.275999999999996
+"test-station-ref-et.R","A3: the tall reference through the station table",5,0,FALSE,FALSE,0,0.0570000000000022
+"test-station-ref-et.R","V14: FAO-56 example 18 through daily records",15,0,FALSE,FALSE,0,0.0720000000000027
+"test-station-ref-et.R","O1 takes the period that contains the overpass time",7,0,FALSE,FALSE,0,0.0679999999999978
+"test-station-ref-et.R","O3 interpolates the hourly rates between mid-points",3,0,FALSE,FALSE,0,0.120000000000005
+"test-station-ref-et.R","an overpass outside the records gives NA and the flag",8,0,FALSE,FALSE,0,0.100000000000009
+"test-station-ref-et.R","no interpolation across a missing or excluded record",11,0,FALSE,FALSE,0,0.162999999999997
+"test-station-ref-et.R","each station gets every overpass time",3,0,FALSE,FALSE,0,0.0539999999999878
+"test-station-ref-et.R","D1: complete UTC days are the sum of their 24 hourly values",9,0,FALSE,FALSE,0,0.0799999999999983
+"test-station-ref-et.R","D1: incomplete days give NA and EF_WS_INCOMPLETE_DAY",10,0,FALSE,FALSE,0,0.144000000000005
+"test-station-ref-et.R","D1: requested dates, including days without records",7,0,FALSE,FALSE,0,0.0949999999999989
+"test-station-ref-et.R","the local standard day and the UTC day give different sums",10,0,FALSE,FALSE,0,0.157999999999987
+"test-station-ref-et.R","night-time periods carry the ratio of 2-3 hours before sunset",26,0,FALSE,FALSE,0,0.140000000000001
+"test-station-ref-et.R","low_sun: ASCE-EWRI Eq. 46 carries fcd of the last beta > 0.3 rad",39,0,FALSE,FALSE,0,0.182000000000002
+"test-station-ref-et.R","the fixed night ratio is used at every night-time period",4,0,FALSE,FALSE,0,0.0499999999999972
+"test-station-ref-et.R","the daytime rule selects G and Cd by Ra > 0 or Rn > 0",8,0,FALSE,FALSE,0,0.11099999999999
+"test-station-ref-et.R","series flags: negative ETr and Rs/Rso limited, with their target",16,0,FALSE,FALSE,0,0.105000000000004
+"test-station-ref-et.R","the result object follows the contract",22,0,FALSE,FALSE,0,0.186999999999998
+"test-station-ref-et.R","humidity sources give the same ETr for consistent inputs",2,0,FALSE,FALSE,0,0.173000000000002
+"test-station-ref-et.R","choices are explicit and checked",31,0,FALSE,FALSE,0,0.909999999999997
+"test-station-ref-et.R","the records must match the time step and have the columns",7,0,FALSE,FALSE,0,0.316000000000003
+"test-station-ref-et.R","keep_all lets impossible values reach the core, which errors",2,0,FALSE,FALSE,0,0.0739999999999981
+"test-surface-chain.R","the surface state feeds one METRIC step with the core contract",0,0,FALSE,TRUE,0,1.574
+"test-utils.R","ef_abort() signals classed errors",4,0,FALSE,FALSE,0,0.0310000000000059
+"test-utils.R","ef_warn() signals classed warnings",2,0,FALSE,FALSE,0,0.0189999999999912
+"test-utils.R","ef_abort() attaches optional data fields to the condition",6,0,FALSE,FALSE,0,0.0139999999999958
+"test-utils.R","ef_abort() keeps the class order and reports the caller",3,0,FALSE,FALSE,0,0.00900000000000034
+"test-utils.R","condition data fields must be uniquely named and not reserved",5,0,FALSE,FALSE,0,0.0390000000000015
+"test-utils.R","ef_warn() attaches optional data fields to the warning",6,0,FALSE,FALSE,0,0.019999999999996
+"test-utils.R","check_method() requires an explicit, exact method",14,0,FALSE,FALSE,0,0.0690000000000026
+"test-utils.R","check_string() accepts one non-empty string only",5,0,FALSE,FALSE,0,0.0510000000000019
+"test-utils.R","check_logical_no_na() rejects non-logical input and NA",4,0,FALSE,FALSE,0,0.0300000000000011
+"test-utils.R","check_numeric() accepts double and integer only",10,0,FALSE,FALSE,0,0.0369999999999919
+"test-utils.R","check_numeric() reports the caller's call",1,0,FALSE,FALSE,0,0.00500000000000966
+"test-utils.R","check_common_length() returns n and enforces the recycling rule",7,0,FALSE,FALSE,0,0.0319999999999965
+"test-utils.R","check_same_dim() requires identical dims of full length",5,0,FALSE,FALSE,0,0.0360000000000014
+"test-utils.R","check_in_range() enforces closed and open bounds",7,0,FALSE,FALSE,0,0.0390000000000015
+"test-utils.R","check_in_range() ignores NA/NaN and rejects infinite values",3,0,FALSE,FALSE,0,0.0170000000000101
+"test-utils.R","check_in_range() errors are classed, counted and named",7,0,FALSE,FALSE,0,0.0109999999999957
+"test-utils.R","check_scalar() checks a single bounded, optionally whole number",8,0,FALSE,FALSE,0,0.0349999999999966
+"test-utils.R","check_condition() and check_whole() raise classed errors",4,0,FALSE,FALSE,0,0.0630000000000024
+"test-utils.R","ef_dispatch_args() matches arguments against the method",3,0,FALSE,FALSE,0,0.0289999999999964
+"test-utils.R","common_dim() and ef_reshape() keep the common shape",4,0,FALSE,FALSE,0,0.0250000000000057
+"test-verification.R","SEBAL-Idaho p. 33, Eq. 38: stable psi_m(200 m) = -5 (2 / L)",6,0,FALSE,FALSE,0,0.027000000000001
+"test-verification.R","SEBAL-Idaho pp. 26, 30: heights z_b = 200 m, z1 = 0.1 m, z2 = 2 m",4,0,FALSE,FALSE,0,0.0139999999999958
+"test-verification.R","SEBAL-Idaho p. 32, Eqs. 35 and 37: unstable corrections",3,0,FALSE,FALSE,0,0.0120000000000005
+"test-verification.R","SEBAL-Idaho p. 32, Eq. 34: Monin-Obukhov length with Ts, g = 9.81",4,0,FALSE,FALSE,0,0.0239999999999867
+"test-verification.R","SEBAL-Idaho pp. 26-27, 33-34: wind, friction velocity and rah",5,0,FALSE,FALSE,0,0.027000000000001
+"test-verification.R","SEBAL-Idaho pp. 27-28, Eqs. 31a-31b, and IAHS 2012: roughness",5,0,FALSE,FALSE,0,0.0160000000000053
+"test-verification.R","SEBAL-Idaho pp. 25, 30-31: H, dT at the anchors and dT line",5,0,FALSE,FALSE,0,0.0190000000000055
+"test-verification.R","SEBAL-Idaho pp. 10 and 14, Eq. 2: net radiation",1,0,FALSE,FALSE,0,0.00499999999999545
+"test-verification.R","SEBAL-Idaho pp. 18-19, 22-23, Eqs. 11-12, 20-23: components",9,0,FALSE,FALSE,0,0.0210000000000008
+"test-verification.R","SEBAL-Idaho p. 20, Eq. 16b: broadband emissivity from LAI",1,0,FALSE,FALSE,0,0.00499999999999545
+"test-verification.R","SEBAL-Idaho p. 24, Eq. 24: G / Rn of Bastiaanssen (2000)",3,0,FALSE,FALSE,0,0.0139999999999958
+"test-verification.R","SEBAL-Idaho pp. 30-31: boundary conditions of the anchors",2,0,FALSE,FALSE,0,0.0519999999999925
+"test-verification.R","SEBAL-Idaho pp. 34-35, Eqs. 1, 42-44: LE, ET_inst, ETrF, ET_24",5,0,FALSE,FALSE,0,0.0229999999999961
+"test-weather.R","ef_station_table() builds the documented object",23,0,FALSE,FALSE,0,0.0999999999999943
+"test-weather.R","inputs inheriting from data.frame become plain data frames",3,0,FALSE,FALSE,0,0.0300000000000011
+"test-weather.R","measured columns are stored as double; all-NA logical is accepted",3,0,FALSE,FALSE,0,0.0210000000000008
+"test-weather.R","surface_type becomes a factor with the contract levels",3,0,FALSE,FALSE,0,0.0240000000000009
+"test-weather.R","POSIXct timestamps are stored in UTC with their source zone",3,0,FALSE,FALSE,0,0.0220000000000056
+"test-weather.R","character timestamps need an explicit format and time zone",8,0,FALSE,FALSE,0,0.102999999999994
+"test-weather.R","timestamps without an explicit zone or of another type are errors",5,0,FALSE,FALSE,0,0.061000000000007
+"test-weather.R","the period semantics are mandatory provenance fields",9,0,FALSE,FALSE,0,0.138999999999996
+"test-weather.R","the CRS must be explicit and WGS84 geographic",3,0,FALSE,FALSE,0,0.0229999999999961
+"test-weather.R","the provenance is a named list without reserved fields",6,0,FALSE,FALSE,0,0.0499999999999972
+"test-weather.R","arguments and required fields must be supplied",11,0,FALSE,FALSE,0,0.10199999999999
+"test-weather.R","columns outside the contract and wrong types are errors",6,0,FALSE,FALSE,0,0.0829999999999984
+"test-weather.R","required metadata values must not be missing",3,0,FALSE,FALSE,0,0.0420000000000016
+"test-weather.R","measurement heights are required by the observed variables",4,0,FALSE,FALSE,0,0.0670000000000073
+"test-weather.R","impossible metadata are domain errors",13,0,FALSE,FALSE,0,0.183999999999997
+"test-weather.R","impossible observations are kept; infinite values are errors",3,0,FALSE,FALSE,0,0.0400000000000063
+"test-weather.R","unknown and duplicated station ids are errors",2,0,FALSE,FALSE,0,0.0519999999999925
+"test-weather.R","exact duplicates are kept once; conflicting ones are errors",4,0,FALSE,FALSE,0,0.0579999999999927
+"test-weather.R","declared unit conversions are applied and recorded",11,0,FALSE,FALSE,0,0.0840000000000032
+"test-weather.R","undeclared or unsupported units are errors, never guessed",6,0,FALSE,FALSE,0,0.0829999999999984
+"test-weather.R","ef_validate_stations() rejects inconsistent objects",7,0,FALSE,FALSE,0,0.122
+"test-weather.R","print shows the contents of the table",7,0,FALSE,FALSE,0,0.0319999999999965
+"test-weather.R","station_values() applies the QC exclusions to a copy",5,0,FALSE,FALSE,0,0.0799999999999983
+"test-weather.R","station_regionalization_input() follows the contract of 7.2",17,0,FALSE,FALSE,0,0.173000000000002
