@@ -86,14 +86,20 @@ ewf_terrain <- function(grid, base = 150, slope_m_per_cell = 4) {
   )
 }
 
-# The same synthetic plane with a "mountain" block: the columns from
-# `from_col` on at `height` metres (fictitious), for the terrain rule of
-# the presets (M5-25).
-ewf_terrain_mountain <- function(grid, from_col = 81L, height = 1200) {
+# The same synthetic plane with a "mountain" block (the columns from
+# `from_col` on at `height` metres) and, optionally, a "valley" block (the
+# columns up to `valley_to_col` at `valley` metres), fictitious, for the
+# terrain rule of the presets (M5-25). The anchors of the packaged scene lie
+# in columns 52 to 86, so with the default `from_col` and `valley_to_col`
+# the blocks hold no anchor and the anchors keep the elevations of the
+# plane.
+ewf_terrain_mountain <- function(grid, from_col = 90L, height = 1200,
+                                 valley_to_col = 0L, valley = 0) {
   ter <- ewf_terrain(grid)
   z <- terra::values(ter$terrain[["elevation"]], mat = FALSE)
   col <- terra::colFromCell(grid, seq_len(terra::ncell(grid)))
   z[col >= from_col] <- height
+  z[col <= valley_to_col] <- valley
   terra::values(ter$terrain[["elevation"]]) <- z
   ter
 }
