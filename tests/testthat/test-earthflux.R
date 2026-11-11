@@ -277,6 +277,8 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   expect_match(e$terrain_rule$status, "CANDIDATA")
   same <- setdiff(names(e$terrain_rule), "max_elevation_difference")
   expect_identical(f$terrain_rule[same], e$terrain_rule[same])
+  expect_match(e$unverified[["terrain_rule"]], "500 m")
+  expect_match(f$unverified[["terrain_rule"]], "250 m")
   expect_true("M5-25" %in% e$decisions)
   expect_true("terrain_rule" %in% names(e$unverified))
   expect_identical(e$modis$surface_options$lai_nonveg, 0)
@@ -433,6 +435,36 @@ test_that("the flat preset uses one transmissivity and one longwave temperature"
   # lapse rate of the datum temperature
   expect_identical(res$h_calibration$datum$lapse_rate, 0)
   expect_identical(res_e$h_calibration$datum$lapse_rate, 0.0065)
+})
+
+test_that("the terrain rule has its own limit in each preset", {
+  # the cells 300 m above the station (z = 450 m on the synthetic plane):
+  # excluded by the flat preset (limit 250 m), kept by the elev preset
+  # (limit 500 m)
+  calls <- ewf_mock(st, ter)
+  res <- ewf_run(aoi, ewf_date(), weather = sta1, preset = "idaho2002_flat",
+                 cache_dir = tempdir())
+  grid <- st$lst
+  in_aoi <- val(terra::rasterize(terra::project(aoi, terra::crs(grid)), grid,
+                                 touches = TRUE, background = 0)) == 1
+  z <- val(ter$terrain[["elevation"]])
+  at300 <- in_aoi & !is.na(z) & z == 150 + 300
+  expect_gt(sum(at300 & !is.na(val(res_e$layers$eta_24))), 10L)
+  expect_true(all(is.na(terra::values(res$layers, mat = TRUE)[at300, ])))
+  b <- ef_flag_registry()$bit[
+    ef_flag_registry()$code == "EF_H_TERRAIN_RULE_APPLIED"]
+  w <- as.integer(val(res$qa$metric$flags_h))
+  expect_true(all(bitwAnd(w[at300], bitwShiftL(1L, b)) != 0L))
+  we <- as.integer(val(res_e$qa$metric$flags_h))
+  expect_false(any(!is.na(we[at300]) &
+                     bitwAnd(we[at300], bitwShiftL(1L, b)) != 0L))
+  expect_identical(res$provenance$scene$terrain_rule$max_elevation_difference,
+                   250)
+  expect_identical(
+    res_e$provenance$scene$terrain_rule$max_elevation_difference, 500
+  )
+  expect_output(print(res), "more than 250 m from the reference elevation")
+  expect_output(print(res_e), "more than 500 m from the reference elevation")
 })
 
 test_that("the result has layers, objects, flag words and units", {
@@ -691,6 +723,18 @@ test_that("workflow_terrain_rule() and workflow_terrain_reference() follow M5-25
   expect_length(none$flags, 0L)
   expect_identical(none$excluded, c(FALSE, FALSE, FALSE))
   expect_identical(attr(none$flags, "evaluated"), "EF_H_TERRAIN_RULE_APPLIED")
+  # the limits of the presets: 300 m above or below the reference is
+  # excluded with the limit of idaho2002_flat and kept with the one of
+  # idaho2002_elev
+  z3 <- c(150, 450, -150, 400, 400.1)
+  lim <- vapply(c("idaho2002_elev", "idaho2002_flat"), function(n)
+    ef_preset(n)$terrain_rule$max_elevation_difference, 0)
+  expect_identical(unname(lim), c(500, 250))
+  rule_e <- workflow_terrain_rule(z3, 150, lim[["idaho2002_elev"]])
+  rule_f <- workflow_terrain_rule(z3, 150, lim[["idaho2002_flat"]])
+  expect_identical(rule_e$excluded, rep(FALSE, 5L))
+  expect_identical(rule_f$excluded, c(FALSE, TRUE, TRUE, FALSE, TRUE))
+  expect_identical(rule_f$flags[[1]]$index, c(2L, 3L, 5L))
   expect_error(workflow_terrain_rule(z, 150, 0), class = "earthflux_input_error")
   expect_error(workflow_terrain_rule(z, NA_real_, 500),
                class = "earthflux_input_error")
