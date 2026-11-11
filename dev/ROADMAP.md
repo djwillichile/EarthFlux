@@ -88,7 +88,8 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
       armonización de M4 y test de extremo a extremo superficie → núcleo
       METRIC (`tests/testthat/test-surface-chain.R`; M4-19 … M4-25).
 - [x] Decisiones del autor del 2026-11-04 (`DECISIONS.md` §1.4, M4-27 …
-      M4-30): fecha de la escena **2019-02-15** (Terra, MP-12); LAI
+      M4-30): fecha de la escena **2019-02-15** (Terra, MP-12; cambiada
+      al **2019-02-14** el 2026-11-11 por el ángulo de visión, M4-27); LAI
       explícito en las clases no vegetadas (`lai_nonveg`, MP-06) con el
       flag `EF_SURF_LAI_ASSIGNED`; emisividades de banda 31/32 llevadas en
       el estado de superficie para E1 (lo que falta para E1/E2:
@@ -143,6 +144,10 @@ de especificaciones en `SCIENTIFIC_SPEC.md` §0.
 
 ## M6 — Scientific validation
 - [ ] Experimento C1 vs. C2 vs. C3 según `VALIDATION_PLAN.md`.
+- [ ] Escena de validación del Maule del **2019-02-14** (Terra,
+      \|ángulo de visión\| ≤ 37° en la región; `DECISIONS.md` M5-28):
+      reunir las estaciones horarias de esa fecha (y de las horas vecinas
+      que piden la ETr y las ventanas de forzamiento).
 
 ## M7 — CRAN preparation
 - [ ] Checks multiplataforma, revisión de documentación y ejemplos.

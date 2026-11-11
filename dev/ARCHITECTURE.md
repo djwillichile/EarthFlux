@@ -552,7 +552,8 @@ autor y licencia, sus convenciones se adoptan como estilo de la casa.
 ### 6.7 Carga de entradas de la API de usuario — **DECIDIDO** (2026-11-05)
 
 Decisión del autor (`DECISIONS.md` §1.5, M5-01 … M5-07). Motivo: al
-preparar la escena de validación del Maule (2019-02-15) se acumularon
+preparar la escena de validación del Maule (2019-02-15; movida al
+2019-02-14 por `DECISIONS.md` M5-28) se acumularon
 MODIS, MDE, cobertura de suelo, ~40 estaciones horarias y ~15 opciones
 científicas; exigir todo eso para obtener un mapa de ETa haría el paquete
 inutilizable fuera de la investigación.

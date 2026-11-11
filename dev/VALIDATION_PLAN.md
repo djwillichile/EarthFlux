@@ -297,6 +297,14 @@ paquete no está instalado; tests largos o con datos externos, detrás de
   desarrollo (ajuste de elementos de diseño: tamaño de bloque L de la CV,
   definición del conjunto de anclas, Δ de k) y un conjunto de confirmación
   (solo evaluación). Regla de partición y fechas: `TODO` en el pre-registro.
+- **Selección de escenas por geometría de observación.** Cada fecha
+  candidata se revisa con el ángulo de visión de la LST (`DECISIONS.md`
+  M5-26, M5-27): se usa el producto (Terra o Aqua) con menor mediana de
+  \|ángulo de visión\| y se descartan, o se declaran como desviación, las
+  escenas cuya región supere el umbral de los presets (40°, `CANDIDATA`).
+  La escena de desarrollo del Maule es el **2019-02-14** (Terra, \|ángulo\|
+  ≤ 37° en la región; M5-28), que reemplaza al 2019-02-15 (Terra 52–65°,
+  Aqua 18–46°).
 - **Condiciones previas (bloqueantes para M6):** parte 1 completa para las
   funciones de la cadena; decisión SH-11 resuelta (**cumplida el
   2026-11-05**: 2/L, Waters et al., 2002, Ec. 38; `DECISIONS.md` M2-09);
