@@ -12,9 +12,11 @@ reg <- ef_flag_registry_build()
 
 # Class II codes (dev/specs/flags.md section 4.2): they need a threshold
 # with a documented reference and must not be registered (section 7, point 7;
-# test R10). The change that registers one of them removes it from here.
+# test R10). The change that registers one of them removes it from here
+# (EF_SURF_VIEW_ANGLE_HIGH left on 2026-11-11: class I with its threshold as
+# an explicit option, decision M5-26).
 class_ii_guard <- c(
-  "EF_SURF_LST_ERROR", "EF_SURF_EMIS_ERROR", "EF_SURF_VIEW_ANGLE_HIGH",
+  "EF_SURF_LST_ERROR", "EF_SURF_EMIS_ERROR",
   "EF_SURF_COMPOSITE_LAG", "EF_SURF_AGG_INCOMPLETE",
   "EF_SURF_OVERPASS_OUTSIDE_WINDOW", "EF_SURF_LST_IMPLAUSIBLE",
   "EF_WS_IMPLAUSIBLE", "EF_WS_RH_RECALIBRATE", "EF_WS_RS_GT_RSO",
@@ -86,7 +88,7 @@ test_that("R9: critical codes declare an error counterpart or object scope", {
 })
 
 test_that("R10: class II codes are not registered", {
-  expect_length(class_ii_guard, 35L)
+  expect_length(class_ii_guard, 34L)
   expect_identical(intersect(reg$code, class_ii_guard), character(0))
 })
 

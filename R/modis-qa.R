@@ -22,9 +22,10 @@
 #   modis_qa_flags()       one QA layer -> masks, NA mask of the policy, flags
 #   modis_na_codes(), modis_maskable_codes(), modis_policy_na()
 #   ef_flags_surface()     registry rows of the stage (EF_SURF_*, including
-#                          the view time and broadband albedo codes raised
-#                          by modis_surface_state(), R/modis-surface.R,
-#                          and the assigned LAI code of modis_lai())
+#                          the view time, broadband albedo and view angle
+#                          codes raised by modis_surface_state(),
+#                          R/modis-surface.R, and the assigned LAI code of
+#                          modis_lai())
 #   ef_diagnose_surface()  masks -> earthflux_flag records (cell scope)
 #   modis_flag_word()      masks -> integer flag word (bits of the registry)
 #   modis_variable()       DN of one layer + its QA layers -> value, masks,
@@ -442,12 +443,16 @@ modis_qa_flags <- function(decoded, qa_policy, mask_codes = NULL) {
 #' `gt1` of `modis_albedo()`), both raised by `modis_surface_state()`
 #' (R/modis-surface.R), and `EF_SURF_LAI_ASSIGNED` (bit 15, class I,
 #' `info`: the LAI of a non-vegetated class was assigned by the explicit
-#' option `lai_nonveg` of `modis_lai()`; decision MP-06). Not registered:
-#' the class II codes
-#' (`EF_SURF_LST_ERROR`, `EF_SURF_EMIS_ERROR`, `EF_SURF_VIEW_ANGLE_HIGH`,
-#' `EF_SURF_COMPOSITE_LAG`, `EF_SURF_AGG_INCOMPLETE`,
-#' `EF_SURF_OVERPASS_OUTSIDE_WINDOW`, `EF_SURF_LST_IMPLAUSIBLE`), which need
-#' a threshold with a reference.
+#' option `lai_nonveg` of `modis_lai()`; decision MP-06) and
+#' `EF_SURF_VIEW_ANGLE_HIGH` (bit 16, class I, `warning`: the absolute view
+#' zenith angle of the LST observation, `Day_view_angl`, is above the
+#' explicit option `view_angle_max` of `modis_surface_options()`; raised by
+#' `modis_surface_state()` in `flags_lst`; decision M5-26, which moved the
+#' code from class II to class I with the threshold as an option without
+#' default). Not registered: the class II codes
+#' (`EF_SURF_LST_ERROR`, `EF_SURF_EMIS_ERROR`, `EF_SURF_COMPOSITE_LAG`,
+#' `EF_SURF_AGG_INCOMPLETE`, `EF_SURF_OVERPASS_OUTSIDE_WINDOW`,
+#' `EF_SURF_LST_IMPLAUSIBLE`), which need a threshold with a reference.
 #'
 #' @return A data frame built with `ef_flag_rows()`.
 #' @noRd
@@ -457,17 +462,19 @@ ef_flags_surface <- function() {
     "EF_SURF_DN_OUT_OF_RANGE", "EF_SURF_LAI_NONVEG", "EF_SURF_QA_OTHER",
     "EF_SURF_CLOUD_ADJACENT", "EF_SURF_SNOW", "EF_SURF_WATER",
     "EF_SURF_SALT_PAN", "EF_SURF_LAI_BACKUP", "EF_SURF_ALBEDO_MAGNITUDE",
-    "EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1", "EF_SURF_LAI_ASSIGNED"
+    "EF_SURF_OVERPASS_MISSING", "EF_SURF_ALBEDO_GT1", "EF_SURF_LAI_ASSIGNED",
+    "EF_SURF_VIEW_ANGLE_HIGH"
   )
   n <- length(codes)
   ef_flag_rows(
     code = codes,
     stage = rep("SURF", n),
-    severity = c(rep("info", 5L), rep("warning", 8L), "critical", "info"),
+    severity = c(rep("info", 5L), rep("warning", 8L), "critical", "info",
+                 "warning"),
     scope = rep("cell", n),
     bit = seq_len(n),
     error_class = c(rep(NA_character_, 13L), "earthflux_domain_error",
-                    NA_character_),
+                    NA_character_, NA_character_),
     description = c(
       "The product value is the fill value of its layer; the output is NA.",
       paste0("The product QA reports the value as not produced (or most ",
@@ -497,15 +504,19 @@ ef_flags_surface <- function() {
       paste0("The LAI value is a non-vegetated land class code (249-254) ",
              "and the LAI was assigned by the user option lai_nonveg (not ",
              "retrieved); the value and the layers computed from it are ",
-             "kept.")
+             "kept."),
+      paste0("The absolute view zenith angle of the LST observation is ",
+             "above the option view_angle_max (large, mixed off-nadir ",
+             "footprint); the LST is kept.")
     ),
     spec = c(
       rep("dev/specs/flags.md 4.2; dev/specs/modis-products.md 10.2", 12L),
       "dev/specs/flags.md 4.2; dev/specs/modis-products.md 6.2",
       "dev/specs/flags.md 4.2 (C12); dev/specs/modis-products.md 8.1",
-      "dev/specs/flags.md 4.2; dev/specs/modis-products.md 5.7, 15 (MP-06)"
+      "dev/specs/flags.md 4.2; dev/specs/modis-products.md 5.7, 15 (MP-06)",
+      "dev/specs/flags.md 4.2; dev/specs/modis-products.md 5.1 e (M5-26)"
     ),
-    since = rep("0.1.0", n)
+    since = c(rep("0.1.0", n - 1L), "0.1.0.9000")
   )
 }
 

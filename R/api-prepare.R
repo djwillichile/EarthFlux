@@ -11,6 +11,10 @@
 # Contents (all internal):
 #   workflow_check_aoi()        AOI checks and single-tile refusal
 #   workflow_surface()          modis_fetch() + modis_surface_state()
+#   workflow_surface_options()  the MODIS options of a preset for one LST
+#                               product (automatic Terra/Aqua choice, M5-27)
+#   workflow_view_angle()       scene statistics of the view angle and the
+#                               warning of M5-26
 #   workflow_terrain()          dem_fetch() on the working grid
 #   workflow_aoi_mask()         cells of the working grid in the AOI polygon
 #   workflow_weather()          station table: user's, or ERA5 (Open-Meteo)
@@ -82,20 +86,121 @@ workflow_aoi_mask <- function(aoi, grid) {
 
 # Surface state ---------------------------------------------------------------------
 
+#' MODIS options of a preset for one LST product
+#'
+#' With `lst_product = "auto_view_angle"` (decision M5-27) the preset does
+#' not name the LST product: it is the one chosen by `modis_fetch()` for the
+#' scene, and the other options of the surface state are those of the
+#' preset.
+#'
+#' @param preset An `earthflux_preset`.
+#' @param lst_product Character. The LST product used (`"MOD11A1"` or
+#'   `"MYD11A1"`); with a preset that names one, it must be that one.
+#' @return An `earthflux_modis_surface_options` object.
+#' @noRd
+workflow_surface_options <- function(preset, lst_product) {
+  opts <- preset$modis$surface_options
+  if (opts$lst_product %in% modis_lst_auto()$choices) {
+    check_method(lst_product, preset$modis$lst_candidates,
+                 arg = "lst_product")
+    opts$lst_product <- lst_product
+  } else if (!identical(opts$lst_product, lst_product)) {
+    ef_abort(sprintf("Preset `%s` uses %s, not %s.", preset$name,
+                     opts$lst_product, lst_product),
+             class = "earthflux_input_error")
+  }
+  do.call(modis_surface_options, opts)
+}
+
 #' MODIS surface state of a scene
 #'
 #' @param aoi,date,cache_dir See `earthflux()`.
 #' @param preset An `earthflux_preset`.
 #' @return A list with `state` (`earthflux_surface_state`) and `fetch`
-#'   (`earthflux_modis_fetch`).
+#'   (`earthflux_modis_fetch`; with the automatic choice, its provenance
+#'   holds `lst_choice`).
 #' @noRd
 workflow_surface <- function(aoi, date, preset, cache_dir) {
+  auto <- preset$modis$lst_product %in% modis_lst_auto()$choices
   fetch <- modis_fetch(aoi, date, lst_product = preset$modis$lst_product,
                        cache_dir = cache_dir,
-                       collection = preset$modis$collection)
-  options <- do.call(modis_surface_options, preset$modis$surface_options)
+                       collection = preset$modis$collection,
+                       min_lst_coverage = if (auto)
+                         preset$modis$min_lst_coverage)
+  lst_product <- fetch$lst_product
+  if (is.null(lst_product)) lst_product <- preset$modis$lst_product
+  options <- workflow_surface_options(preset, lst_product)
   state <- modis_surface_state(fetch$files, aoi = aoi, options = options)
   list(state = state, fetch = fetch)
+}
+
+#' View angle of the LST of a scene
+#'
+#' Decision M5-26: the median of the absolute view zenith angle of the LST
+#' over the cells of the AOI with a valid LST, against the threshold
+#' `view_angle_max` of the surface state (the option of the preset). When
+#' the median is above the threshold, most of the scene was observed far
+#' from nadir (large, mixed footprints; dev/specs/modis-products.md 5.1 e):
+#' a warning of class `earthflux_view_angle_warning` is emitted (fields
+#' `median_abs_view_angle`, `view_angle_max`, `lst_product`,
+#' `fraction_flagged`). The flagged cells hold no anchor (strict QA of the
+#' presets); when no cell is left, the anchor selection stops with an
+#' `earthflux_anchor_error` (no candidates, or an empty percentile domain).
+#'
+#' @param st The surface state.
+#' @param cells Logical per cell: the cells of the AOI.
+#' @param call The call to report.
+#' @return A list (recorded in `provenance$scene$view_angle`): `evaluated`
+#'   (`FALSE` when the state has no `view_angle` layer, e.g. a state built
+#'   by hand), `lst_product`, `view_angle_max`, `median_abs_view_angle`,
+#'   `range_abs_view_angle`, `n_valid_lst`, `n_flagged`, `fraction_flagged`
+#'   and `warned`.
+#' @noRd
+workflow_view_angle <- function(st, cells, call) {
+  threshold <- st$provenance$methods$view_angle_max
+  product <- st$provenance$methods$lst_product
+  if (is.null(product)) {
+    gr <- st$provenance$granules
+    product <- if (is.data.frame(gr)) gr$product[gr$role == "lst"][1L] else
+      NA_character_
+  }
+  if (is.null(st$view_angle) || is.null(threshold)) {
+    return(list(evaluated = FALSE, lst_product = product,
+                reason = paste0("the surface state has no view_angle layer ",
+                                "or no view_angle_max option")))
+  }
+  lst <- terra::values(st$lst, mat = FALSE)
+  angle <- terra::values(st$view_angle, mat = FALSE)
+  ok <- cells & !is.na(lst) & !is.na(angle)
+  a <- angle[ok]
+  med <- if (length(a) > 0L) stats::median(a) else NA_real_
+  n_flagged <- sum(a > threshold)
+  out <- list(
+    evaluated = TRUE, lst_product = product, view_angle_max = threshold,
+    median_abs_view_angle = med,
+    range_abs_view_angle = if (length(a) > 0L) range(a) else
+      c(NA_real_, NA_real_),
+    n_valid_lst = length(a), n_flagged = n_flagged,
+    fraction_flagged = if (length(a) > 0L) n_flagged / length(a) else
+      NA_real_,
+    warned = !is.na(med) && med > threshold
+  )
+  if (out$warned) {
+    ef_warn(
+      sprintf(paste0("The LST (%s) of the area was observed at a median ",
+                     "view zenith angle of %.0f degrees, above the %g ",
+                     "degrees of the preset: off-nadir footprints are ",
+                     "larger and mixed. %.0f %% of the cells with LST are ",
+                     "flagged EF_SURF_VIEW_ANGLE_HIGH and hold no anchor; ",
+                     "consider another date or the other satellite."),
+              product, med, threshold, 100 * out$fraction_flagged),
+      class = "earthflux_view_angle_warning",
+      median_abs_view_angle = med, view_angle_max = threshold,
+      lst_product = product, fraction_flagged = out$fraction_flagged,
+      call = call
+    )
+  }
+  out
 }
 
 #' Check a surface state supplied by the user (expert route)
@@ -121,9 +226,16 @@ workflow_check_surface <- function(surface, preset, call) {
   }
   # Every scientific preparation option must equal the preset's, in the
   # normalized form that modis_surface_options() records: the result
-  # reports the preset options as effective.
-  want <- unclass(do.call(modis_surface_options,
-                          preset$modis$surface_options))
+  # reports the preset options as effective. With the automatic choice of
+  # the LST product (M5-27), either candidate is accepted.
+  lst_product <- methods$lst_product
+  auto <- preset$modis$surface_options$lst_product %in%
+    modis_lst_auto()$choices
+  if (!auto || !isTRUE(lst_product %in% preset$modis$lst_candidates)) {
+    lst_product <- preset$modis$surface_options$lst_product
+    if (auto) lst_product <- preset$modis$lst_candidates[1L]
+  }
+  want <- unclass(workflow_surface_options(preset, lst_product))
   for (nm in names(want)) {
     if (!identical(methods[[nm]], want[[nm]])) {
       ef_abort(

@@ -53,7 +53,10 @@ ss_subcell <- function(i, k, nc = 4L) {
 #   5  view time fill, LST valid       11  NDVI VI Quality MODLAND 01
 #   6  good                            12  good
 # The band 31/32 emissivities (`emis = TRUE`) are good everywhere except
-# `Emis_31` of cell 4 (fill, DN 0).
+# `Emis_31` of cell 4 (fill, DN 0). The view zenith angle (`Day_view_angl`,
+# DN - 65 degrees) is 10 degrees except in cell 2 (fill, DN 255), cell 6
+# (-50 degrees: above a 40 degree threshold) and cell 12 (+40 degrees: at
+# the threshold, not above it).
 ss_scene <- function(dir, lst_date = as.Date("2019-01-15"), emis = TRUE) {
   g1 <- ss_grid(3, 4, modis_sinusoidal_grid()$cell_1km)
   g5 <- ss_grid(6, 8, modis_sinusoidal_grid()$cell_500m)
@@ -62,6 +65,7 @@ ss_scene <- function(dir, lst_date = as.Date("2019-01-15"), emis = TRUE) {
            15300, 15000, 14800)
   qc <- c(0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   vt <- c(105, 255, 106, 105, 255, 104, 105, 105, 106, 105, 105, 104)
+  va <- c(75, 255, 75, 75, 75, 15, 75, 75, 75, 75, 75, 105)
   e31 <- c(245, 240, 250, 0, 245, 246, 247, 248, 249, 230, 244, 243)
   e32 <- c(250, 245, 251, 252, 250, 249, 248, 247, 246, 235, 249, 248)
 
@@ -92,6 +96,7 @@ ss_scene <- function(dir, lst_date = as.Date("2019-01-15"), emis = TRUE) {
       c(LST_Day_1km = w1(lst, "lst.tif", "INT2U"),
         QC_Day = w1(qc, "qc_day.tif", "INT1U"),
         Day_view_time = w1(vt, "view_time.tif", "INT1U"),
+        Day_view_angl = w1(va, "view_angle.tif", "INT1U"),
         if (emis) c(Emis_31 = w1(e31, "emis_31.tif", "INT1U"),
                     Emis_32 = w1(e32, "emis_32.tif", "INT1U"))),
       product = "MOD11A1", date = lst_date, scaled = FALSE
@@ -131,7 +136,7 @@ ss_options <- function(...) {
     composite_method = c(albedo = "same_day", ndvi = "period_pixel_lag",
                          lai = "period"),
     resampling_method = "mean", min_valid_fraction = 0.75,
-    qa_policy = "flag"
+    view_angle_max = 40, qa_policy = "flag"
   )
   new <- list(...)
   for (nm in names(new)) args[nm] <- list(new[[nm]])

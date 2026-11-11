@@ -18,9 +18,10 @@ ewf_mock <- function(st, ter, era = NULL, env = parent.frame()) {
                            ...) {
       calls$modis_fetch <- list(date = date, lst_product = lst_product,
                                 cache_dir = cache_dir,
-                                collection = collection)
+                                collection = collection, ...)
       new_ef_object(list(files = list(lst = "x", albedo = "x", ndvi = "x",
                                       lai = "x"),
+                         lst_product = st$provenance$methods$lst_product,
                          flags = list(),
                          provenance = list(source = "mock",
                                            granules = st$provenance$granules)),
@@ -230,7 +231,7 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   tab <- ef_presets()
   expect_s3_class(tab, "data.frame")
   expect_identical(tab$name, c("idaho2002_elev", "idaho2002_flat"))
-  expect_identical(tab$version, c("4", "4"))
+  expect_identical(tab$version, c("5", "5"))
   expect_identical(tab$status, c("CANDIDATA", "CANDIDATA"))
   e <- ef_preset("idaho2002_elev")
   f <- ef_preset("idaho2002_flat")
@@ -255,8 +256,21 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   expect_length(e$anchors$relax, 1L)
   expect_identical(c(rule(e$anchors$relax[[1]], "cold", 1)$value,
                      rule(e$anchors$relax[[1]], "hot", 1)$value), c(0.8, 0.2))
-  expect_identical(e$anchors$qa_exclude_codes, "EF_SURF_LAI_ASSIGNED")
-  expect_identical(names(e$changes), c("1", "2", "3", "4"))
+  expect_identical(e$anchors$qa_exclude_codes,
+                   c("EF_SURF_LAI_ASSIGNED", "EF_SURF_VIEW_ANGLE_HIGH"))
+  expect_identical(names(e$changes), as.character(1:5))
+  # version 5 (M5-26, M5-27): Terra/Aqua chosen by the view angle, cells
+  # observed at more than 40 degrees flagged; both CANDIDATA
+  expect_identical(e$modis$lst_product, "auto_view_angle")
+  expect_identical(e$modis$lst_candidates, c("MOD11A1", "MYD11A1"))
+  expect_identical(e$modis$min_lst_coverage, 0.8)
+  expect_identical(e$modis$surface_options$view_angle_max, 40)
+  expect_identical(f$modis, e$modis)
+  expect_match(e$modis$lst_choice_status, "CANDIDATA")
+  expect_match(e$modis$view_angle_status, "CANDIDATA")
+  expect_true(all(c("M5-26", "M5-27") %in% e$decisions))
+  expect_true("view_angle" %in% names(e$unverified))
+  expect_match(e$changes[["5"]], "Aqua")
   # version 3 (M2-11): the convergence settings of H are written out in the
   # preset, one tolerance per phase
   expect_identical(
@@ -293,8 +307,14 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   expect_identical(e$wind$zom_station, 0.0144)
   expect_true(length(e$unverified) > 0L)
   # the options of the MODIS surface state are accepted by its constructor
-  expect_s3_class(do.call(modis_surface_options, e$modis$surface_options),
-                  "earthflux_modis_surface_options")
+  # once the LST product of the scene is known (either candidate)
+  for (lst in e$modis$lst_candidates) {
+    o <- workflow_surface_options(e, lst)
+    expect_s3_class(o, "earthflux_modis_surface_options")
+    expect_identical(o$lst_product, lst)
+  }
+  expect_error(workflow_surface_options(e, "MOD21A1D"),
+               class = "earthflux_unknown_method")
   expect_output(print(e), "idaho2002_elev")
   expect_error(ef_preset("metric_default"), class = "earthflux_unknown_method")
   expect_error(ef_preset(), class = "earthflux_missing_input")
@@ -335,12 +355,15 @@ res_e <- local({
 
 test_that("earthflux() runs the download steps with the options of the preset", {
   expect_s3_class(res_e, "earthflux_result")
-  expect_identical(calls_e$modis_fetch$lst_product, "MOD11A1")
+  expect_identical(calls_e$modis_fetch$lst_product, "auto_view_angle")
+  expect_identical(calls_e$modis_fetch$min_lst_coverage, 0.8)
   expect_identical(calls_e$modis_fetch$date, ewf_date())
   expect_identical(calls_e$modis_fetch$cache_dir, tempdir())
   o <- calls_e$modis_surface_state
   expect_s3_class(o, "earthflux_modis_surface_options")
   expect_identical(o$albedo_method, "white_sky")
+  expect_identical(o$lst_product, "MOD11A1") # the product of the scene
+  expect_identical(o$view_angle_max, 40)
   expect_identical(o$min_valid_fraction, 1)
   expect_identical(o$qa_policy, "flag")
   expect_equal(unname(o$lai_nonveg), rep(0, 6))
@@ -889,10 +912,10 @@ test_that("the provenance records every option of the preset", {
   pr <- res_e$provenance
   p <- ef_preset("idaho2002_elev")
   expect_identical(pr$preset$name, "idaho2002_elev")
-  expect_identical(pr$preset$version, "4")
+  expect_identical(pr$preset$version, "5")
   expect_identical(pr$preset$status, "CANDIDATA")
   expect_identical(pr$preset$unverified, p$unverified)
-  expect_identical(names(pr$preset$changes), c("1", "2", "3", "4"))
+  expect_identical(names(pr$preset$changes), as.character(1:5))
   # effective convergence settings of the calibration of H (M2-11)
   expect_identical(pr$options$sensible_heat$control[c("tol", "maxit",
                                                       "pixel_tol",
@@ -963,6 +986,142 @@ test_that("the expert route takes a prepared surface and terrain", {
   bare$provenance$methods <- NULL
   expect_error(earthflux(aoi, ewf_date(), weather = sta1,
                          preset = "idaho2002_elev", surface = bare,
+                         terrain = ter),
+               class = "earthflux_input_error")
+})
+
+# View angle of the LST and Aqua (M5-26, M5-27) ------------------------------------------
+
+# The packaged state with a SYNTHETIC view angle layer (`angle`, degrees, in
+# terra cell order) and the bit of EF_SURF_VIEW_ANGLE_HIGH set in
+# flags_lst where the LST is valid and the angle is above `threshold`.
+ewf_with_view_angle <- function(st, angle, threshold = 40) {
+  va <- terra::setValues(terra::rast(st$lst), angle)
+  names(va) <- "view_angle"
+  st$view_angle <- va
+  reg <- ef_flag_registry()
+  b <- reg$bit[reg$code == "EF_SURF_VIEW_ANGLE_HIGH"]
+  lst <- val(st$lst)
+  w <- as.integer(val(st$qa$flag_word[["flags_lst"]]))
+  hit <- !is.na(lst) & !is.na(w) & angle > threshold
+  w[hit] <- bitwOr(w[hit], bitwShiftL(1L, b))
+  terra::values(st$qa$flag_word[["flags_lst"]]) <- w
+  st$qa$flag_bits <- reg[reg$stage %in% c("INPUT", "SURF") & !is.na(reg$bit),
+                         c("bit", "code", "severity", "description")]
+  st
+}
+
+# Run earthflux() and collect its warnings (the preset warning and others).
+ewf_collect <- function(expr) {
+  w <- list()
+  value <- withCallingHandlers(
+    tryCatch(expr, error = function(e) e),
+    warning = function(cnd) {
+      w[[length(w) + 1L]] <<- cnd
+      invokeRestart("muffleWarning")
+    }
+  )
+  list(value = value,
+       classes = vapply(w, function(x) class(x)[1L], ""), warnings = w)
+}
+
+test_that("the view angle of the scene is recorded and cells above it hold no anchor", {
+  ewf_mock_no_network()
+  # angle 10 degrees except 50 degrees on the cells that held the anchors
+  # of the reference run: the anchors move, no warning (median 10)
+  px <- res_e$anchors$pixels
+  angle <- rep(10, terra::ncell(st$lst))
+  angle[px$cell] <- 50
+  st_va <- ewf_with_view_angle(st, angle)
+  out <- ewf_collect(earthflux(aoi, ewf_date(), weather = sta1,
+                               preset = "idaho2002_elev", surface = st_va,
+                               terrain = ter))
+  expect_identical(out$classes, "earthflux_unverified_preset_warning")
+  res <- out$value
+  expect_s3_class(res, "earthflux_result")
+  expect_false(any(res$anchors$pixels$cell %in% px$cell))
+  va <- res$provenance$scene$view_angle
+  expect_true(va$evaluated)
+  expect_identical(va$lst_product, "MOD11A1")
+  expect_identical(va$view_angle_max, 40)
+  expect_identical(va$median_abs_view_angle, 10)
+  n_flag <- sum(px$cell %in% which(!is.na(val(st$lst)) &
+                                     workflow_aoi_mask(aoi, st$lst)))
+  expect_identical(va$n_flagged, n_flag)
+  expect_identical(res$provenance$counts[["view_angle_high"]], n_flag)
+  expect_false(va$warned)
+  expect_identical(res$provenance$scene$lst_product, "MOD11A1")
+  expect_output(print(res), "LST: MOD11A1, median view angle 10 degrees")
+  # the reference run has no view angle layer: recorded as not evaluated
+  expect_false(res_e$provenance$scene$view_angle$evaluated)
+  expect_true(is.na(res_e$provenance$counts[["view_angle_high"]]))
+})
+
+test_that("a scene observed far from nadir warns and, without anchors, stops", {
+  ewf_mock_no_network()
+  n <- terra::ncell(st$lst)
+  # median 62 degrees: warning; the anchors of the reference run are at 10
+  # degrees, so the run completes
+  px <- res_e$anchors$pixels
+  angle <- rep(62, n)
+  angle[unique(c(px$cell, px$cell + 1L, px$cell - 1L))] <- 10
+  out <- ewf_collect(earthflux(aoi, ewf_date(), weather = sta1,
+                               preset = "idaho2002_elev",
+                               surface = ewf_with_view_angle(st, angle),
+                               terrain = ter))
+  expect_setequal(out$classes, c("earthflux_unverified_preset_warning",
+                                 "earthflux_view_angle_warning"))
+  w <- out$warnings[[which(out$classes == "earthflux_view_angle_warning")]]
+  expect_identical(w$median_abs_view_angle, 62)
+  expect_identical(w$view_angle_max, 40)
+  expect_identical(w$lst_product, "MOD11A1")
+  expect_match(conditionMessage(w), "62 degrees")
+  expect_true(out$value$provenance$scene$view_angle$warned)
+  # every cell above the threshold: no anchor candidate is left
+  out <- ewf_collect(earthflux(aoi, ewf_date(), weather = sta1,
+                               preset = "idaho2002_elev",
+                               surface = ewf_with_view_angle(st, rep(62, n)),
+                               terrain = ter))
+  expect_true("earthflux_view_angle_warning" %in% out$classes)
+  # (the percentile domain of the strict QA is empty)
+  expect_s3_class(out$value, "earthflux_anchor_error")
+  # a threshold at the median: no warning (strictly above)
+  st62 <- ewf_with_view_angle(st, angle, threshold = 62)
+  st62$provenance$methods$view_angle_max <- 62
+  expect_identical(workflow_view_angle(st62, workflow_aoi_mask(aoi, st$lst),
+                                       NULL)$warned, FALSE)
+})
+
+test_that("an Aqua scene runs through the chain at its own overpass times", {
+  # the packaged scene declared as Aqua (MYD11A1) with the overpass moved
+  # 4.2 h later (about 13:30 local solar time instead of 9:20): SYNTHETIC
+  aq <- st
+  aq$provenance$methods$lst_product <- "MYD11A1"
+  aq$provenance$granules$product <- "MYD11A1"
+  hour <- val(st$overpass_time$utc_hour) + 4.2
+  terra::values(aq$overpass_time$utc_hour) <- hour
+  aq$overpass_time$time <- st$overpass_time$time + 4.2 * 3600
+  calls <- ewf_mock(aq, ter)
+  res <- ewf_run(aoi, ewf_date(), weather = sta1, preset = "idaho2002_elev")
+  expect_identical(calls$modis_fetch$lst_product, "auto_view_angle")
+  expect_identical(calls$modis_surface_state$lst_product, "MYD11A1")
+  expect_identical(res$provenance$scene$lst_product, "MYD11A1")
+  # the hourly mid-points bracket the Aqua overpass times (M5-18)
+  mid <- as.POSIXct(res$provenance$scene$hourly_mid_points,
+                    format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+  t <- aq$overpass_time$time[!is.na(val(res$layers$eta_24))]
+  expect_true(min(mid) <= min(t) && max(mid) >= max(t))
+  expect_gt(as.numeric(format(min(mid), "%H", tz = "UTC")), 16)
+  expect_gt(res$provenance$counts[["eta_24_valid"]], 1000L)
+  # the expert route accepts an Aqua state with the preset's other options
+  ewf_mock_no_network()
+  res2 <- ewf_run(aoi, ewf_date(), weather = sta1,
+                  preset = "idaho2002_elev", surface = aq, terrain = ter)
+  expect_equal(val(res2$layers$eta_24), val(res$layers$eta_24))
+  other <- aq
+  other$provenance$methods$lst_product <- "MOD21A1D"
+  expect_error(earthflux(aoi, ewf_date(), weather = sta1,
+                         preset = "idaho2002_elev", surface = other,
                          terrain = ter),
                class = "earthflux_input_error")
 })

@@ -516,11 +516,13 @@ test_that("the surface stage registers its codes with the bits of 6.4", {
       EF_SURF_QA_OTHER = 6L, EF_SURF_CLOUD_ADJACENT = 7L, EF_SURF_SNOW = 8L,
       EF_SURF_WATER = 9L, EF_SURF_SALT_PAN = 10L, EF_SURF_LAI_BACKUP = 11L,
       EF_SURF_ALBEDO_MAGNITUDE = 12L, EF_SURF_OVERPASS_MISSING = 13L,
-      EF_SURF_ALBEDO_GT1 = 14L, EF_SURF_LAI_ASSIGNED = 15L)
+      EF_SURF_ALBEDO_GT1 = 14L, EF_SURF_LAI_ASSIGNED = 15L,
+      EF_SURF_VIEW_ANGLE_HIGH = 16L)
   )
   expect_true(all(surf$scope == "cell"))
   expect_identical(surf$severity,
-                   c(rep("info", 5), rep("warning", 8), "critical", "info"))
+                   c(rep("info", 5), rep("warning", 8), "critical", "info",
+                     "warning"))
   expect_true(all(modis_na_codes() %in% surf$code[surf$severity == "info"]))
   expect_true(all(modis_maskable_codes() %in%
                     surf$code[surf$severity == "warning"]))

@@ -64,6 +64,9 @@ surface_options <- list(
   resampling_method = "mean",              # MP-08
   min_valid_fraction = 1,                  # threshold TODO: only cells with
                                            #   every 500 m sub-cell valid
+  view_angle_max = 40,                     # M5-26 (CANDIDATA): LST cells
+                                           #   observed above 40 degrees are
+                                           #   flagged EF_SURF_VIEW_ANGLE_HIGH
   qa_policy = "flag",                      # MP-09 (provisional)
   lai_nonveg = 0                           # MP-06, A-M4-6 (author, 2026-11-04;
                                            #   CANDIDATA): LAI 0 in the

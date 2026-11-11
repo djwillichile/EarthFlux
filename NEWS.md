@@ -114,6 +114,26 @@
   unchanged and the flat preset loses 18 cells above 669 m. The excluded
   cells get no ETa.
 
+* Presets `idaho2002_elev` and `idaho2002_flat` version 5: view angle of
+  the LST (decisions M5-26 and M5-27, both `CANDIDATA`). The MODIS surface
+  state now reads `Day_view_angl` and carries the absolute view zenith
+  angle of the LST (`view_angle`, degrees, with its flag word); the new
+  option `view_angle_max` of the surface state (no default) flags the LST
+  cells observed above it with the new `EF_SURF_VIEW_ANGLE_HIGH` (warning,
+  cell scope, bit 16 of the SURF word; moved from class II to class I with
+  its threshold as an explicit option). The presets set 40 degrees, where
+  the footprint of an off-nadir observation reaches twice its nadir area,
+  keep the flagged cells out of the anchors, and `earthflux()` warns
+  (`earthflux_view_angle_warning`) when the median of the scene is above
+  it. The presets also choose the LST product per scene
+  (`lst_product = "auto_view_angle"`): Terra (MOD11A1) and Aqua (MYD11A1)
+  are both downloaded and the one with the lowest median view angle over
+  the area among those with at least 80 % of valid LST cells is used, with
+  both candidates recorded in the provenance (`scene$lst_choice`); the
+  NDVI stays MOD13A2. Cauquenes on 2019-02-15: Terra was observed at 62
+  degrees (96.7 % valid) and Aqua at 42 degrees (93.3 %), so Aqua is now
+  used; on 2019-02-14 Terra (15 degrees) is kept.
+
 ## Bug fixes
 
 * The MODIS readers and `modis_provenance()` now work with older and newer

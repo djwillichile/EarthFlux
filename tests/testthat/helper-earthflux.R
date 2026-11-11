@@ -35,13 +35,14 @@ ewf_state <- function(rows = NULL, cols = NULL) {
   bits <- bits[order(bits$bit), ]
   rownames(bits) <- NULL
   words <- r[[grep("^flags_", names(r))]]
-  options <- unclass(do.call(modis_surface_options,
-                             ef_preset("idaho2002_elev")$modis$surface_options))
+  options <- unclass(workflow_surface_options(ef_preset("idaho2002_elev"),
+                                             "MOD11A1"))
   new_ef_object(
     list(
       lst = one("lst"), albedo = one("albedo"), ndvi = one("ndvi"),
       lai = one("lai"), emissivity = one("emissivity"),
       band_emissivity = r[[c("emis_31", "emis_32")]],
+      view_angle = if ("view_angle" %in% names(r)) one("view_angle"),
       overpass_time = list(doy = one("doy"), utc_hour = one("utc_hour"),
                            time = time),
       lonlat = modis_cell_lonlat(template),

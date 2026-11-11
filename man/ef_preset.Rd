@@ -14,8 +14,9 @@ ef_preset(name)
 An object of class \code{earthflux_preset} (a list): \code{name},
 \code{version}, \code{status}, \code{description}, \code{source}, \code{decisions}, \code{changes}
 (what each version changed) and the
-option blocks \code{modis} (product and the options of the MODIS surface
-state), \code{terrain}, \code{weather} (quality control, ERA5 options,
+option blocks \code{modis} (\code{lst_product = "auto_view_angle"} with its
+candidates and \code{min_lst_coverage}, and the options of the MODIS surface
+state, among them \code{view_angle_max}), \code{terrain}, \code{weather} (quality control, ERA5 options,
 regionalization), \code{reference_et}, \code{radiation}, \code{soil_heat},
 \code{roughness}, \code{wind}, \code{lambda}, \code{anchors} (criteria built with
 \code{\link[=ef_anchor_criteria]{ef_anchor_criteria()}}, relaxation plan, aggregation, search area,
@@ -33,7 +34,7 @@ Returns every option that a preset sets, so that the choices made by
 is recorded in the provenance of the result.
 }
 \details{
-The two presets (decisions M5-08 to M5-25 and M2-11,
+The two presets (decisions M5-08 to M5-27 and M2-11,
 dev/specs/presets.md) share every option except the treatment of
 elevation:\tabular{lll}{
    Option \tab \code{idaho2002_elev} \tab \code{idaho2002_flat} \cr
@@ -48,9 +49,16 @@ Neither uses the slope (forced to 0, flat projection, until decision
 RC-09 is resolved); both use the elevation of the elevation model for
 the air pressure, the anchors and the datum temperature.
 
-Common options: MODIS Terra LST (MOD11A1), white-sky albedo, emissivity
+Common options: MODIS LST of Terra (MOD11A1) or Aqua (MYD11A1), chosen
+per scene (\code{lst_product = "auto_view_angle"}, version 5, decision
+M5-27): both are downloaded and the one with the lowest median absolute
+view zenith angle over the AOI among those with at least 80 \% of valid
+LST cells is used (the NDVI stays MOD13A2, Terra, with both);
+white-sky albedo, emissivity
 from LAI, NDVI of MOD13A2, LAI 0 assigned to the non-vegetated classes,
-QA flagged (strict QA for the anchors), \code{min_valid_fraction = 1};
+QA flagged (strict QA for the anchors), \code{min_valid_fraction = 1}, LST
+cells observed at more than 40 degrees from nadir flagged with
+\code{EF_SURF_VIEW_ANGLE_HIGH} (\code{view_angle_max = 40}, decision M5-26);
 NASADEM elevation with water masked; quality control
 \code{"exclude_critical"}; ASCE alfalfa reference ET, hourly, with the
 \code{"rn_positive"} daytime rule and \code{"low_sun"} night cloudiness, the
@@ -77,7 +85,22 @@ at or below the 10th percentile, NDVI > 0 and albedo in
 cells); the coldest 20 \% of the cold and the hottest 20 \% of the hot
 candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
 flagged with \code{EF_ANCHOR_CRITERIA_RELAXED}; no anchor on cells with a
-warning or critical surface flag or an assigned LAI.
+warning or critical surface flag, an assigned LAI or an LST observed at
+more than 40 degrees from nadir.
+
+View angle (version 5, decisions M5-26 and M5-27, \code{CANDIDATA}): the
+footprint of a MODIS observation, 1 km at nadir, grows with the view
+zenith angle; MOD11A1/MYD11A1 average the overlapping observations of
+each 1 km cell with their overlapping areas as weights (Wan, 2019,
+p. 16), so a cell observed far from nadir carries the LST of a larger,
+mixed area. On a sphere with the MODIS scan geometry (1 km pixels at
+nadir, 1354 pixels per scan line, Wan, 2019, p. 6; view zenith angles up
+to 65 degrees, p. 17), the
+footprint is 1.26 x 1.65 km at 40 degrees (twice the nadir area) and
+1.85 x 3.9 km at 62 degrees: the presets flag the cells above 40
+degrees, keep them out of the anchors and choose, per scene, the
+satellite observed closer to nadir. Neither 40 degrees nor the minimum
+coverage of 80 \% has a primary source.
 
 Terrain rule (version 4, decision M5-25, \code{CANDIDATA}): one linear dT
 calibrated between two anchors with one weather forcing holds only over
@@ -104,8 +127,9 @@ presets keep the flat projection.
 
 Versions: \code{"1"} (first presets); \code{"2"} (recalibrated anchor criteria,
 M5-23; minimum z_om, M5-24); \code{"3"} (convergence of the calibration of H,
-one tolerance per phase, M2-11); \code{"4"} (terrain rule, M5-25); see the
-element \code{changes}.
+one tolerance per phase, M2-11); \code{"4"} (terrain rule, M5-25); \code{"5"}
+(Terra/Aqua choice by view angle and view angle flag, M5-26, M5-27); see
+the element \code{changes}.
 }
 \section{Verification status}{
 
@@ -124,6 +148,11 @@ Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
 (2002). \emph{SEBAL: Surface Energy Balance Algorithms for Land. Idaho
 implementation. Advanced training and users manual} (Version 1.0).
 University of Idaho and Idaho Department of Water Resources.
+
+Wan, Z. (2019). \emph{Collection-6 MODIS Land Surface Temperature Products
+Users' Guide} (with the Collection 6.1 cover page). ERI, University of
+California, Santa Barbara. NASA LP DAAC,
+\url{https://lpdaac.usgs.gov/documents/715/MOD11_User_Guide_V61.pdf}.
 }
 \seealso{
 \code{\link[=ef_presets]{ef_presets()}}, \code{\link[=earthflux]{earthflux()}}.
