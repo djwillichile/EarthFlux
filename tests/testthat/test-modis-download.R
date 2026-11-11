@@ -578,6 +578,183 @@ test_that("an AOI over several tiles is refused unless per_tile = TRUE", {
   expect_identical(nrow(f$granules), 8L)
 })
 
+# Automatic choice between Terra and Aqua (M5-27) ----------------------------
+
+# Statistics of two candidates; the values are those of the Cauquenes
+# province on 2019-02-15 (Terra at 62 degrees, Aqua at 42 degrees) and
+# 2019-02-14 (Terra at 15 degrees, Aqua at 47 degrees), rounded.
+lst_stats <- function(valid, angle, products = c("MOD11A1", "MYD11A1")) {
+  data.frame(product = products, file = paste0(products, ".hdf"),
+             n_cells = 3779L, n_valid = as.integer(round(valid * 3779)),
+             valid_fraction = valid, median_abs_view_angle = angle,
+             n_view_angle = as.integer(round(valid * 3779)),
+             stringsAsFactors = FALSE)
+}
+
+test_that("the LST product observed closer to nadir is chosen", {
+  ch <- modis_choose_lst(lst_stats(c(0.967, 0.933), c(62, 42)), 0.8)
+  expect_identical(ch$product, "MYD11A1")
+  expect_identical(ch$method, "auto_view_angle")
+  expect_identical(ch$candidates$chosen, c(FALSE, TRUE))
+  expect_identical(ch$candidates$eligible, c(TRUE, TRUE))
+  expect_match(ch$rule, "lowest median absolute view zenith angle")
+  expect_match(ch$status, "CANDIDATA")
+  ch <- modis_choose_lst(lst_stats(c(0.981, 0.985), c(15, 47)), 0.8)
+  expect_identical(ch$product, "MOD11A1")
+  # a near-nadir candidate below the minimum coverage is not chosen
+  ch <- modis_choose_lst(lst_stats(c(0.70, 0.95), c(5, 50)), 0.8)
+  expect_identical(ch$product, "MYD11A1")
+  expect_identical(ch$candidates$eligible, c(FALSE, TRUE))
+  # ties go to the first candidate (Terra)
+  expect_identical(modis_choose_lst(lst_stats(c(0.9, 0.9), c(20, 20)),
+                                    0.8)$product, "MOD11A1")
+  # no candidate reaches the coverage: the larger coverage, with a warning
+  w <- expect_warning(ch <- modis_choose_lst(lst_stats(c(0.3, 0.6),
+                                                       c(10, 50)), 0.8),
+                      class = "earthflux_lst_choice_warning")
+  expect_identical(ch$product, "MYD11A1")
+  expect_identical(w$product, "MYD11A1")
+  expect_match(ch$rule, "no candidate reached")
+  # no valid LST at all: the coverage rule still gives a product
+  expect_warning(ch <- modis_choose_lst(lst_stats(c(0, 0), c(NA, NA)), 0.8),
+                 class = "earthflux_lst_choice_warning")
+  expect_identical(ch$product, "MOD11A1")
+  expect_error(modis_choose_lst(lst_stats(c(0.9, 0.9), c(1, 2)), 0),
+               class = "earthflux_input_error")
+  expect_error(modis_choose_lst(data.frame(), 0.8),
+               class = "earthflux_input_error")
+})
+
+test_that("view statistics of an LST source are counted over the AOI", {
+  dir <- ss_dir()
+  src <- ss_scene(dir)$lst
+  # synthetic scene: cell 2 is fill; angles 10 degrees except 50 (cell 6)
+  # and 40 (cell 12)
+  s <- modis_lst_view_stats(src, NULL)
+  expect_identical(s$product, "MOD11A1")
+  expect_identical(c(s$n_cells, s$n_valid, s$n_view_angle), c(12L, 11L, 11L))
+  expect_equal(s$valid_fraction, 11 / 12)
+  expect_identical(s$median_abs_view_angle, 10)
+  # a polygon touching the three cells of the last column (4, 8, 12)
+  g <- terra::rast(src$path[["LST_Day_1km"]])
+  e <- terra::ext(g)
+  res <- terra::res(g)[1]
+  poly <- terra::vect(terra::ext(e$xmax - 0.5 * res, e$xmax - 0.2 * res,
+                                 e$ymin + 0.1 * res, e$ymax - 0.1 * res),
+                      crs = terra::crs(g))
+  s2 <- modis_lst_view_stats(src, poly)
+  expect_identical(c(s2$n_cells, s2$n_valid), c(3L, 3L))
+  expect_identical(s2$median_abs_view_angle, 10)
+  # the same files declared as Aqua
+  aqua <- modis_source(src$path, product = "MYD11A1", date = src$date,
+                       scaled = FALSE)
+  expect_identical(modis_lst_view_stats(aqua, NULL)$product, "MYD11A1")
+  expect_error(modis_lst_view_stats(ss_scene(dir)$albedo, NULL),
+               class = "earthflux_input_error")
+})
+
+test_that("modis_fetch() chooses between Terra and Aqua by the view angle", {
+  dl_local_envvar("EARTHDATA_TOKEN", "fake-token-for-tests-0123")
+  log <- mock_network()
+  seen <- new.env()
+  # the synthetic granules are not HDF files: the statistics are mocked
+  testthat::local_mocked_bindings(
+    modis_lst_view_stats = function(src, aoi) {
+      seen$products <- c(seen$products, src$product)
+      st <- lst_stats(c(0.967, 0.933), c(62, 42))
+      st[st$product == src$product, ]
+    }
+  )
+  cache <- dl_test_dir()
+  f <- modis_fetch(cauquenes_bbox(), day, lst_product = "auto_view_angle",
+                   cache_dir = cache, min_lst_coverage = 0.8)
+  expect_identical(seen$products, c("MOD11A1", "MYD11A1"))
+  expect_identical(f$lst_product, "MYD11A1")
+  expect_identical(f$files$lst$product, "MYD11A1")
+  expect_identical(sort(f$granules$product),
+                   sort(c("MYD11A1", "MCD43A3", "MOD13A2", "MCD15A2H")))
+  expect_identical(f$provenance$products[["lst"]], "MYD11A1")
+  ch <- f$provenance$lst_choice
+  expect_identical(ch$product, "MYD11A1")
+  expect_identical(ch$min_lst_coverage, 0.8)
+  expect_identical(ch$candidates$product, c("MOD11A1", "MYD11A1"))
+  expect_identical(ch$candidates$median_abs_view_angle, c(62, 42))
+  expect_true(all(startsWith(ch$candidates$granule_id,
+                             ch$candidates$product)))
+  expect_true(all(grepl("^G[0-9]+-LPCLOUD$", ch$candidates$concept_id)))
+  # both LST granules were searched and downloaded
+  urls <- vapply(log$calls, `[[`, "", "url")
+  expect_true(any(grepl("short_name=MOD11A1", urls, fixed = TRUE)))
+  expect_true(any(grepl("short_name=MYD11A1", urls, fixed = TRUE)))
+  expect_true(any(grepl("/MOD11A1.061/", urls, fixed = TRUE)))
+  # a concrete product keeps the previous behaviour, with no choice
+  f2 <- modis_fetch(cauquenes_bbox(), day, lst_product = "MOD11A1",
+                    cache_dir = cache)
+  expect_identical(f2$lst_product, "MOD11A1")
+  expect_null(f2$provenance$lst_choice)
+})
+
+test_that("the automatic choice goes on when one satellite has no granule", {
+  dl_local_envvar("EARTHDATA_TOKEN", "fake-token-for-tests-0123")
+  no_aqua <- function(product, tile) {
+    if (product == "MYD11A1") list() else synthetic_archive(product, tile)
+  }
+  log <- mock_network(archive = no_aqua)
+  testthat::local_mocked_bindings(
+    modis_lst_view_stats = function(src, aoi) {
+      st <- lst_stats(c(0.967, 0.933), c(62, 42))
+      st[st$product == src$product, ]
+    }
+  )
+  f <- modis_fetch(cauquenes_bbox(), day, lst_product = "auto_view_angle",
+                   cache_dir = dl_test_dir(), min_lst_coverage = 0.8)
+  expect_identical(f$lst_product, "MOD11A1")
+  ch <- f$provenance$lst_choice
+  expect_identical(ch$candidates$product, "MOD11A1")
+  expect_identical(ch$missing$product, "MYD11A1")
+  expect_true(nzchar(ch$missing$reason))
+  expect_length(f$provenance$search$queries, 4L)
+  # with neither satellite available the search error is kept
+  log <- mock_network(archive = function(product, tile) {
+    if (product %in% c("MOD11A1", "MYD11A1")) list() else
+      synthetic_archive(product, tile)
+  })
+  expect_error(modis_fetch(cauquenes_bbox(), day,
+                           lst_product = "auto_view_angle",
+                           cache_dir = dl_test_dir(), min_lst_coverage = 0.8),
+               class = "earthflux_modis_granule_error")
+  # a missing required product still stops the fetch
+  log <- mock_network(archive = function(product, tile) {
+    if (product == "MCD43A3") list() else synthetic_archive(product, tile)
+  })
+  expect_error(modis_fetch(cauquenes_bbox(), day,
+                           lst_product = "auto_view_angle",
+                           cache_dir = dl_test_dir(), min_lst_coverage = 0.8),
+               class = "earthflux_modis_granule_error")
+})
+
+test_that("the automatic choice needs its coverage and one tile", {
+  expect_error(modis_fetch(cauquenes_bbox(), day,
+                           lst_product = "auto_view_angle",
+                           cache_dir = tempdir()),
+               class = "earthflux_missing_input")
+  expect_error(modis_fetch(cauquenes_bbox(), day,
+                           lst_product = "auto_view_angle",
+                           cache_dir = tempdir(), min_lst_coverage = 1.5),
+               class = "earthflux_input_error")
+  expect_error(modis_fetch(cauquenes_bbox(), day, lst_product = "MOD11A1",
+                           cache_dir = tempdir(), min_lst_coverage = 0.8),
+               class = "earthflux_input_error")
+  dl_local_envvar("EARTHDATA_TOKEN", "fake-token-for-tests-0123")
+  log <- mock_network()
+  a <- terra::vect(terra::ext(-61.5, -60.5, -35.5, -35), crs = "EPSG:4326")
+  expect_error(modis_fetch(a, day, lst_product = "auto_view_angle",
+                           cache_dir = tempdir(), per_tile = TRUE,
+                           min_lst_coverage = 0.8),
+               class = "earthflux_method_not_implemented")
+  expect_length(log$calls, 0L)
+})
+
 # Live smoke test (opt-in) -----------------------------------------------------
 
 test_that("live: Cauquenes 2019-02-15 is fetched and assembled", {
@@ -601,7 +778,7 @@ test_that("live: Cauquenes 2019-02-15 is fetched and assembled", {
                                         ndvi = "period_pixel_lag",
                                         lai = "period"),
                    resampling_method = "mean", min_valid_fraction = 1,
-                   qa_policy = "flag", lai_nonveg = 0)
+                   view_angle_max = 40, qa_policy = "flag", lai_nonveg = 0)
   )
   expect_s3_class(st, "earthflux_surface_state")
   # the packaged example scene was built from the same granules (M4-26)

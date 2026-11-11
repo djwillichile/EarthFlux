@@ -23,7 +23,8 @@
 #'
 #' @description
 #' Runs the complete METRIC workflow for one area and one date: downloads
-#' and prepares the MODIS surface state (Terra LST, albedo, NDVI, LAI) and
+#' and prepares the MODIS surface state (LST of Terra or Aqua, whichever
+#' was observed closer to nadir, albedo, NDVI, LAI) and
 #' the NASADEM elevation model on the native 1 km MODIS grid, prepares the
 #' weather forcing from a station table or from ERA5 (Open-Meteo),
 #' regionalizes the reference evapotranspiration and the wind, selects the
@@ -94,12 +95,16 @@
 #'     `target` = layer);
 #'   * `provenance`: the preset (name, version, changes between versions,
 #'     status, unverified elements), every effective option, the values
-#'     derived for the scene (overpass times, day and UTC offset of the
+#'     derived for the scene (the LST product used and, with the automatic
+#'     choice, the statistics of both candidates (`lst_choice`), the view
+#'     angle of the LST (`view_angle`: median, threshold, flagged cells,
+#'     warning), overpass times, day and UTC offset of the
 #'     daily reference ET, regionalization method, datum elevation, the
 #'     terrain rule: its method, reference elevations (anchors of the
 #'     preliminary selection and the station), limit, kept range and the
 #'     elevations of the final anchors, ...), the counts of excluded
-#'     cells (among them `terrain_rule_excluded`, split into
+#'     cells (among them `view_angle_high`, the cells of the AOI flagged
+#'     `EF_SURF_VIEW_ANGLE_HIGH`, `terrain_rule_excluded`, split into
 #'     `terrain_rule_excluded_below` and `terrain_rule_excluded_above` the
 #'     range, and the cells raised to the minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
 #'     (without key) or the station table, attributions, the codes
@@ -108,9 +113,17 @@
 #' @details
 #' Order of the workflow (dev/specs/presets.md section 2): (1) area checks
 #' and refusal of areas over several MODIS tiles **before any download**;
-#' (2) MODIS search, download and surface state; (3) cells outside the AOI
-#' polygon and cells with a critical surface flag (albedo above 1) are
-#' excluded and counted; (4) NASADEM elevation on the working grid (cells
+#' (2) MODIS search, download and surface state; the presets download the
+#' LST of Terra (MOD11A1) and Aqua (MYD11A1) and use the one with the
+#' lowest median absolute view zenith angle over the area among those with
+#' at least 80 % of valid LST cells (decision M5-27); (3) cells outside the
+#' AOI polygon and cells with a critical surface flag (albedo above 1) are
+#' excluded and counted; the LST cells observed at more than the view angle
+#' threshold of the preset (40 degrees) are flagged
+#' `EF_SURF_VIEW_ANGLE_HIGH` and hold no anchor, and a warning of class
+#' `earthflux_view_angle_warning` is emitted when the median of the scene
+#' is above it (decision M5-26; if no cell is left for an anchor, the run
+#' stops with an `earthflux_anchor_error`); (4) NASADEM elevation on the working grid (cells
 #' below the minimum valid fraction excluded); (5) weather table (station
 #' table or ERA5) and its quality control; (6) hourly and daily alfalfa
 #' reference ET of the stations; (7) regionalization of the hourly
@@ -281,6 +294,9 @@ earthflux <- function(aoi, date, weather, preset,
     ef_abort("No cell of the area has a valid LST and overpass time.",
              class = "earthflux_input_error", call = call)
   }
+  # view angle of the LST (M5-26): warning when the scene median is above
+  # the threshold of the preset; the flagged cells hold no anchor
+  view <- workflow_view_angle(st, in_aoi, call)
 
   # Terrain --------------------------------------------------------------------
   ter <- workflow_terrain(aoi, grid, p, cache_dir, terrain = terrain,
@@ -334,7 +350,7 @@ earthflux <- function(aoi, date, weather, preset,
     fc = fc, p = p, grid = grid, in_aoi = in_aoi, ex = ex, scene = scene,
     tiles = tiles, aoi_ll = aoi_ll, centroid = centroid, date = date,
     overpass = overpass, started = started, user_surface = !is.null(surface),
-    user_terrain = !is.null(terrain)
+    user_terrain = !is.null(terrain), view = view
   )
 }
 
@@ -344,7 +360,8 @@ earthflux <- function(aoi, date, weather, preset,
 #' @noRd
 workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
                             in_aoi, ex, scene, tiles, aoi_ll, centroid, date,
-                            overpass, started, user_surface, user_terrain) {
+                            overpass, started, user_surface, user_terrain,
+                            view) {
   n <- terra::ncell(grid)
   template <- terra::rast(grid, nlyrs = 1L)
   as_layer <- function(v, name) {
@@ -492,6 +509,9 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
                  bbox_lonlat = as.vector(terra::ext(aoi_ll)),
                  centroid_lonlat = as.vector(centroid[1L, ])),
       tiles = tiles$tile,
+      lst_product = view$lst_product,
+      lst_choice = if (is.null(fetch)) NULL else fetch$provenance$lst_choice,
+      view_angle = view,
       grid = list(nrow = terra::nrow(grid), ncol = terra::ncol(grid),
                   res = terra::res(grid),
                   extent = as.vector(terra::ext(grid)),
@@ -533,6 +553,8 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
       in_aoi = sum(in_aoi),
       outside_aoi = sum(!in_aoi),
       surface_critical_excluded = sum(ex$exclude & in_aoi),
+      view_angle_high = if (isTRUE(view$evaluated)) view$n_flagged else
+        NA_integer_,
       ter$counts,
       fc$counts,
       zom_floor_applied = mt$zom_floor_applied,

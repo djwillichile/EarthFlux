@@ -209,6 +209,14 @@ workflow_preset_idaho2002 <- function(terrain) {
       "slope forced to 0 (flat projection) until RC-09 is resolved; ",
       "elevation used"
     ),
+    view_angle = paste0(
+      "automatic choice between Terra and Aqua by the median absolute ",
+      "view zenith angle over the AOI with a minimum valid LST coverage ",
+      "of 0.8, and the flag of the LST cells observed at more than 40 ",
+      "degrees from nadir (EF_SURF_VIEW_ANGLE_HIGH, no anchor there): ",
+      "threshold and coverage from the footprint geometry of MODIS ",
+      "without a primary source: CANDIDATA (M5-26, M5-27)"
+    ),
     terrain_rule = paste0(
       "exclusion of the cells more than ", terrain_limit, " m above or ",
       "below the elevation range of the calibration (anchors of a ",
@@ -223,7 +231,7 @@ workflow_preset_idaho2002 <- function(terrain) {
   structure(
     list(
       name = name,
-      version = "4",
+      version = "5",
       status = "CANDIDATA",
       description = if (elev) {
         paste0(
@@ -233,7 +241,8 @@ workflow_preset_idaho2002 <- function(terrain) {
           "longwave adjusted by elevation, shortwave transmissivity per ",
           "pixel); flat projection (slope 0); cells more than 500 m ",
           "above or below the elevation range of the calibration anchors ",
-          "excluded (M5-25)."
+          "excluded (M5-25); Terra or Aqua LST, whichever was observed ",
+          "closer to nadir (M5-27)."
         )
       } else {
         paste0(
@@ -242,17 +251,18 @@ workflow_preset_idaho2002 <- function(terrain) {
           "temperature for the incoming longwave and one shortwave ",
           "transmissivity for the scene; flat projection (slope 0); cells ",
           "more than 250 m above or below the elevation range of the ",
-          "calibration anchors excluded (M5-25)."
+          "calibration anchors excluded (M5-25); Terra or Aqua LST, ",
+          "whichever was observed closer to nadir (M5-27)."
         )
       },
       source = paste0(
         "Waters et al. (2002), SEBAL Idaho manual (pp. 10-38; appendices 7, ",
-        "8 and 12); dev/specs/presets.md; dev/DECISIONS.md M5-08 to M5-25 ",
+        "8 and 12); dev/specs/presets.md; dev/DECISIONS.md M5-08 to M5-27 ",
         "and M2-11"
       ),
       decisions = c("M5-04", "M5-08", "M5-09", "M5-11", "M5-12", "M5-14",
                     "M5-15", "M5-16", "M5-17", "M5-23", "M5-24", "M2-11",
-                    "M5-25"),
+                    "M5-25", "M5-26", "M5-27"),
       changes = c(
         "1" = "first version (2026-11-06; M5-08 to M5-22)",
         "2" = paste0(
@@ -279,13 +289,31 @@ workflow_preset_idaho2002 <- function(terrain) {
           "and 0.3 % (flat)) (2026-11-10; flat limit and range of the ",
           "anchors, which replaced the datum elevation as reference, ",
           "2026-11-11)"
+        ),
+        "5" = paste0(
+          "view angle of the LST (2026-11-11): the LST product is chosen ",
+          "per scene between Terra (MOD11A1) and Aqua (MYD11A1), the one ",
+          "with the lowest median absolute view zenith angle over the AOI ",
+          "among those with at least 80 % of valid LST cells (M5-27; was ",
+          "Terra always); LST cells observed at more than 40 degrees from ",
+          "nadir are flagged with EF_SURF_VIEW_ANGLE_HIGH and hold no ",
+          "anchor, and earthflux() warns when the scene median is above ",
+          "40 degrees (M5-26). Cauquenes, 2019-02-15: Terra at 62 degrees ",
+          "(96.7 % valid), Aqua at 42 degrees (93.3 %): Aqua is chosen"
         )
       ),
       modis = list(
-        lst_product = "MOD11A1",
+        lst_product = "auto_view_angle",
+        lst_candidates = modis_lst_auto()$candidates,
+        min_lst_coverage = 0.8,
+        lst_choice_status = paste0(
+          "CANDIDATA (M5-27): lowest median absolute view zenith angle over ",
+          "the AOI among the candidates with at least 80 % of valid LST ",
+          "cells; NDVI from MOD13A2 (Terra) with both"
+        ),
         collection = "061",
         surface_options = list(
-          lst_product = "MOD11A1",
+          lst_product = "auto_view_angle",
           albedo_method = "white_sky",
           diffuse_fraction = NULL,
           emissivity_method = "lai_empirical",
@@ -294,9 +322,16 @@ workflow_preset_idaho2002 <- function(terrain) {
                                ndvi = "period_pixel_lag", lai = "period"),
           resampling_method = "mean",
           min_valid_fraction = 1,
+          view_angle_max = 40,
           qa_policy = "flag",
           mask_codes = NULL,
           lai_nonveg = 0
+        ),
+        view_angle_status = paste0(
+          "CANDIDATA (M5-26): 40 degrees, where the footprint area of an ",
+          "off-nadir MODIS observation reaches twice its nadir area ",
+          "(geometry of dev/specs/modis-products.md 5.1 e; no primary ",
+          "source gives a threshold)"
         )
       ),
       terrain = list(
@@ -368,11 +403,13 @@ workflow_preset_idaho2002 <- function(terrain) {
         qa = paste0(
           "strict: no warning or critical bit in flags_lst, flags_albedo, ",
           "flags_ndvi, flags_lai, flags_emissivity, and no ",
-          "EF_SURF_LAI_ASSIGNED (LAI set by lai_nonveg, not retrieved); ",
+          "EF_SURF_LAI_ASSIGNED (LAI set by lai_nonveg, not retrieved) nor ",
+          "EF_SURF_VIEW_ANGLE_HIGH (LST observed far from nadir, M5-26); ",
           "valid_fraction == 1; no bit 1, 3 or 6 of the GWR words of the ",
           "forcing; elevation and z_om defined"
         ),
-        qa_exclude_codes = "EF_SURF_LAI_ASSIGNED",
+        qa_exclude_codes = c("EF_SURF_LAI_ASSIGNED",
+                             "EF_SURF_VIEW_ANGLE_HIGH"),
         etrf_cold = 1.05,
         etrf_hot = 0,
         conditions_source = "Waters et al. (2002), pp. 30-31 (steps 5a, 5b)",
@@ -444,8 +481,9 @@ ef_presets <- function() {
 #' @return An object of class `earthflux_preset` (a list): `name`,
 #'   `version`, `status`, `description`, `source`, `decisions`, `changes`
 #'   (what each version changed) and the
-#'   option blocks `modis` (product and the options of the MODIS surface
-#'   state), `terrain`, `weather` (quality control, ERA5 options,
+#'   option blocks `modis` (`lst_product = "auto_view_angle"` with its
+#'   candidates and `min_lst_coverage`, and the options of the MODIS surface
+#'   state, among them `view_angle_max`), `terrain`, `weather` (quality control, ERA5 options,
 #'   regionalization), `reference_et`, `radiation`, `soil_heat`,
 #'   `roughness`, `wind`, `lambda`, `anchors` (criteria built with
 #'   [ef_anchor_criteria()], relaxation plan, aggregation, search area,
@@ -458,7 +496,7 @@ ef_presets <- function() {
 #'   not `VERIFICADA`).
 #'
 #' @details
-#' The two presets (decisions M5-08 to M5-25 and M2-11,
+#' The two presets (decisions M5-08 to M5-27 and M2-11,
 #' dev/specs/presets.md) share every option except the treatment of
 #' elevation:
 #'
@@ -473,9 +511,16 @@ ef_presets <- function() {
 #' RC-09 is resolved); both use the elevation of the elevation model for
 #' the air pressure, the anchors and the datum temperature.
 #'
-#' Common options: MODIS Terra LST (MOD11A1), white-sky albedo, emissivity
+#' Common options: MODIS LST of Terra (MOD11A1) or Aqua (MYD11A1), chosen
+#' per scene (`lst_product = "auto_view_angle"`, version 5, decision
+#' M5-27): both are downloaded and the one with the lowest median absolute
+#' view zenith angle over the AOI among those with at least 80 % of valid
+#' LST cells is used (the NDVI stays MOD13A2, Terra, with both);
+#' white-sky albedo, emissivity
 #' from LAI, NDVI of MOD13A2, LAI 0 assigned to the non-vegetated classes,
-#' QA flagged (strict QA for the anchors), `min_valid_fraction = 1`;
+#' QA flagged (strict QA for the anchors), `min_valid_fraction = 1`, LST
+#' cells observed at more than 40 degrees from nadir flagged with
+#' `EF_SURF_VIEW_ANGLE_HIGH` (`view_angle_max = 40`, decision M5-26);
 #' NASADEM elevation with water masked; quality control
 #' `"exclude_critical"`; ASCE alfalfa reference ET, hourly, with the
 #' `"rn_positive"` daytime rule and `"low_sun"` night cloudiness, the
@@ -502,7 +547,22 @@ ef_presets <- function() {
 #' cells); the coldest 20 % of the cold and the hottest 20 % of the hot
 #' candidates, averaged; one relaxation step (percentiles 0.80 and 0.20),
 #' flagged with `EF_ANCHOR_CRITERIA_RELAXED`; no anchor on cells with a
-#' warning or critical surface flag or an assigned LAI.
+#' warning or critical surface flag, an assigned LAI or an LST observed at
+#' more than 40 degrees from nadir.
+#'
+#' View angle (version 5, decisions M5-26 and M5-27, `CANDIDATA`): the
+#' footprint of a MODIS observation, 1 km at nadir, grows with the view
+#' zenith angle; MOD11A1/MYD11A1 average the overlapping observations of
+#' each 1 km cell with their overlapping areas as weights (Wan, 2019,
+#' p. 16), so a cell observed far from nadir carries the LST of a larger,
+#' mixed area. On a sphere with the MODIS scan geometry (1 km pixels at
+#' nadir, 1354 pixels per scan line, Wan, 2019, p. 6; view zenith angles up
+#' to 65 degrees, p. 17), the
+#' footprint is 1.26 x 1.65 km at 40 degrees (twice the nadir area) and
+#' 1.85 x 3.9 km at 62 degrees: the presets flag the cells above 40
+#' degrees, keep them out of the anchors and choose, per scene, the
+#' satellite observed closer to nadir. Neither 40 degrees nor the minimum
+#' coverage of 80 % has a primary source.
 #'
 #' Terrain rule (version 4, decision M5-25, `CANDIDATA`): one linear dT
 #' calibrated between two anchors with one weather forcing holds only over
@@ -529,8 +589,9 @@ ef_presets <- function() {
 #'
 #' Versions: `"1"` (first presets); `"2"` (recalibrated anchor criteria,
 #' M5-23; minimum z_om, M5-24); `"3"` (convergence of the calibration of H,
-#' one tolerance per phase, M2-11); `"4"` (terrain rule, M5-25); see the
-#' element `changes`.
+#' one tolerance per phase, M2-11); `"4"` (terrain rule, M5-25); `"5"`
+#' (Terra/Aqua choice by view angle and view angle flag, M5-26, M5-27); see
+#' the element `changes`.
 #'
 #' @section Verification status:
 #' `CANDIDATA` (see [ef_presets()]); the unverified elements are in the
@@ -541,6 +602,11 @@ ef_presets <- function() {
 #' (2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
 #' implementation. Advanced training and users manual* (Version 1.0).
 #' University of Idaho and Idaho Department of Water Resources.
+#'
+#' Wan, Z. (2019). *Collection-6 MODIS Land Surface Temperature Products
+#' Users' Guide* (with the Collection 6.1 cover page). ERI, University of
+#' California, Santa Barbara. NASA LP DAAC,
+#' <https://lpdaac.usgs.gov/documents/715/MOD11_User_Guide_V61.pdf>.
 #'
 #' @seealso [ef_presets()], [earthflux()].
 #' @family workflow functions

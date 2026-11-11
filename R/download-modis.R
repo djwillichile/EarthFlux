@@ -20,7 +20,12 @@
 #   modis_download()         download from LP DAAC with the Earthdata token,
 #                            validated cache
 #   modis_fetch()            AOI + date -> the `files` of
-#                            modis_surface_state() + provenance
+#                            modis_surface_state() + provenance; with
+#                            lst_product = "auto_view_angle", the choice
+#                            between Terra and Aqua (decision M5-27)
+#   modis_lst_view_stats()   valid LST coverage and median absolute view
+#                            zenith angle of one LST source over the AOI
+#   modis_choose_lst()       the Terra/Aqua choice from those statistics
 #   Network layer (the only code that touches the network; tests replace
 #   modis_curl() and modis_sleep() with testthat::local_mocked_bindings()):
 #   modis_curl()             one utils::download.file() call (libcurl)
@@ -74,6 +79,10 @@
 #                                  one tile in modis_fetch() (no mosaic of
 #                                  the surface state, M4-19; continuity
 #                                  between tiles TODO, section 11.4).
+#   earthflux_lst_choice_warning   (warning) no LST candidate of the
+#                                  automatic choice reached the minimum
+#                                  valid coverage (fields `candidates`,
+#                                  `min_lst_coverage`, `product`).
 #   TODO(shared): list these classes in the catalogue of R/utils.R and in
 #   dev/ARCHITECTURE.md section 3.3.
 
@@ -697,6 +706,159 @@ modis_download_one <- function(url, dest) {
   invisible(dest)
 }
 
+# Choice between Terra and Aqua (M5-27) ------------------------------------------
+
+#' Values of `lst_product` that choose the LST product automatically
+#'
+#' `"auto_view_angle"` (decision M5-27): download the LST granules of
+#' Terra (MOD11A1) and Aqua (MYD11A1) for the date and tile and keep the
+#' one observed closer to nadir over the AOI among those with enough valid
+#' LST (`modis_choose_lst()`).
+#'
+#' @return A list with `choices` (character) and `candidates` (the LST
+#'   products compared, in order of preference on ties).
+#' @noRd
+modis_lst_auto <- function() {
+  list(choices = "auto_view_angle", candidates = c("MOD11A1", "MYD11A1"))
+}
+
+#' Cells of a grid covered by the area of interest
+#'
+#' A `SpatVector` covers the cells it touches (`terra::rasterize(touches =
+#' TRUE)`, the rule of the example scene, M4-26, and of `earthflux()`,
+#' M5-21); a `SpatExtent` (or `NULL`) covers every cell of the grid, which
+#' the readers already cropped to it.
+#'
+#' @param aoi A `SpatVector`, a `SpatExtent` or `NULL`.
+#' @param grid A `SpatRaster` (the cropped LST grid).
+#' @return Logical vector in terra cell order.
+#' @noRd
+modis_aoi_cells <- function(aoi, grid) {
+  if (!inherits(aoi, "SpatVector")) {
+    return(rep(TRUE, terra::ncell(grid)))
+  }
+  v <- terra::project(aoi, terra::crs(grid))
+  r <- terra::rasterize(v, terra::rast(grid, nlyrs = 1L), field = 1,
+                        touches = TRUE, background = 0)
+  terra::values(r, mat = FALSE) == 1
+}
+
+#' Valid LST coverage and view zenith angle of an LST source over the AOI
+#'
+#' Reads `LST_Day_1km`, `QC_Day` and `Day_view_angl` of a MOD11A1/MYD11A1
+#' source on the AOI (product table, dev/specs/modis-products.md 5.1 b,
+#' `VERIFICADA`: D1 p. 17, Table 9) and counts, over the cells covered by
+#' the AOI (`modis_aoi_cells()`), the cells with a valid LST
+#' (`modis_lst()` with `qa_policy = "flag"`: not fill, not out of range,
+#' produced according to `QC_Day`) and the median of the absolute view
+#' zenith angle of those cells (the sign of `Day_view_angl` is the side of
+#' the swath, D1 p. 16-17).
+#'
+#' @param src An `earthflux_modis_source` of MOD11A1 or MYD11A1 (an HDF4
+#'   file, or converted files declaring the three layers).
+#' @param aoi The area of interest (see `modis_aoi_cells()`).
+#' @return A one-row data frame: `product`, `file`, `n_cells`, `n_valid`,
+#'   `valid_fraction` (`n_valid / n_cells`), `median_abs_view_angle`
+#'   \[degrees\] (`NA` without valid cells) and `n_view_angle` (valid cells
+#'   with a view angle).
+#' @noRd
+modis_lst_view_stats <- function(src, aoi) {
+  call <- sys.call()
+  if (!inherits(src, "earthflux_modis_source") ||
+      !src$product %in% modis_lst_auto()$candidates) {
+    ef_abort("`src` must be a modis_source() of MOD11A1 or MYD11A1.",
+             class = "earthflux_input_error", call = call)
+  }
+  req <- c("LST_Day_1km", "QC_Day", "Day_view_angl")
+  opt <- if (src$type == "hdf4") character(0) else
+    setdiff(names(src$path), req)
+  dn <- modis_read_source_layers(src, list(required = req, optional = opt),
+                                 aoi, call)
+  lst <- modis_lst(dn[["LST_Day_1km"]], dn[["QC_Day"]], src$product,
+                   qa_policy = "flag", collection = src$collection)
+  va <- modis_view_zenith(dn[["Day_view_angl"]], src$product,
+                          collection = src$collection)
+  inside <- modis_aoi_cells(aoi, dn[[1L]])
+  valid <- inside & !is.na(lst$value)
+  angle <- abs(va$value[valid & !is.na(va$value)])
+  data.frame(
+    product = src$product,
+    file = paste(basename(unname(src$path)), collapse = ";"),
+    n_cells = sum(inside),
+    n_valid = sum(valid),
+    valid_fraction = if (sum(inside) > 0L) sum(valid) / sum(inside) else 0,
+    median_abs_view_angle = if (length(angle) > 0L) stats::median(angle) else
+      NA_real_,
+    n_view_angle = length(angle),
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Choose the LST product observed closer to nadir
+#'
+#' Rule of `lst_product = "auto_view_angle"` (decision M5-27, `CANDIDATA`):
+#' among the candidates whose valid LST coverage of the AOI is at least
+#' `min_lst_coverage`, the one with the lowest median absolute view zenith
+#' angle (ties: the first candidate, Terra). The footprint of a MODIS
+#' observation grows with the view angle (dev/specs/modis-products.md 5.1
+#' e), so the candidate closer to nadir has the sharper LST; the coverage
+#' condition keeps a cloudier near-nadir scene from replacing a clear one.
+#' When no candidate reaches the coverage, the one with the larger coverage
+#' is kept and a warning of class `earthflux_lst_choice_warning` is
+#' emitted.
+#'
+#' @param stats Data frame of `modis_lst_view_stats()` rows, one per
+#'   candidate, in order of preference on ties.
+#' @param min_lst_coverage Numeric in (0, 1\]: minimum fraction of AOI
+#'   cells with a valid LST (no default).
+#' @return A list: `method` (`"auto_view_angle"`), `product` (the choice),
+#'   `rule` (the branch of the rule applied), `min_lst_coverage`,
+#'   `candidates` (`stats` with the columns `eligible` and `chosen`) and
+#'   `status`.
+#' @noRd
+modis_choose_lst <- function(stats, min_lst_coverage) {
+  call <- sys.call()
+  if (!is.data.frame(stats) || nrow(stats) == 0L ||
+      !all(c("product", "valid_fraction", "median_abs_view_angle") %in%
+           names(stats))) {
+    ef_abort("`stats` must be rows of modis_lst_view_stats().",
+             class = "earthflux_input_error", call = call)
+  }
+  check_scalar(min_lst_coverage, "min_lst_coverage", lower = 0, upper = 1,
+               lower_inclusive = FALSE, call = call)
+  eligible <- stats$valid_fraction >= min_lst_coverage &
+    !is.na(stats$median_abs_view_angle)
+  if (any(eligible)) {
+    k <- which(eligible)[which.min(stats$median_abs_view_angle[eligible])]
+    rule <- paste0("lowest median absolute view zenith angle among the ",
+                   "candidates with a valid LST coverage of at least ",
+                   "min_lst_coverage")
+  } else {
+    k <- which.max(stats$valid_fraction)
+    rule <- paste0("no candidate reached min_lst_coverage: the candidate ",
+                   "with the larger valid LST coverage")
+  }
+  stats$eligible <- eligible
+  stats$chosen <- seq_len(nrow(stats)) == k
+  rownames(stats) <- NULL
+  if (!any(eligible)) {
+    ef_warn(
+      sprintf(paste0("No LST candidate covers %s of the area with valid ",
+                     "LST (%s); %s is used."),
+              format(min_lst_coverage),
+              paste(sprintf("%s %.1f %%", stats$product,
+                            100 * stats$valid_fraction), collapse = ", "),
+              stats$product[k]),
+      class = "earthflux_lst_choice_warning",
+      candidates = stats, min_lst_coverage = min_lst_coverage,
+      product = stats$product[k], call = call
+    )
+  }
+  list(method = "auto_view_angle", product = stats$product[k], rule = rule,
+       min_lst_coverage = min_lst_coverage, candidates = stats,
+       status = "CANDIDATA (M5-27; minimum coverage without a source)")
+}
+
 # Composition ------------------------------------------------------------------
 
 #' Fetch the MODIS files of the surface state for an AOI and a date
@@ -727,24 +889,38 @@ modis_download_one <- function(url, dest) {
 #' @param aoi Area of interest: `SpatVector` (any CRS) or `SpatExtent` in
 #'   the sinusoidal CRS.
 #' @param date `Date`, length 1. UTC day of the LST.
-#' @param lst_product Character, no default: `"MOD11A1"` (Terra) or
-#'   `"MYD11A1"` (Aqua).
+#' @param lst_product Character, no default: `"MOD11A1"` (Terra),
+#'   `"MYD11A1"` (Aqua) or `"auto_view_angle"` (decision M5-27): the LST
+#'   granules of both are downloaded, their valid LST coverage and median
+#'   absolute view zenith angle over the AOI are computed
+#'   (`modis_lst_view_stats()`) and the product observed closer to nadir
+#'   among those with enough valid LST is kept (`modis_choose_lst()`); one
+#'   tile only.
 #' @param cache_dir Character. Cache directory (see `modis_download()`).
 #' @param collection Character. Collection (`"061"`).
 #' @param per_tile Logical. Allow AOIs over several tiles (see above).
+#' @param min_lst_coverage With `lst_product = "auto_view_angle"`: numeric
+#'   in (0, 1\], the minimum fraction of AOI cells with a valid LST of a
+#'   candidate (no default; `CANDIDATA`, 0.8 in the presets); `NULL`
+#'   otherwise.
 #' @return An object of class `earthflux_modis_fetch` (`new_ef_object()`),
 #'   a list with `files` (list `lst`, `albedo`, `ndvi`, `lai` of
 #'   `earthflux_modis_source` objects, or `NULL` with several tiles),
 #'   `files_by_tile` (one such list per tile, named by tile), `tiles` (data
 #'   frame of `modis_tiles_for_aoi()`), `granules` (the table of
-#'   `modis_download()` with the column `role`), `flags` (empty) and
+#'   `modis_download()` with the column `role`; with the automatic choice,
+#'   only the chosen LST granule), `lst_product` (the LST product used),
+#'   `flags` (empty) and
 #'   `provenance` (sources, products by role, collection, date, tiles,
 #'   granules with CMR concept ids and DOIs, search and download times,
-#'   cache paths, licence; never the token).
+#'   cache paths, licence; never the token; with the automatic choice,
+#'   `lst_choice`: the result of `modis_choose_lst()`, both candidates'
+#'   statistics and granules included).
 #' @noRd
 modis_fetch <- function(aoi, date, lst_product,
                         cache_dir = tools::R_user_dir("EarthFlux", "cache"),
-                        collection = "061", per_tile = FALSE) {
+                        collection = "061", per_tile = FALSE,
+                        min_lst_coverage = NULL) {
   call <- sys.call()
   if (missing(aoi) || is.null(aoi)) {
     ef_abort("`aoi` must be supplied (a SpatVector or a SpatExtent).",
@@ -756,12 +932,31 @@ modis_fetch <- function(aoi, date, lst_product,
              class = c("earthflux_missing_input", "earthflux_input_error"),
              call = call)
   }
-  check_method(lst_product, modis_lst_products()$available,
+  auto <- modis_lst_auto()
+  check_method(lst_product, c(modis_lst_products()$available, auto$choices),
                arg = "lst_product", call = call)
+  is_auto <- lst_product %in% auto$choices
   modis_check_date(date, "date", scalar = TRUE, call = call)
   if (!is.logical(per_tile) || length(per_tile) != 1L || is.na(per_tile)) {
     ef_abort("`per_tile` must be TRUE or FALSE.",
              class = "earthflux_input_error", call = call)
+  }
+  if (is_auto) {
+    if (is.null(min_lst_coverage)) {
+      ef_abort(
+        sprintf(paste0("`lst_product = \"%s\"` needs `min_lst_coverage` ",
+                       "(no default, decision M5-27)."), lst_product),
+        class = c("earthflux_missing_input", "earthflux_input_error"),
+        call = call
+      )
+    }
+    check_scalar(min_lst_coverage, "min_lst_coverage", lower = 0, upper = 1,
+                 lower_inclusive = FALSE, call = call)
+  } else if (!is.null(min_lst_coverage)) {
+    ef_abort(
+      "`min_lst_coverage` is used only with `lst_product = \"auto_view_angle\"`.",
+      class = "earthflux_input_error", call = call
+    )
   }
   check_string(cache_dir)
   tiles <- modis_tiles_for_aoi(aoi)
@@ -778,10 +973,67 @@ modis_fetch <- function(aoi, date, lst_product,
       method = "multi_tile", choices = "single_tile", call = call
     )
   }
-  roles <- c(lst = lst_product, albedo = "MCD43A3", ndvi = "MOD13A2",
-             lai = "MCD15A2H")
-  found <- modis_search(unname(roles), date, tiles, collection = collection)
+  if (is_auto && nrow(tiles) > 1L) {
+    ef_abort(
+      sprintf(paste0("`lst_product = \"%s\"` compares the candidates over ",
+                     "one tile; the area needs %d (%s)."), lst_product,
+              nrow(tiles), paste(tiles$tile, collapse = ", ")),
+      class = c("earthflux_method_not_implemented",
+                "earthflux_unknown_method", "earthflux_input_error"),
+      method = "multi_tile", choices = "single_tile", call = call
+    )
+  }
+  others <- c(albedo = "MCD43A3", ndvi = "MOD13A2", lai = "MCD15A2H")
+  lst_candidates <- if (is_auto) auto$candidates else lst_product
+  missing_lst <- NULL
+  if (is_auto) {
+    # Each LST candidate is searched on its own: a satellite without a
+    # granule for the date does not stop the choice among the others; the
+    # missing candidates are recorded. The other products stay required.
+    lst_found <- lapply(lst_candidates, function(p) {
+      tryCatch(modis_search(p, date, tiles, collection = collection),
+               earthflux_modis_granule_error = function(e) e)
+    })
+    is_missing <- vapply(lst_found, inherits, logical(1),
+                         "earthflux_modis_granule_error")
+    if (all(is_missing)) {
+      stop(lst_found[[1L]])
+    }
+    missing_lst <- data.frame(
+      product = lst_candidates[is_missing],
+      reason = vapply(lst_found[is_missing], conditionMessage, character(1)),
+      stringsAsFactors = FALSE
+    )
+    lst_candidates <- lst_candidates[!is_missing]
+    rest <- modis_search(unname(others), date, tiles, collection = collection)
+    parts <- c(lst_found[!is_missing], list(rest))
+    found <- do.call(rbind, parts)
+    pv <- attr(rest, "provenance")
+    pv$queries <- do.call(c, lapply(parts, function(x)
+      attr(x, "provenance")$queries))
+    attr(found, "provenance") <- pv
+  } else {
+    found <- modis_search(c(lst_candidates, unname(others)), date, tiles,
+                          collection = collection)
+  }
   got <- modis_download(found, cache_dir = cache_dir)
+  prov <- attr(got, "provenance")
+  lst_choice <- NULL
+  if (is_auto) {
+    stats <- do.call(rbind, lapply(lst_candidates, function(p) {
+      i <- which(got$product == p)
+      cbind(modis_lst_view_stats(modis_source(got$path[i]), aoi),
+            granule_id = got$granule_id[i], concept_id = got$concept_id[i],
+            stringsAsFactors = FALSE)
+    }))
+    lst_choice <- modis_choose_lst(stats, min_lst_coverage)
+    lst_choice$missing <- missing_lst
+    lst_product <- lst_choice$product
+    got <- got[!got$product %in% setdiff(lst_candidates, lst_product), ,
+               drop = FALSE]
+    rownames(got) <- NULL
+  }
+  roles <- c(lst = lst_product, others)
   got$role <- names(roles)[match(got$product, roles)]
   known <- modis_download_products()
   files_by_tile <- lapply(tiles$tile, function(tile) {
@@ -796,7 +1048,6 @@ modis_fetch <- function(aoi, date, lst_product,
     out
   })
   names(files_by_tile) <- tiles$tile
-  prov <- attr(got, "provenance")
   dois <- modis_product_doi()
   k <- match(paste(got$product, collection),
              paste(dois$product, dois$collection))
@@ -814,6 +1065,7 @@ modis_fetch <- function(aoi, date, lst_product,
       files_by_tile = files_by_tile,
       tiles = tiles,
       granules = got,
+      lst_product = lst_product,
       flags = list(),
       provenance = list(
         source = paste0("NASA CMR granule search (provider LPCLOUD) and ",
@@ -828,13 +1080,14 @@ modis_fetch <- function(aoi, date, lst_product,
         download_time = prov$download_time,
         cache_dir = prov$cache_dir,
         credentials = prov$credentials,
+        lst_choice = lst_choice,
         licence = paste0("MODIS data are shared openly without restriction ",
                          "(EOSDIS Data Use and Citation Guidance; ",
                          "modis-products.md 12); cite the DOI of each ",
                          "product. Citation requirements for redistribution ",
                          "TODO (modis-products.md 16)."),
         spec = paste0("dev/specs/modis-products.md 4, 11.4, 11.5, 12; ",
-                      "DECISIONS.md M4-19, M4-23, M4-26, M5-03")
+                      "DECISIONS.md M4-19, M4-23, M4-26, M5-03, M5-27")
       )
     ),
     "earthflux_modis_fetch"

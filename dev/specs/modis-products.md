@@ -14,7 +14,7 @@ Componente: `surface` · Archivos: `R/io-modis.R`, `R/modis-qa.R`,
 > documento se adopte, debe trasladarse allí.
 
 Revisión documental: **2026-11-04**. Todas las fuentes de §2 se leyeron en
-esa fecha.
+esa fecha. D1 se releyó el 2026-11-11 para el ángulo de visión (§5.1 e).
 
 > **Estado de implementación (M4, 2026-11-04; bloque único tras la
 > armonización de M4).** Implementado como funciones internas (`@noRd`,
@@ -137,10 +137,22 @@ esa fecha.
 > collection, per_tile = FALSE)` (devuelve el argumento `files` de
 > `modis_surface_state()`; AOI de varias teselas →
 > `earthflux_method_not_implemented` salvo `per_tile = TRUE`, que entrega
-> una lista por tesela sin mosaico, §11.4). Tests sin red en
+> una lista por tesela sin mosaico, §11.4; desde M5-27 también
+> `lst_product = "auto_view_angle"` con `min_lst_coverage`, ver §5.1 e). Tests sin red en
 > `tests/testthat/test-modis-download.R`; prueba en línea opcional con
 > `EARTHFLUX_LIVE_TESTS=true` (contrastada el 2026-11-06 contra la escena
 > `cauquenes_modis`: valores idénticos).
+>
+> **Ángulo de visión (M5, 2026-11-11; M5-26, M5-27).** El estado de
+> superficie lee `Day_view_angl` (obligatoria entre las capas de la LST) y
+> entrega `view_angle` (|ángulo cenital|, grados) con su palabra
+> `flags_view_angle`; `modis_surface_options()` exige `view_angle_max`
+> (sin defecto) y `modis_surface_state()` levanta
+> `EF_SURF_VIEW_ANGLE_HIGH` (bit 16) en `flags_lst`. `modis_fetch()` acepta
+> `lst_product = "auto_view_angle"` (elección Terra/Aqua por el ángulo,
+> con `modis_lst_view_stats()` y `modis_choose_lst()`). Hechos, geometría
+> y evidencia en §5.1 (e). La capa nocturna `Night_view_angl` no se lee
+> (filas nocturnas `TODO` en la tabla; METRIC usa la LST diurna).
 
 ---
 
@@ -381,7 +393,86 @@ Notas `VERIFICADA`:
   emisividades por clasificación (D1 p. 9), aportan poca información
   independiente sobre la superficie real; en zonas áridas su
   incertidumbre es mayor (D1 p. 9).
-- `Day_view_angl` como diagnóstico (flag de ángulo alto, umbral `TODO`).
+- `Day_view_angl` como diagnóstico: capa `view_angle` del estado de
+  superficie (valor absoluto, grados) y flag de ángulo alto
+  `EF_SURF_VIEW_ANGLE_HIGH` con umbral explícito (**M5-26**, 2026-11-11;
+  detalle abajo); elección por escena entre Terra y Aqua por el ángulo de
+  visión (**M5-27**).
+
+**Ángulo de visión y huella (M5-26, M5-27; 2026-11-11).** Hechos
+`VERIFICADA`: resolución nominal de **1 km en el nadir** y **1354 píxeles
+por línea** de barrido (D1 p. 6); `Day_view_angl` en 0–130 DN → −65° a
++65° (escala 1, offset −65, relleno 255; D1 p. 17, Tabla 9; el signo indica
+el lado del barrido, negativo = vista desde el este, el cenital en sí es
+positivo, D1 p. 16–17); MOD11A1 se construye **promediando las LST de los
+píxeles que se superponen a cada celda, ponderadas por el área de
+superposición**, y donde hay varias observaciones elige la de menor ángulo
+cenital (o una de mayor ángulo con LST ≥ 2 K más alta) (D1 p. 16); el
+rango de ángulo cenital "en la superficie" es 0–65°, dividido en ocho
+subrangos 0–10, 10–20, 20–30, 30–39, 39–47, 47–54, 54–60 y 60–65° para los
+productos día/noche (D1 p. 29); altitud de Aqua 705 km hasta marzo de 2021
+(D14 alerta 200068, §7.1); radio de la esfera 6 371 007,181 m (§4). GDAL
+(terra) aplica por sí mismo el offset −65 y la escala 1 de `Day_view_angl`
+si se lee sin `raw = TRUE`; los lectores del paquete leen DN y aplican la
+tabla (§11.3), con el mismo resultado (contrastado con los granulos de
+Cauquenes de 2019-02-08 … 22).
+
+`DERIVADA` (geometría, sin fuente primaria que dé el número): con una
+órbita circular a h = 705 km sobre la esfera y muestreo angular constante
+(1 km en el nadir), el ángulo de barrido θ y el cenital en la superficie φ
+cumplen sen φ = (R + h)/R · sen θ; la distancia oblicua es ρ = R·sen(φ −
+θ)/sen θ; la huella mide ρ/h km a lo largo de la traza y ρ/(h·cos φ) km a
+lo largo del barrido. Comprobación de consistencia con D1: 677 píxeles a
+cada lado dan θ = 55,0° y φ = 65,5° (D1: 65°).
+
+| φ (°) | 0 | 15 | 30 | 40 | 45 | 50 | 55 | 62 | 65 |
+|---|---|---|---|---|---|---|---|---|---|
+| Traza (km) | 1,00 | 1,03 | 1,14 | 1,26 | 1,35 | 1,46 | 1,59 | 1,85 | 1,98 |
+| Barrido (km) | 1,00 | 1,07 | 1,31 | 1,65 | 1,91 | 2,27 | 2,78 | 3,93 | 4,69 |
+| Área / área en el nadir | 1,00 | 1,10 | 1,49 | **2,08** | 2,58 | 3,31 | 4,43 | 7,26 | 9,30 |
+
+Como cada celda de 1 km es el promedio ponderado por área de las huellas
+que la cubren (D1 p. 16), una celda observada lejos del nadir lleva la LST
+de un área mayor y mezclada, y las celdas vecinas comparten las mismas
+huellas: bordes en bloques alineados con la traza. Hallazgo en la escena
+`cauquenes_modis` (MOD11A1 2019-02-15, toda la provincia a 61–62°):
+diferencias de LST entre celdas vecinas de 1,24 K donde cambia el ángulo
+frente a 0,32 K en el resto; paso a las ~9:20 h solares; anclas con píxeles
+mezclados.
+
+- **Umbral de los presets: 40°** (`view_angle_max`, opción de
+  `modis_surface_options()` **sin defecto**; `CANDIDATA`): el ángulo al que
+  el área de la huella llega al **doble** de la del nadir (1,26 × 1,65 km):
+  por encima, cada celda de 1 km representa más de dos celdas de
+  superficie. Ninguna fuente consultada da un umbral; el criterio (área
+  doble) es una elección. Sensibilidad: 35° → 1,74 veces; 45° → 2,58 veces.
+- **Flag** `EF_SURF_VIEW_ANGLE_HIGH` (clase I con umbral opción, `warning`,
+  bit 16, en `flags_lst`; `flags.md` §4.2): donde la LST es válida y
+  |ángulo| > umbral; la LST se conserva; las anclas de los presets lo
+  excluyen (`anchors$qa_exclude_codes`).
+- **Elección Terra/Aqua** (`modis_fetch(lst_product = "auto_view_angle",
+  min_lst_coverage)`): se descargan MOD11A1 y MYD11A1 del día y la tesela y,
+  sobre las celdas del AOI, se calcula la fracción de LST válida y la
+  mediana de |ángulo| (`modis_lst_view_stats()`); se elige el de **menor
+  mediana** entre los que tienen al menos `min_lst_coverage` de LST válida
+  (**0,8** en los presets, `CANDIDATA`: cubre los días despejados de
+  Cauquenes, 93–99 %, y deja fuera días parcialmente nublados como Terra
+  2019-02-13, 70 %); si ninguno llega, el de mayor cobertura con un aviso
+  (`earthflux_lst_choice_warning`). Ambos candidatos y la elección quedan en
+  la procedencia (`lst_choice`). El NDVI sigue siendo MOD13A2 (Terra) con
+  Aqua: MYD13A2 no está implementado (MP-05) y MOD13A2 es un compuesto de
+  16 días que no depende de la hora de paso.
+
+Evidencia (Cauquenes, máscara de la provincia, 3779 celdas; % de LST válida
+y mediana de |ángulo|):
+
+| Fecha | Terra (MOD11A1) | Aqua (MYD11A1) | Elección (≥ 80 %) |
+|---|---|---|---|
+| 2019-02-09 | 98,3 %, 20° | 98,2 %, 22° | Terra |
+| 2019-02-11 | 93,8 %, 39° | 98,1 %, 1° | Aqua |
+| 2019-02-14 | 98,1 %, 15° | 98,5 %, 47° | **Terra** |
+| 2019-02-15 | 96,7 %, 62° | 93,3 %, 42° | **Aqua** (sobre 40°: aviso) |
+| 2019-02-18 | 81,4 %, 30° | 94,8 %, 11° | Aqua |
 
 ### 5.2 MOD21A1D (Terra) / MYD21A1D (Aqua) — LST y emisividad, TES
 
@@ -1385,7 +1476,7 @@ resultado con distinto tamaño de bloque y en secuencial vs paralelo
 | ID | Decisión | Opciones | Recomendación provisional |
 |---|---|---|---|
 | MP-01 | Producto LST | MOD11A1/MYD11A1 vs MOD21A1D/MYD21A1D | MOD11A1 por defecto (view time documentado); MOD21A1D como alternativa cuando se resuelva §6.4 |
-| MP-02 | Plataforma | Terra, Aqua o ambas (dos escenas por día) | Configurable; registrar plataforma; considerar deriva (§7) |
+| MP-02 | Plataforma | Terra, Aqua o ambas (dos escenas por día) | Configurable; registrar plataforma; considerar deriva (§7). *2026-11-11 (autor, M5-27):* los presets eligen por escena la de menor mediana de ángulo de visión sobre el AOI con LST válida ≥ 80 % (`lst_product = "auto_view_angle"`, `CANDIDATA`; §5.1 e) |
 | MP-03 | Albedo | A1–A6 (§8.1) | A1 si se resuelve la circularidad con Rs↓; si no, A2/A3 explícitas |
 | MP-04 | Emisividad de banda ancha | E1–E4 (§8.2) | Vinculada a RC-14; preferir E1/E2 por coherencia con LST, con referencia primaria verificada. Sigue abierta: E3 implementada; para E1 las bandas 31/32 ya viajan en el estado y lo que falta está en la lista de §8.2 (M4-30) |
 | MP-05 | Fuente de NDVI | MOD13A2, MOD13Q1 agregado, MOD09GA/GQ diario | MOD13A2 + desfase por píxel (T2) |

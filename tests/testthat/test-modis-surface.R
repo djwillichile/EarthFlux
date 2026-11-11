@@ -69,7 +69,7 @@ test_that("modis_surface_options() has no defaults for scientific choices", {
                composite_method = c(albedo = "same_day", ndvi = "period",
                                     lai = "period"),
                resampling_method = "median", min_valid_fraction = 1,
-               qa_policy = "flag")
+               view_angle_max = 40, qa_policy = "flag")
   expect_s3_class(do.call(modis_surface_options, args),
                   "earthflux_modis_surface_options")
   for (nm in names(args)) {
@@ -155,8 +155,8 @@ test_that("the surface state holds the contract on the working grid", {
   st <- modis_surface_state(files, aoi = NULL, options = ss_options())
   expect_s3_class(st, c("earthflux_surface_state", "list"))
   expect_named(st, c("lst", "albedo", "ndvi", "lai", "emissivity",
-                     "band_emissivity", "overpass_time", "lonlat", "qa",
-                     "units", "flags", "provenance"))
+                     "band_emissivity", "view_angle", "overpass_time",
+                     "lonlat", "qa", "units", "flags", "provenance"))
   tmpl <- ss_grid(3, 4, modis_sinusoidal_grid()$cell_1km)
   for (v in c("lst", "albedo", "ndvi", "lai", "emissivity")) {
     expect_s4_class(st[[v]], "SpatRaster")
@@ -226,6 +226,55 @@ test_that("the overpass flag is raised only where the LST is valid", {
   expect_false(is.na(terra::values(st$lst, mat = FALSE)[5]))
 })
 
+test_that("the view angle flag is raised above the threshold where the LST is valid", {
+  dir <- ss_dir()
+  st <- modis_surface_state(ss_scene(dir), aoi = NULL,
+                            options = ss_options())
+  val <- function(x) terra::values(x, mat = FALSE)
+  # absolute view zenith angle [degrees] = |DN - 65|; cell 2 is fill
+  expect_identical(names(st$view_angle), "view_angle")
+  expect_identical(st$units[["view_angle"]], "degree")
+  expect_equal(val(st$view_angle),
+               c(10, NA, 10, 10, 10, 50, 10, 10, 10, 10, 10, 40))
+  word <- terra::values(st$qa$flag_word, mat = TRUE)
+  reg <- ef_flag_registry()
+  b <- reg$bit[reg$code == "EF_SURF_VIEW_ANGLE_HIGH"]
+  expect_identical(b, 16L)
+  has <- bitwAnd(as.integer(word[, "flags_lst"]), bitwShiftL(1L, b)) != 0L
+  # positive: cell 6 (50 degrees, LST valid); negative: cell 12 (40 degrees,
+  # at the threshold), cell 2 (fill) and the cells at 10 degrees
+  expect_identical(which(has), 6L)
+  rec <- Filter(function(f) f$code == "EF_SURF_VIEW_ANGLE_HIGH", st$flags)
+  expect_length(rec, 1L)
+  expect_identical(rec[[1]]$index, 6L)
+  expect_identical(rec[[1]]$target, "lst")
+  expect_identical(rec[[1]]$severity, "warning")
+  expect_false(is.na(val(st$lst)[6])) # the LST is kept
+  expect_true("EF_SURF_VIEW_ANGLE_HIGH" %in%
+                st$provenance$flags_evaluated_by_target$lst)
+  # the fill of the view angle has its own word
+  fill <- reg$bit[reg$code == "EF_SURF_FILL"]
+  expect_identical(which(bitwAnd(as.integer(word[, "flags_view_angle"]),
+                                 bitwShiftL(1L, fill)) != 0L), 2L)
+  expect_identical(st$provenance$methods$view_angle_max, 40)
+  # a lower threshold flags cell 12 too; a threshold of 65 flags nothing
+  st35 <- modis_surface_state(ss_scene(dir), aoi = NULL,
+                              options = ss_options(view_angle_max = 35))
+  w35 <- terra::values(st35$qa$flag_word[["flags_lst"]], mat = FALSE)
+  expect_identical(which(bitwAnd(as.integer(w35), bitwShiftL(1L, b)) != 0L),
+                   c(6L, 12L))
+  st65 <- modis_surface_state(ss_scene(dir), aoi = NULL,
+                              options = ss_options(view_angle_max = 65))
+  expect_false(any(vapply(st65$flags, `[[`, "", "code") ==
+                     "EF_SURF_VIEW_ANGLE_HIGH"))
+  # the threshold is explicit, in (0, 65] degrees
+  expect_error(ss_options(view_angle_max = 0), class = "earthflux_input_error")
+  expect_error(ss_options(view_angle_max = 70),
+               class = "earthflux_input_error")
+  expect_error(ss_options(view_angle_max = NA_real_),
+               class = "earthflux_input_error")
+})
+
 test_that("albedo above 1 is kept with the critical flag and excluded", {
   dir <- ss_dir()
   st <- modis_surface_state(ss_scene(dir), aoi = NULL,
@@ -271,7 +320,7 @@ test_that("flags of the inputs reach the layers of the state", {
   expect_identical(at("EF_INPUT_NA", "emissivity"), 10L)
   ev <- st$provenance$flags_evaluated_by_target
   expect_named(ev, c("lst", "overpass_time", "albedo", "ndvi", "lai",
-                     "emissivity", "emis_31", "emis_32"))
+                     "emissivity", "view_angle", "emis_31", "emis_32"))
   expect_true("EF_SURF_ALBEDO_GT1" %in% ev$albedo)
   expect_true("EF_SURF_OVERPASS_MISSING" %in% ev$overpass_time)
   expect_identical(names(st$qa$flag_word), paste0("flags_", names(ev)))

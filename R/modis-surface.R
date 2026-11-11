@@ -6,7 +6,9 @@
 #   (numeric `doy` and `utc_hour` plus the POSIXct instant), `qa` (flag word
 #   per layer and flag records) and the provenance; plus the band 31/32
 #   emissivities of MOD11A1/MYD11A1 (`band_emissivity`), carried for the
-#   split-window broadband emissivity (E1), which is not implemented. Together with
+#   split-window broadband emissivity (E1), which is not implemented, and
+#   the absolute view zenith angle of the LST observation (`view_angle`,
+#   decision M5-26). Together with
 #   R/io-modis.R, R/modis-qa.R and R/prep-modis.R, the only place that knows
 #   MODIS conventions (dev/specs/modis-products.md section 1; ARCHITECTURE
 #   principle 2): everything below is built from the product table, the QA
@@ -38,14 +40,17 @@
 #
 # Flags (dev/specs/flags.md 4.2, 6.3): one integer flag word per output
 #   layer (`flags_lst`, `flags_overpass_time`, `flags_albedo`, `flags_ndvi`,
-#   `flags_lai`, `flags_emissivity` and, with the band emissivities,
-#   `flags_emis_31`, `flags_emis_32`) with the bits of the SURF stage, and
+#   `flags_lai`, `flags_emissivity`, `flags_view_angle` and, with the band
+#   emissivities, `flags_emis_31`, `flags_emis_32`) with the bits of the
+#   SURF stage, and
 #   one `earthflux_flag` record per code flagged in a layer, with the field
 #   `target` naming the layer. Raised here: EF_SURF_OVERPASS_MISSING (view
-#   time missing where the LST is valid), EF_SURF_ALBEDO_GT1 (broadband
-#   albedo above 1, class III, critical) and EF_SURF_LAI_ASSIGNED in the
-#   emissivity computed from an assigned LAI; the other codes come from the
-#   converters of R/modis-qa.R.
+#   time missing where the LST is valid), EF_SURF_VIEW_ANGLE_HIGH in
+#   `flags_lst` (absolute view zenith angle above the option
+#   `view_angle_max`, where the LST is valid; M5-26), EF_SURF_ALBEDO_GT1
+#   (broadband albedo above 1, class III, critical) and EF_SURF_LAI_ASSIGNED
+#   in the emissivity computed from an assigned LAI; the other codes come
+#   from the converters of R/modis-qa.R.
 
 # Product roles -----------------------------------------------------------------
 
@@ -122,7 +127,8 @@ modis_ndvi_sources <- function() {
 modis_surface_layers <- function(role, options) {
   switch(role,
     lst = list(product = options$lst_product,
-               required = c("LST_Day_1km", "QC_Day", "Day_view_time"),
+               required = c("LST_Day_1km", "QC_Day", "Day_view_time",
+                            "Day_view_angl"),
                optional = modis_band_emissivity_layers(options$lst_product)),
     albedo = list(
       product = "MCD43A3",
@@ -376,6 +382,14 @@ modis_read_source_layers <- function(src, layers, aoi, call) {
 #'   `"median"`; one value for both, or named `c(albedo = , lai = )`.
 #' @param min_valid_fraction Numeric in (0, 1\]: minimum fraction of valid
 #'   sub-cells (threshold `TODO`, no default).
+#' @param view_angle_max Numeric in (0, 65\] \[degrees\], no default: the
+#'   absolute view zenith angle of the LST observation (`Day_view_angl`,
+#'   0-65 degrees, dev/specs/modis-products.md 5.1 b) above which the LST
+#'   cell is flagged with `EF_SURF_VIEW_ANGLE_HIGH` (decision M5-26). The
+#'   value is a choice of the caller, `CANDIDATA` in the presets (40
+#'   degrees: the footprint area of an off-nadir observation reaches twice
+#'   its nadir area, a geometric argument without a primary source; see
+#'   dev/specs/modis-products.md 5.1 e).
 #' @param qa_policy,mask_codes QA policy (`"flag"` or `"mask"`) and, with
 #'   `"mask"`, the codes to mask (MP-09; see `modis_qa_flags()`).
 #' @param lai_nonveg Explicit LAI \[m2 m-2\] of the non-vegetated MCD15A2H
@@ -395,7 +409,7 @@ modis_surface_options <- function(lst_product, albedo_method,
                                   diffuse_fraction = NULL, emissivity_method,
                                   ndvi_source, composite_method,
                                   resampling_method, min_valid_fraction,
-                                  qa_policy, mask_codes = NULL,
+                                  view_angle_max, qa_policy, mask_codes = NULL,
                                   lai_nonveg = NULL) {
   call <- sys.call()
   m <- modis_lst_products()
@@ -507,6 +521,16 @@ modis_surface_options <- function(lst_product, albedo_method,
   }
   check_scalar(min_valid_fraction, "min_valid_fraction", lower = 0,
                upper = 1, lower_inclusive = FALSE, call = call)
+  if (missing(view_angle_max)) {
+    ef_abort(
+      paste0("`view_angle_max` must be supplied explicitly (degrees; no ",
+             "default, decision M5-26)."),
+      class = c("earthflux_missing_input", "earthflux_input_error"),
+      call = call
+    )
+  }
+  check_scalar(view_angle_max, "view_angle_max", lower = 0, upper = 65,
+               lower_inclusive = FALSE, call = call)
   mask_codes <- check_qa_policy(qa_policy, mask_codes, call = call)
   lai_nonveg <- check_lai_nonveg(lai_nonveg, call = call)
 
@@ -516,7 +540,8 @@ modis_surface_options <- function(lst_product, albedo_method,
          emissivity_method = emissivity_method, ndvi_source = ndvi_source,
          composite_method = composite_method,
          resampling_method = resampling_method,
-         min_valid_fraction = min_valid_fraction, qa_policy = qa_policy,
+         min_valid_fraction = min_valid_fraction,
+         view_angle_max = view_angle_max, qa_policy = qa_policy,
          mask_codes = mask_codes, lai_nonveg = lai_nonveg),
     class = "earthflux_modis_surface_options"
   )
@@ -629,7 +654,10 @@ surface_flags <- function(masks, target) {
 #'    not implemented, dev/specs/modis-products.md 8.2).
 #' 2. Overpass instant from `Day_view_time` and the longitude of the cell
 #'    centres (`modis_overpass_time()`, local mean solar time -> UTC, no
-#'    equation of time).
+#'    equation of time); absolute view zenith angle of the observation from
+#'    `Day_view_angl` (`modis_view_zenith()`; the sign, the side of the
+#'    swath, is dropped), and `EF_SURF_VIEW_ANGLE_HIGH` in `flags_lst`
+#'    where the LST is valid and the angle is above `view_angle_max`.
 #' 3. Broadband albedo: MCD43A3 black-/white-sky shortwave albedos with their
 #'    mandatory quality, aggregated to the working grid, then
 #'    `modis_albedo()` (aggregation before the combination, so that a
@@ -660,6 +688,8 @@ surface_flags <- function(masks, target) {
 #'     \[-\] of the MOD11A1/MYD11A1 band emissivities on the working grid,
 #'     or `NULL` when a converted LST source does not declare them (not an
 #'     input of the METRIC core: reserved for option E1);
+#'   * `view_angle`: single-layer `SpatRaster` \[degrees\] of the absolute
+#'     view zenith angle of the LST observation (`Day_view_angl`, 0-65);
 #'   * `overpass_time`: list with `doy` and `utc_hour` (single-layer
 #'     `SpatRaster`s; day of year of the UTC date and UTC hour, the time
 #'     inputs of the core) and `time` (`POSIXct`, UTC, terra cell order);
@@ -667,8 +697,9 @@ surface_flags <- function(masks, target) {
 #'     centres (WGS84);
 #'   * `qa`: list with `flag_word` (`SpatRaster`, one integer layer per
 #'     output: `flags_lst`, `flags_overpass_time`, `flags_albedo`,
-#'     `flags_ndvi`, `flags_lai`, `flags_emissivity` and, with
-#'     `band_emissivity`, `flags_emis_31`, `flags_emis_32`), `flag_bits` (bit,
+#'     `flags_ndvi`, `flags_lai`, `flags_emissivity`, `flags_view_angle`
+#'     and, with `band_emissivity`, `flags_emis_31`, `flags_emis_32`),
+#'     `flag_bits` (bit,
 #'     code, severity, description of the INPUT/SURF cell codes, a view of
 #'     the registry), `valid_fraction` (`SpatRaster` of the fraction of
 #'     valid sub-cells of each aggregated input), `composite` (per product:
@@ -688,13 +719,17 @@ surface_flags <- function(masks, target) {
 #' **Flags.** Besides the codes of the converters, the stage raises
 #' `EF_SURF_OVERPASS_MISSING` in `flags_overpass_time` where the LST is
 #' valid and the view time is missing (fill, out of range or missing DN),
-#' and `EF_SURF_ALBEDO_GT1` (class III, `critical`) in `flags_albedo` where
+#' `EF_SURF_VIEW_ANGLE_HIGH` (`warning`) in `flags_lst` where the LST is
+#' valid and its absolute view zenith angle is above `view_angle_max` (the
+#' value is kept; the strict QA of the anchors of `earthflux()` excludes the
+#' cell), and `EF_SURF_ALBEDO_GT1` (class III, `critical`) in `flags_albedo` where
 #' the broadband albedo is above 1 (value kept). The emissivity carries
 #' `EF_INPUT_NA` where the LAI is `NA` and `EF_SURF_LAI_ASSIGNED` where it
 #' is computed from an assigned LAI (option `lai_nonveg`; the LAI carries it
 #' where any of its sub-cells was assigned). The band emissivities carry
 #' the codes of their scaling (`EF_INPUT_NA`, `EF_SURF_FILL`,
-#' `EF_SURF_DN_OUT_OF_RANGE`). For aggregated layers, the masks of the
+#' `EF_SURF_DN_OUT_OF_RANGE`), and so does the view angle. For aggregated
+#' layers, the masks of the
 #' sub-cells are combined as described in `surface_to_grid()`.
 #'
 #' **Handing the state to the METRIC core** (M5): see
@@ -708,7 +743,9 @@ surface_flags <- function(masks, target) {
 #'
 #' @section Verification status:
 #' Assembly only; the status of each step is that of the function used:
-#' product facts `VERIFICADA` (product table), view time conversion and
+#' product facts `VERIFICADA` (product table, including `Day_view_angl`),
+#' threshold of the view angle flag `CANDIDATA` (an option), view time
+#' conversion and
 #' broadband albedo `CANDIDATA`, broadband emissivity E3 `VERIFICADA
 #' (SEBAL-Idaho 2002)` as a formulation (RC-14 open), the assigned LAI of the
 #' non-vegetated classes `CANDIDATA` (MP-06), NDVI and band emissivities
@@ -777,6 +814,15 @@ modis_surface_state <- function(files, aoi, options) {
   ov_masks <- modis_order_masks(ov_masks)
   names(ov$doy) <- "doy"
   names(ov$utc_hour) <- "utc_hour"
+
+  # View zenith angle of the observation (sign = side of the swath, dropped)
+  va <- modis_view_zenith(dn[["Day_view_angl"]], src$product,
+                          collection = src$collection)
+  rows <- c(rows, list(va$source))
+  view_angle <- abs(va$value)
+  lst$masks$EF_SURF_VIEW_ANGLE_HIGH <- lst_valid & !is.na(view_angle) &
+    view_angle > options$view_angle_max
+  lst$masks <- modis_order_masks(lst$masks)
 
   # Band emissivities (inputs of option E1, carried only) -----------------
   band_emis <- list()
@@ -893,7 +939,7 @@ modis_surface_state <- function(files, aoi, options) {
   # Flags -------------------------------------------------------------------
   masks <- c(list(lst = lst$masks, overpass_time = ov_masks,
                   albedo = alb_masks, ndvi = ndvi_g$masks, lai = lai_g$masks,
-                  emissivity = emis_masks),
+                  emissivity = emis_masks, view_angle = va$masks),
              lapply(band_emis, `[[`, "masks"))
   words <- terra::rast(lapply(names(masks), function(l) {
     modis_as_raster(modis_flag_word(masks[[l]]), template, paste0("flags_", l))
@@ -956,6 +1002,7 @@ modis_surface_state <- function(files, aoi, options) {
       lai = lai_r,
       emissivity = emissivity,
       band_emissivity = band_emis_r,
+      view_angle = modis_as_raster(view_angle, template, "view_angle"),
       overpass_time = list(doy = ov$doy, utc_hour = ov$utc_hour,
                            time = ov$time),
       lonlat = lonlat,
@@ -968,7 +1015,7 @@ modis_surface_state <- function(files, aoi, options) {
       ),
       units = c(lst = "K", albedo = "1", ndvi = "1", lai = "m2 m-2",
                 emissivity = "1", emis_31 = "1", emis_32 = "1",
-                doy = "1", utc_hour = "h",
+                view_angle = "degree", doy = "1", utc_hour = "h",
                 time = "POSIXct (UTC)", lon = "degree", lat = "degree"),
       flags = flags,
       provenance = provenance
@@ -992,7 +1039,8 @@ modis_surface_state <- function(files, aoi, options) {
 #'   `"converted_scaled"`), `production` (UTC, from the HDF4 name),
 #'   `doi`, `doi_status`), `products`, `collection`, `methods` (the options,
 #'   with the diffuse fraction recorded as a number or as `"SpatRaster"` and
-#'   `lai_nonveg` as the LAI assigned per class code or `NULL`),
+#'   `lai_nonveg` as the LAI assigned per class code or `NULL`, and
+#'   `view_angle_max`),
 #'   `status` (verification status of each step), `product_rows`, `versions`
 #'   (EarthFlux, terra, GDAL, PROJ, GEOS, R) and `spec`.
 #' @noRd
@@ -1042,6 +1090,8 @@ modis_provenance <- function(sources, options, rows) {
       band_emissivity = paste0("VERIFICADA (product layers); broadband ",
                                "conversion E1 not implemented (MP-04)"),
       ndvi = "VERIFICADA",
+      view_angle = paste0("VERIFICADA (product layer Day_view_angl); ",
+                          "threshold view_angle_max CANDIDATA (M5-26)"),
       composite_matching = "DECIDIDA (provisional), MP-07",
       resampling = "DECIDIDA (provisional), MP-08",
       real_granule_check = "TODO (A-M4-3)"

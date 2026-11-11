@@ -73,6 +73,12 @@ print.earthflux_result <- function(x, ...) {
                   paste0(sc$regionalization_method, ", ",
                          length(sc$stations_used), " stations"),
               sc$overpass_range[1L], sc$overpass_range[2L]))
+  va <- sc$view_angle
+  if (isTRUE(va$evaluated)) {
+    cat(sprintf(paste0("  LST: %s, median view angle %.0f degrees (%d cells ",
+                       "above %g)\n"), va$lst_product,
+                va$median_abs_view_angle, va$n_flagged, va$view_angle_max))
+  }
   cp <- x$anchors$calibration_points
   cat(sprintf("  anchors: cold Ts %.2f K, hot Ts %.2f K; dT = %.4g + %.4g Ts_datum\n",
               cp$lst[cp$type == "cold"], cp$lst[cp$type == "hot"],
