@@ -1,7 +1,8 @@
 # Evaluación de una regla de terreno para los presets (M5-25)
 
 Fecha: **2026-11-10** (límite propio de `idaho2002_flat`: 2026-11-11,
-§8). Autor: Guillermo Servando Fuentes-Jaque.
+§8; referencia de la regla cambiada al rango de elevación de las anclas:
+2026-11-11, §10). Autor: Guillermo Servando Fuentes-Jaque.
 Decisión: `DECISIONS.md` §1.5, M5-25. Especificación: `specs/presets.md`
 §4.1. Antecedente: `verification/anchors-m5-23.md` (§4.3 y §5, punto 3).
 
@@ -376,7 +377,8 @@ ETrF de `flat` sin regla según z − z_ref (n; mediana; > 1,05; < 0):
    la tolerancia de homogeneidad, también sin fuente; §5, punto 4, y
    §8.1). Hasta el 2026-11-10 se usaba 500 m en ambos presets; desde el
    2026-11-11 cada preset tiene el suyo (decisión del autor).
-3. **Referencia en C2.** Depende del punto frío de la selección
+3. **Referencia en C2** (resuelto por §10: la referencia es ahora el
+   rango de las anclas). Depende del punto frío de la selección
    preliminar: si los criterios eligieran un frío de montaña, la regla
    excluiría el valle. En estas escenas el frío está en 260–419 m; con el
    límite de 250 m de `flat` esto ya ocurre en Cauquenes (§8.3: 44 % de
@@ -390,3 +392,161 @@ ETrF de `flat` sin regla según z − z_ref (n; mediana; > 1,05; < 0):
    resuelve los criterios de anclas ni el clima no uniforme de la costa.
 5. Evaluación en dos escenas de un solo día despejado de verano, una con
    ERA5 recortado por el límite de la API; sin datos de referencia.
+6. **Rango de las anclas (§10).** El rango depende de los puntos de
+   calibración *preliminares*, que promedian sus píxeles: un caliente
+   preliminar con píxeles de montaña (Maule: 115–2450 m, media 303 m)
+   ensancha el rango aunque el caliente final quede en el valle. Si los
+   criterios eligieran un ancla preliminar en la montaña, el rango la
+   incluiría entera (el riesgo inverso del punto 3). La extensión por la
+   estación (C1) solo se probó con datos sintéticos: ninguna escena
+   evaluada tiene una estación.
+
+## 10. Referencia: rango de elevación de las anclas (2026-11-11)
+
+**Decisión del autor (opción 1), que reemplaza la referencia de §5,
+puntos 3 y 5:** la regla deja de medir la distancia a un punto (el datum)
+y mide la distancia al **rango de elevación de la calibración**. Se
+conservan las celdas con
+
+min(z_frío, z_caliente[, z_estación]) − límite ≤ z ≤ max(z_frío, z_caliente[, z_estación]) + límite
+
+y se excluyen las demás (`EF_H_TERRAIN_RULE_APPLIED`, sin ancla, `NA` en
+todas las capas). Los límites no cambian (500 m `elev`, 250 m `flat`,
+§8.1). Motivo: la recta dT(Ts_datum) se calibra *entre* las dos anclas;
+la regla debe excluir solo la extrapolación más allá del rango calibrado,
+no las celdas entre las anclas. Las secciones 1–9 quedan como historia:
+sus cifras son las de la referencia anterior (z_ref).
+
+### 10.1 Implementación
+
+- **Anclas de referencia:** puntos de calibración frío y caliente de una
+  **selección preliminar** con los mismos criterios y sin la regla (como
+  antes para z_ref en C2, ahora también con estación); la selección final
+  corre sobre las celdas conservadas.
+- **Estación (C1):** su elevación entra en el rango. Es el datum de
+  Ts_datum (M5-12) y el sitio del forzamiento (ETr y viento de la estación
+  sobre toda la grilla), es decir, la otra referencia de la calibración;
+  incluirla hace que el rango contenga siempre el datum, como en C2 (donde
+  el datum es el frío). Consecuencia: la regla nueva nunca excluye una
+  celda que la regla anterior conservaba con las mismas anclas
+  preliminares ([z_ref − límite, z_ref + límite] está dentro del rango).
+  Sin estación (ERA5 o varias estaciones) el forzamiento se regionaliza a
+  cada celda y no hay un sitio único.
+- **Anclas finales dentro del rango:** se cumple por construcción. Cada
+  punto de calibración agrega (media) píxeles conservados, y las celdas
+  conservadas forman un intervalo de elevación; `anchors_in_range` lo
+  registra. Las anclas finales pueden abarcar un rango **más estrecho**
+  que las preliminares (los percentiles de los criterios cambian al
+  quitar celdas). Se mantiene el **rango preliminar sin iterar**: una
+  nueva selección sobre un nuevo rango no tiene punto fijo garantizado, y
+  la diferencia en estas escenas es pequeña (§10.3). Se registran las
+  elevaciones finales.
+- **Opciones del preset:** `terrain_rule$method = "anchor_elevation_range"`
+  (antes `"datum_elevation_difference"`), `reference` describe el rango.
+  Versión de los presets: sigue siendo `"4"` (no publicada), con la nota
+  `changes` actualizada.
+- **Proveniencia** (`provenance$scene$terrain_rule`): `method`,
+  `reference_elevations` (`cold`, `hot` y, con estación, `station`),
+  `reference_source`, `max_elevation_difference`, `range` (`lower`,
+  `upper`: elevaciones conservadas), `anchor_elevations` (anclas finales)
+  y `anchors_in_range`; en `provenance$counts`, `terrain_rule_excluded`
+  separado en `terrain_rule_excluded_below` y
+  `terrain_rule_excluded_above`.
+
+### 10.2 Resultados: z_ref frente al rango de las anclas
+
+`workflow_metric()` sobre las mismas entradas preparadas de §3 y §8 (ERA5,
+sin estación); las corridas completas de `earthflux()` reproducen las
+celdas excluidas, las anclas, a y b. "Calculadas" = celdas con ETa₂₄ sin
+regla (Cauquenes 6598, Maule 24 830). Referencias preliminares: Cauquenes
+frío 418,7 m, caliente 145,2 m; Maule frío 259,7 m, caliente 303,0 m (sus
+píxeles van de 115 a 2450 m, §6). Columna "z_ref": la regla anterior
+(frío preliminar ± límite); "rango": la nueva.
+
+| Escena | Preset | Regla | Elevación conservada (m) | Excluidas (de las calculadas) | n con ETa | ETrF > 1,05 | ETrF < 0 | ETrF p1 / p50 / p99 | ETa₂₄ p50 |
+|---|---|---|---|---|---|---|---|---|---|
+| Cauquenes | `elev` | z_ref | −81 … 919 | 0 (0,0 %) | 6598 | 20,6 % | 1,9 % | −0,04 / 0,45 / 1,92 | 3,2 |
+| Cauquenes | `elev` | **rango** | −355 … 919 | 0 (0,0 %) | 6598 | 20,6 % | 1,9 % | −0,04 / 0,45 / 1,92 | 3,2 |
+| Cauquenes | `flat` | z_ref | 169 … 669 | 2933 (44,5 %): 2915 debajo (5–169 m), 18 encima (669–787 m) | 3665 | 29,0 % | 0,5 % | 0,03 / 0,62 / 1,77 | 4,2 |
+| Cauquenes | `flat` | **rango** | −105 … 669 | **18 (0,3 %)**: todas encima (669–787 m) | 6580 | 19,6 % | 1,1 % | −0,01 / 0,42 / 1,71 | 3,0 |
+| Maule | `elev` | z_ref | −240 … 760 | 10 151 (40,9 %): todas encima (760–4491 m) | 14 679 | 28,8 % | 0,9 % | 0,01 / 0,91 / 1,73 | 6,2 |
+| Maule | `elev` | **rango** | −240 … 803 | 9986 (40,2 %): todas encima (803–4491 m) | 14 844 | 29,8 % | 1,0 % | 0,00 / 0,92 / 1,74 | 6,3 |
+| Maule | `flat` | z_ref | 10 … 510 | 11 710 (47,2 %): 48 debajo (3–10 m), 11 662 encima (510–4491 m) | 13 120 | 31,2 % | 0,4 % | 0,05 / 0,94 / 1,69 | 6,4 |
+| Maule | `flat` | **rango** | 10 … 553 | 11 319 (45,6 %): 48 debajo (3–10 m), 11 271 encima (553–4491 m) | 13 511 | 30,7 % | 0,4 % | 0,05 / 0,93 / 1,67 | 6,4 |
+
+Celdas del AOI con elevación marcadas (corridas completas, regla nueva):
+Cauquenes 0 (`elev`) y 18 (`flat`) de 6614; Maule 10 295 (`elev`) y
+11 735 (`flat`) de 28 460 (con z_ref: 10 460 y 12 167).
+
+Anclas (candidatos tras la homogeneidad, elevación del punto de
+calibración con mín.–máx. de sus píxeles, Ts; ningún caso necesitó
+relajación):
+
+| Escena | Preset | Regla | Frío | Caliente | Datum final | a; b |
+|---|---|---|---|---|---|---|
+| Cauquenes | `elev` | z_ref y rango | 22, 419 m (303–471), 299,43 K | 447, 145 m (115–234), 307,14 K | 419 m | −206,2; 0,6929 |
+| Cauquenes | `flat` | z_ref | 1, 303 m (un píxel), 300,36 K | 95, 193 m (169–243), 306,87 K | 303 m | −190,6; 0,6390 |
+| Cauquenes | `flat` | **rango** | 23, 419 m (303–471), 299,43 K | 446, 145 m (115–234), 307,14 K | 419 m | −157,4; 0,5299 |
+| Maule | `elev` | z_ref | 118, 271 m (118–523), 299,41 K | 355, 150 m (109–243), 307,00 K | 271 m | −193,4; 0,6492 |
+| Maule | `elev` | **rango** | 106, 250 m (118–523), 299,52 K | 357, 150 m (109–243), 307,00 K | 250 m | −196,7; 0,6598 |
+| Maule | `flat` | z_ref | 288, 252 m (118–426), 299,56 K | 324, 150 m (109–243), 307,01 K | 252 m | −178,3; 0,5985 |
+| Maule | `flat` | **rango** | 246, 262 m (118–523), 299,51 K | 328, 150 m (109–243), 307,01 K | 262 m | −175,6; 0,5895 |
+
+Por banda de elevación (n; ETrF p5 / p50 / p95; > 1,05; < 0; ETa₂₄ p50,
+mm d⁻¹). Las bandas 1000–2000 m y > 2000 m del Maule quedan excluidas
+con ambas reglas y ambos presets.
+
+| Escena | Preset | Banda (m) | z_ref | **Rango** |
+|---|---|---|---|---|
+| Cauquenes | `elev` | 0–300 | 4865; 0,05 / 0,36 / 1,78; 15,1 %; 2,0 %; 2,6 | sin cambio |
+| Cauquenes | `elev` | 300–1000 | 1733; 0,15 / 0,84 / 1,59; 35,8 %; 1,6 %; 5,4 | sin cambio |
+| Cauquenes | `flat` | 0–300 | 1950; 0,07 / 0,41 / 1,65; 14,4 %; 1,0 %; 2,9 | 4865; 0,05 / 0,32 / 1,59; 13,2 %; 1,5 %; 2,3 |
+| Cauquenes | `flat` | 300–1000 | 1715; 0,31 / 0,99 / 1,63; 45,7 %; 0,0 %; 6,5 | 1715; 0,31 / 0,90 / 1,52; 37,8 %; 0,0 %; 5,8 |
+| Maule | `elev` | 0–300 | 9449; 0,18 / 0,93 / 1,54; 30,6 %; 0,8 %; 6,5 | 9449; 0,18 / 0,94 / 1,55; 31,7 %; 0,8 %; 6,5 |
+| Maule | `elev` | 300–1000 | 5230; 0,28 / 0,86 / 1,37; 25,6 %; 1,1 %; 5,8 | 5395; 0,25 / 0,87 / 1,37; 26,3 %; 1,4 %; 5,8 |
+| Maule | `flat` | 0–300 | 9401; 0,18 / 0,91 / 1,48; 27,7 %; 0,5 %; 6,3 | 9401; 0,18 / 0,90 / 1,48; 27,0 %; 0,5 %; 6,3 |
+| Maule | `flat` | 300–1000 | 3719; 0,55 / 1,00 / 1,44; 40,2 %; 0,0 %; 6,7 | 4110; 0,55 / 0,99 / 1,43; 39,3 %; 0,0 %; 6,6 |
+
+### 10.3 Lectura
+
+1. **Cauquenes `flat` recupera el valle.** El rango de las anclas
+   preliminares (145–419 m) contiene el llano: con 250 m solo quedan fuera
+   las 18 celdas sobre 669 m (cumbres de la Cordillera de la Costa). Las
+   anclas vuelven a las de la escena sin regla (frío de 5 píxeles en lugar
+   de uno, contraste 7,71 K) y las cifras de la escena son las de
+   "sin regla" salvo esas 18 celdas (ETrF > 1,05 19,8 → 19,6 %). El
+   problema de §8.3, puntos 2 y 3, y de §9, punto 3, desaparece.
+2. **Maule: casi igual que con z_ref.** El caliente preliminar está a
+   303 m (por encima del frío, 260 m), así que el rango sube el límite
+   superior 43 m (760 → 803 m con `elev`, 510 → 553 m con `flat`) y
+   conserva 165 (`elev`) y 391 (`flat`) celdas calculadas más, todas en
+   la banda 300–1000 m; las cifras de la escena cambian menos de un punto
+   (ETrF > 1,05: 28,8 → 29,8 % `elev`, 31,2 → 30,7 % `flat`). La montaña
+   (z ≥ 803 m) sigue excluida.
+3. **Rango preliminar y anclas finales.** En el Maule las anclas finales
+   (frío 250 o 262 m, caliente 150 m) abarcan menos que las preliminares
+   (260–303 m): el caliente preliminar promedia píxeles de 115 a 2450 m,
+   y al excluirse la montaña el caliente final baja a 150 m. Quedan
+   199 celdas (`elev`, z 750–803 m) y 362 (`flat`, z 513–553 m) a más del
+   límite del rango de las anclas *finales*, como mucho 53 m y 41 m más
+   allá. En Cauquenes, ninguna. Iterar no se justifica para esa
+   diferencia (§10.1).
+4. **`elev` en Cauquenes:** sin cambio (ninguna celda fuera con ninguna
+   regla).
+
+### 10.4 Pruebas
+
+`tests/testthat/test-earthflux.R`, con el terreno sintético de
+`helper-earthflux.R` (plano de 150 a 582 m; bloque de "montaña" desde la
+columna 90 y "valle" hasta la columna 12, lejos de las anclas, que están
+en las columnas 52–86): unidades de `workflow_terrain_rule()` (celda a
+700 m de ambas anclas conservada; bordes inclusivos; exclusión por debajo
+y por encima; extensión por la estación; límites de ambos presets;
+errores) y de `workflow_terrain_reference()` (frío y caliente; estación
+añadida); flujo completo con una estación (`elev`, montaña a 1200 m
+excluida e igualdad con la cadena paso a paso), sin estación (`flat`,
+valle y montaña excluidos, anclas finales dentro del rango), con una
+estación a 1000 m (`flat`: bloque a 725 m, a más de 250 m de la estación
+y de ambas anclas, conservado; el plano, que una regla centrada en la
+estación excluiría, conservado; valle excluido) y un bloque a 850 m que
+excluye `flat` y conserva `elev`.
