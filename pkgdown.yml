@@ -2,10 +2,11 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  articles/anchors-monin-obukhov: anchors-monin-obukhov.html
   articles/cauquenes-example: cauquenes-example.html
   articles/design: design.html
   earthflux-introduction: earthflux-introduction.html
-last_built: 2026-11-11T07:05Z
+last_built: 2026-11-11T07:17Z
 urls:
   reference: https://djwillichile.github.io/EarthFlux/reference
   article: https://djwillichile.github.io/EarthFlux/articles

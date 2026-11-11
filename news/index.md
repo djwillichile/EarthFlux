@@ -167,6 +167,16 @@
   are shown in geographic coordinates (EPSG:4326); the computations stay
   on the native MODIS grid.
 
+- New website article *Hot and cold anchors and the Monin–Obukhov
+  iteration*: why the sensible heat flux is calibrated with anchor
+  pixels, how dT = a + b Ts_datum is solved, and the stability iteration
+  of
+  [`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md)
+  written out step by step on the `cauquenes_modis` scene (with an
+  illustrative weather station and elevation), checked against the
+  function and with convergence, neutral versus stability corrected H
+  and per-cell iteration figures.
+
 ## EarthFlux 0.1.0
 
 First release of EarthFlux. It is **experimental and not for operational

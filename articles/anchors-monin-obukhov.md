@@ -1,0 +1,1201 @@
+# Hot and cold anchors and the Monin–Obukhov iteration
+
+The sensible heat flux $`H`$ is the hardest term of a METRIC energy
+balance. This article explains, step by step, how METRIC (Allen et al.,
+2007) estimates it: the internal calibration with a hot and a cold
+anchor pixel, and the Monin–Obukhov iteration that corrects the
+aerodynamic resistance for atmospheric stability. Every equation is run
+on the packaged MODIS scene of the Cauquenes province (15 February 2019,
+see the article [Example scene:
+Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md))
+with the exported functions of EarthFlux, and the iteration is written
+out by hand and checked against
+[`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md).
+
+Equation and page numbers refer to the SEBAL Idaho manual of the METRIC
+authors (Waters et al., 2002), against which the formulations of
+EarthFlux are verified.
+
+> **Experimental and illustrative.** EarthFlux is an experimental
+> package and its results are not validated. The scene carries no
+> weather data and no elevation model, so this article uses an
+> **illustrative** hourly weather station and an **illustrative uniform
+> elevation** (both made up for this article, though plausible for the
+> place and the date). The numbers below show how the method works; they
+> are not estimates of the fluxes of Cauquenes.
+
+Everything below runs offline from the installed package.
+
+## 1. Why H is hard
+
+At the time of the satellite overpass, the latent heat flux $`LE`$ is
+the residual of the surface energy balance (Waters et al., 2002, Eq. 1):
+
+``` math
+LE = R_n - G - H ,
+```
+
+with the net radiation $`R_n`$, the soil heat flux $`G`$ and the
+sensible heat flux $`H`$, all in W m⁻². $`R_n`$ and $`G`$ follow, with
+known uncertainty, from the surface state (albedo, surface temperature,
+emissivity, vegetation indices) and the solar geometry. $`H`$ is
+transported by turbulence and is written as a bulk transfer equation
+(Waters et al., 2002, p. 25, Eq. 25):
+
+``` math
+H = \frac{\rho_{air}\, c_p\, dT}{r_{ah}} ,
+```
+
+where $`\rho_{air}`$ is the air density (kg m⁻³), $`c_p = 1004`$ J kg⁻¹
+K⁻¹ the specific heat of air, $`r_{ah}`$ the aerodynamic resistance to
+heat transport (s m⁻¹) between two heights above the zero-plane
+displacement, $`z_1 = 0.1`$ m and $`z_2 = 2`$ m, and
+$`dT = T_{z_1} - T_{z_2}`$ the air temperature difference between those
+two heights (K).
+
+The obvious shortcut, $`dT \approx T_s - T_{air}`$ with the land surface
+temperature $`T_s`$ of the satellite and the air temperature of a
+weather station, does not work, for three reasons:
+
+- **Radiometric is not aerodynamic temperature.** The satellite sees a
+  radiometric temperature: a mixture of sunlit and shaded soil and
+  leaves, weighted by the view angle and the emissivity. The temperature
+  that drives the transfer of heat is an aerodynamic temperature at the
+  apparent source of heat, inside the canopy. The two can differ by
+  several kelvin, and the difference depends on the cover, which is
+  exactly what varies across a scene.
+- **Errors of $`T_s`$ are of the size of $`dT`$.** $`dT`$ is only a few
+  kelvin. An error of 1–2 K in $`T_s`$ (atmospheric correction,
+  emissivity, view angle) is an error of tens of percent in $`H`$.
+- **There is no air temperature per pixel.** Stations are few, and even
+  a dense network gives air temperature above a reference grass, not
+  above each field.
+
+How sensitive $`H`$ is to $`dT`$ can be read from the factor
+$`\rho_{air} c_p / r_{ah}`$ (W m⁻² K⁻¹): with an air density near 1.15
+kg m⁻³ and resistances of 10–50 s m⁻¹, every kelvin of $`dT`$ is worth
+tens of W m⁻² of $`H`$ (the value at the cold anchor of the scene is
+computed in section 2).
+
+## 2. Internal calibration with two anchors
+
+### The idea
+
+METRIC, after SEBAL (Bastiaanssen et al., 1998), never measures $`dT`$.
+It assumes that, within one scene, $`dT`$ is a linear function of the
+surface temperature (Waters et al., 2002, p. 30, Eq. 32):
+
+``` math
+dT = a + b\, T_{s,datum} ,
+```
+
+and finds $`a`$ and $`b`$ from two pixels whose $`H`$ is known from
+their energy balance: the **anchor pixels**. Hot surfaces heat the air
+above them more, so $`b > 0`$. $`T_{s,datum}`$ is the surface
+temperature referred to a common elevation (the datum),
+$`T_{s,datum} = T_s + \Gamma\,(z -
+z_{datum})`$ with a lapse rate $`\Gamma`$ (Waters et al., 2002, appendix
+12, Eq. 12-7); in this article the elevation is uniform and
+$`\Gamma = 0`$, so $`T_{s,datum} = T_s`$. (The manual writes
+$`dT = b + a\,T_s`$, with $`a`$ the slope; EarthFlux names the intercept
+$`a`$ and the slope $`b`$.)
+
+Because $`a`$ and $`b`$ are fitted inside the image, systematic errors
+of $`T_s`$ (a bias of the atmospheric correction, for example) are
+largely absorbed: $`dT`$ depends on differences of $`T_s`$, not on its
+absolute value. This is what “internalized calibration” means in the
+name of METRIC.
+
+The two anchors (Waters et al., 2002, pp. 30–31, steps 5a and 5b) are:
+
+- the **cold anchor**: well-watered agricultural vegetation with full
+  ground cover, evaporating at 1.05 times the rate of the alfalfa
+  reference ($`ET_rF = 1.05`$), so that
+  ``` math
+  LE_{cold} = 1.05\, \lambda\, ET_{r,inst}, \qquad
+  H_{cold} = R_{n,cold} - G_{cold} - LE_{cold} ,
+  ```
+  with the latent heat of vaporization $`\lambda`$ and the instantaneous
+  alfalfa reference evapotranspiration $`ET_{r,inst}`$ expressed as a
+  mass flux;
+- the **hot anchor**: a dry, bare agricultural field where evaporation
+  is zero ($`ET_rF = 0`$), so that all the available energy goes into
+  $`H`$:
+  ``` math
+  H_{hot} = R_{n,hot} - G_{hot} .
+  ```
+
+For each anchor, the bulk transfer equation is inverted to give the
+$`dT`$ that produces its $`H`$ (Waters et al., 2002, p. 30, Eq. 33):
+
+``` math
+dT_i = \frac{H_i\, r_{ah,i}}{\rho_{air,i}\, c_p}, \qquad i \in \{hot,\ cold\},
+```
+
+and the two points $`(T_{s,datum,i},\ dT_i)`$ fix the line:
+
+``` math
+b = \frac{dT_{hot} - dT_{cold}}{T_{s,datum,hot} - T_{s,datum,cold}},
+\qquad a = dT_{cold} - b\, T_{s,datum,cold} .
+```
+
+The catch is that $`r_{ah,i}`$ depends on the stability of the air,
+which depends on $`H`$ itself. That is the subject of section 3. First,
+the inputs.
+
+### The scene and an illustrative weather station
+
+The surface state is the packaged scene, on its native 1 km sinusoidal
+grid. The numeric core of EarthFlux works on plain matrices, so the
+layers are read as matrices (one row of the grid per row of the matrix):
+
+``` r
+
+library(EarthFlux)
+
+r <- terra::unwrap(cauquenes_modis)
+as_mat <- function(name) terra::as.matrix(r[[name]], wide = TRUE)
+
+lst <- as_mat("lst")               # K
+albedo <- as_mat("albedo")         # -
+ndvi <- as_mat("ndvi")             # -
+lai <- as_mat("lai")               # m2 m-2
+emissivity <- as_mat("emissivity") # -
+utc_hour <- as_mat("utc_hour")     # h, overpass time of each cell
+doy <- as_mat("doy")
+inside <- !is.na(as_mat("flags_lst")) # cells of the province
+
+# Longitude and latitude of the cell centres (degrees)
+lonlat <- terra::project(terra::xyFromCell(r, seq_len(terra::ncell(r))),
+                         from = terra::crs(r), to = "EPSG:4326")
+lon <- matrix(lonlat[, 1], terra::nrow(r), byrow = TRUE)
+lat <- matrix(lonlat[, 2], terra::nrow(r), byrow = TRUE)
+summary(as.vector(utc_hour))
+#>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.     NAs 
+#>   14.11   14.12   14.13   14.18   14.14   15.84    5936
+```
+
+The overpass is at about 14:08 UTC (09:20 local mean solar time), with a
+few cells observed later, up to 15:50 UTC.
+
+The scene has no elevation model. **For this article only**, the
+elevation is set to a uniform 150 m, roughly the elevation of the town
+of Cauquenes. This is the situation of the preset `"idaho2002_flat"`: no
+lapse rate ($`\Gamma = 0`$) and one shortwave transmissivity for the
+scene.
+
+``` r
+
+z_scene <- 150 # m, illustrative, uniform
+elevation <- ifelse(inside, z_scene, NA)
+pressure <- ef_air_pressure(elevation) # kPa
+```
+
+The weather is an **illustrative** hourly weather station (values made
+up for this article, consistent with a clear summer morning in the
+interior of the province; they are not observations): air temperature,
+dew point, wind speed at 2 m over grass and solar radiation for the four
+hours around the overpass. From them, the hourly alfalfa reference
+evapotranspiration $`ET_r`$ of the ASCE standardized equation
+(ASCE-EWRI, 2005):
+
+``` r
+
+station <- list(lon = -72.35, lat = -35.97, elevation = z_scene)
+wx <- data.frame(
+  utc_start = 13:16,                       # hour 13:00-14:00 UTC, ...
+  air_temperature = c(19.0, 21.5, 24.0, 26.0), # degrees C
+  dewpoint = c(10.0, 10.0, 10.2, 10.2),        # degrees C
+  wind_2m = c(1.8, 2.2, 2.6, 3.0),             # m s-1
+  solar_radiation = c(2.10, 2.62, 2.98, 3.18)  # MJ m-2 h-1
+)
+wx$utc_mid <- wx$utc_start + 0.5
+
+deg <- pi / 180
+ra <- ef_ra_period(lat = station$lat * deg, lon = station$lon * deg,
+                   doy = 46, utc_mid = wx$utc_mid, period_hours = 1,
+                   standard = "asce")
+ea <- ef_ea_dewpoint(wx$dewpoint)
+rn_ref <- ef_ref_net_radiation(
+  solar_radiation = wx$solar_radiation,
+  clear_sky_radiation = ef_rso(ra, station$elevation),
+  vapour_pressure = ea, air_temperature = wx$air_temperature,
+  timestep = "hourly", standard = "asce"
+)$rn
+daytime <- rn_ref > 0
+g_ref <- ef_ref_soil_heat_flux(rn_ref, reference = "alfalfa",
+                               timestep = "hourly", standard = "asce",
+                               daytime = daytime)
+wx$etr <- ef_ref_et(
+  net_radiation = rn_ref, soil_heat_flux = g_ref,
+  air_temperature = wx$air_temperature, wind_speed_2m = wx$wind_2m,
+  vapour_pressure_deficit = ef_es(wx$air_temperature) - ea,
+  slope = ef_es_slope(wx$air_temperature),
+  psychrometric = ef_psychrometric(ef_air_pressure(station$elevation)),
+  reference = "alfalfa", timestep = "hourly", standard = "asce",
+  daytime = daytime
+)$et_ref
+wx
+#>   utc_start air_temperature dewpoint wind_2m solar_radiation utc_mid       etr
+#> 1        13            19.0     10.0     1.8            2.10    13.5 0.4279352
+#> 2        14            21.5     10.0     2.2            2.62    14.5 0.5854770
+#> 3        15            24.0     10.2     2.6            2.98    15.5 0.7255116
+#> 4        16            26.0     10.2     3.0            3.18    16.5 0.8344484
+```
+
+As in the presets of
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md),
+each cell takes the values at its own overpass time, by linear
+interpolation between the mid-points of the hours:
+
+``` r
+
+at_overpass <- function(v) {
+  out <- utc_hour
+  out[] <- stats::approx(wx$utc_mid, v, xout = as.vector(utc_hour))$y
+  out
+}
+etr_inst <- at_overpass(wx$etr)    # mm h-1, alfalfa reference
+wind_2m <- at_overpass(wx$wind_2m) # m s-1
+```
+
+### Radiation, soil heat flux and roughness
+
+The options are those of the preset `"idaho2002_flat"` (see
+`ef_preset("idaho2002_flat")`), except that the weather comes from the
+illustrative station above instead of a regionalized forcing.
+
+``` r
+
+preset <- ef_preset("idaho2002_flat")
+```
+
+Roughness of momentum from LAI, $`z_{om} = 0.018\, LAI`$ (Waters et al.,
+2002, p. 27, Eq. 31a), with the minimum of 0.005 m of the preset, and
+the wind speed at the blending height $`z_b = 200`$ m, extrapolated from
+the station with a logarithmic profile over its grass (Waters et al.,
+2002, p. 26, Eqs. 27 and 29):
+
+``` r
+
+zom <- pmax(ef_zom(lai = lai, method = "lai")$zom, preset$roughness$zom_min)
+w <- preset$wind
+u_blend <- ef_blending_wind(wind_2m, height = w$height,
+                            zom_station = w$zom_station,
+                            d_station = w$d_station,
+                            blending_height = w$blending_height)
+range(u_blend, na.rm = TRUE) # m s-1 at 200 m
+#> [1] 3.951541 5.288491
+```
+
+The anchors are selected before the net radiation, because the incoming
+longwave radiation of the presets uses the surface temperature of the
+cold anchor (Waters et al., 2002, p. 23, Eq. 23). The candidates must
+pass the strict quality control of the presets: no `warning` or
+`critical` flag (bits 6–14) and no assigned LAI (bit 15,
+`EF_SURF_LAI_ASSIGNED`) in the flag words of the surface variables,
+every 500 m sub-cell of the aggregated inputs valid, and every input
+defined.
+
+``` r
+
+geo <- ef_solar_geometry(doy = doy, utc_hour = utc_hour, lat = lat * deg,
+                         lon = lon * deg, slope = 0, aspect = 0)
+
+qa <- inside & !is.na(lst) & !is.na(albedo) & !is.na(ndvi) & !is.na(lai) &
+  !is.na(emissivity) & !is.na(etr_inst) & !is.na(geo$cos_zenith)
+excluded_bits <- sum(2^(6:15))
+for (l in c("lst", "albedo", "ndvi", "lai", "emissivity")) {
+  word <- as_mat(paste0("flags_", l))
+  qa <- qa & !is.na(word) & bitwAnd(word, excluded_bits) == 0
+}
+qa <- qa & as_mat("valid_fraction_albedo") == 1 &
+  as_mat("valid_fraction_lai") == 1
+qa[is.na(qa)] <- FALSE
+c(province = sum(inside), usable_for_anchors = sum(qa))
+#>           province usable_for_anchors 
+#>               3779               2703
+```
+
+The selection criteria of the preset (`CANDIDATA`, decision M5-23)
+translate the physical intent of the manual (Waters et al., 2002,
+pp. 23, 30–31 and appendix 7) into thresholds for 1 km MODIS cells: cold
+candidates among the 10 % highest NDVI with a white-sky albedo between
+0.14 and 0.26 (which leaves out dark forest canopies), hot candidates
+among the 10 % lowest NDVI with an albedo between 0.18 and 0.35 (dry
+fields, not dark rock); a homogeneous neighbourhood (standard deviation
+of $`T_s`$ of at most 1.5 K in 3 × 3 cells); and, among them, the
+coldest 20 % and the hottest 20 %. The anchor value of each class is the
+mean of its pixels.
+
+``` r
+
+ext <- terra::ext(r)
+anchors <- ef_select_anchors(
+  lst, ndvi, albedo, lai = lai, qa = qa, elevation = elevation,
+  utc_hour = utc_hour, criteria = preset$anchors$criteria,
+  relax = preset$anchors$relax, aggregate = preset$anchors$aggregate,
+  cell_size = terra::res(r)[1],
+  origin = c(terra::xmin(ext), terra::ymax(ext)),
+  crs = terra::crs(r, proj = TRUE)
+)
+funnel <- anchors$funnel
+funnel[funnel$filter != "total", c("type", "filter", "n")]
+#>    type                      filter    n
+#> 2  cold                      usable 2703
+#> 3  cold                       valid 2703
+#> 4  cold           percentile_domain 2703
+#> 5  cold                ndvi >= p0.9  271
+#> 6  cold albedo between [0.14, 0.26]    7
+#> 7  cold                 homogeneity    5
+#> 8  cold                    selected    1
+#> 10  hot                      usable 2703
+#> 11  hot                       valid 2703
+#> 12  hot           percentile_domain 2703
+#> 13  hot                ndvi <= p0.1  271
+#> 14  hot                    ndvi > 0  271
+#> 15  hot albedo between [0.18, 0.35]  246
+#> 16  hot                 homogeneity  208
+#> 17  hot                    selected   42
+```
+
+The funnel shows how few cells of a 1 km scene look like a well-watered
+full-cover field: 271 cells pass the NDVI percentile, but only 7 of them
+have a crop-like albedo, and 1 pixel is finally the cold anchor (flag
+`EF_ANCHOR_SINGLE_PIXEL`).
+
+Now the net radiation and the soil heat flux (shortwave transmissivity
+from elevation, Waters et al., 2002, p. 18, Eq. 11; incoming longwave
+with the cold anchor temperature, Eqs. 21–23; $`G`$ of Bastiaanssen, Eq.
+24):
+
+``` r
+
+t_cold <- anchors$calibration_points$lst[
+  anchors$calibration_points$type == "cold"]
+tau <- ef_tau_sw(elevation = z_scene, method = "elevation")
+rs <- ef_rs_in(cos_zenith = geo$cos_zenith,
+               cos_incidence = geo$cos_incidence,
+               inv_distance = geo$inv_distance, tau_beam = tau$total,
+               tau_diffuse = 0, slope = 0, method = "modelled")
+rl_in <- ef_rl_in(temperature = t_cold,
+                  atm_emissivity = ef_atm_emissivity(tau$total))
+rl_out <- ef_rl_out(lst, emissivity)
+rn <- ef_net_radiation(rs_in = rs$total, albedo = albedo, rl_in = rl_in,
+                       rl_out = rl_out, emissivity = emissivity)
+g <- ef_g(rn, lst = lst, albedo = albedo, ndvi = ndvi,
+          method = preset$soil_heat$method)$g
+```
+
+### The boundary conditions
+
+[`ef_anchor_conditions()`](https://djwillichile.github.io/EarthFlux/reference/ef_anchor_conditions.md)
+adds to each calibration point its $`R_n`$, $`G`$, the target $`LE`$ and
+$`H`$, and the inputs of the aerodynamic calculation ($`z_{om}`$, wind
+at 200 m, pressure):
+
+``` r
+
+a_opt <- preset$anchors
+lambda <- ef_lambda(method = preset$lambda$method)
+anchors <- ef_anchor_conditions(
+  anchors, rn = rn, g = g, etr_inst = etr_inst, lambda = lambda,
+  etrf_cold = a_opt$etrf_cold, etrf_hot = a_opt$etrf_hot,
+  reference = "alfalfa", source = a_opt$conditions_source,
+  status = a_opt$conditions_status, etr_source = "station",
+  zom = zom, u_blend = u_blend, pressure = pressure
+)
+cp_tab <- anchors$calibration_points
+cp_tab[, c("type", "n_pixels", "lst", "ndvi", "albedo", "rn", "g",
+           "le_target", "h_target", "zom", "u_blend")]
+#>   type n_pixels      lst      ndvi    albedo       rn        g le_target
+#> 1 cold        1 300.4000 0.8174000 0.1407500 523.8690 38.87824  376.6475
+#> 2  hot       42 307.2995 0.2916667 0.1995774 447.0312 79.93581    0.0000
+#>   h_target         zom  u_blend
+#> 1 108.3433 0.111600000 3.966880
+#> 2 367.0954 0.009021429 3.990879
+```
+
+At the cold anchor, most of the available energy is evaporated
+($`LE = 1.05\,\lambda\,ET_{r,inst}`$) and $`H`$ is small; at the hot
+anchor all of it goes into $`H`$.
+
+### The calibration
+
+[`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md)
+runs the whole calibration: the iteration at the anchors (phase A,
+section 3) and the sensible heat flux of every cell with the calibrated
+coefficients (phase B). The settings are those of the preset, written
+out in it
+([`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md),
+decision M2-11):
+
+``` r
+
+sh <- preset$sensible_heat
+sh$control[c("blending_height", "z1", "z2", "stable_psi_m_height", "tol",
+             "maxit", "pixel_tol", "pixel_maxit")]
+#> $blending_height
+#> [1] 200
+#> 
+#> $z1
+#> [1] 0.1
+#> 
+#> $z2
+#> [1] 2
+#> 
+#> $stable_psi_m_height
+#> [1] 2
+#> 
+#> $tol
+#> [1] 1e-06
+#> 
+#> $maxit
+#> [1] 100
+#> 
+#> $pixel_tol
+#> [1] 1e-05
+#> 
+#> $pixel_maxit
+#> [1] 100
+
+cal <- ef_calibrate_h(
+  anchors, control = sh$control, lapse_rate = sh$lapse_rate,
+  datum_elevation = z_scene,
+  pixels = list(lst = lst, elevation = elevation, zom = zom,
+                u_blend = u_blend, pressure = pressure, rn = rn, g = g)
+)
+c(a = cal$a, b = cal$b, iterations = cal$iterations,
+  converged = cal$converged)
+#>            a            b   iterations    converged 
+#> -154.3451605    0.5199804   18.0000000    1.0000000
+cal$anchors[, c("type", "ts_datum", "h_target", "dt", "rah", "u_star",
+                "obukhov_length", "h")]
+#>   type ts_datum h_target       dt      rah    u_star obukhov_length        h
+#> 1  hot 307.2995 367.0954 5.444556 16.93990 0.2611358      -4.233083 367.0954
+#> 2 cold 300.4000 108.3433 1.856939 19.79312 0.3178788     -25.571069 108.3433
+```
+
+Each anchor reproduces its target $`H`$ exactly. At the cold anchor,
+$`\rho_{air} c_p / r_{ah}`$ = 58 W m⁻² K⁻¹: a bias of 1 K in $`dT`$
+there would be a bias of 58 W m⁻² in $`H`$, or 0.09 mm h⁻¹ of
+evapotranspiration, which is why $`dT`$ is calibrated rather than
+measured. Where are the anchors, and what does the calibrated line look
+like?
+
+``` r
+
+# Display only: project to geographic coordinates (the computation stays on
+# the native grid) and drop the empty margins.
+to_lonlat <- function(x, method = "bilinear") {
+  terra::trim(terra::project(x, "EPSG:4326", method = method))
+}
+as_rast <- function(m, name) {
+  x <- terra::rast(r, nlyrs = 1)
+  terra::values(x) <- as.vector(t(m))
+  names(x) <- name
+  x
+}
+px <- anchors$pixels
+pts_xy <- terra::crds(terra::project(
+  terra::vect(px[, c("x", "y")], geom = c("x", "y"), crs = terra::crs(r)),
+  "EPSG:4326"
+))
+add_anchors <- function() {
+  hot <- px$type == "hot"
+  points(pts_xy[hot, , drop = FALSE], pch = 21, bg = "#D7301F", cex = 1)
+  points(pts_xy[!hot, , drop = FALSE], pch = 24, bg = "#2B8CBE", cex = 1.6)
+}
+terra::plot(
+  to_lonlat(c(as_rast(lst, "lst"), as_rast(ndvi, "ndvi"))),
+  main = c("Land surface temperature (K)", "NDVI (-)"),
+  nc = 2, axes = FALSE, fun = add_anchors, mar = c(1, 1, 2, 4)
+)
+```
+
+![](anchors-monin-obukhov_files/figure-html/anchor-maps-1.png)
+
+*The anchor pixels on the land surface temperature and on the NDVI of
+the scene: the cold anchor (blue triangle) and the 42 pixels of the hot
+anchor (red circles), whose mean is the hot calibration point.* The hot
+pixels are among the warmest and least green cells, in the east of the
+province. The cold anchor is a green cell (NDVI 0.82) in the west, but
+its albedo, 0.141, is just inside the lower limit of 0.14 that the
+preset uses to leave out dark forest canopies: at 1 km it may well be a
+mixture of plantation and fields. This is the kind of compromise that
+section 4 comes back to. The coolest cells of the scene, along the
+coast, are colder than the cold anchor.
+
+``` r
+
+ts_all <- as.vector(cal$pixels$ts_datum)
+an <- cal$anchors
+ts_hot <- an$ts_datum[an$type == "hot"]
+ts_cold <- an$ts_datum[an$type == "cold"]
+iter_col <- grDevices::gray.colors(5, start = 0.85, end = 0.5)
+plot(NA, xlim = range(ts_all, na.rm = TRUE), ylim = c(-8, 16),
+     xlab = expression(T[s*","*datum] ~ "(K)"), ylab = "dT (K)",
+     main = "Calibrated dT line and its iterates")
+rect(ts_hot, -20, 400, 40, col = "#FEE0D2", border = NA)
+rect(0, -20, ts_cold, 40, col = "#DEEBF7", border = NA)
+text(mean(c(par("usr")[1], ts_cold)), -7, cex = 0.8, col = "#2B5C8A",
+     "extrapolated: colder than the cold anchor")
+text(mean(c(ts_hot, par("usr")[2])), 11.5, srt = 90, cex = 0.8,
+     col = "#99341F", "extrapolated")
+abline(h = 0, col = "grey60", lty = 3)
+for (k in 1:5) {
+  abline(a = cal$trace$a[k], b = cal$trace$b[k], col = iter_col[k])
+}
+abline(a = cal$a, b = cal$b, lwd = 2.5)
+points(an$ts_datum, an$dt, pch = c(21, 24), cex = 1.6,
+       bg = c("#D7301F", "#2B8CBE"))
+rug(ts_all, col = grDevices::adjustcolor("grey20", 0.15))
+box()
+legend("topleft", bty = "n", cex = 0.85,
+       legend = c("iterates k = 1 to 5 (lighter = earlier)",
+                  "calibrated line (a*, b*)", "hot anchor", "cold anchor"),
+       lty = c(1, 1, NA, NA), lwd = c(1, 2.5, NA, NA),
+       col = c("grey60", "black", "black", "black"),
+       pch = c(NA, NA, 21, 24), pt.bg = c(NA, NA, "#D7301F", "#2B8CBE"),
+       pt.cex = 1.3)
+```
+
+![](anchors-monin-obukhov_files/figure-html/dt-line-1.png)
+
+*The anchors in $`(T_{s,datum}, dT)`$ space. Each iteration of section 3
+gives a different pair $`(dT_{hot}, dT_{cold})`$ and therefore a
+different line (grey; the first one is the steepest); the final line
+(black) passes through both anchors. The rug marks the temperature of
+every cell of the scene: many cells are colder than the cold anchor
+(shaded blue; below about 296.8 K their $`dT`$, and so their $`H`$, is
+negative) and a few are hotter than the hot anchor (shaded red). In both
+regions $`dT`$ is extrapolated.*
+
+``` r
+
+c(below_cold = sum(ts_all < an$ts_datum[an$type == "cold"], na.rm = TRUE),
+  above_hot = sum(ts_all > an$ts_datum[an$type == "hot"], na.rm = TRUE),
+  cells = sum(!is.na(ts_all)))
+#> below_cold  above_hot      cells 
+#>       1114         38       3656
+```
+
+These cells are flagged `EF_H_DT_EXTRAPOLATED_COLD` and
+`EF_H_DT_EXTRAPOLATED_HOT`; they are computed with the same line, not
+truncated.
+
+## 3. The Monin–Obukhov iteration
+
+### The aerodynamic resistance
+
+With a logarithmic wind profile (neutral air), the friction velocity of
+a pixel follows from the wind speed $`u_{200}`$ at the blending height
+$`z_b =
+200`$ m, where the wind is assumed to be the same over the whole scene,
+and the roughness of the pixel (Waters et al., 2002, p. 27, Eq. 30):
+
+``` math
+u_* = \frac{k\, u_{200}}{\ln(z_b / z_{om})} ,
+```
+
+with the von Kármán constant $`k = 0.41`$. The resistance to heat
+transport between $`z_1 = 0.1`$ m and $`z_2 = 2`$ m is (Waters et al.,
+2002, p. 26, Eq. 26):
+
+``` math
+r_{ah} = \frac{\ln(z_2 / z_1)}{k\, u_*} .
+```
+
+### Stability
+
+On a sunny day the surface is much warmer than the air: buoyancy adds to
+the mechanical turbulence (unstable air), heat is carried away faster
+and $`r_{ah}`$ is lower than in neutral air. Over a cool irrigated field
+surrounded by dry land, warm air can flow over a colder surface
+(advection): the air is stable, turbulence is damped and $`r_{ah}`$ is
+higher. The Monin–Obukhov length $`L`$ (m) measures the balance between
+the two sources of turbulence (Waters et al., 2002, p. 32, Eq. 34):
+
+``` math
+L = -\frac{\rho_{air}\, c_p\, u_*^3\, T_s}{k\, g\, H} ,
+```
+
+with $`g = 9.81`$ m s⁻². $`L < 0`$ when $`H > 0`$ (unstable), $`L > 0`$
+when $`H < 0`$ (stable), and $`|L| \to \infty`$ in neutral air. The
+stability corrections $`\psi_m`$ (momentum) and $`\psi_h`$ (heat) are
+functions of $`z/L`$ (Waters et al., 2002, pp. 32–33):
+
+- unstable ($`L < 0`$; Eqs. 35–37), with $`x_z = (1 - 16\, z/L)^{1/4}`$:
+  ``` math
+  \psi_{m(200\,m)} = 2 \ln\!\left(\frac{1 + x_{200}}{2}\right) +
+  \ln\!\left(\frac{1 + x_{200}^2}{2}\right) - 2 \arctan(x_{200}) +
+  \frac{\pi}{2}, \qquad
+  \psi_{h(z)} = 2 \ln\!\left(\frac{1 + x_z^2}{2}\right),\ z \in \{2,\ 0.1\}\ \mathrm{m};
+  ```
+- stable ($`L > 0`$; Eqs. 38–39):
+  ``` math
+  \psi_{m(200\,m)} = -5 \left(\frac{2}{L}\right), \qquad
+  \psi_{h(2\,m)} = -5 \left(\frac{2}{L}\right), \qquad
+  \psi_{h(0.1\,m)} = -5 \left(\frac{0.1}{L}\right).
+  ```
+
+Note that the stable correction of the momentum at the blending height
+is evaluated with $`2/L`$, not $`200/L`$: this is how Eq. 38 of the
+manual is written, and it is the default `stable_psi_m_height = 2` of
+[`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
+(decision SH-11). With a stable cold anchor, $`200/L`$ makes the
+iteration diverge in the test scenes of the package, while $`2/L`$
+converges.
+
+The corrected friction velocity and resistance are (Waters et al., 2002,
+p. 33, Eq. 40, and p. 34, Eq. 41):
+
+``` math
+u_* = \frac{k\, u_{200}}{\ln(z_b / z_{om}) - \psi_{m(200\,m)}}, \qquad
+r_{ah} = \frac{\ln(z_2/z_1) - \psi_{h(z_2)} + \psi_{h(z_1)}}{k\, u_*} .
+```
+
+### The loop
+
+$`H`$ needs $`r_{ah}`$, $`r_{ah}`$ needs $`L`$, and $`L`$ needs $`H`$:
+the calibration is a fixed-point iteration (Waters et al., 2002,
+pp. 25–34, figure 4 and appendix 8). In EarthFlux
+([`?ef_calibrate_h`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md)):
+
+0.  **Start** ($`k = 0`$): neutral $`u_*`$ and $`r_{ah}`$ at each
+    anchor, $`dT_0 = 0`$.
+1.  Air density $`\rho_k`$ at the near-surface air temperature
+    $`T_a = T_s - dT_{k-1}`$ (Waters et al., 2002, p. 31, step 6).
+2.  $`dT_k = H_{target}\, r_{ah,k-1} / (\rho_k\, c_p)`$ at each anchor
+    (Eq. 33), and the line $`(a_k, b_k)`$ through the two anchors.
+3.  $`H_k = \rho_k\, c_p\, (a_k + b_k T_{s,datum}) / r_{ah,k-1}`$, equal
+    to the target at the anchors by construction.
+4.  $`L_k`$ from $`H_k`$, $`\rho_k`$, $`u_{*,k-1}`$ and $`T_s`$; then
+    $`\psi_m`$, $`\psi_h`$, the new $`u_{*,k}`$ and $`r_{ah,k}`$.
+5.  Stop when the relative change of $`r_{ah}`$ is below `tol` at both
+    anchors.
+
+The manual iterates “until the successive values for dT_hot and rah at
+the hot pixel have stabilized” (p. 34), typically in 3 to 7 iterations
+(appendix 8). The tolerance is a design choice of EarthFlux (decision
+M2-11): `tol = 1e-6` on the relative change of $`r_{ah}`$, because the
+cells inherit any offset left at the anchors. After the loop, steps 1–2
+are repeated once with the final $`r_{ah}`$ (closure), so that the
+anchors reproduce their targets exactly.
+
+**Phase B.** With $`(a^*, b^*)`$ fixed, $`dT = a^* + b^* T_{s,datum}`$
+and $`\rho_{air}`$ of every cell are fixed, and each cell iterates only
+its own stability correction,
+$`H \to L \to \psi \to u_* \to r_{ah} \to H`$, from neutral, until the
+relative change of its $`r_{ah}`$ is below `pixel_tol` ($`10^{-5}`$).
+
+### The iteration by hand
+
+The stability functions and $`L`$ are internal to EarthFlux, so they are
+written out here from the equations above. The friction velocity and the
+resistance use the exported
+[`ef_ustar()`](https://djwillichile.github.io/EarthFlux/reference/ef_ustar.md)
+and
+[`ef_rah()`](https://djwillichile.github.io/EarthFlux/reference/ef_rah.md),
+and the constants are those recorded by
+[`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md).
+
+``` r
+
+ctrl <- cal$control
+k_vk <- cal$constants$von_karman # 0.41
+g0 <- cal$constants$gravity      # 9.81 m s-2
+cp <- cal$constants$cp           # 1004 J kg-1 K-1
+
+obukhov <- function(rho, u_star, ts, h) {
+  ifelse(h == 0, Inf, -rho * cp * u_star^3 * ts / (k_vk * g0 * h))
+}
+psi_m <- function(z, L) { # Eqs. 35 and 38
+  zeta <- z / L
+  x <- (1 - 16 * pmin(zeta, 0))^0.25
+  ifelse(zeta < 0,
+         2 * log((1 + x) / 2) + log((1 + x^2) / 2) - 2 * atan(x) + pi / 2,
+         -5 * zeta)
+}
+psi_h <- function(z, L) { # Eqs. 36 and 39
+  zeta <- z / L
+  x <- (1 - 16 * pmin(zeta, 0))^0.25
+  ifelse(zeta < 0, 2 * log((1 + x^2) / 2), -5 * zeta)
+}
+# One stability step: H -> L -> psi -> u* -> rah
+stability_step <- function(rho, u_star, ts, h, u200, zom) {
+  L <- obukhov(rho, u_star, ts, h)
+  z_m <- ifelse(L > 0, ctrl$stable_psi_m_height, ctrl$blending_height)
+  u_new <- ef_ustar(u200, zom, blending_height = ctrl$blending_height,
+                    psi_m = psi_m(z_m, L))
+  rah_new <- ef_rah(u_new, z1 = ctrl$z1, z2 = ctrl$z2,
+                    psi_h_z2 = psi_h(ctrl$z2, L),
+                    psi_h_z1 = psi_h(ctrl$z1, L))
+  list(L = L, u_star = u_new, rah = rah_new)
+}
+```
+
+Phase A at the two anchors, recording every iterate:
+
+``` r
+
+p <- cp_tab[match(c("hot", "cold"), cp_tab$type), ]
+ts_datum <- ef_ts_datum(p$lst, p$elevation, datum_elevation = z_scene,
+                        lapse_rate = sh$lapse_rate)
+h_target <- p$rn - p$g - p$le_target
+
+u_star <- ef_ustar(p$u_blend, p$zom, blending_height = ctrl$blending_height)
+rah <- ef_rah(u_star, z1 = ctrl$z1, z2 = ctrl$z2)
+dt <- c(0, 0)
+hist_a <- data.frame(iteration = 0, a = NA, b = NA,
+                     dt_hot = 0, dt_cold = 0, L_hot = Inf, L_cold = Inf,
+                     u_star_hot = u_star[1], u_star_cold = u_star[2],
+                     rah_hot = rah[1], rah_cold = rah[2],
+                     h_next_hot = NA, h_next_cold = NA, change = NA)
+for (k in seq_len(ctrl$maxit)) {
+  rho <- ef_air_density(p$pressure, p$lst - dt)                # step 1
+  dt <- h_target * rah / (rho * cp)                            # step 2
+  co <- ef_dt_coef(ts_datum[1], ts_datum[2], dt[1], dt[2])
+  h <- ef_sensible_heat(rho, co$a + co$b * ts_datum, rah)      # step 3
+  st <- stability_step(rho, u_star, p$lst, h, p$u_blend, p$zom) # step 4
+  change <- max(abs(st$rah - rah) / st$rah)                    # step 5
+  u_star <- st$u_star
+  rah <- st$rah
+  hist_a <- rbind(hist_a, data.frame(
+    iteration = k, a = co$a, b = co$b, dt_hot = dt[1], dt_cold = dt[2],
+    L_hot = st$L[1], L_cold = st$L[2],
+    u_star_hot = u_star[1], u_star_cold = u_star[2],
+    rah_hot = rah[1], rah_cold = rah[2],
+    # H that the current dT would give with the updated resistance
+    h_next_hot = rho[1] * cp * dt[1] / rah[1],
+    h_next_cold = rho[2] * cp * dt[2] / rah[2],
+    change = change
+  ))
+  if (change < ctrl$tol) break
+}
+# Closure: steps 1-2 with the final resistance
+rho <- ef_air_density(p$pressure, p$lst - dt)
+dt <- h_target * rah / (rho * cp)
+co <- ef_dt_coef(ts_datum[1], ts_datum[2], dt[1], dt[2])
+
+signif(head(hist_a[, c("iteration", "a", "b", "dt_hot", "dt_cold", "L_hot",
+                       "L_cold", "rah_hot", "rah_cold", "change")], 8), 4)
+#>   iteration       a      b dt_hot dt_cold  L_hot  L_cold rah_hot rah_cold
+#> 1         0      NA     NA  0.000   0.000    Inf     Inf  44.680    33.65
+#> 2         1 -495.10 1.6590 14.620   3.177 -1.021  -8.097   8.378    13.64
+#> 3         2  -56.94 0.1938  2.611   1.274 -8.232 -44.340  21.670    22.43
+#> 4         3 -212.20 0.7133  7.029   2.108 -3.291 -20.650  15.220    18.70
+#> 5         4 -133.80 0.4512  4.866   1.753 -4.702 -28.010  17.670    20.25
+#> 6         5 -163.20 0.5495  5.692   1.900 -4.058 -24.630  16.650    19.60
+#> 7         6 -150.90 0.5083  5.346   1.839 -4.307 -25.970  17.060    19.87
+#> 8         7 -155.80 0.5247  5.485   1.864 -4.204 -25.410  16.890    19.76
+#>     change
+#> 1       NA
+#> 2 4.334000
+#> 3 0.613300
+#> 4 0.423700
+#> 5 0.139000
+#> 6 0.061760
+#> 7 0.024220
+#> 8 0.009992
+```
+
+The first iterate is far off. With the neutral resistance of the smooth
+hot anchor, 44.7 s m⁻¹, the hot anchor needs $`dT`$ = 14.6 K to carry
+its $`H`$; such a $`dT`$ with that resistance means very unstable air
+($`L`$ = -1 m), the resistance falls to 8.4 s m⁻¹, the next $`dT`$ is
+too small, and so on: the iterates oscillate around the fixed point with
+a shrinking amplitude.
+
+**Check against
+[`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md).**
+The loop by hand reproduces the number of iterations, the whole trace
+and the calibrated coefficients:
+
+``` r
+
+mine <- hist_a[-1, ]
+c(iterations_equal = nrow(mine) == cal$iterations,
+  max_rel_diff_trace = max(
+    abs(mine$a - cal$trace$a) / abs(cal$trace$a),
+    abs(mine$b - cal$trace$b) / abs(cal$trace$b),
+    abs(mine$rah_hot - cal$trace$rah_hot) / cal$trace$rah_hot,
+    abs(mine$rah_cold - cal$trace$rah_cold) / cal$trace$rah_cold,
+    abs(mine$L_hot - cal$trace$obukhov_length_hot) /
+      abs(cal$trace$obukhov_length_hot)
+  ),
+  a_diff = co$a - cal$a, b_diff = co$b - cal$b)
+#>   iterations_equal max_rel_diff_trace             a_diff             b_diff 
+#>       1.000000e+00       5.282326e-15       0.000000e+00       0.000000e+00
+```
+
+Phase B for every cell of the scene, with $`(a^*, b^*)`$ fixed. Each
+cell starts from neutral and stops when its own $`r_{ah}`$ has
+converged:
+
+``` r
+
+v <- function(m) as.vector(m)
+dt_px <- cal$a + cal$b * ef_ts_datum(v(lst), v(elevation), z_scene,
+                                     sh$lapse_rate)
+rho_px <- ef_air_density(v(pressure), v(lst) - dt_px)
+u_px <- ef_ustar(v(u_blend), v(zom), blending_height = ctrl$blending_height)
+rah_px <- ef_rah(u_px, z1 = ctrl$z1, z2 = ctrl$z2)
+rah_neutral <- rah_px
+n_iter <- ifelse(is.na(rah_px), NA, 0L)
+active <- which(!is.na(rah_px))
+for (k in seq_len(ctrl$pixel_maxit)) {
+  if (length(active) == 0) break
+  i <- active
+  h_px <- rho_px[i] * cp * dt_px[i] / rah_px[i]
+  st <- stability_step(rho_px[i], u_px[i], v(lst)[i], h_px,
+                       v(u_blend)[i], v(zom)[i])
+  change <- abs(st$rah - rah_px[i]) / st$rah
+  u_px[i] <- st$u_star
+  rah_px[i] <- st$rah
+  n_iter[i] <- k
+  active <- i[change >= ctrl$pixel_tol]
+}
+h_mo <- ef_sensible_heat(rho_px, dt_px, rah_px)
+
+c(cells = sum(!is.na(h_mo)),
+  same_missing_cells = identical(is.na(h_mo), is.na(v(cal$pixels$h))),
+  max_abs_diff_h = max(abs(h_mo - v(cal$pixels$h)), na.rm = TRUE),
+  same_iterations = all(n_iter == v(cal$pixels$iterations), na.rm = TRUE))
+#>              cells same_missing_cells     max_abs_diff_h    same_iterations 
+#>       3.655000e+03       1.000000e+00       2.273737e-13       1.000000e+00
+```
+
+Both phases written by hand give the same iterates, the same
+coefficients and the same $`H`$ in every cell as
+[`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md),
+to rounding error (differences of $`10^{-13}`$ or less). The loop above
+is therefore an exact, readable account of what the function does.
+
+### Convergence at the anchors
+
+``` r
+
+col_hc <- c(hot = "#D7301F", cold = "#2B8CBE")
+it <- hist_a$iteration
+panel <- function(y_hot, y_cold, main, ylab, target = NULL, log = "",
+                  from = 0) {
+  keep <- it >= from
+  rng <- range(c(y_hot[keep], y_cold[keep], target), na.rm = TRUE)
+  plot(it[keep], y_hot[keep], type = "o", pch = 16, cex = 0.6,
+       col = col_hc["hot"], ylim = rng, log = log, main = main,
+       xlab = "iteration k", ylab = ylab)
+  if (!is.null(y_cold)) {
+    lines(it[keep], y_cold[keep], type = "o", pch = 17, cex = 0.6,
+          col = col_hc["cold"])
+  }
+  if (!is.null(target)) abline(h = target, lty = 2, col = col_hc)
+}
+op <- par(mfrow = c(2, 4), mar = c(4, 4.2, 2.5, 0.8), mgp = c(2.4, 0.8, 0))
+panel(hist_a$rah_hot, hist_a$rah_cold, "Resistance", "rah (s m-1)")
+panel(hist_a$u_star_hot, hist_a$u_star_cold, "Friction velocity",
+      "u* (m s-1)")
+panel(hist_a$L_hot, hist_a$L_cold, "Monin-Obukhov length", "L (m)",
+      from = 1)
+panel(hist_a$dt_hot, hist_a$dt_cold, "Temperature difference", "dT (K)",
+      from = 1)
+panel(hist_a$h_next_hot, hist_a$h_next_cold,
+      "H with the updated rah", "H (W m-2)", target = h_target, from = 1)
+legend("right", bty = "n", legend = c("hot anchor", "cold anchor",
+                                      "target H"),
+       col = c(col_hc, "grey40"), lty = c(1, 1, 2), pch = c(16, 17, NA))
+panel(hist_a$a, NULL, "Intercept a", "a (K)", target = cal$a, from = 1)
+panel(hist_a$b, NULL, "Slope b", "b (-)", target = cal$b, from = 1)
+panel(hist_a$change, NULL, "Convergence", "max relative change of rah",
+      log = "y", from = 1)
+abline(h = ctrl$tol, lty = 2)
+text(1, ctrl$tol, "tol", pos = 3, cex = 0.8)
+```
+
+![](anchors-monin-obukhov_files/figure-html/convergence-1.png)
+
+``` r
+
+par(op)
+```
+
+*Phase A of the calibration, iteration by iteration, at the hot (red)
+and cold (blue) anchors. Iteration 0 is the neutral start. “H with the
+updated rah” is the flux that the current $`dT_k`$ would give with the
+resistance $`r_{ah,k}`$ that it produces: it equals the target only at
+the fixed point. The dashed lines in the panels of $`a`$ and $`b`$ are
+the calibrated values $`(a^*, b^*)`$; the last panel shows the
+convergence statistic on a logarithmic scale against `tol`.* Both
+anchors are unstable ($`L < 0`$), the hot anchor much more so ($`L`$ =
+-4.2 m, against -25.6 m at the cold anchor): its converged resistance is
+38 % of the neutral one. After the first iterations the error shrinks by
+a roughly constant factor of about 2.5 per iteration (a straight line on
+the logarithmic scale): the iteration contracts linearly, and reaching
+`tol` = $`10^{-6}`$ takes 18 iterations instead of the 7 needed for a
+tolerance of 1 %.
+
+### Why the stability correction matters
+
+To isolate the effect of stability, the same calibration is repeated
+with $`r_{ah}`$ frozen at its neutral value: only the air density is
+iterated, so the anchors still reproduce their targets exactly.
+
+``` r
+
+rah0 <- ef_rah(ef_ustar(p$u_blend, p$zom), z1 = ctrl$z1, z2 = ctrl$z2)
+dt_n <- c(0, 0)
+for (k in 1:50) {
+  rho_n <- ef_air_density(p$pressure, p$lst - dt_n)
+  dt_n <- h_target * rah0 / (rho_n * cp)
+}
+co_n <- ef_dt_coef(ts_datum[1], ts_datum[2], dt_n[1], dt_n[2])
+dt_neutral <- co_n$a + co_n$b * v(lst)
+h_neutral <- ef_sensible_heat(
+  ef_air_density(v(pressure), v(lst) - dt_neutral), dt_neutral,
+  rah_neutral
+)
+rbind(neutral = c(a = co_n$a, b = co_n$b, dt_hot = dt_n[1],
+                  dt_cold = dt_n[2]),
+      monin_obukhov = c(a = cal$a, b = cal$b, dt_hot = cal$anchors$dt[1],
+                        dt_cold = cal$anchors$dt[2]))
+#>                       a         b    dt_hot  dt_cold
+#> neutral       -467.6372 1.5671802 13.956505 3.143708
+#> monin_obukhov -154.3452 0.5199804  5.444556 1.856939
+
+# Difference of H (W m-2) by position with respect to the anchors
+region <- cut(v(lst), c(-Inf, ts_cold, ts_hot, Inf),
+              right = FALSE,
+              labels = c("colder than cold anchor", "between the anchors",
+                         "hotter than hot anchor"))
+stats_by <- function(x) {
+  c(min = min(x, na.rm = TRUE), median = stats::median(x, na.rm = TRUE),
+    max = max(x, na.rm = TRUE), cells = sum(!is.na(x)))
+}
+round(do.call(rbind, tapply(h_mo - h_neutral, region, stats_by)), 1)
+#>                           min median   max cells
+#> colder than cold anchor   0.4   94.4 472.9  1113
+#> between the anchors     -60.0  -17.0  13.4  2504
+#> hotter than hot anchor  -17.2   -0.1  10.4    38
+```
+
+``` r
+
+h_cols <- c(grDevices::hcl.colors(5, "Blues 3")[1:4],
+            rev(grDevices::hcl.colors(10, "Reds 3")[1:9]))
+brk_h <- seq(-200, 450, by = 50)
+show_h <- function(h, main) {
+  x <- terra::clamp(as_rast(matrix(h, nrow(lst)), "h"), -200, 450)
+  terra::plot(to_lonlat(x), breaks = brk_h, col = h_cols, main = main,
+              axes = FALSE, mar = c(1, 1, 2, 5), plg = list(cex = 0.9))
+}
+op <- par(mfrow = c(2, 2))
+show_h(h_neutral, "H, neutral rah (W m-2)")
+show_h(h_mo, "H, Monin-Obukhov (W m-2)")
+brk_d <- seq(-100, 100, by = 20)
+d <- terra::clamp(as_rast(matrix(h_mo - h_neutral, nrow(lst)), "d"),
+                  -100, 100)
+terra::plot(to_lonlat(d), breaks = brk_d,
+            col = grDevices::hcl.colors(length(brk_d) - 1, "Purple-Green"),
+            main = "Difference, MO - neutral (W m-2)", axes = FALSE,
+            mar = c(1, 1, 2, 5), plg = list(cex = 0.9))
+par(mar = c(4.5, 4.5, 3, 1))
+plot(v(lst), h_neutral, pch = 20, cex = 0.3, col = "grey60",
+     xlab = "Ts (K)", ylab = "H (W m-2)", main = "H against Ts")
+points(v(lst), h_mo, pch = 20, cex = 0.3, col = "black")
+abline(h = 0, lty = 3, col = "grey50")
+points(an$ts_datum, an$h_target, pch = c(21, 24), cex = 1.5,
+       bg = c("#D7301F", "#2B8CBE"))
+legend("topleft", bty = "n", cex = 0.8, pch = c(20, 20, 21, 24),
+       col = c("grey60", "black", "black", "black"),
+       pt.bg = c(NA, NA, "#D7301F", "#2B8CBE"),
+       legend = c("neutral rah", "Monin-Obukhov", "hot anchor",
+                  "cold anchor"))
+```
+
+![](anchors-monin-obukhov_files/figure-html/h-neutral-mo-1.png)
+
+``` r
+
+par(op)
+```
+
+*Sensible heat flux of every cell calibrated with the neutral resistance
+and with the Monin–Obukhov iteration (same anchors, same targets), their
+difference, and both against the surface temperature. In the maps,
+values beyond the ends of the colour scales are shown with the extreme
+colours (the neutral $`H`$ goes down to -590 W m⁻²).*
+
+Both calibrations agree at the two anchors, by construction, and yet
+they are very different. Without the stability correction the resistance
+of the hot anchor is about 2.6 times too high, so the hot anchor needs a
+$`dT`$ of 14 K instead of 5.4 K, and the line is 3 times steeper.
+Between the anchors the two fields differ by some tens of W m⁻², of the
+same order as the effect of a 1 K bias in $`dT`$. Beyond the cold anchor
+the steep neutral line, extrapolated, gives strongly negative fluxes in
+the cool coastal cells, while the stability correction limits them:
+there the air is stable, $`\psi_h`$ becomes negative, $`r_{ah}`$ grows
+and damps the downward flux. The correction is not a refinement: it
+changes the calibration itself.
+
+### Stability and convergence cell by cell
+
+``` r
+
+zeta <- ctrl$z2 / v(cal$pixels$obukhov_length)
+stab <- as_rast(matrix(zeta, nrow(lst)), "zeta")
+iters <- as_rast(cal$pixels$iterations, "iterations")
+brk_z <- c(-1, -0.4, -0.2, -0.1, -0.05, -0.02, 0, 0.02, 0.05, 0.1, 0.2, 1)
+op <- par(no.readonly = TRUE)
+layout(matrix(1:3, nrow = 1), widths = c(1.3, 1.3, 0.8))
+terra::plot(to_lonlat(stab, "near"), breaks = brk_z,
+            col = rev(grDevices::hcl.colors(length(brk_z) - 1, "RdBu")),
+            main = "Stability z2 / L (-)", axes = FALSE,
+            mar = c(1, 1, 2, 5), plg = list(cex = 0.9))
+terra::plot(to_lonlat(iters, "near"), type = "classes",
+            col = grDevices::hcl.colors(
+              length(unique(stats::na.omit(v(cal$pixels$iterations)))),
+              "Viridis"
+            ),
+            main = "Iterations of phase B", axes = FALSE,
+            mar = c(1, 1, 2, 5), plg = list(cex = 0.9))
+par(mar = c(4.5, 4.5, 3, 1))
+barplot(table(cal$pixels$iterations), col = "#00606F", border = NA,
+        xlab = "iterations to converge", ylab = "cells",
+        main = "Iterations of phase B")
+```
+
+![](anchors-monin-obukhov_files/figure-html/phase-b-maps-1.png)
+
+``` r
+
+par(op)
+c(unstable = sum(zeta < 0, na.rm = TRUE), stable = sum(zeta > 0, na.rm = TRUE),
+  not_converged = sum(!cal$pixels$converged, na.rm = TRUE))
+#>      unstable        stable not_converged 
+#>          3053           602             0
+```
+
+*Left: the stability parameter $`z_2/L`$ of each cell after phase B
+(negative: unstable, $`H > 0`$; positive: stable, $`H < 0`$). Centre and
+right: the number of iterations each cell needed to reach `pixel_tol`.*
+
+Most of the scene is unstable; the stable cells are those colder than
+the point where the calibrated line crosses $`dT = 0`$, mostly the cool
+coastal strip in the west. No cell failed to converge. Which cells need
+more iterations?
+
+``` r
+
+cells <- data.frame(iterations = v(cal$pixels$iterations), ts = v(lst),
+                    lai = v(lai), zom = v(zom), h = v(cal$pixels$h),
+                    zeta = zeta)
+cells <- cells[!is.na(cells$iterations), ]
+round(stats::aggregate(cbind(ts, lai, zom, h, zeta) ~ iterations,
+                       data = cells, FUN = stats::median), 3)
+#>   iterations     ts   lai   zom       h   zeta
+#> 1          2 296.81 3.787 0.068  -0.318  0.001
+#> 2          3 296.30 5.525 0.099  -9.283  0.022
+#> 3          4 305.08 0.800 0.014 267.770 -0.338
+#> 4          5 305.80 0.850 0.015 301.656 -0.336
+#> 5          6 304.00 1.425 0.026 231.230 -0.232
+#> 6          7 300.68 3.825 0.069 112.481 -0.101
+#> 7          8 300.64 5.750 0.104 115.545 -0.084
+```
+
+Cells close to neutral ($`H \approx 0`$, $`z_2/L \approx 0`$) converge
+in two or three iterations, because their correction is small. The
+slowest are not the most unstable cells but the rough, vegetated ones
+with a moderate positive $`H`$: their $`\ln(z_b/z_{om})`$ is smaller, so
+the same $`\psi_m`$ changes $`u_*`$ relatively more, the feedback of
+stability on the resistance is stronger, and the fixed-point iteration
+contracts more slowly.
+
+## 4. Assumptions and limitations
+
+The calibration is powerful because it absorbs the systematic errors of
+$`T_s`$ and of the weather at the anchors, but it rests on assumptions
+that are worth stating in plain terms. Their status is recorded in the
+design decisions of the package
+([`dev/DECISIONS.md`](https://github.com/djwillichile/EarthFlux/blob/main/dev/DECISIONS.md),
+in Spanish).
+
+- **dT is linear in $`T_s`$ across the whole scene.** One line serves
+  every cell. Cells colder than the cold anchor or hotter than the hot
+  anchor use the line outside the range where it was calibrated; they
+  are flagged (`EF_H_DT_EXTRAPOLATED_COLD`, `EF_H_DT_EXTRAPOLATED_HOT`),
+  not truncated.
+- **The weather is uniform.** The wind at the blending height and the
+  reference evapotranspiration that enter the calibration are assumed to
+  be the same, or to vary smoothly, across the scene. With one weather
+  station (as here) any spatial gradient of the forcing is ignored; the
+  comparison of a single station with interpolated or GWR forcing is the
+  research question of EarthFlux.
+- **True anchors exist.** The cold anchor must be a well-watered field
+  with full cover transpiring at $`1.05\,ET_r`$, and the hot anchor a
+  dry bare field with no evaporation (no rain in the previous days;
+  Waters et al., 2002, appendix 7, p. 72, gives the evaporation of bare
+  soil after rain). If the “cold” cell is in fact water-stressed, or the
+  “hot” cell still evaporates, every cell inherits the error. The anchor
+  criteria of the presets are `CANDIDATA` (decision M5-23): they
+  translate the intent of the manual into thresholds set on two MODIS
+  scenes, without a primary source.
+- **MODIS 1 km cells are mixed.** At 1 km, a cell rarely holds one
+  field. In this scene only one cell qualified as cold anchor
+  (`EF_ANCHOR_SINGLE_PIXEL`), and mixtures of crops, orchards, bare soil
+  and roads are the norm. The relation between dT and $`T_s`$ fitted on
+  mixed cells may differ from that of the fields inside them (decision
+  T-18; to be evaluated with independent observations, milestone M6).
+- **Mountains and the terrain rule.** Here the elevation is uniform and
+  $`\Gamma = 0`$. In relief, the surface temperature falls with
+  elevation and a cool mountain slope would look like a wet field; the
+  preset `"idaho2002_elev"` therefore refers $`T_s`$ to a datum with a
+  lapse rate of 0.0065 K m⁻¹ (Waters et al., 2002, Eq. 12-7) and adjusts
+  the longwave radiation and the transmissivity with elevation, while
+  the anchors must be flat agricultural land, not slopes (appendix 7).
+  Both presets still ignore slope and aspect in the radiation (flat
+  projection), and whether anchors should be selected on $`T_s`$ or on
+  $`T_{s,datum}`$ is an open decision (D-AP-07). In the evaluation of
+  the presets on the Maule region, Andean slopes above 1000 m came out
+  with $`ET_rF < 0`$.
+- **The iteration settings are design choices.** The stability functions
+  are those of the manual (`VERIFICADA (SEBAL-Idaho 2002)`), but the
+  convergence criteria (`tol`, `pixel_tol`, decision M2-11), the closure
+  at the anchors and the per-cell phase B are decisions of EarthFlux,
+  documented in
+  [`ef_h_control()`](https://djwillichile.github.io/EarthFlux/reference/ef_h_control.md)
+  and
+  [`ef_calibrate_h()`](https://djwillichile.github.io/EarthFlux/reference/ef_calibrate_h.md).
+
+To run the whole chain on an area and a date with downloaded MODIS data,
+an elevation model and ERA5 or station weather, see
+[`earthflux()`](https://djwillichile.github.io/EarthFlux/reference/earthflux.md)
+and the options of each preset in
+[`ef_preset()`](https://djwillichile.github.io/EarthFlux/reference/ef_preset.md);
+the scene used here is described in [Example scene:
+Cauquenes](https://djwillichile.github.io/EarthFlux/articles/cauquenes-example.md).
+
+## References
+
+ASCE-EWRI (2005). *The ASCE Standardized Reference Evapotranspiration
+Equation*. Task Committee on Standardization of Reference
+Evapotranspiration, Environmental and Water Resources Institute of the
+American Society of Civil Engineers. Published as Allen, R. G., Walter,
+I. A., Elliott, R. L., Howell, T. A., Itenfisu, D., Jensen, M. E., &
+Snyder, R. L. (Eds.), American Society of Civil Engineers, Reston, VA.
+[doi:10.1061/9780784408056](https://doi.org/10.1061/9780784408056)
+
+Allen, R. G., Tasumi, M., & Trezza, R. (2007). Satellite-based energy
+balance for mapping evapotranspiration with internalized calibration
+(METRIC) — Model. *Journal of Irrigation and Drainage Engineering*,
+133(4), 380–394.
+[doi:10.1061/(ASCE)0733-9437(2007)133:4(380)](https://doi.org/10.1061/(ASCE)0733-9437(2007)133:4(380))
+
+Bastiaanssen, W. G. M., Menenti, M., Feddes, R. A., & Holtslag, A. A. M.
+(1998). A remote sensing surface energy balance algorithm for land
+(SEBAL). 1. Formulation. *Journal of Hydrology*, 212–213, 198–212.
+[doi:10.1016/S0022-1694(98)00253-4](https://doi.org/10.1016/S0022-1694(98)00253-4)
+
+Waters, R., Allen, R., Bastiaanssen, W., Tasumi, M., & Trezza, R.
+(2002). *SEBAL: Surface Energy Balance Algorithms for Land. Idaho
+implementation. Advanced training and users manual* (Version 1.0).
+University of Idaho and Idaho Department of Water Resources.
