@@ -89,6 +89,21 @@
   decision M2-11) and recorded in the provenance with every other option.
   H changes by up to about 1.3 W m-2.
 
+* Presets `idaho2002_elev` and `idaho2002_flat` version 4: a terrain rule
+  (decision M5-25, `CANDIDATA`). One linear dT calibrated at two anchors
+  with one weather forcing only holds near the elevation of the
+  calibration, so cells whose elevation differs by more than 500 m from
+  the datum elevation (the station, or without one the cold calibration
+  point of a preliminary anchor selection) hold no anchor and are `NA` in
+  every layer of the result. They are flagged with the new
+  `EF_H_TERRAIN_RULE_APPLIED` (info, cell scope, bit 11 of the H word; the
+  other words are `NA` there) and counted in the provenance
+  (`terrain_rule_excluded`, with the reference elevation in
+  `scene$terrain_rule`). On the Maule scene of 2019-02-15 this removes the
+  Andes above about 760 m (41 % of the computed cells), where ETrF was
+  mostly negative, and keeps the hot anchor in valley fields; the
+  Cauquenes scene is unchanged. The excluded cells get no ETa.
+
 ## Bug fixes
 
 * The MODIS readers and `modis_provenance()` now work with older and newer
