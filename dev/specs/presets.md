@@ -322,7 +322,9 @@ regla de G y z_om para agua y nieve (G-D4); ETa de las celdas excluidas
 por la regla de terreno (M5-25: sub-imagen con su propio clima y anclas,
 o modelo de montaña); referencia de la regla en C2 con el límite de
 250 m de `flat` (en Cauquenes excluye el llano bajo 169 m); selección
-sobre Ts o Ts_datum (D-AP-07).
+sobre Ts o Ts_datum (D-AP-07); ETrF > 1,05 en las celdas más frías que el ancla fría
+cuando la escena no tiene cultivos regados de cobertura completa (§8,
+hallazgo 7; `DECISIONS.md` A-M5-1).
 
 ## 7. Tests (`tests/testthat/test-earthflux.R`, sin red)
 
@@ -437,3 +439,28 @@ con GeoTIFF sintéticos y `modis_fetch()` con la red simulada).
    mediana 5,1 mm d⁻¹; versión 5 el 2019-02-15: elige Aqua, avisa
    (mediana 42°) y se detiene sin candidatos calientes
    (`earthflux_anchor_no_candidates`, filtro de homogeneidad).
+7. **ETrF > 1,05 sobre el ancla fría (2026-11-11;
+   `verification/etrf-above-cold-anchor.md`; diagnóstico de coherencia,
+   pregunta abierta A-M5-1).** Cauquenes, 2019-02-14, versión 5: el 19,2 %
+   de las celdas tiene ETrF > 1,05 (`elev` y `flat`). El ancla fría es un
+   solo píxel de borde de bosque (MCD12Q1 EBF; albedo 0,1403, NDVI 0,82;
+   sd de LST 3 × 3 1,32 K): de las 314 celdas con NDVI ≥ p0,90, 313 tienen
+   albedo < 0,14 (plantaciones y bosque costero) y no son candidatas. El
+   ancla queda en el percentil 16,5 de Ts_datum de la escena; las 607
+   celdas más frías (`EF_H_DT_EXTRAPOLATED_COLD`) son el 81 % (`elev`) y el
+   86 % (`flat`) de las celdas > 1,05, y el 56–60 % de estas tiene dT < 0
+   y H < 0 (estable). Exceso medio sobre 1,05 (`elev`): 67 % por un H menor
+   que el del ancla, 23 % por más Rn − G, 11 % por la ETr. Vegetación
+   oscura (albedo < 0,14, NDVI ≥ 0,7): 75–81 % de las celdas > 1,05;
+   bosque MCD12Q1: 92–95 %; < 20 km del mar: 94–97 %. ETr uniforme o
+   ±10 %: ±1 punto; z_om de bosque (0,5 m): −0,3 puntos. En el Maule
+   (rectángulo regional, misma fecha) solo el 2,9 / 2,7 %: anclas de 26–33
+   píxeles en el percentil 2,5 / 1,2 de la escena. El manual no da una
+   regla para las celdas más frías que el ancla (ETrF esperada de 0 a 1,
+   "perhaps up to 1.1" en alfalfa o maíz, p. 35; frío "very cold, but not
+   extremely cold", p. 67). Opciones evaluadas sin cambiar los presets:
+   elegir el frío más frío (sin efecto en Cauquenes), ampliar la banda de
+   albedo a [0,10; 0,26] (8,4 % `elev`, 5,0 % `flat`, pero el ancla pasa a
+   ser bosque y la ETa₂₄ del interior baja 13 %), recortar en 1,05 (quita
+   el 4,3 % de la ETa), calibración aparte de la costa (sin candidatos con
+   los criterios actuales).
