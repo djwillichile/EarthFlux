@@ -718,7 +718,7 @@ test_that("the automatic choice needs its coverage and one tile", {
 
 # Live smoke test (opt-in) -----------------------------------------------------
 
-test_that("live: Cauquenes 2019-02-15 is fetched and assembled", {
+test_that("live: Cauquenes 2019-02-14 is fetched and assembled", {
   skip_on_cran()
   skip_on_ci()
   skip_if_not(identical(Sys.getenv("EARTHFLUX_LIVE_TESTS"), "true"),
@@ -727,8 +727,9 @@ test_that("live: Cauquenes 2019-02-15 is fetched and assembled", {
   skip_if_not(modis_has_hdf4(), "GDAL HDF4 driver not available")
   cache <- Sys.getenv("EARTHFLUX_LIVE_CACHE", unset = "")
   if (!nzchar(cache)) cache <- dl_test_dir()
-  f <- modis_fetch(aoi_cauquenes(), day, lst_product = "MOD11A1",
-                   cache_dir = cache)
+  # the date of the packaged example scene (M4-27, 2026-11-11)
+  f <- modis_fetch(aoi_cauquenes(), as.Date("2019-02-14"),
+                   lst_product = "MOD11A1", cache_dir = cache)
   expect_identical(f$provenance$tiles, "h12v12")
   st <- modis_surface_state(
     f$files, aoi = aoi_cauquenes(),
@@ -746,7 +747,7 @@ test_that("live: Cauquenes 2019-02-15 is fetched and assembled", {
   ex <- terra::unwrap(cauquenes_modis)
   expect_true(terra::compareGeom(st$lst, ex[["lst"]], stopOnError = FALSE))
   inside <- !is.na(terra::values(ex[["lst"]], mat = FALSE))
-  for (v in c("lst", "albedo", "ndvi", "lai")) {
+  for (v in c("lst", "albedo", "ndvi", "lai", "view_angle")) {
     expect_equal(terra::values(st[[v]], mat = FALSE)[inside],
                  terra::values(ex[[v]], mat = FALSE)[inside])
   }

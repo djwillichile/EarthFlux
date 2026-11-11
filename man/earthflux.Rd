@@ -182,7 +182,7 @@ free API is for non-commercial use.
 # Needs network access and EARTHDATA_TOKEN (NASA Earthdata).
 aoi <- terra::vect(terra::ext(-72.8, -71.9, -36.3, -35.6),
                    crs = "EPSG:4326")
-res <- earthflux(aoi, date = as.Date("2019-02-15"), weather = "era5",
+res <- earthflux(aoi, date = as.Date("2019-02-14"), weather = "era5",
                  preset = "idaho2002_elev")
 res
 summary(res)
