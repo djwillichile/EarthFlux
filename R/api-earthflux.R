@@ -96,9 +96,12 @@
 #'     status, unverified elements), every effective option, the values
 #'     derived for the scene (overpass times, day and UTC offset of the
 #'     daily reference ET, regionalization method, datum elevation, the
-#'     reference elevation of the terrain rule, ...), the counts of excluded
-#'     cells (among them `terrain_rule_excluded`, and the cells raised to
-#'     the minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
+#'     terrain rule: its method, reference elevations (anchors of the
+#'     preliminary selection and the station), limit, kept range and the
+#'     elevations of the final anchors, ...), the counts of excluded
+#'     cells (among them `terrain_rule_excluded`, split into
+#'     `terrain_rule_excluded_below` and `terrain_rule_excluded_above` the
+#'     range, and the cells raised to the minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
 #'     (without key) or the station table, attributions, the codes
 #'     evaluated, versions, the `future` plan and timings.
 #'
@@ -118,10 +121,11 @@
 #' before the net radiation because the incoming longwave uses the
 #' temperature of the cold anchor (P0-3), outside the cells excluded by the
 #' terrain rule of the preset (decision M5-25: elevation more than 500 m,
-#' `idaho2002_elev`, or 250 m, `idaho2002_flat`, above or below the datum
-#' elevation of the calibration, i.e. the station,
-#' or without one the cold calibration point of a preliminary selection;
-#' those cells are not computed, are `NA` in every layer and are flagged
+#' `idaho2002_elev`, or 250 m, `idaho2002_flat`, below or above the
+#' elevation range of the calibration, i.e. the cold and hot anchors of a
+#' preliminary selection without the rule and, with one station, the
+#' station; cells between the anchors are kept; the excluded cells are
+#' not computed, are `NA` in every layer and are flagged
 #' with `EF_H_TERRAIN_RULE_APPLIED`); (10) shortwave and longwave
 #' radiation, net radiation, soil heat flux; (11) boundary conditions at the
 #' anchors and calibration of dT; (12) LE, instantaneous ET, ETrF and daily
@@ -511,12 +515,11 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
                                     "pixel (elevation model)")) NULL else
         scene$tau_elevation,
       datum_elevation = scene$datum_elevation,
-      terrain_rule = list(
-        reference_elevation = mt$terrain_rule$reference_elevation,
-        reference_source = mt$terrain_rule$reference_source,
-        max_elevation_difference =
-          mt$terrain_rule$max_elevation_difference
-      ),
+      terrain_rule = mt$terrain_rule[c("method", "reference_elevations",
+                                       "reference_source",
+                                       "max_elevation_difference", "range",
+                                       "anchor_elevations",
+                                       "anchors_in_range")],
       rl_in_cold_temperature = unname(mt$t_rl[["t_cold"]]),
       rl_in_cold_elevation = unname(mt$t_rl[["z_cold"]]),
       lambda = mt$objects$lambda,
@@ -534,6 +537,8 @@ workflow_result <- function(mt, st, fetch, ter, wx_src, wx, fc, p, grid,
       fc$counts,
       zom_floor_applied = mt$zom_floor_applied,
       terrain_rule_excluded = sum(excluded),
+      terrain_rule_excluded_below = sum(excluded & mt$terrain_rule$below),
+      terrain_rule_excluded_above = sum(excluded & !mt$terrain_rule$below),
       eta_24_valid = cnt_eta
     ),
     surface_critical_by_code = ex$counts,

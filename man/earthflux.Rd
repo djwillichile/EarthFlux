@@ -85,9 +85,12 @@ cell flags of the METRIC chain on the cells of the grid (with
 status, unverified elements), every effective option, the values
 derived for the scene (overpass times, day and UTC offset of the
 daily reference ET, regionalization method, datum elevation, the
-reference elevation of the terrain rule, ...), the counts of excluded
-cells (among them \code{terrain_rule_excluded}, and the cells raised to
-the minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
+terrain rule: its method, reference elevations (anchors of the
+preliminary selection and the station), limit, kept range and the
+elevations of the final anchors, ...), the counts of excluded
+cells (among them \code{terrain_rule_excluded}, split into
+\code{terrain_rule_excluded_below} and \code{terrain_rule_excluded_above} the
+range, and the cells raised to the minimum z_om), the MODIS granules, the NASADEM tiles, the Open-Meteo request
 (without key) or the station table, attributions, the codes
 evaluated, versions, the \code{future} plan and timings.
 }
@@ -123,10 +126,11 @@ geometry, pressure, roughness and wind at 200 m; (9) anchors, selected
 before the net radiation because the incoming longwave uses the
 temperature of the cold anchor (P0-3), outside the cells excluded by the
 terrain rule of the preset (decision M5-25: elevation more than 500 m,
-\code{idaho2002_elev}, or 250 m, \code{idaho2002_flat}, above or below the datum
-elevation of the calibration, i.e. the station,
-or without one the cold calibration point of a preliminary selection;
-those cells are not computed, are \code{NA} in every layer and are flagged
+\code{idaho2002_elev}, or 250 m, \code{idaho2002_flat}, below or above the
+elevation range of the calibration, i.e. the cold and hot anchors of a
+preliminary selection without the rule and, with one station, the
+station; cells between the anchors are kept; the excluded cells are
+not computed, are \code{NA} in every layer and are flagged
 with \code{EF_H_TERRAIN_RULE_APPLIED}); (10) shortwave and longwave
 radiation, net radiation, soil heat flux; (11) boundary conditions at the
 anchors and calibration of dT; (12) LE, instantaneous ET, ETrF and daily

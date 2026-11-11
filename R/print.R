@@ -87,9 +87,12 @@ print.earthflux_result <- function(x, ...) {
   tr <- sc$terrain_rule
   if (!is.null(tr) && "terrain_rule_excluded" %in% names(p$counts)) {
     cat(sprintf(paste0("  terrain rule: %d cells excluded (more than %g m ",
-                       "from the reference elevation %.0f m)\n"),
+                       "outside the calibration range %.0f to %.0f m; kept %.0f ",
+                       "to %.0f m)\n"),
                 p$counts[["terrain_rule_excluded"]],
-                tr$max_elevation_difference, tr$reference_elevation))
+                tr$max_elevation_difference,
+                min(tr$reference_elevations), max(tr$reference_elevations),
+                tr$range[["lower"]], tr$range[["upper"]]))
   }
   cat(sprintf("  ETa_24: %s\n", rng("eta_24")))
   cat(sprintf("  ETrF:   %s\n", rng("etrf")))
