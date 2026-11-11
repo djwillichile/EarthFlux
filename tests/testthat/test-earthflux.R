@@ -3,7 +3,7 @@
 #
 # Offline: modis_fetch(), modis_surface_state(), dem_fetch() and
 # openmeteo_fetch() are replaced with testthat::local_mocked_bindings() that
-# return the packaged example scene (real MODIS surface state of 2019-02-15)
+# return the packaged example scene (real MODIS surface state of 2019-02-14)
 # and SYNTHETIC elevation, station and ERA5 data (helper-earthflux.R). The
 # values are not realistic results: the tests check the orchestration
 # (equivalence with the chain run step by step, options, provenance,
@@ -327,7 +327,7 @@ test_that("the preset is required and checked before any download", {
   expect_error(earthflux(aoi, ewf_date(), weather = sta1,
                          preset = "idaho2002"),
                class = "earthflux_unknown_method")
-  expect_error(earthflux(aoi, "2019-02-15", weather = sta1,
+  expect_error(earthflux(aoi, "2019-02-14", weather = sta1,
                          preset = "idaho2002_elev"),
                class = "earthflux_input_error")
   expect_error(earthflux(aoi, ewf_date(), weather = "merra2",
@@ -935,7 +935,7 @@ test_that("the provenance records every option of the preset", {
   expect_identical(sc$representative_station, "ST01")
   expect_identical(sc$humidity, "dewpoint_temperature")
   expect_equal(sc$utc_offset, sc$aoi$centroid_lonlat[1] / 15)
-  expect_identical(sc$reference_et_day, "2019-02-15")
+  expect_identical(sc$reference_et_day, "2019-02-14")
   expect_identical(sc$datum_elevation, 150)
   # terrain rule (M5-25): method, references, limit, kept range, final
   # anchors and counts
@@ -1052,9 +1052,24 @@ test_that("the view angle of the scene is recorded and cells above it hold no an
   expect_false(va$warned)
   expect_identical(res$provenance$scene$lst_product, "MOD11A1")
   expect_output(print(res), "LST: MOD11A1, median view angle 10 degrees")
-  # the reference run has no view angle layer: recorded as not evaluated
-  expect_false(res_e$provenance$scene$view_angle$evaluated)
-  expect_true(is.na(res_e$provenance$counts[["view_angle_high"]]))
+  # the packaged scene (Terra, 2019-02-14) was observed at 12 to 18
+  # degrees: nothing flagged, no warning (median 16 over the test AOI, a
+  # box around the province; 15 over the province)
+  va_e <- res_e$provenance$scene$view_angle
+  expect_true(va_e$evaluated)
+  expect_identical(va_e$median_abs_view_angle, 16)
+  expect_identical(va_e$range_abs_view_angle, c(12, 18))
+  expect_identical(va_e$n_flagged, 0L)
+  expect_false(va_e$warned)
+  expect_identical(res_e$provenance$counts[["view_angle_high"]], 0L)
+  # a state without the layer (built by hand): recorded as not evaluated
+  bare <- st
+  bare$view_angle <- NULL
+  out <- ewf_collect(earthflux(aoi, ewf_date(), weather = sta1,
+                               preset = "idaho2002_elev", surface = bare,
+                               terrain = ter))
+  expect_false(out$value$provenance$scene$view_angle$evaluated)
+  expect_true(is.na(out$value$provenance$counts[["view_angle_high"]]))
 })
 
 test_that("a scene observed far from nadir warns and, without anchors, stops", {
@@ -1185,7 +1200,7 @@ test_that("ERA5: options, sea cells excluded, gridded flag, no secret", {
 test_that("weather that does not cover the scene is refused clearly", {
   short <- sta1
   keep <- short$observations$timestamp <
-    as.POSIXct("2019-02-15 12:00", tz = "UTC")
+    as.POSIXct("2019-02-14 12:00", tz = "UTC")
   short <- ef_station_table(sta1$stations, sta1$observations[keep, ],
                             provenance = list(timestamp_convention = "end",
                                               interval = 3600,

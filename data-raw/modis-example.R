@@ -12,16 +12,19 @@
 #      cauquenes-province.gpkg; data-raw/cauquenes-province.R), with the
 #      explicit options below;
 #   4. masks the cells outside the province and stacks the physical layers
-#      (with the band 31/32 emissivities of MOD11A1, carried for option E1),
+#      (with the band 31/32 emissivities of MOD11A1, carried for option E1,
+#      and the absolute view zenith angle of the LST, M5-26),
 #      the valid fractions and the flag words in one SpatRaster, packed with
 #      terra::wrap() and saved as data/cauquenes_modis.rda (xz; target:
 #      < 500 KB), the convention of the dataset cauquenes of thermify; the
 #      provenance and the bit table of the flag words go to
 #      data-raw/cauquenes_modis.yml and to the documentation (R/data.R).
 #
-# Scene (decision MP-12, author's decision of 2026-11-04): 2019-02-15,
-#   Terra (MOD11A1), tile h12v12, tile cloud cover 3 %; a clear-sky summer
-#   day before the orbital drift of Terra (2020).
+# Scene (decision MP-12; author's decisions of 2026-11-04 and 2026-11-11):
+#   2019-02-14, Terra (MOD11A1), tile h12v12; a clear-sky summer day before
+#   the orbital drift of Terra (2020), observed close to nadir (median view
+#   zenith angle 15 degrees over the province). Until 2026-11-11 the scene
+#   was 2019-02-15, observed at 61-62 degrees (M4-27).
 #
 # What the person running it must provide:
 #   * EARTHDATA_TOKEN: a NASA Earthdata Login user token (generated at
@@ -41,10 +44,12 @@
 
 ## Parameters -------------------------------------------------------------------
 
-# UTC date of the scene (MP-12; author's decision of 2026-11-04): Terra
-# MOD11A1 of tile h12v12 with 3 % cloud cover, a clear-sky summer day
-# before 2020 (before the orbital drift of Terra).
-scene_date <- as.Date("2019-02-15")
+# UTC date of the scene (MP-12; author's decision of 2026-11-11, which
+# replaced 2019-02-15 of 2026-11-04): Terra MOD11A1 of tile h12v12, a
+# clear-sky summer day before 2020 (before the orbital drift of Terra)
+# with the province observed at 12-18 degrees from nadir (98.1 % valid
+# LST); on 2019-02-15 it was observed at 61-62 degrees.
+scene_date <- as.Date("2019-02-14")
 
 tile <- "h12v12"   # Cauquenes province lies inside this tile
 collection <- "061" # MP-13
@@ -253,11 +258,14 @@ layers <- list(
   # band 31/32 emissivities of MOD11A1 (inputs of option E1, not used yet)
   emis_31 = st$band_emissivity[["emis_31"]],
   emis_32 = st$band_emissivity[["emis_32"]],
+  # absolute view zenith angle of the LST observation (M5-26)
+  view_angle = st$view_angle,
   doy = st$overpass_time$doy, utc_hour = st$overpass_time$utc_hour,
   ndvi_lag_days = st$qa$composite$ndvi$lag_days
 )
 units_of <- c(lst = "K", albedo = "-", ndvi = "-", lai = "m2 m-2",
-              emissivity = "-", emis_31 = "-", emis_32 = "-", doy = "-",
+              emissivity = "-", emis_31 = "-", emis_32 = "-",
+              view_angle = "degree", doy = "-",
               utc_hour = "h", ndvi_lag_days = "d")
 for (nm in names(layers)) names(layers[[nm]]) <- nm
 scene <- c(terra::rast(unname(layers)), vf, st$qa$flag_word)
@@ -291,7 +299,7 @@ yml <- c(
   "dataset: EarthFlux MODIS example scene, Cauquenes province (Maule, Chile)",
   "synthetic: false",
   sprintf("scene_date_utc: %s", yaml_scalar(format(scene_date))),
-  "scene_selection: author's decision of 2026-11-04 (MP-12); Terra MOD11A1, tile h12v12 cloud cover 3 %, southern summer, before the orbital drift of Terra",
+  "scene_selection: author's decision of 2026-11-11 (MP-12, M4-27); Terra MOD11A1, tile h12v12, southern summer, before the orbital drift of Terra, province observed at 12-18 degrees from nadir (median 15, 98.1 % valid LST); replaces 2019-02-15 (author's decision of 2026-11-04), observed at 61-62 degrees",
   sprintf("tile: %s", yaml_scalar(tile)),
   sprintf("collection: %s", yaml_scalar(collection)),
   sprintf("download_date: %s", yaml_scalar(format(download_date))),
@@ -326,6 +334,7 @@ yml <- c(
   sprintf("  resampling_method_%s: %s", names(methods$resampling_method),
           yaml_scalar(methods$resampling_method)),
   sprintf("  min_valid_fraction: %s", methods$min_valid_fraction),
+  sprintf("  view_angle_max: %s", methods$view_angle_max),
   if (is.null(methods$lai_nonveg)) "  lai_nonveg: null" else
     sprintf("  lai_nonveg_%s: %s", names(methods$lai_nonveg),
             methods$lai_nonveg),

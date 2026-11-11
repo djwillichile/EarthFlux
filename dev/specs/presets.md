@@ -425,4 +425,15 @@ con GeoTIFF sintéticos y `modis_fetch()` con la red simulada).
    42°, 93,3 % de LST válida), aún sobre 40°: aviso y 98,4 % de las celdas
    con LST marcadas (40–44°; solo 58 celdas a 40° quedan para las anclas,
    de modo que la selección puede quedar sin candidatos). El 2019-02-14
-   usa Terra (12–18°, 98,1 %), sin celdas marcadas.
+   usa Terra (12–18°, 98,1 %), sin celdas marcadas: es la fecha de la
+   escena de ejemplo `cauquenes_modis` desde el 2026-11-11 (M4-27).
+   Corridas reales (2026-11-11; provincia de Cauquenes, ERA5 vía
+   Open-Meteo, `idaho2002_elev`; coherencia, no validación): versión 4 el
+   2019-02-15 (Terra, 62°): anclas fría 300,40 K y caliente 307,30 K (42
+   píxeles), ETrF mediana 0,52, p90 1,73, p99 2,08, > 1,05 en el 30,4 %,
+   < 0 en el 1,5 %, ETa₂₄ mediana 3,6 mm d⁻¹; versión 5 el 2019-02-14
+   (Terra, 15°): anclas 302,16 K y 315,60 K (36 píxeles), ETrF mediana
+   0,57, p90 1,14, p99 1,48, > 1,05 en el 19,2 %, < 0 en el 1,0 %, ETa₂₄
+   mediana 5,1 mm d⁻¹; versión 5 el 2019-02-15: elige Aqua, avisa
+   (mediana 42°) y se detiene sin candidatos calientes
+   (`earthflux_anchor_no_candidates`, filtro de homogeneidad).

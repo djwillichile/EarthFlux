@@ -1,11 +1,11 @@
 # Provenance of data/cauquenes_modis.rda (built by data-raw/modis-example.R)
 dataset: EarthFlux MODIS example scene, Cauquenes province (Maule, Chile)
 synthetic: false
-scene_date_utc: "2019-02-15"
-scene_selection: author's decision of 2026-11-04 (MP-12); Terra MOD11A1, tile h12v12 cloud cover 3 %, southern summer, before the orbital drift of Terra
+scene_date_utc: "2019-02-14"
+scene_selection: author's decision of 2026-11-11 (MP-12, M4-27); Terra MOD11A1, tile h12v12, southern summer, before the orbital drift of Terra, province observed at 12-18 degrees from nadir (median 15, 98.1 % valid LST); replaces 2019-02-15 (author's decision of 2026-11-04), observed at 61-62 degrees
 tile: "h12v12"
 collection: "061"
-download_date: "2026-11-05"
+download_date: "2026-11-11"
 download_source: NASA LP DAAC cloud archive (LPCLOUD), found with NASA CMR
 area_of_interest: inst/extdata/cauquenes-province.gpkg (DPA 2023, SUBDERE; see cauquenes-province.yml); cells outside the province are NA
 object: PackedSpatRaster (terra::wrap), one layer per variable, documented in R/data.R
@@ -13,24 +13,24 @@ grid: MODIS sinusoidal, 1 km cells of the MOD11A1 file (MP-08)
 granules:
   - role: "lst"
     product: "MOD11A1"
-    local_granule_id: "MOD11A1.A2019046.h12v12.061.2020344054048.hdf"
-    cmr_concept_id: "G2207028292-LPCLOUD"
+    local_granule_id: "MOD11A1.A2019045.h12v12.061.2020344043116.hdf"
+    cmr_concept_id: "G2206984142-LPCLOUD"
     doi: "10.5067/MODIS/MOD11A1.061"
     doi_status: "VERIFICADA"
-    data_day: "2019-02-15"
-    time_start: "2019-02-15T00:00:00.000Z"
-    time_end: "2019-02-15T23:59:59.000Z"
-    production: "2020-12-09T05:40:48Z"
+    data_day: "2019-02-14"
+    time_start: "2019-02-14T00:00:00.000Z"
+    time_end: "2019-02-14T23:59:59.000Z"
+    production: "2020-12-09T04:31:16Z"
   - role: "albedo"
     product: "MCD43A3"
-    local_granule_id: "MCD43A3.A2019046.h12v12.061.2020290040302.hdf"
-    cmr_concept_id: "G2370514964-LPCLOUD"
+    local_granule_id: "MCD43A3.A2019045.h12v12.061.2020290034937.hdf"
+    cmr_concept_id: "G2370514450-LPCLOUD"
     doi: "10.5067/MODIS/MCD43A3.061"
     doi_status: "VERIFICADA"
-    data_day: "2019-02-15"
-    time_start: "2019-02-07T00:00:00.000Z"
-    time_end: "2019-02-22T23:59:59.999Z"
-    production: "2020-10-16T04:03:02Z"
+    data_day: "2019-02-14"
+    time_start: "2019-02-06T00:00:00.000Z"
+    time_end: "2019-02-21T23:59:59.999Z"
+    production: "2020-10-16T03:49:37Z"
   - role: "ndvi"
     product: "MOD13A2"
     local_granule_id: "MOD13A2.A2019033.h12v12.061.2020287215652.hdf"
@@ -64,6 +64,7 @@ options:
   resampling_method_albedo: "mean"
   resampling_method_lai: "mean"
   min_valid_fraction: 1
+  view_angle_max: 40
   lai_nonveg_249: 0
   lai_nonveg_250: 0
   lai_nonveg_251: 0
@@ -74,15 +75,16 @@ status:
   product_facts: "VERIFICADA"
   overpass_time: "CANDIDATA"
   albedo: "CANDIDATA"
-  emissivity: "CANDIDATA"
+  emissivity: "VERIFICADA (SEBAL-Idaho 2002); RC-14 open"
   lai_nonveg: "CANDIDATA (explicit LAI of the non-vegetated classes, MP-06)"
   band_emissivity: "VERIFICADA (product layers); broadband conversion E1 not implemented (MP-04)"
   ndvi: "VERIFICADA"
+  view_angle: "VERIFICADA (product layer Day_view_angl); threshold view_angle_max CANDIDATA (M5-26)"
   composite_matching: "DECIDIDA (provisional), MP-07"
   resampling: "DECIDIDA (provisional), MP-08"
   real_granule_check: "TODO (A-M4-3)"
 versions:
-  earthflux: "0.0.0.9000"
+  earthflux: "0.1.0.9000"
   terra: "1.9.50"
   gdal: "3.8.4"
   proj: "9.4.0"
@@ -96,6 +98,7 @@ layers:
   emissivity: -
   emis_31: -
   emis_32: -
+  view_angle: degree
   doy: -
   utc_hour: h
   ndvi_lag_days: d
@@ -107,6 +110,7 @@ layers:
   flags_ndvi: bits
   flags_lai: bits
   flags_emissivity: bits
+  flags_view_angle: bits
   flags_emis_31: bits
   flags_emis_32: bits
 flag_bits:
@@ -158,4 +162,7 @@ flag_bits:
   - bit: 15
     code: EF_SURF_LAI_ASSIGNED
     severity: info
+  - bit: 16
+    code: EF_SURF_VIEW_ANGLE_HIGH
+    severity: warning
 license: MODIS data are shared openly without restriction (EOSDIS Data Use and Citation Guidance); citation requirements for redistribution TODO (modis-products.md section 16, item 20)

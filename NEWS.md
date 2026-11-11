@@ -134,6 +134,17 @@
   degrees (96.7 % valid) and Aqua at 42 degrees (93.3 %), so Aqua is now
   used; on 2019-02-14 Terra (15 degrees) is kept.
 
+* The example scene `cauquenes_modis` is now of 14 February 2019 (Terra,
+  MOD11A1), when the Cauquenes province was observed 12 to 18 degrees from
+  nadir, instead of 15 February 2019, when Terra observed it at 61 to 62
+  degrees and the LST showed blocky edges from footprints of about
+  2 x 4 km (author's decision of 2026-11-11). It gains the layers
+  `view_angle` and `flags_view_angle` (22 layers, 60 KB); its LST is valid
+  in 98.1 % of the province (was 96.7 %) and the overpass is at about
+  10:12 local solar time (was 9:20). The README, the article on the
+  example scene and the anchors articles (English and Spanish) use the
+  new date.
+
 ## Bug fixes
 
 * The MODIS readers and `modis_provenance()` now work with older and newer

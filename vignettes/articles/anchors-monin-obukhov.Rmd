@@ -20,7 +20,7 @@ balance. This article explains, step by step, how METRIC (Allen et al.,
 2007) estimates it: the internal calibration with a hot and a cold anchor
 pixel, and the Monin–Obukhov iteration that corrects the aerodynamic
 resistance for atmospheric stability. Every equation is run on the
-packaged MODIS scene of the Cauquenes province (15 February 2019, see the
+packaged MODIS scene of the Cauquenes province (14 February 2019, see the
 article [Example scene: Cauquenes](cauquenes-example.html)) with the
 exported functions of EarthFlux, and the iteration is written out by hand
 and checked against `ef_calibrate_h()`.
@@ -180,8 +180,9 @@ lat <- matrix(lonlat[, 2], terra::nrow(r), byrow = TRUE)
 summary(as.vector(utc_hour))
 ```
 
-The overpass is at about 14:08 UTC (09:20 local mean solar time), with a
-few cells observed later, up to 15:50 UTC.
+The overpass is at about 15:02 UTC (10:12 local mean solar time); every
+cell of the province was observed by the same Terra pass, between 15:01
+and 15:07 UTC, at 12 to 18 degrees from nadir.
 
 The scene has no elevation model. **For this article only**, the elevation
 is set to a uniform 150 m, roughly the elevation of the town of
@@ -215,7 +216,7 @@ wx$utc_mid <- wx$utc_start + 0.5
 
 deg <- pi / 180
 ra <- ef_ra_period(lat = station$lat * deg, lon = station$lon * deg,
-                   doy = 46, utc_mid = wx$utc_mid, period_hours = 1,
+                   doy = 45, utc_mid = wx$utc_mid, period_hours = 1,
                    standard = "asce")
 ea <- ef_ea_dewpoint(wx$dewpoint)
 rn_ref <- ef_ref_net_radiation(
@@ -284,8 +285,10 @@ The anchors are selected before the net radiation, because the incoming
 longwave radiation of the presets uses the surface temperature of the cold
 anchor (Waters et al., 2002, p. 23, Eq. 23). The candidates must pass the
 strict quality control of the presets: no `warning` or `critical` flag
-(bits 6–14) and no assigned LAI (bit 15, `EF_SURF_LAI_ASSIGNED`) in the
-flag words of the surface variables, every 500 m sub-cell of the
+(bits 6–14, and bit 16, `EF_SURF_VIEW_ANGLE_HIGH`, an LST observed more
+than 40 degrees from nadir; none in this scene) and no assigned LAI
+(bit 15, `EF_SURF_LAI_ASSIGNED`) in the flag words of the surface
+variables, every 500 m sub-cell of the
 aggregated inputs valid, and every input defined.
 
 ```{r qa}
@@ -294,7 +297,7 @@ geo <- ef_solar_geometry(doy = doy, utc_hour = utc_hour, lat = lat * deg,
 
 qa <- inside & !is.na(lst) & !is.na(albedo) & !is.na(ndvi) & !is.na(lai) &
   !is.na(emissivity) & !is.na(etr_inst) & !is.na(geo$cos_zenith)
-excluded_bits <- sum(2^(6:15))
+excluded_bits <- sum(2^(6:16))
 for (l in c("lst", "albedo", "ndvi", "lai", "emissivity")) {
   word <- as_mat(paste0("flags_", l))
   qa <- qa & !is.na(word) & bitwAnd(word, excluded_bits) == 0
@@ -337,9 +340,10 @@ names(n_cold) <- funnel$filter[funnel$type == "cold"]
 
 The funnel shows how few cells of a 1 km scene look like a well-watered
 full-cover field: `r n_cold[["ndvi >= p0.9"]]` cells pass the NDVI
-percentile, but only `r n_cold[["albedo between [0.14, 0.26]"]]` of them
-have a crop-like albedo, and `r n_cold[["selected"]]` pixel is finally the
-cold anchor (flag `EF_ANCHOR_SINGLE_PIXEL`).
+percentile, but the albedo band of a crop leaves
+`r n_cold[["albedo between [0.14, 0.26]"]]` of them, and
+`r n_cold[["selected"]]` pixel is finally the cold anchor (flag
+`EF_ANCHOR_SINGLE_PIXEL`).
 
 Now the net radiation and the soil heat flux (shortwave transmissivity
 from elevation, Waters et al., 2002, p. 18, Eq. 11; incoming longwave
@@ -460,7 +464,7 @@ scene: the cold anchor (blue triangle) and the
 mean is the hot calibration point.* The hot pixels are among the warmest
 and least green cells, in the east of the province. The cold anchor is a
 green cell (NDVI `r round(cp_tab$ndvi[cp_tab$type == "cold"], 2)`) in the
-west, but its albedo, `r round(cp_tab$albedo[cp_tab$type == "cold"], 3)`,
+west, but its albedo, `r round(cp_tab$albedo[cp_tab$type == "cold"], 4)`,
 is just inside the lower limit of 0.14 that the preset uses to leave out
 dark forest canopies: at 1 km it may well be a mixture of plantation and
 fields. This is the kind of compromise that section 4 comes back to. The
@@ -478,7 +482,7 @@ plot(NA, xlim = range(ts_all, na.rm = TRUE), ylim = c(-8, 16),
      main = "Calibrated dT line and its iterates")
 rect(ts_hot, -20, 400, 40, col = "#FEE0D2", border = NA)
 rect(0, -20, ts_cold, 40, col = "#DEEBF7", border = NA)
-text(mean(c(par("usr")[1], ts_cold)), -7, cex = 0.8, col = "#2B5C8A",
+text(par("usr")[1], -7, adj = c(-0.03, 0.5), cex = 0.8, col = "#2B5C8A",
      "extrapolated: colder than the cold anchor")
 text(mean(c(ts_hot, par("usr")[2])), 11.5, srt = 90, cex = 0.8,
      col = "#99341F", "extrapolated")
@@ -957,9 +961,11 @@ c(unstable = sum(zeta < 0, na.rm = TRUE), stable = sum(zeta > 0, na.rm = TRUE),
 (negative: unstable, $H > 0$; positive: stable, $H < 0$). Centre and
 right: the number of iterations each cell needed to reach `pixel_tol`.*
 
-Most of the scene is unstable; the stable cells are those colder than the
-point where the calibrated line crosses $dT = 0$, mostly the cool coastal
-strip in the west. No cell failed to converge. Which cells need more
+Almost the whole scene is unstable: only
+`r sum(zeta > 0, na.rm = TRUE)` cells are stable, those colder than the
+point where the calibrated line crosses $dT = 0$
+(`r round(-cal$a / cal$b, 1)` K), on the cool coastal strip in the west.
+No cell failed to converge. Which cells need more
 iterations?
 
 ```{r iterations-by-class}

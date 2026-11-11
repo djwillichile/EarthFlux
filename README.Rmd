@@ -84,7 +84,8 @@ What 0.1.0 includes:
   optionally in parallel, and spatial block cross-validation.
 * **MODIS preprocessing** (internal, not exported yet) into the surface
   state of the METRIC chain, and the example scene `cauquenes_modis`
-  (Cauquenes province, Chile, 15 February 2019).
+  (Cauquenes province, Chile, 15 February 2019; 14 February 2019 in the
+  development version, a date observed closer to nadir).
 
 What 0.1.0 does **not** include: the integrated `earthflux()` workflow and
 its presets, the automatic download of MODIS products, the elevation model
@@ -150,8 +151,9 @@ or the development version with `pak::pak("djwillichile/EarthFlux")`.
 ## Example
 
 The packaged scene `cauquenes_modis` is the MODIS surface state of the
-Cauquenes province (Maule Region, Chile) on 15 February 2019 (Terra
-overpass), on the 1 km sinusoidal grid. It is a packed `terra` raster:
+Cauquenes province (Maule Region, Chile) on 14 February 2019 (Terra
+overpass at about 10:12 local solar time, observed 12 to 18 degrees from
+nadir), on the 1 km sinusoidal grid. It is a packed `terra` raster:
 
 ```{r example-scene}
 library(EarthFlux)
@@ -176,7 +178,7 @@ terra::global(rl_out, c("min", "mean", "max"), na.rm = TRUE)
 # Computed on the native grid; shown in geographic coordinates (EPSG:4326)
 rl_out_lonlat <- terra::project(rl_out, "EPSG:4326", method = "bilinear")
 terra::plot(rl_out_lonlat,
-            main = "Emitted longwave radiation (W m-2), 2019-02-15")
+            main = "Emitted longwave radiation (W m-2), 2019-02-14")
 ```
 
 The map is projected to geographic coordinates (WGS 84, EPSG:4326) for

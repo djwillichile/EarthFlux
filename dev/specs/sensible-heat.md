@@ -744,7 +744,7 @@ H_target exactamente con (a*, b*) (§14.6).
   | Talca, Landsat 7, 2013-02-15 (198 926 celdas, L_cal ≈ −0.7 m) | 0.01 / 0.01 | 11 | 5 | −0.593 | 1.29 | 0.30 s |
   | | 0.01 / 10⁻¹⁰ | 11 | 15 | −0.608 | 1.34 | 0.66 s |
   | | **10⁻⁶ / 10⁻⁵** | 26 | 9 | 7·10⁻⁵ | 4.7·10⁻⁴ | 0.44 s |
-  | Cauquenes, `cauquenes_modis` en la cadena de `earthflux()` de los tests (3147 celdas, `idaho2002_elev` / `_flat`) | 0.01 / 0.01 | 6 | 4 | +0.426 / +0.415 | 1.25 / 1.21 | 0.010 / 0.011 s |
+  | Cauquenes, `cauquenes_modis` del 2019-02-15 (la escena de ejemplo hasta el 2026-11-11) en la cadena de `earthflux()` de los tests (3147 celdas, `idaho2002_elev` / `_flat`) | 0.01 / 0.01 | 6 | 4 | +0.426 / +0.415 | 1.25 / 1.21 | 0.010 / 0.011 s |
   | | **10⁻⁶ / 10⁻⁵** | 15 | 8 | −3·10⁻⁵ | 2.9·10⁻⁴ / 3.4·10⁻⁴ | 0.021 / 0.016 s |
 
   En el caso sintético de §14.5 con viento de 1 m/s a 2 m (L_cal ≈ −0.7 m)

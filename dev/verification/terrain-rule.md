@@ -12,6 +12,15 @@ Decisión: `DECISIONS.md` §1.5, M5-25. Especificación: `specs/presets.md`
 > este documento cambia el estado `CANDIDATA` de la regla. No se versionan
 > datos descargados: solo números.
 
+> **Nota (2026-11-11; M4-27, M5-26, M5-27).** Las corridas de este
+> documento usan el 2019-02-15 con Terra (MOD11A1), fecha en que la
+> provincia de Cauquenes se observó a 61–62° del nadir (huellas de
+> ~1,9 × 3,9 km; véase `specs/modis-products.md` §5.1 e). Desde el
+> 2026-11-11 la escena de ejemplo `cauquenes_modis` es del 2019-02-14
+> (Terra a 12–18°) y los presets versión 5 eligen Aqua (42°) para el
+> 2019-02-15 en Cauquenes. Las cifras se conservan como registro de la
+> evaluación; no describen la escena de ejemplo actual.
+
 ## 1. Problema
 
 Con los presets versión 3 y ERA5, la escena del Maule (2019-02-15) da en

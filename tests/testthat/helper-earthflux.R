@@ -1,13 +1,13 @@
 # Offline inputs of earthflux() (tests/testthat/test-earthflux.R).
 #
 # The surface state is the packaged example scene (cauquenes_modis, real
-# MODIS data of 2019-02-15) turned into an earthflux_surface_state; the
+# MODIS data of 2019-02-14) turned into an earthflux_surface_state; the
 # elevation model, the station tables and the Open-Meteo response are
 # SYNTHETIC (fictitious values). modis_fetch(), modis_surface_state(),
 # dem_fetch() and openmeteo_fetch() are replaced with
 # testthat::local_mocked_bindings(), so no test touches the network.
 
-ewf_date <- function() as.Date("2019-02-15")
+ewf_date <- function() as.Date("2019-02-14")
 
 # Surface state from the packaged scene, optionally cropped to rows and
 # columns of the grid.
@@ -55,7 +55,7 @@ ewf_state <- function(rows = NULL, cols = NULL) {
       flags = list(),
       provenance = list(
         granules = data.frame(role = "lst", product = "MOD11A1",
-                              date = "2019-02-15",
+                              date = "2019-02-14",
                               doi = "10.5067/MODIS/MOD11A1.061",
                               stringsAsFactors = FALSE),
         methods = options,
@@ -91,10 +91,10 @@ ewf_terrain <- function(grid, base = 150, slope_m_per_cell = 4) {
 # `from_col` on at `height` metres) and, optionally, a "valley" block (the
 # columns up to `valley_to_col` at `valley` metres), fictitious, for the
 # terrain rule of the presets (M5-25). The anchors of the packaged scene lie
-# in columns 52 to 86, so with the default `from_col` and `valley_to_col`
+# in columns 53 to 90, so with the default `from_col` and `valley_to_col`
 # the blocks hold no anchor and the anchors keep the elevations of the
 # plane.
-ewf_terrain_mountain <- function(grid, from_col = 90L, height = 1200,
+ewf_terrain_mountain <- function(grid, from_col = 92L, height = 1200,
                                  valley_to_col = 0L, valley = 0) {
   ter <- ewf_terrain(grid)
   z <- terra::values(ter$terrain[["elevation"]], mat = FALSE)
@@ -116,14 +116,14 @@ ewf_weather <- function(t, lon, k = 0) {
        solar_radiation = 830 * sun)
 }
 
-# Hourly station table (UTC, end of period) from 2019-02-13 01:00 to
-# 2019-02-17 00:00 for stations at lon, lat, elevation.
+# Hourly station table (UTC, end of period) from 2019-02-12 01:00 to
+# 2019-02-16 00:00 for stations at lon, lat, elevation.
 ewf_stations <- function(lon = -72.25, lat = -35.95, elevation = 150) {
   ids <- sprintf("ST%02d", seq_along(lon))
   stations <- data.frame(station_id = ids, lon = lon, lat = lat,
                          elevation = elevation, height_wind = 2,
                          height_temp_rh = 2, stringsAsFactors = FALSE)
-  t <- as.POSIXct("2019-02-13 01:00", tz = "UTC") + 3600 * (0:95)
+  t <- as.POSIXct("2019-02-12 01:00", tz = "UTC") + 3600 * (0:95)
   obs <- do.call(rbind, lapply(seq_along(ids), function(i) {
     w <- ewf_weather(t, lon[i], k = i - 1)
     data.frame(station_id = ids[i], timestamp = t, w,
