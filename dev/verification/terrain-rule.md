@@ -1,6 +1,7 @@
 # Evaluación de una regla de terreno para los presets (M5-25)
 
-Fecha: **2026-11-10**. Autor: Guillermo Servando Fuentes-Jaque.
+Fecha: **2026-11-10** (límite propio de `idaho2002_flat`: 2026-11-11,
+§8). Autor: Guillermo Servando Fuentes-Jaque.
 Decisión: `DECISIONS.md` §1.5, M5-25. Especificación: `specs/presets.md`
 §4.1. Antecedente: `verification/anchors-m5-23.md` (§4.3 y §5, punto 3).
 
@@ -196,7 +197,9 @@ válido exige pendiente definida.
    escenas). **Advertencia:** 500 m también es, de los tres límites
    evaluados, el que deja menos ETrF < 0 en el Maule (§4.1); quien revise
    la decisión debe saber que el argumento y las cifras coinciden, y que
-   las cifras solas no bastarían para elegirlo.
+   las cifras solas no bastarían para elegirlo. Este límite es el de
+   `idaho2002_elev`; `idaho2002_flat`, sin corrección por gradiente, usa
+   250 m por el mismo argumento (decisión del autor del 2026-11-11, §8).
 5. **Referencia en C2 (ERA5 o varias estaciones).** El datum es el punto
    de calibración frío, que solo existe tras seleccionar las anclas. Se
    toma de una **selección preliminar** con los mismos criterios y sin la
@@ -245,21 +248,142 @@ excluyen 10 460 celdas del AOI con elevación (36,8 % de 28 460; 10 151 de
 ellas tenían ETa₂₄), todas sobre 760 m (z_ref + 500 m); máxima elevación
 conservada 759,6 m. `EF_H_TERRAIN_RULE_APPLIED` marca las 10 460.
 
-## 8. Limitaciones y pendientes
+## 8. Límite propio de `idaho2002_flat` (2026-11-11)
+
+**Decisión del autor (opción B):** `idaho2002_elev` conserva 500 m e
+`idaho2002_flat` usa el límite que da el mismo argumento de §5, punto 4,
+sin corrección por gradiente (Γ = 0). Las cifras de §4 y §7 para `flat`
+son las de 500 m; esta sección da las de 250 m. Los presets siguen en la
+versión 4 (la rama no estaba integrada).
+
+### 8.1 Cálculo del límite
+
+El argumento compara el error de Ts_datum acumulado con la distancia en
+elevación al datum con la tolerancia de homogeneidad de LST de las anclas,
+1,5 K (`specs/presets.md` §4):
+
+| Preset | Corrección de Ts_datum | Error por km | 1,5 K / error | Límite | Error en el límite |
+|---|---|---|---|---|---|
+| `idaho2002_elev` | Γ = 6,5 K km⁻¹ (neutro, p. 95) frente a g/c_p ≈ 9,8 K km⁻¹ | 9,8 − 6,5 = 3,3 K km⁻¹ | 1,5 / 3,3 = 0,455 km = 455 m | **500 m** | 3,3 × 0,5 = 1,65 K |
+| `idaho2002_flat` | ninguna (Γ = 0): el error es el gradiente completo del manual | 6,5 K km⁻¹ | 1,5 / 6,5 = 0,231 km = 231 m | **250 m** | 6,5 × 0,25 = 1,63 K |
+
+Redondeo: al **múltiplo de 50 m superior**, la regla que reproduce los
+500 m de `elev` (455 → 500). Se prefiere 250 m a 230 m porque (i) aplica a
+ambos presets el mismo redondeo, que deja el mismo error en el límite
+(~1,6 K en los dos); (ii) los datos del argumento (1,5 K, 6,5 K km⁻¹)
+tienen una o dos cifras significativas, y 230 o 231 m sugerirían una
+precisión que no tienen. Redondear a 100 m daría 200 m, más estricto
+para `flat` (1,3 K en el límite) que para `elev`. Nota: el argumento de
+`flat` toma como error el gradiente del propio manual (lo que `flat` omite
+respecto de la Ec. 12-7); con el perfil adiabático seco de `elev` como
+referencia el error sería 9,8 K km⁻¹ y el límite ~150 m (200 m con el
+mismo redondeo). Ninguno de los dos límites tiene fuente primaria.
+
+### 8.2 Resultados de `idaho2002_flat` con 250 m
+
+`workflow_metric()` sobre las mismas entradas preparadas de §3, con la
+regla del preset aplicada dentro de la cadena; las corridas completas de
+`earthflux()` (versión 4, límite 250 m) reproducen exactamente las celdas
+excluidas, las anclas, a y b. "Calculadas" = celdas con ETa₂₄ sin regla.
+
+| Escena | Límite | Excluidas (de las calculadas) | n con ETa | ETrF > 1,05 | ETrF < 0 | ETrF p1 / p50 / p99 | ETa₂₄ p50 |
+|---|---|---|---|---|---|---|---|
+| Cauquenes | ninguno / 500 m | 0 (0,0 %) | 6598 | 19,8 % | 1,1 % | −0,01 / 0,42 / 1,71 | 3,0 |
+| Cauquenes | **250 m** | 2933 (44,5 %): 2915 debajo (z 5–169 m), 18 encima (z 669–787 m) | 3665 | 29,0 % | 0,5 % | 0,03 / 0,62 / 1,77 | 4,2 |
+| Maule | ninguno | 0 (0,0 %) | 24 830 | 28,7 % | 14,1 % | −1,17 / 0,85 / 1,63 | 5,8 |
+| Maule | 500 m | 10 151 (40,9 %), todas encima (z ≥ 760 m) | 14 679 | 30,9 % | 0,3 % | 0,06 / 0,93 / 1,65 | 6,3 |
+| Maule | **250 m** | 11 710 (47,2 %): 48 debajo (z 3–10 m), 11 662 encima (z 510–4491 m) | 13 120 | 31,2 % | 0,4 % | 0,05 / 0,94 / 1,69 | 6,4 |
+
+Celdas del AOI con elevación marcadas con `EF_H_TERRAIN_RULE_APPLIED`:
+Cauquenes 2948 de 6614 (44,6 %), Maule 12 167 de 28 460 (42,8 %; con
+500 m, 10 460). Elevación conservada: Cauquenes 169–668 m, Maule
+10–510 m.
+
+Anclas (candidatos tras la homogeneidad, elevación del punto de
+calibración con mín.–máx. de sus píxeles, Ts; ningún caso necesitó
+relajación):
+
+| Escena | Límite | Frío | Caliente | Datum final (z_ref) | a; b |
+|---|---|---|---|---|---|
+| Cauquenes | ninguno / 500 m | 22, 419 m (303–471), 299,43 K | 447, 145 m (115–234), 307,14 K | 419 m (419 m) | −157,4; 0,5299 |
+| Cauquenes | **250 m** | **1**, 303 m (un píxel, `EF_ANCHOR_SINGLE_PIXEL`), 300,36 K | 95, 193 m (169–243), 306,87 K | 303 m (419 m) | −190,6; 0,6390 |
+| Maule | 500 m | 118, 271 m (118–523), 299,41 K | 355, 150 m (109–243), 307,00 K | 271 m (260 m) | −172,1; 0,5782 |
+| Maule | **250 m** | 288, 252 m (118–426), 299,56 K | 324, 150 m (109–243), 307,01 K | 252 m (260 m) | −178,3; 0,5985 |
+
+Por banda de elevación (n; ETrF p5 / p50 / p95; > 1,05; < 0; ETa₂₄ p50,
+mm d⁻¹):
+
+| Escena | Banda (m) | Sin regla | 500 m | **250 m** |
+|---|---|---|---|---|
+| Cauquenes | 0–300 | 4865; 0,05 / 0,32 / 1,59; 13,2 %; 1,5 %; 2,3 | sin cambio | 1950; 0,07 / 0,41 / 1,65; 14,4 %; 1,0 %; 2,9 |
+| Cauquenes | 300–1000 | 1733; 0,31 / 0,90 / 1,52; 38,2 %; 0,0 %; 5,9 | sin cambio | 1715; 0,31 / 0,99 / 1,63; 45,7 %; 0,0 %; 6,5 |
+| Maule | 0–300 | 9449; 0,20 / 0,93 / 1,50; 29,1 %; 0,4 %; 6,4 | 9449; 0,18 / 0,89 / 1,47; 26,3 %; 0,5 %; 6,2 | 9401; 0,18 / 0,91 / 1,48; 27,7 %; 0,5 %; 6,3 |
+| Maule | 300–1000 | 6186; 0,53 / 1,03 / 1,42; 47,3 %; 0,4 %; 6,9 | 5230; 0,54 / 0,99 / 1,40; 39,4 %; 0,0 %; 6,6 | 3719; 0,55 / 1,00 / 1,44; 40,2 %; 0,0 %; 6,7 |
+| Maule | 1000–2000 | 3742; −1,02 / 0,65 / 1,36; 27,9 %; 25,9 %; 4,1 | 0 (excluidas) | 0 (excluidas) |
+| Maule | > 2000 | 5453; −0,94 / 0,07 / 1,18; 7,2 %; 45,1 %; 0,4 | 0 (excluidas) | 0 (excluidas) |
+
+ETrF de `flat` sin regla según z − z_ref (n; mediana; > 1,05; < 0):
+
+| z − z_ref (m) | Cauquenes (z_ref = 419 m) | Maule (z_ref = 260 m) |
+|---|---|---|
+| < −250 | 2915; 0,25; 13,5 %; 2,5 % | 48; 1,39; 89,6 %; 0,0 % |
+| −250 … −125 | 1880; 0,40; 12,5 %; 0,1 % | 3133; 0,87; 33,0 %; 0,3 % |
+| −125 … 0 | 1065; 0,72; 27,6 %; 0,0 % | 4975; 0,93; 24,8 %; 0,6 % |
+| 0 … 125 | 567; 1,04; 48,5 %; 0,0 % | 3362; 0,99; 36,1 %; 0,0 % |
+| 125 … 250 | 153; 1,20; 61,4 %; 0,0 % | 1650; 1,04; 49,2 %; 0,0 % |
+| 250 … 500 | 18; 1,32; 77,8 %; 0,0 % | 1511; 1,07; 53,1 %; 0,1 % |
+| 500 … 750 | — | 987; 1,10; 56,1 %; 2,8 % |
+| > 750 | — | 9164; 0,23; 15,5 %; 37,4 % |
+
+### 8.3 Lectura
+
+1. **Maule.** Pasar de 500 a 250 m excluye 1559 celdas calculadas más
+   (la banda 300–1000 m baja de 5230 a 3719 celdas, más 48 celdas
+   costeras bajo 10 m) y casi no cambia las cifras de la escena (ETrF < 0
+   0,3 → 0,4 %, > 1,05 30,9 → 31,2 %). Sale la franja 250–500 m sobre el
+   datum, donde `flat` sin corrección da ETrF mediana 1,07 y 53 % > 1,05
+   (las celdas altas parecen frías, §4.4). El ancla caliente no cambia; el
+   frío gana candidatos (288) y baja a 252 m.
+2. **Cauquenes: la regla corta ahora el valle, no la cumbre.** z_ref es el
+   punto frío de la selección preliminar (419 m, §4.3) y la escena llega
+   a 787 m, pero también baja a 5 m: con 250 m solo 18 celdas quedan fuera por encima
+   (669–787 m) y **2915 por debajo (z < 169 m, 44 % de las calculadas)**,
+   incluida la zona del ancla caliente de la versión 4 (145 m). Es el caso
+   de §9, punto 3: la referencia en C2 depende del frío preliminar, y con
+   un límite de 250 m un frío en lomaje deja fuera el llano. Sin regla,
+   esas celdas tienen ETrF mediana 0,25 y solo 2,5 % < 0: la exclusión
+   viene del argumento (a 274 m bajo el datum, Ts sin corregir lleva un
+   error de ~1,8 K hacia lo seco), no de valores sin sentido físico, y las
+   cifras no permiten separar ese sesgo de la sequedad real del llano en
+   verano.
+3. **Anclas de Cauquenes con 250 m.** El dominio de percentiles queda en
+   169–668 m; de 291 celdas con NDVI ≥ p0,90 solo 2 cumplen la banda de
+   albedo y 1 la homogeneidad: el ancla fría es **un solo píxel** (303 m,
+   300,36 K, `EF_ANCHOR_SINGLE_PIXEL`), sin relajación porque hay
+   candidato. El contraste entre anclas baja de 7,71 a 6,51 K, y el datum
+   final (303 m) queda a 116 m de la referencia (419 m). Una calibración
+   que depende de un píxel es frágil.
+4. Con `elev` nada cambia (límite 500 m, §4 y §7).
+
+## 9. Limitaciones y pendientes
 
 1. **Sin ETa en la montaña.** El 41 % de las celdas calculadas del Maule
    queda `NA`. El manual pide para ellas otra aplicación (sub-imagen con
    su propio clima y sus anclas, pp. 39, 70) o el modelo de montaña
    (ap. 12): ninguno está implementado.
-2. **El límite es `CANDIDATA`.** 500 m sale de un argumento de orden de
-   magnitud (gradiente neutro frente a adiabático seco, comparado con la
-   tolerancia de homogeneidad, también sin fuente). Con `flat` (Γ = 0) el
-   error de no corregir es 6,5 K km⁻¹ y el mismo argumento daría ~230 m;
-   se usa el mismo límite en ambos presets porque `flat` se declara para
-   relieve bajo, y lo que la regla acota es la validez de la calibración.
+2. **Los límites son `CANDIDATA`.** 500 m (`elev`) y 250 m (`flat`)
+   salen de un argumento de orden de magnitud (error de Ts_datum frente a
+   la tolerancia de homogeneidad, también sin fuente; §5, punto 4, y
+   §8.1). Hasta el 2026-11-10 se usaba 500 m en ambos presets; desde el
+   2026-11-11 cada preset tiene el suyo (decisión del autor).
 3. **Referencia en C2.** Depende del punto frío de la selección
    preliminar: si los criterios eligieran un frío de montaña, la regla
-   excluiría el valle. En estas escenas el frío está en 260–419 m.
+   excluiría el valle. En estas escenas el frío está en 260–419 m; con el
+   límite de 250 m de `flat` esto ya ocurre en Cauquenes (§8.3: 44 % de
+   las celdas calculadas, bajo 169 m, y un ancla fría de un píxel).
+   Alternativas para el autor (no implementadas): una estación como
+   referencia, una referencia entre el frío y el caliente preliminares, o
+   `elev` en escenas con relieve.
 4. **El valle no mejora en lo que la regla no toca.** En el Maule el 30,6 %
    de las celdas bajo 300 m sigue con ETrF > 1,05 (`elev`) y Cauquenes
    conserva 20,6 % (`verification/anchors-m5-23.md` §5): la regla no
