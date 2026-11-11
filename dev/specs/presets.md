@@ -5,7 +5,9 @@ Guillermo Servando Fuentes-Jaque · Decisiones: `DECISIONS.md` §1.5, M5-04
 y **M5-08 … M5-25** (presets versión 2 desde M5-23 y M5-24), **M2-11**
 (versión 3: convergencia de H por fase), **M5-25** (versión 4: regla de
 terreno; límite propio de `idaho2002_flat` y referencia = rango de
-elevación de las anclas desde el 2026-11-11) · Documento
+elevación de las anclas desde el 2026-11-11), **M5-26** y **M5-27**
+(versión 5: flag de ángulo de visión y elección Terra/Aqua, 2026-11-11) ·
+Documento
 dueño de la arquitectura:
 `ARCHITECTURE.md` §6.7.
 
@@ -66,8 +68,8 @@ V#7; M5-11) las anclas se seleccionan **antes** de Rn (P0-3;
 | # | Paso | Llamada | Notas de la implementación |
 |---|---|---|---|
 | 0 | Comprobaciones | `check_method(preset)`, `workflow_check_aoi()` (`modis_tiles_for_aoi()`) | Rechazo de varias teselas antes de descargar (hueco 8). Aviso de preset no verificado |
-| 1 | MODIS | `modis_fetch(aoi, date, lst_product, cache_dir, collection)` | — |
-| 2 | Superficie | `modis_surface_state(files, aoi, modis_surface_options(...))` | Grilla de trabajo = LST 1 km (MP-08) |
+| 1 | MODIS | `modis_fetch(aoi, date, lst_product = "auto_view_angle", cache_dir, collection, min_lst_coverage = 0.8)` | Se descargan MOD11A1 y MYD11A1; se usa el de menor mediana de \|ángulo de visión\| sobre el AOI entre los que tienen ≥ 80 % de LST válida (M5-27; `modis-products.md` §5.1 e); ambos candidatos en `provenance$scene$lst_choice` |
+| 2 | Superficie | `modis_surface_state(files, aoi, workflow_surface_options(preset, producto elegido))` | Grilla de trabajo = LST 1 km (MP-08); `view_angle_max = 40` → `EF_SURF_VIEW_ANGLE_HIGH` en `flags_lst` (M5-26). Aviso `earthflux_view_angle_warning` si la mediana de \|ángulo\| de las celdas del AOI con LST supera 40° (`workflow_view_angle()`, `provenance$scene$view_angle`) |
 | 3 | Máscaras | `workflow_aoi_mask()` (`terra::rasterize(touches = TRUE)`), `surface_exclusion()` | Fuera del polígono → `NA` en todo (hueco 8); bits `critical` SURF → albedo `NA`, contados (P0-11) |
 | 4 | MDE | `dem_fetch(aoi, grid, method = "flat", water = "mask", cache_dir)` | `valid_fraction < 1` → elevación `NA`, contada (M5-17); pendiente y orientación 0 (RC-09) |
 | 5 | Meteorología | tabla del usuario o `openmeteo_fetch(aoi, date, elevation_adjust = FALSE, instant_values = "trapezoid", apikey, cache_dir)` | La tabla debe ser horaria (WF-09) |
@@ -89,7 +91,7 @@ V#7; M5-11) las anclas se seleccionan **antes** de Rn (P0-3;
 
 ## 3. Presets
 
-Dos presets (M5-09), **`CANDIDATA`**, versión interna **`"4"`** (registrada
+Dos presets (M5-09), **`CANDIDATA`**, versión interna **`"5"`** (registrada
 en la procedencia; un cambio de cualquier valor es una versión nueva).
 Versiones (elemento `changes` del preset y `provenance$preset$changes`):
 
@@ -99,6 +101,7 @@ Versiones (elemento `changes` del preset y `provenance$preset$changes`):
 | `"2"` | 2026-11-06 | Criterios de anclas recalibrados para MODIS a 1 km (M5-23, reemplaza M5-10; §4); mínimo de z_om de 0,005 m con `EF_H_ZOM_FLOOR_APPLIED` (M5-24, reemplaza M5-13); ninguna ancla en celdas con LAI asignado (`EF_SURF_LAI_ASSIGNED`) |
 | `"3"` | 2026-11-10 | Convergencia de la calibración de H con una tolerancia por fase (M2-11): `tol` = 10⁻⁶ y `maxit` = 100 en las anclas, `pixel_tol` = 10⁻⁵ y `pixel_maxit` = 100 por píxel (antes 0,01 y 20 en ambas fases), escritos en el preset para que un cambio de los defectos de `ef_h_control()` no lo cambie en silencio. H cambia hasta ~1,3 W m⁻² (en Cauquenes, −0,43 W m⁻² de media) |
 | `"4"` | 2026-11-10 (límite de `flat` y referencia = rango de las anclas: 2026-11-11) | Regla de terreno (M5-25, §4.1): celdas a más de 500 m (`idaho2002_elev`) o 250 m (`idaho2002_flat`, sin corrección por gradiente) por debajo o por encima del rango de elevación de la calibración (anclas preliminares y, en C1, la estación) sin ancla y `NA` en todas las capas, con `EF_H_TERRAIN_RULE_APPLIED`; los límites difieren por preset. Maule: 40 % (`elev`, todas sobre 803 m) y 46 % (`flat`) de las celdas calculadas excluidas; Cauquenes: ninguna (`elev`) y 0,3 % (`flat`, 18 celdas sobre 669 m). Con la referencia anterior (datum, hasta el 2026-11-11): Maule 41 % y 47 %, Cauquenes `flat` 44 % (casi todas bajo 169 m) |
+| `"5"` | 2026-11-11 | Ángulo de visión de la LST (M5-26, M5-27; `modis-products.md` §5.1 e): producto LST elegido por escena entre Terra (MOD11A1) y Aqua (MYD11A1), el de menor mediana de \|ángulo de visión\| sobre el AOI entre los que tienen ≥ 80 % de LST válida (`lst_product = "auto_view_angle"`, antes siempre Terra); celdas con \|ángulo\| > 40° marcadas `EF_SURF_VIEW_ANGLE_HIGH` y sin ancla (`anchors$qa_exclude_codes`); aviso si la mediana de la escena supera 40°. NDVI: MOD13A2 (Terra) también con Aqua (MYD13A2 no implementado). Cauquenes 2019-02-15: Terra 62° (96,7 %), Aqua 42° (93,3 %) → Aqua; 2019-02-14: Terra 15° (98,1 %), Aqua 47° (98,5 %) → Terra |
  El
 estado va en la documentación y en la procedencia, **no en el nombre**
 (M5-08, que reescribe D-AP-01). Ninguno usa la pendiente: se fuerza a 0
@@ -116,7 +119,8 @@ estado va en la documentación y en la procedencia, **no en el nombre**
 
 | Bloque | Opción | Valor | Estado |
 |---|---|---|---|
-| MODIS | `lst_product` | `"MOD11A1"` (Terra), colección 061 | V producto; hora de paso C |
+| MODIS | `lst_product` | `"auto_view_angle"`: MOD11A1 (Terra) o MYD11A1 (Aqua), el de menor mediana de \|ángulo de visión\| sobre el AOI con LST válida ≥ `min_lst_coverage` = 0,8 (versión 5; antes `"MOD11A1"`), colección 061 | V producto; hora de paso C; regla y 0,8 **C** (M5-27) |
+| | `view_angle_max` | **40°**: \|`Day_view_angl`\| > 40° → `EF_SURF_VIEW_ANGLE_HIGH` (el área de la huella llega al doble de la del nadir) | **C** (M5-26; geometría sin fuente primaria) |
 | | `albedo_method` / `diffuse_fraction` | `"white_sky"` / `NULL` | C (MP-03) |
 | | `emissivity_method` | `"lai_empirical"` (E3) | V-I forma (V#11) |
 | | `ndvi_source`; `composite_method` | `"MOD13A2"`; `c(albedo = "same_day", ndvi = "period_pixel_lag", lai = "period")` | V; D(p) |
@@ -158,6 +162,8 @@ paso), `modis_matching` (MP-07, MP-08, umbral de `min_valid_fraction`),
 `lai_nonveg` (MP-06), `reference_et_time` (WF-09, WF-11), `regionalization`
 (IDW C), `era5` (forzamiento grillado, `instant_values`, elevación nativa,
 exclusión de celdas marinas), `station_roughness` (h = 0,12 m, SH-04),
+`view_angle` (umbral de 40° y cobertura mínima de 0,8 de la elección
+Terra/Aqua, M5-26, M5-27),
 `zom_floor` (mínimo de 0,005 m, SH-02, M5-24), `wind_time` (M5-14),
 `flat_projection` (RC-09), `terrain_rule` (límite de 500 m en `elev` y
 250 m en `flat`, M5-25).
@@ -186,7 +192,7 @@ primaria**.
 | Selección | frío `ef_anchor_pick("lst", "lowest_fraction", 0.2)`; caliente `ef_anchor_pick("lst", "highest_fraction", 0.2)`; `aggregate = "mean"` | igual |
 | Dominio / cuantil | `percentile_domain = "land"`, `quantile_type = 7` | igual |
 | `relax` | **un** paso: frío `ndvi >= 0.80`, caliente `ndvi <= 0.20` (percentiles), el resto igual → `EF_ANCHOR_CRITERIA_RELAXED` | un paso: frío `lai >= 2` |
-| QA de anclas (estricto, MP-09) | sin bits `warning`/`critical` en `flags_lst`, `flags_albedo`, `flags_ndvi`, `flags_lai`, `flags_emissivity` (bits leídos del registro por severidad) **ni `EF_SURF_LAI_ASSIGNED`** (LAI asignado por `lai_nonveg`, no recuperado: clases urbana, desnuda, agua, nieve; `anchors$qa_exclude_codes`); todas las `valid_fraction` = 1; sin bits 1, 3 o 6 GWR en las palabras del forzamiento a la hora de paso; y la cadena definida en la celda (elevación, z_om, forzamiento, hora de paso) — M5-22 | sin la exclusión de LAI asignado (lo hacía, de hecho, z_om `NA` en LAI = 0, M5-13) |
+| QA de anclas (estricto, MP-09) | sin bits `warning`/`critical` en `flags_lst`, `flags_albedo`, `flags_ndvi`, `flags_lai`, `flags_emissivity` (bits leídos del registro por severidad) **ni `EF_SURF_LAI_ASSIGNED`** (LAI asignado por `lai_nonveg`, no recuperado: clases urbana, desnuda, agua, nieve; `anchors$qa_exclude_codes`) **ni `EF_SURF_VIEW_ANGLE_HIGH`** (LST observada a más de 40° del nadir, huella grande y mezclada; versión 5, M5-26; ya excluida por ser `warning` en `flags_lst`, listada explícitamente); todas las `valid_fraction` = 1; sin bits 1, 3 o 6 GWR en las palabras del forzamiento a la hora de paso; y la cadena definida en la celda (elevación, z_om, forzamiento, hora de paso) — M5-22 | sin la exclusión de LAI asignado (lo hacía, de hecho, z_om `NA` en LAI = 0, M5-13) |
 
 Motivos (evidencia en `verification/anchors-m5-23.md` §3):
 
@@ -281,7 +287,7 @@ pendientes.
 | `qa` | Palabras de flags por etapa, **sin combinar bit a bit**: `surface` (las del estado), `forcing` (GWR: una capa por variable a la hora de paso de cada celda, OR de los dos puntos medios), `metric` (`flags_rad`, `flags_g`, `flags_h`, `flags_et`) y `flag_bits` por etapa. `NA` = no evaluado (fuera del AOI; en las celdas excluidas por la regla de terreno solo `flags_h` está definida, con el bit de `EF_H_TERRAIN_RULE_APPLIED`) |
 | `flags` | Registros de objeto/registro del forzamiento (`EF_WS_GRIDDED_FORCING` subido desde `provenance$forcing`, hueco 9; `EF_GWR_*` con `target` = tabla de estaciones de la superficie), de las anclas y de la calibración, y los registros de celda de la cadena METRIC sobre las celdas de `terra` (`target` = capa, índices dentro del AOI). Los flags de registro del QC y de la ETr de estaciones quedan en `weather` |
 | `date`, `preset` | Fecha y el `earthflux_preset` usado |
-| `provenance` | `preset` (nombre, versión, estado, fuente, decisiones, elementos no verificados); `options` (**cada opción** del preset); `scene` (AOI, teselas, grilla, rango y número de horas de paso, fuente meteorológica, humedad, `utc_offset`, día de ETr₂₄, puntos medios, método y estación representativa, estaciones usadas y excluidas, elevación de τ y del datum, `terrain_rule` (referencia, su fuente y el límite), T_cold y z_frío de RL↓, λ, área de búsqueda, entradas del usuario); `counts` (celdas de la grilla y del AOI; dentro del AOI: críticas SURF, MDE sin dato o bajo la fracción válida mínima, fuera de dominio GWR, z_om elevada al mínimo, excluidas por la regla de terreno, ETa válidas); `sources` (MODIS: granulos, DOI, caché; MDE: teselas, DOI, licencia; meteorología: petición Open-Meteo **sin clave**, `apikey_used`, licencia y atribución, o la procedencia de la tabla de estaciones); `attribution`; `flags_evaluated` y `flags_evaluated_by_stage`; `versions`; `execution` (plan `future`, inicio, duración) |
+| `provenance` | `preset` (nombre, versión, estado, fuente, decisiones, elementos no verificados); `options` (**cada opción** del preset); `scene` (AOI, teselas, `lst_product` usado y `lst_choice` (estadísticas de ambos candidatos, regla aplicada; M5-27), `view_angle` (mediana, rango, umbral, celdas marcadas, aviso; M5-26), grilla, rango y número de horas de paso, fuente meteorológica, humedad, `utc_offset`, día de ETr₂₄, puntos medios, método y estación representativa, estaciones usadas y excluidas, elevación de τ y del datum, `terrain_rule` (referencia, su fuente y el límite), T_cold y z_frío de RL↓, λ, área de búsqueda, entradas del usuario); `counts` (celdas de la grilla y del AOI; dentro del AOI: críticas SURF, `view_angle_high`, MDE sin dato o bajo la fracción válida mínima, fuera de dominio GWR, z_om elevada al mínimo, excluidas por la regla de terreno, ETa válidas); `sources` (MODIS: granulos, DOI, caché; MDE: teselas, DOI, licencia; meteorología: petición Open-Meteo **sin clave**, `apikey_used`, licencia y atribución, o la procedencia de la tabla de estaciones); `attribution`; `flags_evaluated` y `flags_evaluated_by_stage`; `versions`; `execution` (plan `future`, inicio, duración) |
 
 Métodos: `print()` (preset, grilla, meteorología, anclas, a y b, rangos
 de ETa₂₄ y ETrF, flags), `summary()` (tabla de capas con unidad, n
@@ -346,7 +352,14 @@ albedo y los umbrales de NDVI calculados); ruta experta; C2 con varias
 estaciones sobre el AOI completo (con los criterios v1 el frío quedaba
 vacío y se usaba un AOI menor); ERA5 (opciones,
 celdas marinas excluidas, `EF_WS_GRIDDED_FORCING`, ni la clave ni el token
-en la procedencia ni en los flags); meteorología insuficiente.
+en la procedencia ni en los flags); meteorología insuficiente; ángulo de
+visión (versión 5: capa sintética de ángulo sobre la escena, anclas que se
+apartan de las celdas marcadas, aviso con la mediana sobre 40° y error de
+anclas sin celdas utilizables; procedencia y conteo `view_angle_high`;
+escena declarada como Aqua con la hora de paso 4,2 h más tarde: puntos
+medios que la rodean y ruta experta). La elección Terra/Aqua se prueba en
+`test-modis-download.R` (`modis_choose_lst()`, `modis_lst_view_stats()`
+con GeoTIFF sintéticos y `modis_fetch()` con la red simulada).
 
 ## 8. Hallazgos
 
@@ -402,3 +415,14 @@ en la procedencia ni en los flags); meteorología insuficiente.
    las anclas (2026-11-11, §10 de la evaluación): Cauquenes `flat` 18
    celdas del AOI excluidas (sobre 669 m), anclas de la escena sin regla;
    Maule 10 295 (`elev`) y 11 735 (`flat`) celdas del AOI excluidas.
+6. **Ángulo de visión (2026-11-11; M5-26, M5-27; `modis-products.md`
+   §5.1 e).** En la escena `cauquenes_modis` (MOD11A1, 2019-02-15) toda la
+   provincia se observó a 61–62° del nadir: huellas de ~1,9 × 3,9 km
+   promediadas en la grilla de 1 km dan bordes rectos norte–sur en la LST
+   (diferencias entre celdas vecinas de 1,24 K donde cambia el ángulo frente
+   a 0,32 K en el resto), el paso fue a las ~9:20 h solares y las anclas
+   caen en píxeles mezclados. Con la versión 5 esa fecha usa Aqua (mediana
+   42°, 93,3 % de LST válida), aún sobre 40°: aviso y 98,4 % de las celdas
+   con LST marcadas (40–44°; solo 58 celdas a 40° quedan para las anclas,
+   de modo que la selección puede quedar sin candidatos). El 2019-02-14
+   usa Terra (12–18°, 98,1 %), sin celdas marcadas.

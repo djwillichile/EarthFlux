@@ -28,8 +28,8 @@ mayúsculas (`EF_*`); las descripciones del registro, en inglés (en-GB,
 | Filas de inventario (propuestas por documento, §2) | 122 |
 | Códigos/condiciones distintos inventariados | 120 (119 con nombre + 1 sin nombre: "Rn negativo") |
 | Códigos tras normalizar (§3–§4) | **116** (112 de la normalización de M1 + `EF_SURF_LAI_ASSIGNED`, agregado en M4 con la opción `lai_nonveg`, MP-06, + `EF_WS_GRIDDED_FORCING`, agregado en M5 con el forzamiento ERA5 vía Open-Meteo, M5-07, + `EF_H_ZOM_UNDEFINED`, agregado en M5 con `earthflux()`, M5-13, y **retirado** por M5-24 con su bit ocupado, + `EF_H_TERRAIN_RULE_APPLIED`, agregado con la regla de terreno de los presets, M5-25; §4.2, §7) |
-| Clase I — inequívocos, sin umbral: registrables con su módulo | **77** (68 registrados + 8 pendientes + 1 retirado al 2026-11-10, §4.4) |
-| Clase II — requieren umbral (o verificación de fuente): `TODO`, no registrar | **35** |
+| Clase I — inequívocos, sin umbral: registrables con su módulo | **78** (69 registrados + 8 pendientes + 1 retirado al 2026-11-11, §4.4; incluye `EF_SURF_VIEW_ANGLE_HIGH`, pasado de la clase II con su umbral como opción explícita, M5-26) |
+| Clase II — requieren umbral (o verificación de fuente): `TODO`, no registrar | **34** |
 | Clase III — imposibilidad física/lógica: **error** en el núcleo; flag `critical` solo en módulos de datos | **4** |
 | Fusiones (mismo hecho, nombres distintos) | 5 (eliminan 5 códigos) |
 | Retiros por herencia (anclas) | 4 |
@@ -509,7 +509,10 @@ decisión del autor (excepción a §7, punto 3). Ningún código existente lo
 significaba. En las celdas excluidas solo la palabra `flags_h` está
 definida (este bit); `flags_rad`, `flags_g` y `flags_et` son `NA` (no
 evaluado, §6.3, punto 5) y ningún otro registro de celda las incluye.
-Total registrado: 72 códigos (§4.4). Las demás filas de
+El 2026-11-11 (M5-26) `EF_SURF_VIEW_ANGLE_HIGH` pasa de la clase II a la
+clase I con su umbral como opción explícita sin defecto (`view_angle_max`)
+y se registra en `ef_flags_surface()` con el bit 16 de `SURF` (§4.4, §7,
+punto 2). Total registrado: 73 códigos (§4.4). Las demás filas de
 este catálogo siguen sin registrar y se registran según §7.
 
 #### `EF_INPUT_` (1)
@@ -539,7 +542,7 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_SURF_LAI_ASSIGNED` | — (nuevo en M4; `modis-products.md` MP-06) | nuevo | I (registrado; `modis_lai()` con la opción `lai_nonveg`; `modis_surface_state()` lo lleva a `flags_lai` y a `flags_emissivity`) | info* | cell | 15 | LAI de una clase no vegetada (249–254) **asignado** por el usuario (no recuperado), valor conservado; `EF_SURF_LAI_NONVEG` conserva su significado (LAI `NA`) y **no** se levanta en las celdas asignadas (sí en las clases no asignadas). No enmascarable ni causa de `NA` |
 | `EF_SURF_LST_ERROR` | `EF_MODIS_LST_ERROR` | prefijo | II | warning* | cell | libre | Qué categoría de error `TODO` |
 | `EF_SURF_EMIS_ERROR` | `EF_MODIS_EMIS_ERROR` | prefijo | II | warning* | cell | libre | `TODO` |
-| `EF_SURF_VIEW_ANGLE_HIGH` | `EF_MODIS_VIEW_ANGLE_HIGH` | prefijo | II | warning* | cell | libre | Absorbe `EF_ANCHOR_HIGH_VIEW_ANGLE` por herencia |
+| `EF_SURF_VIEW_ANGLE_HIGH` | `EF_MODIS_VIEW_ANGLE_HIGH` | prefijo | I (registrado; **pasado de II a I** el 2026-11-11, M5-26: umbral = opción explícita `view_angle_max` de `modis_surface_options()` sin defecto, 40° `CANDIDATA` en los presets; `modis_surface_state()` lo levanta en `flags_lst` donde la LST es válida y \|`Day_view_angl`\| > umbral) | warning* | cell | 16 | Absorbe `EF_ANCHOR_HIGH_VIEW_ANGLE` por herencia: las anclas de los presets excluyen la celda (`anchors$qa_exclude_codes`); LST conservada (`modis-products.md` §5.1 e) |
 | `EF_SURF_COMPOSITE_LAG` | `EF_MODIS_COMPOSITE_LAG` | prefijo | II | warning* | cell | libre | Absorbe `EF_ANCHOR_COMPOSITE_LAG` por herencia |
 | `EF_SURF_AGG_INCOMPLETE` | `EF_MODIS_AGG_INCOMPLETE` | prefijo | II | info* | cell | libre | Causa de `NA` |
 | `EF_SURF_OVERPASS_OUTSIDE_WINDOW` | `EF_OVERPASS_OUTSIDE_WINDOW` | prefijo | II | warning* | cell | libre | Ventana `TODO` (`soil-heat-flux.md` §3.1) |
@@ -692,7 +695,7 @@ división).
 | Prefijo | I | II | III | Total | Registrados |
 |---|---|---|---|---|---|
 | `INPUT` | 1 | 0 | 0 | 1 | 1 |
-| `SURF` | 14 | 7 | 1 | 22 | 15 |
+| `SURF` | 15 | 6 | 1 | 22 | 16 |
 | `WS` | 12 | 13 | 2 | 27 | 14 |
 | `GWR` | 14 | 4 | 1 | 19 | 13 |
 | `RAD` | 4 | 1 | 0 | 5 | 4 |
@@ -700,7 +703,7 @@ división).
 | `ANCHOR` | 10 | 4 | 0 | 14 | 10 |
 | `H` | 13 | 2 | 0 | 15 | 10 |
 | `ET` | 5 | 2 | 0 | 7 | 1 |
-| **Total** | **77** | **35** | **4** | **116** | **72** |
+| **Total** | **78** | **34** | **4** | **116** | **73** |
 
 Registrados (M4, 2026-11-04, tras la opción `lai_nonveg`; recuento de
 `ef_flag_registry()`): **69 códigos** — `INPUT` 1, `RAD` 4, `G` 4,
@@ -734,6 +737,20 @@ Regla de terreno de los presets (M5-25, 2026-11-10):
 en `ef_flags_workflow()` con sus tests positivo y negativo: **72 códigos**
 registrados, 68 de clase I (`H` 10); la clase I suma 77 = 68 registrados
 + 8 pendientes + 1 retirado.
+
+Ángulo de visión de la LST (M5-26, 2026-11-11): `EF_SURF_VIEW_ANGLE_HIGH`
+pasa de la clase II a la **clase I** por decisión del autor: el umbral no
+tiene referencia, pero es una opción explícita sin defecto
+(`view_angle_max` de `modis_surface_options()`; 40° `CANDIDATA` en los
+presets, geometría de `modis-products.md` §5.1 e), de modo que el flag
+significa sin ambigüedad "ángulo por encima del umbral elegido", como
+`EF_SURF_LAI_ASSIGNED` con `lai_nonveg` (excepción explícita a §7, punto
+2, registrada). Se registra en `ef_flags_surface()` (`warning`, `cell`,
+**bit 16 de `SURF`**, el siguiente libre de §6.4) con tests positivo y
+negativo (`test-modis-surface.R`, `test-earthflux.R`) y sale de la guardia
+de clase II (34 códigos): **73 códigos** registrados, 69 de clase I
+(`SURF` 16); la clase I suma 78 = 69 registrados + 8 pendientes + 1
+retirado; la clase II, 34.
 
 Superficie (M4, 2026-11-04): los 14 `EF_SURF_*` de clase I y el de clase
 III están registrados en `ef_flags_surface()` (`R/modis-qa.R`): 12
@@ -949,7 +966,7 @@ código entra al registro (§7). Los códigos de clase II con ámbito `cell`
 reciben el siguiente bit libre al registrarse. Un bit asignado nunca se
 reutiliza ni se renumera (aunque el código se retire).
 
-| Bit | `SURF` (lst, emissivity, albedo, ndvi, lai, overpass_time, emis_31, emis_32) | `GWR` (cada variable × `target_time`) | `RAD` (rn y componentes) | `G` (g, g_rn_ratio) | `H` (h, rah, dt) | `ET` (et_inst, etrf, eta_24, et_period) |
+| Bit | `SURF` (lst, emissivity, albedo, ndvi, lai, overpass_time, view_angle, emis_31, emis_32) | `GWR` (cada variable × `target_time`) | `RAD` (rn y componentes) | `G` (g, g_rn_ratio) | `H` (h, rah, dt) | `ET` (et_inst, etrf, eta_24, et_period) |
 |---|---|---|---|---|---|---|
 | 0 | `EF_INPUT_NA` | `EF_INPUT_NA` | `EF_INPUT_NA` | `EF_INPUT_NA` | `EF_INPUT_NA` | `EF_INPUT_NA` |
 | 1 | `EF_SURF_FILL` | `EF_GWR_EXTRAPOLATION_COVARIATE` | `EF_RAD_SELF_SHADED` | `EF_G_RN_NONPOSITIVE` | `EF_H_ZOM_FLOOR_APPLIED` | `EF_ET_NEGATIVE` |
@@ -967,10 +984,11 @@ reutiliza ni se renumera (aunque el código se retire).
 | 13 | `EF_SURF_OVERPASS_MISSING` | | | | | |
 | 14 | `EF_SURF_ALBEDO_GT1` | | | | | |
 | 15 | `EF_SURF_LAI_ASSIGNED` | | | | | |
-| 16–30 | libres | 7–30 libres | 5–30 libres | 5–30 libres | 12–30 libres | 6–30 libres |
+| 16 | `EF_SURF_VIEW_ANGLE_HIGH` (M5-26) | | | | | |
+| 17–30 | libres | 7–30 libres | 5–30 libres | 5–30 libres | 12–30 libres | 6–30 libres |
 
 Ocupación si se registraran **todos** los códigos `cell` (incluidos los
-de clase II): `SURF` 23/31, `GWR` 9/31, `RAD` 6/31, `G` 7/31, `H` 13/31,
+de clase II): `SURF` 23/31 (sin cambio con `EF_SURF_VIEW_ANGLE_HIGH`, que ya contaba), `GWR` 9/31, `RAD` 6/31, `G` 7/31, `H` 13/31,
 `ET` 8/31 (contando el bit 0); desde M5-25, `H` 14/31 con
 `EF_H_TERRAIN_RULE_APPLIED`. Una sola palabra para toda la cadena
 `metric` (RAD + G + H + ET) ocuparía 30/31 bits: por eso las palabras son
@@ -1051,7 +1069,11 @@ Cada resultado (`earthflux_result`, `earthflux_surface`,
    en `SCIENTIFIC_SPEC.md` (y `REFERENCES.md`) con estado `VERIFICADA`. El
    umbral se expone como parámetro registrado en la procedencia; sin
    referencia, el parámetro no tiene valor por defecto y el flag no se
-   evalúa (`weather-forcing.md` §3.1, punto 3).
+   evalúa (`weather-forcing.md` §3.1, punto 3). Excepción explícita,
+   decidida por el autor y registrada: `EF_SURF_VIEW_ANGLE_HIGH` (M5-26,
+   2026-11-11), reclasificado como clase I porque su umbral es una opción
+   obligatoria sin defecto (`view_angle_max`), con el valor de los presets
+   `CANDIDATA` en la procedencia.
 3. **Clase I-m**: se registra con el método, que a su vez exige `VERIFICADA`. Excepciones explícitas, decididas por el autor y registradas: `EF_G_LOW_LAI_BRANCH` (M2, `DECISIONS.md` §1.0), `EF_H_ZOM_FLOOR_APPLIED` (M5-24) y `EF_H_TERRAIN_RULE_APPLIED` (M5-25), registrados con su regla `CANDIDATA`.
 4. **Clase III**: se registra junto con la contraparte de error del núcleo
    y la política que excluye por defecto; los tests cubren ambos caminos.
@@ -1119,7 +1141,7 @@ con la primera función espacial o con parámetro.
 Notas:
 
 - Implementados (2026-11-04) en `test-diagnostics.R`: R1–R11, R15, R17
-  (con el vector de guardia de clase II, 35 códigos; la excepción
+  (con el vector de guardia de clase II, 35 códigos, 34 desde M5-26; la excepción
   temporal de R11 se retiró en la armonización M2), más tests de
   `ef_flag_rows()`, de `ef_flag()` y de los auxiliares de la convención de
   diagnósticos (`ef_flag_set()`, `ef_input_na_flags()`,
