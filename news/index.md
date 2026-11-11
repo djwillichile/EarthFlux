@@ -177,6 +177,11 @@
   function and with convergence, neutral versus stability corrected H
   and per-cell iteration figures.
 
+- Spanish version of that article for university teaching, *Píxeles
+  ancla y la iteración de Monin–Obukhov*, with the same code, data and
+  verification and the figure labels in Spanish; the two versions link
+  to each other.
+
 ## EarthFlux 0.1.0
 
 First release of EarthFlux. It is **experimental and not for operational

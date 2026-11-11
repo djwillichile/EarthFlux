@@ -11,6 +11,8 @@
 
 - [Hot and cold anchors and the Monin–Obukhov
   iteration](https://djwillichile.github.io/EarthFlux/articles/anchors-monin-obukhov.md):
+- [Píxeles ancla y la iteración de Monin–Obukhov
+  (español)](https://djwillichile.github.io/EarthFlux/articles/anclas-monin-obukhov.md):
 
 ### Development
 

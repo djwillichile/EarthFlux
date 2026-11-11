@@ -1,5 +1,9 @@
 # Hot and cold anchors and the Monin–Obukhov iteration
 
+> A Spanish version of this article, for teaching, is available:
+> [Píxeles ancla y la iteración de
+> Monin–Obukhov](https://djwillichile.github.io/EarthFlux/articles/anclas-monin-obukhov.md).
+
 The sensible heat flux $`H`$ is the hardest term of a METRIC energy
 balance. This article explains, step by step, how METRIC (Allen et al.,
 2007) estimates it: the internal calibration with a hot and a cold
