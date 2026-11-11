@@ -152,7 +152,8 @@ workflow_flag_word <- function(records, evaluated) {
 #' `EF_H_TERRAIN_RULE_APPLIED` (decision M5-25, dev/specs/presets.md 4.1):
 #' the terrain rule of the preset excluded the cell, because its elevation
 #' differs from the reference elevation of the calibration (the datum of
-#' Ts) by more than the limit of the preset (500 m, `CANDIDATA`); the cell
+#' Ts) by more than the limit of the preset (500 m in `idaho2002_elev`,
+#' 250 m in `idaho2002_flat`, `CANDIDATA`); the cell
 #' holds no anchor and is `NA` in every layer of the result. Class I-m (the
 #' limit is part of the rule of the preset), `info` (cause of an `NA`,
 #' dev/specs/flags.md 5.3), cell scope, bit 11 of the `H` stage (the next

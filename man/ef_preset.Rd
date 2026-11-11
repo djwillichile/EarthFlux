@@ -21,7 +21,8 @@ regionalization), \code{reference_et}, \code{radiation}, \code{soil_heat},
 \code{\link[=ef_anchor_criteria]{ef_anchor_criteria()}}, relaxation plan, aggregation, search area,
 anchor QA and boundary conditions), \code{sensible_heat} (with an
 \code{\link[=ef_h_control]{ef_h_control()}} list), \code{et}, \code{terrain_rule} (the terrain rule of
-version 4: method, limit \code{max_elevation_difference} in metres,
+version 4: method, limit \code{max_elevation_difference} in metres, 500
+for \code{idaho2002_elev} and 250 for \code{idaho2002_flat},
 reference elevation, flag and status) and \code{unverified} (named
 character vector of the elements that are not \code{VERIFICADA}).
 }
@@ -38,6 +39,7 @@ elevation:\tabular{lll}{
    Lapse rate of the datum surface temperature (Eq. 12-7) \tab 0.0065 K m-1 \tab 0 \cr
    Temperature of the incoming longwave \tab cold-anchor Ts adjusted by elevation (Eq. 12-8) \tab cold-anchor Ts \cr
    Shortwave transmissivity (Eq. 11) \tab per pixel, from the elevation model \tab one for the scene \cr
+   Limit of the terrain rule (M5-25) \tab 500 m \tab 250 m \cr
 }
 
 
@@ -81,11 +83,18 @@ calibrated at two anchors with one weather forcing holds only near the
 elevation of the calibration (the manual assumes uniform climate,
 Waters et al., 2002, p. 70, and gives its lapse rate of 6.5 K per km
 under neutral conditions, appendix 12, p. 95). Cells whose elevation
-differs by more than 500 m from the datum elevation (the station; with
-no station, the cold calibration point of a preliminary selection
-without the rule) hold no anchor and are \code{NA} in every layer, flagged
-with \code{EF_H_TERRAIN_RULE_APPLIED}; the limit has no primary source. The
-slope is not used: the presets keep the flat projection.
+differs from the datum elevation (the station; with no station, the
+cold calibration point of a preliminary selection without the rule) by
+more than the limit of the preset hold no anchor and are \code{NA} in every
+layer, flagged with \code{EF_H_TERRAIN_RULE_APPLIED}. The limit keeps the
+error of the datum surface temperature within the 1.5 K of the
+homogeneity tolerance of the anchors, rounded up to the next 50 m:
+with the lapse correction of \code{idaho2002_elev} the error is the
+difference to a dry adiabatic profile, 9.8 - 6.5 = 3.3 K per km
+(1.5 / 3.3 = 455 m, limit 500 m); without it (\code{idaho2002_flat}) the
+error is the whole lapse rate, 6.5 K per km (1.5 / 6.5 = 231 m, limit
+250 m). Neither limit has a primary source. The slope is not used: the
+presets keep the flat projection.
 
 Versions: \code{"1"} (first presets); \code{"2"} (recalibrated anchor criteria,
 M5-23; minimum z_om, M5-24); \code{"3"} (convergence of the calibration of H,

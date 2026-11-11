@@ -117,8 +117,9 @@
 #' geometry, pressure, roughness and wind at 200 m; (9) anchors, selected
 #' before the net radiation because the incoming longwave uses the
 #' temperature of the cold anchor (P0-3), outside the cells excluded by the
-#' terrain rule of the preset (decision M5-25: elevation more than 500 m
-#' above or below the datum elevation of the calibration, i.e. the station,
+#' terrain rule of the preset (decision M5-25: elevation more than 500 m,
+#' `idaho2002_elev`, or 250 m, `idaho2002_flat`, above or below the datum
+#' elevation of the calibration, i.e. the station,
 #' or without one the cold calibration point of a preliminary selection;
 #' those cells are not computed, are `NA` in every layer and are flagged
 #' with `EF_H_TERRAIN_RULE_APPLIED`); (10) shortwave and longwave

@@ -267,12 +267,16 @@ test_that("ef_presets() and ef_preset() describe the registered presets", {
   )
   expect_identical(f$sensible_heat$control, e$sensible_heat$control)
   expect_true("M2-11" %in% e$decisions)
-  # version 4 (M5-25): the terrain rule, CANDIDATA, in both presets
+  # version 4 (M5-25): the terrain rule, CANDIDATA, in both presets, with
+  # the limit of each preset (error of Ts_datum of 1.5 K: 3.3 K per km with
+  # the lapse correction, 6.5 K per km without it)
   expect_identical(e$terrain_rule$method, "datum_elevation_difference")
   expect_identical(e$terrain_rule$max_elevation_difference, 500)
+  expect_identical(f$terrain_rule$max_elevation_difference, 250)
   expect_identical(e$terrain_rule$flag, "EF_H_TERRAIN_RULE_APPLIED")
   expect_match(e$terrain_rule$status, "CANDIDATA")
-  expect_identical(f$terrain_rule, e$terrain_rule)
+  same <- setdiff(names(e$terrain_rule), "max_elevation_difference")
+  expect_identical(f$terrain_rule[same], e$terrain_rule[same])
   expect_true("M5-25" %in% e$decisions)
   expect_true("terrain_rule" %in% names(e$unverified))
   expect_identical(e$modis$surface_options$lai_nonveg, 0)
@@ -402,7 +406,17 @@ test_that("the flat preset uses one transmissivity and one longwave temperature"
   calls <- ewf_mock(st, ter)
   res <- ewf_run(aoi, ewf_date(), weather = sta1, preset = "idaho2002_flat",
                  cache_dir = tempdir())
-  man <- ewf_manual(st, ter, aoi, sta1, "idaho2002_flat")
+  # the synthetic plane rises from 150 m (the station) to 582 m: the limit
+  # of the flat preset (250 m) excludes its upper part (M5-25)
+  grid <- st$lst
+  in_aoi <- val(terra::rasterize(terra::project(aoi, terra::crs(grid)), grid,
+                                 touches = TRUE, background = 0)) == 1
+  z <- val(ter$terrain[["elevation"]])
+  excl <- in_aoi & !is.na(z) & abs(z - 150) > 250
+  expect_gt(sum(excl), 100L)
+  expect_identical(res$provenance$counts[["terrain_rule_excluded"]],
+                   sum(excl))
+  man <- ewf_manual(st, ter, aoi, sta1, "idaho2002_flat", exclude = excl)
   for (nm in c("eta_24", "etrf", "h", "rn", "rl_in", "tau_sw")) {
     expect_equal(val(res$layers[[nm]]), man[[nm]], tolerance = 1e-8,
                  info = nm)
@@ -634,15 +648,18 @@ test_that("without a station the terrain rule refers to the cold calibration poi
   res <- ewf_run(aoi, ewf_date(), weather = sta3, preset = "idaho2002_flat")
   tr <- res$provenance$scene$terrain_rule
   expect_match(tr$reference_source, "preliminary anchor selection")
+  expect_identical(tr$max_elevation_difference, 250)
   # the preliminary selection is the selection without the rule: the same
-  # criteria on the same cells, its cold point on the mountain terrain
+  # criteria on the same cells (the elev preset on the plane, where its
+  # limit of 500 m excludes nothing), its cold point on the mountain terrain
   calls0 <- ewf_mock(st, ter)
-  res0 <- ewf_run(aoi, ewf_date(), weather = sta3, preset = "idaho2002_flat")
+  res0 <- ewf_run(aoi, ewf_date(), weather = sta3, preset = "idaho2002_elev")
+  expect_identical(res0$provenance$counts[["terrain_rule_excluded"]], 0L)
   px0 <- res0$anchors$pixels
   z_m <- val(ter_m$terrain[["elevation"]])
   expect_equal(tr$reference_elevation,
                mean(z_m[px0$cell[px0$type == "cold"]]), tolerance = 1e-12)
-  excl <- !is.na(z_m) & abs(z_m - tr$reference_elevation) > 500
+  excl <- !is.na(z_m) & abs(z_m - tr$reference_elevation) > 250
   inside <- val(terra::rasterize(terra::project(aoi, terra::crs(st$lst)),
                                  st$lst, touches = TRUE, background = 0)) == 1
   expect_gt(sum(excl & inside), 100L)
@@ -656,7 +673,7 @@ test_that("without a station the terrain rule refers to the cold calibration poi
   expect_identical(res$provenance$scene$datum_elevation,
                    cp$elevation[cp$type == "cold"])
   expect_lte(abs(res$provenance$scene$datum_elevation -
-                   tr$reference_elevation), 500)
+                   tr$reference_elevation), 250)
 })
 
 test_that("workflow_terrain_rule() and workflow_terrain_reference() follow M5-25", {
