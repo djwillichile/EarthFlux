@@ -985,8 +985,37 @@ modis_fetch <- function(aoi, date, lst_product,
   }
   others <- c(albedo = "MCD43A3", ndvi = "MOD13A2", lai = "MCD15A2H")
   lst_candidates <- if (is_auto) auto$candidates else lst_product
-  found <- modis_search(c(lst_candidates, unname(others)), date, tiles,
-                        collection = collection)
+  missing_lst <- NULL
+  if (is_auto) {
+    # Each LST candidate is searched on its own: a satellite without a
+    # granule for the date does not stop the choice among the others; the
+    # missing candidates are recorded. The other products stay required.
+    lst_found <- lapply(lst_candidates, function(p) {
+      tryCatch(modis_search(p, date, tiles, collection = collection),
+               earthflux_modis_granule_error = function(e) e)
+    })
+    is_missing <- vapply(lst_found, inherits, logical(1),
+                         "earthflux_modis_granule_error")
+    if (all(is_missing)) {
+      stop(lst_found[[1L]])
+    }
+    missing_lst <- data.frame(
+      product = lst_candidates[is_missing],
+      reason = vapply(lst_found[is_missing], conditionMessage, character(1)),
+      stringsAsFactors = FALSE
+    )
+    lst_candidates <- lst_candidates[!is_missing]
+    rest <- modis_search(unname(others), date, tiles, collection = collection)
+    parts <- c(lst_found[!is_missing], list(rest))
+    found <- do.call(rbind, parts)
+    pv <- attr(rest, "provenance")
+    pv$queries <- do.call(c, lapply(parts, function(x)
+      attr(x, "provenance")$queries))
+    attr(found, "provenance") <- pv
+  } else {
+    found <- modis_search(c(lst_candidates, unname(others)), date, tiles,
+                          collection = collection)
+  }
   got <- modis_download(found, cache_dir = cache_dir)
   prov <- attr(got, "provenance")
   lst_choice <- NULL
@@ -998,6 +1027,7 @@ modis_fetch <- function(aoi, date, lst_product,
             stringsAsFactors = FALSE)
     }))
     lst_choice <- modis_choose_lst(stats, min_lst_coverage)
+    lst_choice$missing <- missing_lst
     lst_product <- lst_choice$product
     got <- got[!got$product %in% setdiff(lst_candidates, lst_product), ,
                drop = FALSE]

@@ -694,6 +694,45 @@ test_that("modis_fetch() chooses between Terra and Aqua by the view angle", {
   expect_null(f2$provenance$lst_choice)
 })
 
+test_that("the automatic choice goes on when one satellite has no granule", {
+  dl_local_envvar("EARTHDATA_TOKEN", "fake-token-for-tests-0123")
+  no_aqua <- function(product, tile) {
+    if (product == "MYD11A1") list() else synthetic_archive(product, tile)
+  }
+  log <- mock_network(archive = no_aqua)
+  testthat::local_mocked_bindings(
+    modis_lst_view_stats = function(src, aoi) {
+      st <- lst_stats(c(0.967, 0.933), c(62, 42))
+      st[st$product == src$product, ]
+    }
+  )
+  f <- modis_fetch(cauquenes_bbox(), day, lst_product = "auto_view_angle",
+                   cache_dir = dl_test_dir(), min_lst_coverage = 0.8)
+  expect_identical(f$lst_product, "MOD11A1")
+  ch <- f$provenance$lst_choice
+  expect_identical(ch$candidates$product, "MOD11A1")
+  expect_identical(ch$missing$product, "MYD11A1")
+  expect_true(nzchar(ch$missing$reason))
+  expect_length(f$provenance$search$queries, 4L)
+  # with neither satellite available the search error is kept
+  log <- mock_network(archive = function(product, tile) {
+    if (product %in% c("MOD11A1", "MYD11A1")) list() else
+      synthetic_archive(product, tile)
+  })
+  expect_error(modis_fetch(cauquenes_bbox(), day,
+                           lst_product = "auto_view_angle",
+                           cache_dir = dl_test_dir(), min_lst_coverage = 0.8),
+               class = "earthflux_modis_granule_error")
+  # a missing required product still stops the fetch
+  log <- mock_network(archive = function(product, tile) {
+    if (product == "MCD43A3") list() else synthetic_archive(product, tile)
+  })
+  expect_error(modis_fetch(cauquenes_bbox(), day,
+                           lst_product = "auto_view_angle",
+                           cache_dir = dl_test_dir(), min_lst_coverage = 0.8),
+               class = "earthflux_modis_granule_error")
+})
+
 test_that("the automatic choice needs its coverage and one tile", {
   expect_error(modis_fetch(cauquenes_bbox(), day,
                            lst_product = "auto_view_angle",
