@@ -494,7 +494,8 @@ retira aunque nunca se publicó (solo existió en la versión de desarrollo
 resultados de esa versión.
 *Actualización (2026-11-10, `DECISIONS.md` M5-25):* la regla de terreno
 de los presets (`workflow_terrain_rule()`, `R/api-run.R`) excluye de las
-anclas y del resultado las celdas a más de 500 m (arriba o abajo) de la
+anclas y del resultado las celdas a más de 500 m (`idaho2002_elev`) o
+250 m (`idaho2002_flat`, desde el 2026-11-11) (arriba o abajo) de la
 elevación de referencia de la calibración, y `ef_flags_workflow()`
 registra el código nuevo **`EF_H_TERRAIN_RULE_APPLIED`** (I-m, `info`
 —causa de un `NA`, §5.3—, ámbito `cell`, **bit 11 de `H`**, el siguiente
@@ -654,7 +655,7 @@ este catálogo siguen sin registrar y se registran según §7.
 | `EF_H_CALIBRATION_NOT_CONVERGED` | `EF_H_NOT_CONVERGED` | renombre (C11) | I (registrado) | critical* | object | — | Además `earthflux_convergence_warning`; a, b o u* no finitos en un ancla: `earthflux_calibration_error` |
 | `EF_H_DT_SLOPE_NONPOSITIVE` | `EF_DT_SLOPE_NONPOSITIVE` | prefijo | I (registrado) | critical* | object | — | Ts_hot ≤ Ts_cold: error (anclas invertidas / b indefinida) |
 | `EF_H_ZOM_UNDEFINED` | — (nuevo, M5; `DECISIONS.md` M5-13) | nuevo | **retirado** (M5-24, 2026-11-06; `ef_flag_retired()`) | info* | cell | 10 (ocupado) | Significaba: z_om = 0 (LAI = 0) sin mínimo aplicado, z_om `NA` y la celda `NA` desde H. Sustituto: `EF_H_ZOM_FLOOR_APPLIED` (los presets aplican el mínimo) |
-| `EF_H_TERRAIN_RULE_APPLIED` | — (nuevo, M5-25) | nuevo | I-m (registrado en `ef_flags_workflow()`; lo levanta `earthflux()`, `workflow_terrain_rule()` en `R/api-run.R`; M5-25) | info* | cell | 11 | La regla de terreno del preset excluyó la celda: \|z − z_ref\| > 500 m (`CANDIDATA`), sin ancla y `NA` en todas las capas. Registrado con el límite `CANDIDATA` por decisión del autor (excepción a §7, punto 3) |
+| `EF_H_TERRAIN_RULE_APPLIED` | — (nuevo, M5-25) | nuevo | I-m (registrado en `ef_flags_workflow()`; lo levanta `earthflux()`, `workflow_terrain_rule()` en `R/api-run.R`; M5-25) | info* | cell | 11 | La regla de terreno del preset excluyó la celda: \|z − z_ref\| > 500 m en `elev`, 250 m en `flat` (`CANDIDATA`), sin ancla y `NA` en todas las capas. Registrado con el límite `CANDIDATA` por decisión del autor (excepción a §7, punto 3) |
 | `EF_H_WIND_LOW` | `EF_LOW_WIND` | prefijo + orden | II | warning | cell, object | libre | u_b = 0 en un ancla: `earthflux_calibration_error` |
 | `EF_H_STABILITY_STRONG` | `EF_STRONGLY_STABLE` | prefijo + orden | II | warning | cell | libre | `TODO` |
 

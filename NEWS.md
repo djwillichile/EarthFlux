@@ -92,17 +92,25 @@
 * Presets `idaho2002_elev` and `idaho2002_flat` version 4: a terrain rule
   (decision M5-25, `CANDIDATA`). One linear dT calibrated at two anchors
   with one weather forcing only holds near the elevation of the
-  calibration, so cells whose elevation differs by more than 500 m from
-  the datum elevation (the station, or without one the cold calibration
-  point of a preliminary anchor selection) hold no anchor and are `NA` in
-  every layer of the result. They are flagged with the new
+  calibration, so cells whose elevation differs from the datum elevation
+  (the station, or without one the cold calibration point of a
+  preliminary anchor selection) by more than the limit of the preset hold
+  no anchor and are `NA` in every layer of the result. The limits differ
+  per preset: 500 m for `idaho2002_elev`, whose lapse correction leaves
+  an error of about 3.3 K per km in the datum surface temperature, and
+  250 m for `idaho2002_flat`, which has no lapse correction (6.5 K per
+  km); both keep that error within the 1.5 K homogeneity tolerance of the
+  anchors. They are flagged with the new
   `EF_H_TERRAIN_RULE_APPLIED` (info, cell scope, bit 11 of the H word; the
   other words are `NA` there) and counted in the provenance
   (`terrain_rule_excluded`, with the reference elevation in
-  `scene$terrain_rule`). On the Maule scene of 2019-02-15 this removes the
-  Andes above about 760 m (41 % of the computed cells), where ETrF was
-  mostly negative, and keeps the hot anchor in valley fields; the
-  Cauquenes scene is unchanged. The excluded cells get no ETa.
+  `scene$terrain_rule`). On the Maule scene of 2019-02-15 the elev preset
+  loses the Andes above about 760 m (41 % of the computed cells), where
+  ETrF was mostly negative, and keeps the hot anchor in valley fields;
+  the flat preset loses 47 %. On the Cauquenes scene the elev preset is
+  unchanged, while the flat preset loses 44 % of the computed cells,
+  nearly all of them more than 250 m below the reference (the plain under
+  169 m). The excluded cells get no ETa.
 
 ## Bug fixes
 

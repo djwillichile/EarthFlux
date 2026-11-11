@@ -58,7 +58,8 @@ Convención de estados: la misma de `SCIENTIFIC_SPEC.md` (`TODO`,
 >
 > **Actualización M5-25 (2026-11-10).** Respuesta parcial a Q-AP-10 en
 > los presets (no en el núcleo): la regla de terreno excluye de los
-> candidatos —y del resultado— las celdas a más de 500 m de la elevación
+> candidatos —y del resultado— las celdas a más de 500 m (`elev`; 250 m
+> en `flat` desde el 2026-11-11) de la elevación
 > de referencia de la calibración (la estación, o el punto frío de una
 > selección preliminar sin la regla), con `EF_H_TERRAIN_RULE_APPLIED`
 > (`specs/presets.md` §4.1; evaluación en `verification/terrain-rule.md`).
